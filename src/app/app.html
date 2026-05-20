@@ -1,0 +1,33 @@
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" routerLink="/dashboard" aria-label="yep_web dashboard">
+      <span class="brand-icon">
+        <svg lucideShieldCheck aria-hidden="true"></svg>
+      </span>
+      <span>yep_web</span>
+    </a>
+
+    <nav aria-label="Principal">
+      @if (isAuthenticated()) {
+        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <button type="button" (click)="logout()">
+          <svg lucideLogOut aria-hidden="true"></svg>
+          <span>Salir</span>
+        </button>
+      } @else {
+        <a routerLink="/login" routerLinkActive="active">Login</a>
+        <a routerLink="/register" routerLinkActive="active">Registro</a>
+      }
+
+      <button class="icon-button" type="button" (click)="toggleTheme()" [attr.aria-label]="themeLabel()">
+        @if (isDark()) {
+          <svg lucideSun aria-hidden="true"></svg>
+        } @else {
+          <svg lucideMoon aria-hidden="true"></svg>
+        }
+      </button>
+    </nav>
+  </header>
+
+  <router-outlet />
+</div>

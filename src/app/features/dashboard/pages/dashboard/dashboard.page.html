@@ -1,0 +1,98 @@
+<main class="dashboard-page">
+  <section class="dashboard-hero">
+    <div>
+      <p>Monitor en tiempo real</p>
+      <h1>Notificaciones</h1>
+      <span>{{ user()?.firstName }} {{ user()?.lastName }}</span>
+    </div>
+
+    <button class="refresh-button" type="button" (click)="loadNotifications()" [disabled]="loading()">
+      @if (loading()) {
+        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      } @else {
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+      }
+      <span>Actualizar</span>
+    </button>
+  </section>
+
+  <section class="metric-grid" aria-label="Resumen de notificaciones">
+    <article>
+      <svg lucideBell aria-hidden="true"></svg>
+      <span>Total</span>
+      <strong>{{ totalNotifications() }}</strong>
+    </article>
+
+    <article>
+      <svg lucideShieldCheck aria-hidden="true"></svg>
+      <span>Estado</span>
+      <strong>Activo</strong>
+    </article>
+
+    <article>
+      <svg lucideBellDot aria-hidden="true"></svg>
+      <span>Fuentes</span>
+      <strong>{{ sources() }}</strong>
+    </article>
+  </section>
+
+  <section class="notifications-panel">
+    <div class="panel-heading">
+      <div>
+        <p>Eventos recibidos</p>
+        <h2>Ultimas notificaciones</h2>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="state-message error">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="state-message">
+        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+        <span>Cargando notificaciones</span>
+      </div>
+    } @else if (!error() && notifications().length === 0) {
+      <div class="state-message">
+        <svg lucideBell aria-hidden="true"></svg>
+        <span>Sin notificaciones por ahora</span>
+      </div>
+    } @else {
+      <div class="notification-list">
+        @for (notification of notifications(); track notification.id) {
+          <article class="notification-item">
+            <div class="notification-icon">
+              <svg lucideBellDot aria-hidden="true"></svg>
+            </div>
+
+            <div class="notification-content">
+              <div class="notification-title">
+                <h3>{{ title(notification) }}</h3>
+                <span>{{ notification.status }}</span>
+              </div>
+              <p>{{ message(notification) }}</p>
+              <dl>
+                <div>
+                  <dt>Fuente</dt>
+                  <dd>{{ notification.source }}</dd>
+                </div>
+                <div>
+                  <dt>External ID</dt>
+                  <dd>{{ notification.externalId }}</dd>
+                </div>
+                <div>
+                  <dt>Creada</dt>
+                  <dd>{{ notification.createdAt | date: 'medium' }}</dd>
+                </div>
+              </dl>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>
