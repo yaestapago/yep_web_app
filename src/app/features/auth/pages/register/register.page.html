@@ -5,20 +5,12 @@
     </div>
 
     <div class="auth-heading">
-      <p>Nuevo workspace</p>
+      <p>Nuevo usuario</p>
       <h1>yep_web</h1>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="field-grid">
-        <label class="full">
-          <span>Cuenta</span>
-          <input type="text" formControlName="accountName" autocomplete="organization" />
-          @if (isInvalid('accountName')) {
-            <small>Ingresa el nombre de la cuenta.</small>
-          }
-        </label>
-
         <label>
           <span>Nombre</span>
           <input type="text" formControlName="firstName" autocomplete="given-name" />
@@ -35,7 +27,7 @@
           }
         </label>
 
-        <label class="full">
+        <label>
           <span>Email</span>
           <input type="email" formControlName="email" autocomplete="email" />
           @if (isInvalid('email')) {
@@ -44,16 +36,27 @@
         </label>
 
         <label>
-          <span>Password</span>
-          <input type="password" formControlName="password" autocomplete="new-password" />
-          @if (isInvalid('password')) {
-            <small>Minimo 6 caracteres.</small>
+          <span>Identificacion</span>
+          <input type="text" formControlName="identificationNumber" autocomplete="off" />
+          @if (isInvalid('identificationNumber')) {
+            <small>Ingresa tu numero de identificacion.</small>
           }
         </label>
 
         <label>
-          <span>Telefono opcional</span>
-          <input id="phone-number" type="tel" formControlName="phoneNumber" autocomplete="tel" />
+          <span>Celular</span>
+          <input type="tel" formControlName="cellphoneNumber" autocomplete="tel" />
+          @if (isInvalid('cellphoneNumber')) {
+            <small>Ingresa tu celular.</small>
+          }
+        </label>
+
+        <label class="full">
+          <span>Password</span>
+          <input type="password" formControlName="password" autocomplete="new-password" />
+          @if (isInvalid('password')) {
+            <small>Minimo 8 caracteres.</small>
+          }
         </label>
       </div>
 

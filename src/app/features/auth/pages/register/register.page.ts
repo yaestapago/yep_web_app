@@ -29,12 +29,12 @@ export class RegisterPage {
   readonly success = signal('');
 
   readonly form = this.fb.group({
-    accountName: ['', [Validators.required, Validators.minLength(2)]],
     firstName: ['', [Validators.required, Validators.minLength(2)]],
     lastName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    phoneNumber: [''],
+    identificationNumber: ['', [Validators.required, Validators.minLength(5)]],
+    cellphoneNumber: ['', [Validators.required, Validators.minLength(7)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
   submit(): void {
@@ -46,7 +46,7 @@ export class RegisterPage {
       return;
     }
 
-    const { phoneNumber: _phoneNumber, ...request } = this.form.getRawValue();
+    const request = this.form.getRawValue();
 
     this.loading.set(true);
     this.authApi
@@ -59,7 +59,10 @@ export class RegisterPage {
         next: (response) => {
           this.session.saveSession(response);
           this.success.set(`Cuenta creada para ${response.user.firstName}.`);
-          setTimeout(() => void this.router.navigateByUrl('/dashboard'), 450);
+          setTimeout(
+            () => void this.router.navigateByUrl(this.session.onboardingRequired() ? '/onboarding' : '/dashboard'),
+            450,
+          );
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });

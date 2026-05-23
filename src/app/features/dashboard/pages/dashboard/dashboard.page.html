@@ -3,17 +3,36 @@
     <div>
       <p>Monitor en tiempo real</p>
       <h1>Notificaciones</h1>
-      <span>{{ user()?.firstName }} {{ user()?.lastName }}</span>
+      <span>
+        {{ activeMembership()?.businessAccount?.name ?? activeMembership()?.businessAccountId }}
+        · {{ activeMembership()?.businessAccountId }}
+        · {{ user()?.firstName }} {{ user()?.lastName }}
+      </span>
     </div>
 
-    <button class="refresh-button" type="button" (click)="loadNotifications()" [disabled]="loading()">
-      @if (loading()) {
-        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      } @else {
-        <svg lucideRefreshCw aria-hidden="true"></svg>
+    <div class="dashboard-actions">
+      @if (approvedMemberships().length > 1) {
+        <label class="business-selector">
+          <span>Negocio</span>
+          <select [value]="activeBusinessAccountId()" (change)="selectBusiness($event)">
+            @for (membership of approvedMemberships(); track membership.id) {
+              <option [value]="membership.businessAccountId">
+                {{ businessName(membership.businessAccountId) }} · {{ membership.businessAccountId }}
+              </option>
+            }
+          </select>
+        </label>
       }
-      <span>Actualizar</span>
-    </button>
+
+      <button class="refresh-button" type="button" (click)="loadNotifications()" [disabled]="loading()">
+        @if (loading()) {
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+        } @else {
+          <svg lucideRefreshCw aria-hidden="true"></svg>
+        }
+        <span>Actualizar</span>
+      </button>
+    </div>
   </section>
 
   <section class="metric-grid" aria-label="Resumen de notificaciones">

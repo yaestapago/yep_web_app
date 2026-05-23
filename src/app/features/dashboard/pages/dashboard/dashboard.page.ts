@@ -33,19 +33,30 @@ import { NotificationsApiService } from '../../../notifications/services/notific
 export class DashboardPage implements OnInit {
   private readonly notificationsApi = inject(NotificationsApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly session = inject(AuthSessionService);
 
-  readonly user = inject(AuthSessionService).user;
+  readonly user = this.session.user;
+  readonly activeMembership = this.session.activeMembership;
+  readonly approvedMemberships = this.session.approvedMemberships;
+  readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
   readonly loading = signal(false);
   readonly error = signal('');
   readonly notifications = signal<YepNotification[]>([]);
   readonly totalNotifications = computed(() => this.notifications().length);
-  readonly sources = computed(() => new Set(this.notifications().map((notification) => notification.source)).size);
+  readonly sources = computed(
+    () => new Set(this.notifications().map((notification) => notification.source)).size,
+  );
 
   ngOnInit(): void {
     this.loadNotifications();
   }
 
   loadNotifications(): void {
+    if (!this.session.activeBusinessAccountId()) {
+      this.error.set('Selecciona un negocio activo antes de cargar notificaciones.');
+      return;
+    }
+
     this.loading.set(true);
     this.error.set('');
 
@@ -59,6 +70,21 @@ export class DashboardPage implements OnInit {
         next: (response) => this.notifications.set(response.notifications),
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
+  }
+
+  selectBusiness(event: Event): void {
+    const businessAccountId = (event.target as HTMLSelectElement).value;
+
+    this.session.setActiveBusinessAccountId(businessAccountId);
+    this.loadNotifications();
+  }
+
+  businessName(businessAccountId: string): string {
+    return (
+      this.approvedMemberships().find(
+        (membership) => membership.businessAccountId === businessAccountId,
+      )?.businessAccount?.name ?? businessAccountId
+    );
   }
 
   title(notification: YepNotification): string {
