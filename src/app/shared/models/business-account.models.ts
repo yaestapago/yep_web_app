@@ -1,4 +1,9 @@
-import { BusinessAccount, BusinessMembership, BusinessMembershipRole } from './auth.models';
+import {
+  BusinessAccount,
+  BusinessMembership,
+  BusinessMembershipRole,
+  BusinessMembershipStatus,
+} from './auth.models';
 
 export interface BusinessAccountsResponse {
   businessAccounts: BusinessAccount[];
@@ -27,4 +32,8 @@ export interface MembershipRequest {
 
 export interface MembershipResponse {
   membership: BusinessMembership;
+}
+
+export interface UpdateMembershipStatusRequest {
+  status: Extract<BusinessMembershipStatus, 'approved' | 'rejected' | 'revoked'>;
 }

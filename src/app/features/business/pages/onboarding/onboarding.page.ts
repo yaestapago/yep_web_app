@@ -15,7 +15,7 @@ import {
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { BusinessMembership } from '../../../../shared/models/auth.models';
+import { BusinessAccount, BusinessMembership } from '../../../../shared/models/auth.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -46,6 +46,7 @@ export class OnboardingPage implements OnInit {
   readonly approvedMemberships = this.session.approvedMemberships;
   readonly pendingMemberships = this.session.pendingMemberships;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
+  readonly knownBusinessAccounts = signal<BusinessAccount[]>([]);
 
   readonly loadingMemberships = signal(false);
   readonly creatingBusiness = signal(false);
@@ -66,6 +67,7 @@ export class OnboardingPage implements OnInit {
 
   ngOnInit(): void {
     this.loadMemberships();
+    this.loadKnownBusinessAccounts();
   }
 
   loadMemberships(): void {
@@ -81,6 +83,16 @@ export class OnboardingPage implements OnInit {
       .subscribe({
         next: (response) => this.session.updateMemberships(response.memberships),
         error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  loadKnownBusinessAccounts(): void {
+    this.businessApi
+      .listBusinessAccounts()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.knownBusinessAccounts.set(response.businessAccounts),
+        error: () => this.knownBusinessAccounts.set([]),
       });
   }
 
@@ -126,10 +138,25 @@ export class OnboardingPage implements OnInit {
       return;
     }
 
+    const businessAccountId = this.requestForm.controls.businessAccountId.value.trim();
+    const existingStatus = this.membershipStatusForBusiness(businessAccountId);
+
+    if (existingStatus === 'pending') {
+      this.success.set('Ya existe una solicitud pendiente para este negocio.');
+      return;
+    }
+
+    if (existingStatus === 'approved') {
+      this.session.setActiveBusinessAccountId(businessAccountId);
+      this.success.set('Ya tienes acceso aprobado. Negocio activo seleccionado.');
+      void this.router.navigateByUrl('/dashboard');
+      return;
+    }
+
     this.requestingAccess.set(true);
     this.businessApi
       .requestMembership({
-        businessAccountId: this.requestForm.controls.businessAccountId.value.trim(),
+        businessAccountId,
         role: 'account_staff',
       })
       .pipe(
@@ -143,8 +170,13 @@ export class OnboardingPage implements OnInit {
 
           if (response.membership.status === 'approved') {
             this.session.setActiveBusinessAccountId(response.membership.businessAccountId);
-            this.success.set('Acceso aprobado. Negocio activo seleccionado.');
+            this.success.set('Ya existe acceso aprobado. Negocio activo seleccionado.');
             void this.router.navigateByUrl('/dashboard');
+            return;
+          }
+
+          if (existingStatus === 'rejected') {
+            this.success.set('Solicitud enviada nuevamente. Un owner debe aprobar el acceso.');
             return;
           }
 
@@ -171,6 +203,19 @@ export class OnboardingPage implements OnInit {
   isRequestInvalid(): boolean {
     const control = this.requestForm.controls.businessAccountId;
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  selectKnownBusiness(event: Event): void {
+    const businessAccountId = (event.target as HTMLSelectElement).value;
+    this.requestForm.patchValue({ businessAccountId });
+  }
+
+  private membershipStatusForBusiness(businessAccountId: string): BusinessMembership['status'] | null {
+    return (
+      this.session
+        .memberships()
+        .find((membership) => membership.businessAccountId === businessAccountId)?.status ?? null
+    );
   }
 
   private mergeMembership(membership: BusinessMembership): BusinessMembership[] {

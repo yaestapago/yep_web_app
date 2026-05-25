@@ -132,6 +132,18 @@
       </div>
 
       <form [formGroup]="requestForm" (ngSubmit)="requestAccess()" novalidate>
+        @if (knownBusinessAccounts().length > 0) {
+          <label>
+            <span>Seleccionar negocio conocido</span>
+            <select (change)="selectKnownBusiness($event)" [value]="requestForm.controls.businessAccountId.value">
+              <option value="">Ingresar ID manualmente</option>
+              @for (business of knownBusinessAccounts(); track business.id) {
+                <option [value]="business.id">{{ business.name }} · {{ business.id }}</option>
+              }
+            </select>
+          </label>
+        }
+
         <label>
           <span>ID del negocio</span>
           <input type="text" formControlName="businessAccountId" autocomplete="off" />

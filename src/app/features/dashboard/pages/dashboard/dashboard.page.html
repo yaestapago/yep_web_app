@@ -1,8 +1,8 @@
 <main class="dashboard-page">
   <section class="dashboard-hero">
     <div>
-      <p>Monitor en tiempo real</p>
-      <h1>Notificaciones</h1>
+      <p>Operaciones</p>
+      <h1>Pagos Yep</h1>
       <span>
         {{ activeMembership()?.businessAccount?.name ?? activeMembership()?.businessAccountId }}
         · {{ activeMembership()?.businessAccountId }}
@@ -24,8 +24,8 @@
         </label>
       }
 
-      <button class="refresh-button" type="button" (click)="loadNotifications()" [disabled]="loading()">
-        @if (loading()) {
+      <button class="refresh-button" type="button" (click)="loadOverview()" [disabled]="loadingTransactions() || loadingEvents() || loadingCustomers()">
+        @if (loadingTransactions() || loadingEvents() || loadingCustomers()) {
           <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
         } @else {
           <svg lucideRefreshCw aria-hidden="true"></svg>
@@ -35,83 +35,421 @@
     </div>
   </section>
 
-  <section class="metric-grid" aria-label="Resumen de notificaciones">
+  @if (error()) {
+    <div class="form-alert error">
+      <svg lucideTriangleAlert aria-hidden="true"></svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (success()) {
+    <p class="form-alert success">{{ success() }}</p>
+  }
+
+  <section class="metric-grid" aria-label="Resumen de pagos">
     <article>
-      <svg lucideBell aria-hidden="true"></svg>
-      <span>Total</span>
-      <strong>{{ totalNotifications() }}</strong>
+      <svg lucideBanknote aria-hidden="true"></svg>
+      <span>Total capturado</span>
+      <strong>{{ totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
     </article>
 
     <article>
       <svg lucideShieldCheck aria-hidden="true"></svg>
-      <span>Estado</span>
-      <strong>Activo</strong>
+      <span>Pagos validos</span>
+      <strong>{{ paidCount() }}</strong>
     </article>
 
     <article>
-      <svg lucideBellDot aria-hidden="true"></svg>
-      <span>Fuentes</span>
-      <strong>{{ sources() }}</strong>
+      <svg lucideActivity aria-hidden="true"></svg>
+      <span>Por revisar</span>
+      <strong>{{ openReviewCount() }}</strong>
+    </article>
+
+    <article>
+      <svg lucideBell aria-hidden="true"></svg>
+      <span>Eventos fuente</span>
+      <strong>{{ sourceEvents().length }}</strong>
     </article>
   </section>
 
-  <section class="notifications-panel">
-    <div class="panel-heading">
-      <div>
-        <p>Eventos recibidos</p>
-        <h2>Ultimas notificaciones</h2>
-      </div>
-    </div>
-
-    @if (error()) {
-      <div class="state-message error">
-        <svg lucideTriangleAlert aria-hidden="true"></svg>
-        <span>{{ error() }}</span>
-      </div>
+  <nav class="tab-bar" aria-label="Vistas del dashboard">
+    <button type="button" [class.active]="activeView() === 'transactions'" (click)="selectView('transactions')">
+      <svg lucideBanknote aria-hidden="true"></svg>
+      <span>Transacciones</span>
+    </button>
+    <button type="button" [class.active]="activeView() === 'events'" (click)="selectView('events')">
+      <svg lucideBell aria-hidden="true"></svg>
+      <span>Eventos</span>
+    </button>
+    <button type="button" [class.active]="activeView() === 'customers'" (click)="selectView('customers')">
+      <svg lucideUsers aria-hidden="true"></svg>
+      <span>Clientes</span>
+    </button>
+    @if (canManageStaffRequests()) {
+      <button type="button" [class.active]="activeView() === 'staffRequests'" (click)="selectView('staffRequests')">
+        <svg lucideUsers aria-hidden="true"></svg>
+        <span>Solicitudes</span>
+      </button>
     }
+    <button type="button" [class.active]="activeView() === 'capture'" (click)="selectView('capture')">
+      <svg lucideFileScan aria-hidden="true"></svg>
+      <span>Capturar</span>
+    </button>
+  </nav>
 
-    @if (loading()) {
-      <div class="state-message">
-        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-        <span>Cargando notificaciones</span>
+  @if (activeView() === 'transactions') {
+    <section class="data-panel">
+      <div class="panel-heading">
+        <div>
+          <p>Verificacion</p>
+          <h2>Transacciones recientes</h2>
+        </div>
       </div>
-    } @else if (!error() && notifications().length === 0) {
-      <div class="state-message">
-        <svg lucideBell aria-hidden="true"></svg>
-        <span>Sin notificaciones por ahora</span>
-      </div>
-    } @else {
-      <div class="notification-list">
-        @for (notification of notifications(); track notification.id) {
-          <article class="notification-item">
-            <div class="notification-icon">
-              <svg lucideBellDot aria-hidden="true"></svg>
-            </div>
 
-            <div class="notification-content">
-              <div class="notification-title">
-                <h3>{{ title(notification) }}</h3>
-                <span>{{ notification.status }}</span>
+      @if (loadingTransactions()) {
+        <div class="state-message">
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          <span>Cargando transacciones</span>
+        </div>
+      } @else if (transactions().length === 0) {
+        <div class="state-message">
+          <svg lucideBanknote aria-hidden="true"></svg>
+          <span>Sin transacciones capturadas</span>
+        </div>
+      } @else {
+        <div class="transaction-list">
+          @for (transaction of transactions(); track transaction.id) {
+            <article class="transaction-item">
+              <div class="transaction-main">
+                <div>
+                  <h3>{{ transaction.reference || transaction.id }}</h3>
+                  <p>{{ transaction.bankId }} · {{ transaction.transactionDate | date: 'medium' }}</p>
+                </div>
+                <strong>{{ transaction.amount | currency: transaction.currency : 'symbol-narrow' : '1.0-0' }}</strong>
               </div>
-              <p>{{ message(notification) }}</p>
+
               <dl>
                 <div>
-                  <dt>Fuente</dt>
-                  <dd>{{ notification.source }}</dd>
+                  <dt>Estado</dt>
+                  <dd>{{ transaction.status }}</dd>
                 </div>
                 <div>
-                  <dt>External ID</dt>
-                  <dd>{{ notification.externalId }}</dd>
+                  <dt>Nivel</dt>
+                  <dd>{{ transaction.verification.level }}</dd>
                 </div>
                 <div>
-                  <dt>Creada</dt>
-                  <dd>{{ notification.createdAt | date: 'medium' }}</dd>
+                  <dt>Cliente</dt>
+                  <dd>{{ transaction.sender?.name || transaction.sender?.account || 'Sin datos' }}</dd>
+                </div>
+                <div>
+                  <dt>Pagable</dt>
+                  <dd>{{ transaction.verification.canBeConsideredPaid ? 'Si' : 'No' }}</dd>
                 </div>
               </dl>
-            </div>
-          </article>
-        }
+
+              <button class="ghost-action" type="button" (click)="runVerification(transaction)" [disabled]="loadingTransactions()">
+                <svg lucideShieldCheck aria-hidden="true"></svg>
+                <span>Verificar</span>
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (activeView() === 'events') {
+    <section class="data-panel">
+      <div class="panel-heading">
+        <div>
+          <p>Ingesta</p>
+          <h2>Source events</h2>
+        </div>
       </div>
-    }
-  </section>
+
+      @if (loadingEvents()) {
+        <div class="state-message">
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          <span>Cargando eventos</span>
+        </div>
+      } @else if (sourceEvents().length === 0) {
+        <div class="state-message">
+          <svg lucideBell aria-hidden="true"></svg>
+          <span>Sin eventos fuente</span>
+        </div>
+      } @else {
+        <div class="event-list">
+          @for (event of sourceEvents(); track event.id) {
+            <article class="event-item">
+              <div>
+                <h3>{{ eventTitle(event) }}</h3>
+                <p>{{ event.sourceType }} · {{ event.status }} · {{ event.createdAt | date: 'medium' }}</p>
+              </div>
+              @if (eventAmount(event) !== null) {
+                <strong>{{ eventAmount(event) | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}</strong>
+              }
+              <code>{{ rawSummary(event.rawPayload) }}</code>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (activeView() === 'customers') {
+    <section class="data-panel">
+      <div class="panel-heading">
+        <div>
+          <p>Recurrentes</p>
+          <h2>Clientes inferidos</h2>
+        </div>
+      </div>
+
+      @if (loadingCustomers()) {
+        <div class="state-message">
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          <span>Cargando clientes</span>
+        </div>
+      } @else if (customers().length === 0) {
+        <div class="state-message">
+          <svg lucideUsers aria-hidden="true"></svg>
+          <span>Sin clientes inferidos aun</span>
+        </div>
+      } @else {
+        <div class="customer-list">
+          @for (customer of customers(); track customer.id) {
+            <article class="customer-item">
+              <div>
+                <h3>{{ customerName(customer) }}</h3>
+                <p>{{ customer.bankId || 'Banco sin identificar' }} · {{ customer.lastSeenAt | date: 'medium' }}</p>
+              </div>
+              <dl>
+                <div>
+                  <dt>Pagos</dt>
+                  <dd>{{ customer.transactionCount }}</dd>
+                </div>
+                <div>
+                  <dt>Total</dt>
+                  <dd>{{ customer.totalPaidAmount | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+                </div>
+                <div>
+                  <dt>Cuenta</dt>
+                  <dd>{{ customer.account || 'Sin datos' }}</dd>
+                </div>
+              </dl>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (activeView() === 'staffRequests') {
+    <section class="data-panel">
+      <div class="panel-heading">
+        <div>
+          <p>Staff</p>
+          <h2>Solicitudes de acceso</h2>
+        </div>
+
+        <button class="refresh-button" type="button" (click)="loadStaffRequests()" [disabled]="loadingStaffRequests()">
+          @if (loadingStaffRequests()) {
+            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          } @else {
+            <svg lucideRefreshCw aria-hidden="true"></svg>
+          }
+          <span>Consultar</span>
+        </button>
+      </div>
+
+      @if (staffRequestsMessage()) {
+        <div class="state-message pending-backend">
+          <svg lucideTriangleAlert aria-hidden="true"></svg>
+          <span>{{ staffRequestsMessage() }}</span>
+        </div>
+      } @else if (loadingStaffRequests()) {
+        <div class="state-message">
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          <span>Cargando solicitudes</span>
+        </div>
+      } @else if (staffRequestsAttempted() && staffRequests().length === 0) {
+        <div class="state-message">
+          <svg lucideUsers aria-hidden="true"></svg>
+          <span>No hay solicitudes pendientes.</span>
+        </div>
+      } @else {
+        <div class="staff-request-list">
+          @for (membership of staffRequests(); track membership.id) {
+            <article class="staff-request-item">
+              <div>
+                <h3>{{ requesterLabel(membership) }}</h3>
+                <p>{{ membership.role }} · {{ membership.status }} · {{ membership.createdAt | date: 'medium' }}</p>
+              </div>
+
+              <dl>
+                <div>
+                  <dt>Email</dt>
+                  <dd>{{ membership.email || 'Sin email' }}</dd>
+                </div>
+                <div>
+                  <dt>Identificacion</dt>
+                  <dd>{{ membership.identificationNumber || 'Sin datos' }}</dd>
+                </div>
+                <div>
+                  <dt>Negocio</dt>
+                  <dd>{{ membership.businessAccountId }}</dd>
+                </div>
+              </dl>
+
+              <div class="staff-actions">
+                <button class="primary-action" type="button" (click)="approveStaffRequest(membership)" [disabled]="actingMembershipId() === membership.id">
+                  @if (actingMembershipId() === membership.id) {
+                    <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+                  } @else {
+                    <svg lucideShieldCheck aria-hidden="true"></svg>
+                  }
+                  <span>Aprobar</span>
+                </button>
+
+                <button class="danger-action" type="button" (click)="rejectStaffRequest(membership)" [disabled]="actingMembershipId() === membership.id">
+                  <svg lucideTriangleAlert aria-hidden="true"></svg>
+                  <span>Rechazar</span>
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (activeView() === 'capture') {
+    <section class="capture-grid">
+      <article class="data-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Comprobante</p>
+            <h2>OCR de imagen</h2>
+          </div>
+        </div>
+
+        <label class="file-control">
+          <span>Imagen</span>
+          <input type="file" accept="image/*" (change)="onReceiptSelected($event)" />
+        </label>
+
+        <button class="primary-action" type="button" (click)="extractReceipt()" [disabled]="extracting()">
+          @if (extracting()) {
+            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          } @else {
+            <svg lucideUpload aria-hidden="true"></svg>
+          }
+          <span>Extraer datos</span>
+        </button>
+
+        @if (extraction()) {
+          <div class="ocr-result">
+            <h3>Resultado OCR</h3>
+            <dl>
+              <div>
+                <dt>Banco</dt>
+                <dd>{{ extraction()?.transaction?.bank || 'Sin datos' }}</dd>
+              </div>
+              <div>
+                <dt>Monto</dt>
+                <dd>{{ extraction()?.transaction?.amount || 0 | currency: extraction()?.transaction?.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+              </div>
+              <div>
+                <dt>Confianza</dt>
+                <dd>{{ (extraction()?.transaction?.confidence || 0) | percent: '1.0-0' }}</dd>
+              </div>
+            </dl>
+          </div>
+        }
+      </article>
+
+      <article class="data-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Registro</p>
+            <h2>Crear transaccion</h2>
+          </div>
+        </div>
+
+        <form [formGroup]="manualForm" (ngSubmit)="createManualTransaction()" novalidate>
+          <div class="form-grid">
+            <label>
+              <span>Banco</span>
+              <input type="text" formControlName="bankId" autocomplete="off" />
+              @if (isInvalid('bankId')) {
+                <small>Ingresa el banco.</small>
+              }
+            </label>
+
+            <label>
+              <span>Fecha</span>
+              <input type="datetime-local" formControlName="transactionDate" />
+              @if (isInvalid('transactionDate')) {
+                <small>Ingresa la fecha.</small>
+              }
+            </label>
+
+            <label>
+              <span>Monto</span>
+              <input type="number" min="1" step="1" formControlName="amount" />
+              @if (isInvalid('amount')) {
+                <small>Ingresa el monto.</small>
+              }
+            </label>
+
+            <label>
+              <span>Moneda</span>
+              <input type="text" formControlName="currency" />
+            </label>
+
+            <label>
+              <span>Referencia</span>
+              <input type="text" formControlName="reference" autocomplete="off" />
+            </label>
+
+            <label>
+              <span>Pagador</span>
+              <input type="text" formControlName="senderName" autocomplete="off" />
+            </label>
+
+            <label>
+              <span>Cuenta pagador</span>
+              <input type="text" formControlName="senderAccount" autocomplete="off" />
+            </label>
+
+            <label>
+              <span>Cuenta destino</span>
+              <input type="text" formControlName="receiverAccount" autocomplete="off" />
+            </label>
+
+            <label class="full">
+              <span>Notas</span>
+              <input type="text" formControlName="notes" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary-action" type="submit" [disabled]="creatingTransaction()">
+              @if (creatingTransaction()) {
+                <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+              } @else {
+                <svg lucideSend aria-hidden="true"></svg>
+              }
+              <span>Crear manual</span>
+            </button>
+
+            <button class="secondary-action" type="button" (click)="createTransactionFromOcr()" [disabled]="creatingTransaction() || !extraction()">
+              <svg lucideFileScan aria-hidden="true"></svg>
+              <span>Crear desde OCR</span>
+            </button>
+          </div>
+        </form>
+      </article>
+    </section>
+  }
 </main>

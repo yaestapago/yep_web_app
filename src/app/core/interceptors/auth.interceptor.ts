@@ -28,7 +28,14 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 };
 
 function isBusinessScopedRequest(url: string): boolean {
-  return ['/notifications', '/transactions', '/whatsapp', '/business-accounts/active'].some((path) =>
-    url.includes(path),
-  );
+  return [
+    '/business-accounts/active',
+    '/business-accounts/',
+    '/customers',
+    '/notifications',
+    '/payment-supports',
+    '/source-events',
+    '/transactions',
+    '/whatsapp',
+  ].some((path) => url.includes(path));
 }

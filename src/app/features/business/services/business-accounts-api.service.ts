@@ -10,6 +10,7 @@ import {
   CreateBusinessAccountResponse,
   MembershipRequest,
   MembershipResponse,
+  UpdateMembershipStatusRequest,
 } from '../../../shared/models/business-account.models';
 
 @Injectable({ providedIn: 'root' })
@@ -31,5 +32,29 @@ export class BusinessAccountsApiService {
 
   requestMembership(request: MembershipRequest): Observable<MembershipResponse> {
     return this.http.post<MembershipResponse>(`${this.apiUrl}/business-accounts/membership-requests`, request);
+  }
+
+  // Backend pending: owner inbox endpoint does not exist yet.
+  // Expected contract:
+  // GET /business-accounts/:businessAccountId/membership-requests?status=pending
+  // Response: { memberships: BusinessMembership[] }
+  listPendingStaffRequests(businessAccountId: string): Observable<BusinessMembershipsResponse> {
+    return this.http.get<BusinessMembershipsResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/membership-requests`,
+      {
+        params: { status: 'pending' },
+      },
+    );
+  }
+
+  updateMembershipStatus(
+    businessAccountId: string,
+    membershipId: string,
+    request: UpdateMembershipStatusRequest,
+  ): Observable<MembershipResponse> {
+    return this.http.patch<MembershipResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/memberships/${membershipId}/status`,
+      request,
+    );
   }
 }
