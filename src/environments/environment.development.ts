@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://api.yaestapago.co',
+  apiUrl: 'http://localhost:3000',
 };

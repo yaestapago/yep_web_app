@@ -29,7 +29,7 @@ export class LoginPage {
 
   readonly form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
   submit(): void {
@@ -52,7 +52,10 @@ export class LoginPage {
         next: (response) => {
           this.session.saveSession(response);
           this.success.set(`Bienvenido, ${response.user.firstName}.`);
-          setTimeout(() => void this.router.navigateByUrl('/dashboard'), 350);
+          setTimeout(
+            () => void this.router.navigateByUrl(this.session.onboardingRequired() ? '/onboarding' : '/dashboard'),
+            350,
+          );
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });

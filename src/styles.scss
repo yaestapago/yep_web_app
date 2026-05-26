@@ -62,13 +62,15 @@ body {
 }
 
 button,
-input {
+input,
+select {
   letter-spacing: 0;
 }
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   outline-offset: 2px;
 }

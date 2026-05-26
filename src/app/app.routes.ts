@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
+import { businessGuard } from './core/guards/business.guard';
 
 export const routes: Routes = [
   {
@@ -17,8 +18,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/pages/register/register.page').then((m) => m.RegisterPage),
   },
   {
-    path: 'dashboard',
+    path: 'onboarding',
     canActivate: [authGuard],
+    loadComponent: () => import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [businessGuard],
     loadComponent: () => import('./features/dashboard/pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
   },
   {
