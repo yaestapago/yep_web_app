@@ -32,6 +32,7 @@ function isBusinessScopedRequest(url: string): boolean {
     '/business-accounts/active',
     '/business-accounts/',
     '/customers',
+    '/notifiers',
     '/notifications',
     '/payment-supports',
     '/source-events',

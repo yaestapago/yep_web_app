@@ -24,8 +24,8 @@
         </label>
       }
 
-      <button class="refresh-button" type="button" (click)="loadOverview()" [disabled]="loadingTransactions() || loadingEvents() || loadingCustomers()">
-        @if (loadingTransactions() || loadingEvents() || loadingCustomers()) {
+      <button class="refresh-button" type="button" (click)="loadOverview()" [disabled]="loadingTransactions() || loadingEvents() || loadingCustomers() || loadingNotifiers()">
+        @if (loadingTransactions() || loadingEvents() || loadingCustomers() || loadingNotifiers()) {
           <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
         } @else {
           <svg lucideRefreshCw aria-hidden="true"></svg>
@@ -70,6 +70,12 @@
       <span>Eventos fuente</span>
       <strong>{{ sourceEvents().length }}</strong>
     </article>
+
+    <article>
+      <svg lucideBell aria-hidden="true"></svg>
+      <span>Notifiers activos</span>
+      <strong>{{ activeNotifierCount() }}</strong>
+    </article>
   </section>
 
   <nav class="tab-bar" aria-label="Vistas del dashboard">
@@ -84,6 +90,10 @@
     <button type="button" [class.active]="activeView() === 'customers'" (click)="selectView('customers')">
       <svg lucideUsers aria-hidden="true"></svg>
       <span>Clientes</span>
+    </button>
+    <button type="button" [class.active]="activeView() === 'notifiers'" (click)="selectView('notifiers')">
+      <svg lucideBell aria-hidden="true"></svg>
+      <span>Notifiers</span>
     </button>
     @if (canManageStaffRequests()) {
       <button type="button" [class.active]="activeView() === 'staffRequests'" (click)="selectView('staffRequests')">
@@ -241,6 +251,162 @@
           }
         </div>
       }
+    </section>
+  }
+
+  @if (activeView() === 'notifiers') {
+    <section class="notifier-layout">
+      @if (canManageNotifiers()) {
+        <article class="data-panel">
+          <div class="panel-heading">
+            <div>
+              <p>Registro</p>
+              <h2>Nuevo notifier</h2>
+            </div>
+          </div>
+
+          <form [formGroup]="notifierForm" (ngSubmit)="createNotifier()" novalidate>
+            <div class="form-grid">
+              <label>
+                <span>Nombre</span>
+                <input type="text" formControlName="displayName" autocomplete="off" />
+                @if (isNotifierInvalid('displayName')) {
+                  <small>Ingresa un nombre.</small>
+                }
+              </label>
+
+              <label>
+                <span>Telefono o correo</span>
+                <input type="text" formControlName="identifier" autocomplete="off" />
+              </label>
+
+              <label>
+                <span>Tipo</span>
+                <select formControlName="identifierType">
+                  <option value="phone">Telefono</option>
+                  <option value="email">Email</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Bancos</span>
+                <input type="text" formControlName="bankIds" autocomplete="off" />
+              </label>
+
+              <label class="full">
+                <span>Apps Android</span>
+                <textarea rows="5" formControlName="watchedPackages"></textarea>
+              </label>
+
+            </div>
+
+            <div class="form-actions">
+              <button class="primary-action" type="submit" [disabled]="creatingNotifier()">
+                @if (creatingNotifier()) {
+                  <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideSend aria-hidden="true"></svg>
+                }
+                <span>Crear notifier</span>
+              </button>
+            </div>
+          </form>
+        </article>
+      }
+
+      <article class="data-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Dispositivos</p>
+            <h2>Notifiers registrados</h2>
+          </div>
+
+          <button class="refresh-button" type="button" (click)="loadNotifiers()" [disabled]="loadingNotifiers()">
+            @if (loadingNotifiers()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            } @else {
+              <svg lucideRefreshCw aria-hidden="true"></svg>
+            }
+            <span>Actualizar</span>
+          </button>
+        </div>
+
+        @if (loadingNotifiers()) {
+          <div class="state-message">
+            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            <span>Cargando notifiers</span>
+          </div>
+        } @else if (notifiers().length === 0) {
+          <div class="state-message">
+            <svg lucideBell aria-hidden="true"></svg>
+            <span>Sin notifiers registrados</span>
+          </div>
+        } @else {
+          <div class="notifier-list">
+            @for (notifier of notifiers(); track notifier.id) {
+              <article class="notifier-item">
+                <div class="notifier-main">
+                  <div>
+                    <h3>{{ notifier.displayName || notifier.id }}</h3>
+                    <p>{{ notifier.active ? 'Activo' : 'Pausado' }} Â· {{ notifier.isOnline ? 'Online' : 'Offline' }} Â· {{ notifierDeviceLabel(notifier) }}</p>
+                  </div>
+
+                  @if (notifier.accessCode) {
+                    <button class="access-code" type="button" (click)="copyAccessCode(notifier)">
+                      <span>{{ notifier.accessCode }}</span>
+                    </button>
+                  }
+                </div>
+
+                <dl>
+                  <div>
+                    <dt>Bancos</dt>
+                    <dd>{{ notifier.bankIds.join(', ') || 'Todos' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Apps</dt>
+                    <dd>{{ notifier.watchedPackages.join(', ') || 'Sin filtro' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Ultima señal</dt>
+                    <dd>{{ notifier.lastSeenAt ? (notifier.lastSeenAt | date: 'medium') : 'Sin heartbeat' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Pairing</dt>
+                    <dd>{{ notifier.pairedDevice ? (notifier.pairedDevice.pairedAt | date: 'medium') : 'Pendiente' }}</dd>
+                  </div>
+                </dl>
+
+                @if (canManageNotifiers()) {
+                  <div class="notifier-actions">
+                    @if (notifier.active) {
+                      <button class="secondary-action" type="button" (click)="deactivateNotifier(notifier)" [disabled]="actingNotifierId() === notifier.id">
+                        <svg lucideTriangleAlert aria-hidden="true"></svg>
+                        <span>Pausar</span>
+                      </button>
+                    } @else {
+                      <button class="primary-action compact" type="button" (click)="activateNotifier(notifier)" [disabled]="actingNotifierId() === notifier.id">
+                        <svg lucideShieldCheck aria-hidden="true"></svg>
+                        <span>Activar</span>
+                      </button>
+                    }
+
+                    <button class="secondary-action" type="button" (click)="unpairNotifier(notifier)" [disabled]="actingNotifierId() === notifier.id || !notifier.pairedDevice">
+                      <svg lucideRefreshCw aria-hidden="true"></svg>
+                      <span>Desemparejar</span>
+                    </button>
+
+                    <button class="danger-action" type="button" (click)="removeNotifier(notifier)" [disabled]="actingNotifierId() === notifier.id">
+                      <svg lucideTriangleAlert aria-hidden="true"></svg>
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+      </article>
     </section>
   }
 

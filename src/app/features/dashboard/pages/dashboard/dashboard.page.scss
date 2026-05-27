@@ -53,6 +53,8 @@
 }
 
 .business-selector select,
+select,
+textarea,
 input {
   background: var(--color-input-bg);
   border: 1px solid var(--color-border);
@@ -62,6 +64,12 @@ input {
   min-height: 44px;
   padding: 0 12px;
   width: 100%;
+}
+
+textarea {
+  min-height: 118px;
+  padding: 12px;
+  resize: vertical;
 }
 
 button {
@@ -104,10 +112,14 @@ button:disabled {
   min-height: 50px;
 }
 
+.primary-action.compact {
+  min-height: 44px;
+}
+
 .metric-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .metric-grid article {
@@ -182,6 +194,7 @@ label span {
 .transaction-list,
 .event-list,
 .customer-list,
+.notifier-list,
 .staff-request-list {
   display: grid;
   gap: 12px;
@@ -190,6 +203,7 @@ label span {
 .transaction-item,
 .event-item,
 .customer-item,
+.notifier-item,
 .staff-request-item {
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -199,6 +213,7 @@ label span {
 }
 
 .transaction-main,
+.notifier-main,
 .event-item {
   align-items: start;
   display: flex;
@@ -209,6 +224,7 @@ label span {
 .transaction-main h3,
 .event-item h3,
 .customer-item h3,
+.notifier-item h3,
 .ocr-result h3 {
   color: var(--color-text-primary);
   font-size: 1rem;
@@ -218,7 +234,8 @@ label span {
 
 .transaction-main p,
 .event-item p,
-.customer-item p {
+.customer-item p,
+.notifier-item p {
   color: var(--color-text-secondary);
   margin: 0;
 }
@@ -265,6 +282,27 @@ code {
 
 .customer-item dl {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.notifier-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.notifier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.access-code {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 46%, var(--color-border));
+  color: var(--color-text-primary);
+  flex: 0 0 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
 }
 
 .staff-request-item h3 {
@@ -396,6 +434,7 @@ small {
 
   .metric-grid,
   .capture-grid,
+  .notifier-layout,
   .form-grid,
   dl,
   .customer-item dl {
@@ -403,6 +442,7 @@ small {
   }
 
   .transaction-main,
+  .notifier-main,
   .event-item {
     display: grid;
   }

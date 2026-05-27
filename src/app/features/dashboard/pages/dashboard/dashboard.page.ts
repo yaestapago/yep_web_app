@@ -32,14 +32,16 @@ import {
   TransactionParty,
 } from '../../../../shared/models/transaction.models';
 import { Customer } from '../../../../shared/models/customer.models';
+import { Notifier, NotifierIdentifierType } from '../../../../shared/models/notifier.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { CustomersApiService } from '../../../customers/services/customers-api.service';
 import { ExtractionApiService } from '../../../extraction/services/extraction-api.service';
+import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 
-type DashboardView = 'transactions' | 'events' | 'customers' | 'staffRequests' | 'capture';
+type DashboardView = 'transactions' | 'events' | 'customers' | 'notifiers' | 'staffRequests' | 'capture';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -67,6 +69,7 @@ export class DashboardPage implements OnInit {
   private readonly transactionsApi = inject(TransactionsApiService);
   private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly customersApi = inject(CustomersApiService);
+  private readonly notifiersApi = inject(NotifiersApiService);
   private readonly extractionApi = inject(ExtractionApiService);
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly destroyRef = inject(DestroyRef);
@@ -82,10 +85,13 @@ export class DashboardPage implements OnInit {
   readonly loadingTransactions = signal(false);
   readonly loadingEvents = signal(false);
   readonly loadingCustomers = signal(false);
+  readonly loadingNotifiers = signal(false);
   readonly loadingStaffRequests = signal(false);
   readonly extracting = signal(false);
   readonly creatingTransaction = signal(false);
+  readonly creatingNotifier = signal(false);
   readonly actingMembershipId = signal<string | null>(null);
+  readonly actingNotifierId = signal<string | null>(null);
   readonly error = signal('');
   readonly success = signal('');
   readonly staffRequestsMessage = signal(
@@ -99,6 +105,7 @@ export class DashboardPage implements OnInit {
   readonly transactions = signal<PaymentTransaction[]>([]);
   readonly sourceEvents = signal<SourceEvent[]>([]);
   readonly customers = signal<Customer[]>([]);
+  readonly notifiers = signal<Notifier[]>([]);
   readonly staffRequests = signal<BusinessMembership[]>([]);
 
   readonly totalAmount = computed(() =>
@@ -118,6 +125,12 @@ export class DashboardPage implements OnInit {
   readonly canManageStaffRequests = computed(
     () => this.activeMembership()?.role === 'account_owner' || this.user()?.globalRole === 'account_su',
   );
+  readonly activeNotifierCount = computed(
+    () => this.notifiers().filter((notifier) => notifier.active).length,
+  );
+  readonly canManageNotifiers = computed(
+    () => this.activeMembership()?.role === 'account_owner' || this.user()?.globalRole === 'account_su',
+  );
 
   readonly manualForm = this.fb.group({
     bankId: ['', [Validators.required, Validators.minLength(2)]],
@@ -130,6 +143,13 @@ export class DashboardPage implements OnInit {
     receiverName: [''],
     receiverAccount: [''],
     notes: [''],
+  });
+  readonly notifierForm = this.fb.group({
+    displayName: ['', [Validators.required, Validators.maxLength(120)]],
+    identifier: [''],
+    identifierType: ['phone' as NotifierIdentifierType],
+    bankIds: ['nequi'],
+    watchedPackages: ['com.nequi.mobileapp\ncom.nequi.app'],
   });
 
   ngOnInit(): void {
@@ -145,6 +165,7 @@ export class DashboardPage implements OnInit {
     this.loadTransactions();
     this.loadSourceEvents();
     this.loadCustomers();
+    this.loadNotifiers();
   }
 
   loadTransactions(): void {
@@ -191,6 +212,22 @@ export class DashboardPage implements OnInit {
       )
       .subscribe({
         next: (response) => this.customers.set(response.customers),
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  loadNotifiers(): void {
+    this.loadingNotifiers.set(true);
+    this.error.set('');
+
+    this.notifiersApi
+      .list()
+      .pipe(
+        finalize(() => this.loadingNotifiers.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => this.notifiers.set(response.notifiers),
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
   }
@@ -279,6 +316,51 @@ export class DashboardPage implements OnInit {
 
   createManualTransaction(): void {
     this.createTransactionFromForm('manual');
+  }
+
+  createNotifier(): void {
+    this.error.set('');
+    this.success.set('');
+
+    if (this.notifierForm.invalid) {
+      this.notifierForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.notifierForm.getRawValue();
+    const identifier = this.optional(raw.identifier);
+    const request = {
+      displayName: this.optional(raw.displayName),
+      identifier,
+      identifierType: identifier
+        ? this.resolveNotifierIdentifierType(identifier, raw.identifierType)
+        : undefined,
+      bankIds: this.toList(raw.bankIds),
+      watchedPackages: this.toList(raw.watchedPackages),
+    };
+
+    this.creatingNotifier.set(true);
+
+    this.notifiersApi
+      .create(request)
+      .pipe(
+        finalize(() => this.creatingNotifier.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.notifiers.update((notifiers) => [response.notifier, ...notifiers]);
+          this.success.set(`Notifier creado. Codigo de emparejamiento: ${response.notifier.accessCode}`);
+          this.notifierForm.reset({
+            displayName: '',
+            identifier: '',
+            identifierType: 'phone',
+            bankIds: 'nequi',
+            watchedPackages: 'com.nequi.mobileapp\ncom.nequi.app',
+          });
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
   }
 
   createTransactionFromOcr(): void {
@@ -383,6 +465,32 @@ export class DashboardPage implements OnInit {
     this.updateStaffRequestStatus(membership, 'rejected');
   }
 
+  activateNotifier(notifier: Notifier): void {
+    this.runNotifierAction(notifier, 'activate');
+  }
+
+  deactivateNotifier(notifier: Notifier): void {
+    this.runNotifierAction(notifier, 'deactivate');
+  }
+
+  unpairNotifier(notifier: Notifier): void {
+    const confirmed = window.confirm('Desemparejar el dispositivo actual de este notifier?');
+    if (!confirmed) return;
+    this.runNotifierAction(notifier, 'unpair');
+  }
+
+  removeNotifier(notifier: Notifier): void {
+    const confirmed = window.confirm('Desactivar y desemparejar este notifier?');
+    if (!confirmed) return;
+    this.runNotifierAction(notifier, 'remove');
+  }
+
+  copyAccessCode(notifier: Notifier): void {
+    if (!notifier.accessCode) return;
+    void navigator.clipboard?.writeText(notifier.accessCode);
+    this.success.set(`Codigo ${notifier.accessCode} copiado.`);
+  }
+
   businessName(businessAccountId: string): string {
     return (
       this.approvedMemberships().find(
@@ -414,6 +522,18 @@ export class DashboardPage implements OnInit {
   isInvalid(controlName: keyof typeof this.manualForm.controls): boolean {
     const control = this.manualForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  isNotifierInvalid(controlName: keyof typeof this.notifierForm.controls): boolean {
+    const control = this.notifierForm.controls[controlName];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  notifierDeviceLabel(notifier: Notifier): string {
+    if (!notifier.pairedDevice) return 'Sin dispositivo';
+    return [notifier.pairedDevice.manufacturer, notifier.pairedDevice.model]
+      .filter(Boolean)
+      .join(' ') || notifier.pairedDevice.deviceId;
   }
 
   private buildTransactionRequest(mechanismKind: MechanismKind): CreateTransactionRequest | null {
@@ -465,6 +585,41 @@ export class DashboardPage implements OnInit {
             memberships.filter((current) => current.id !== response.membership.id),
           );
           this.success.set(status === 'approved' ? 'Solicitud aprobada.' : 'Solicitud rechazada.');
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  private runNotifierAction(
+    notifier: Notifier,
+    action: 'activate' | 'deactivate' | 'unpair' | 'remove',
+  ): void {
+    this.actingNotifierId.set(notifier.id);
+    this.error.set('');
+    this.success.set('');
+
+    const request =
+      action === 'activate'
+        ? this.notifiersApi.activate(notifier.id)
+        : action === 'deactivate'
+          ? this.notifiersApi.deactivate(notifier.id)
+          : action === 'unpair'
+            ? this.notifiersApi.unpair(notifier.id)
+            : this.notifiersApi.remove(notifier.id);
+
+    request
+      .pipe(
+        finalize(() => this.actingNotifierId.set(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.notifiers.update((notifiers) =>
+            notifiers.map((current) =>
+              current.id === response.notifier.id ? response.notifier : current,
+            ),
+          );
+          this.success.set('Notifier actualizado.');
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
@@ -555,6 +710,22 @@ export class DashboardPage implements OnInit {
   private optional(value: string): string | undefined {
     const trimmed = value.trim();
     return trimmed ? trimmed : undefined;
+  }
+
+  private toList(value: string): string[] | undefined {
+    const items = value
+      .split(/[\n,]+/)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+
+    return items.length > 0 ? Array.from(new Set(items)) : undefined;
+  }
+
+  private resolveNotifierIdentifierType(
+    identifier: string,
+    selectedType: NotifierIdentifierType,
+  ): NotifierIdentifierType {
+    return identifier.includes('@') ? 'email' : selectedType;
   }
 
   private defaultDateTimeLocal(): string {
