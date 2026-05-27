@@ -4,7 +4,8 @@ export type SourceEventType =
   | 'BANK_SMS'
   | 'BANK_WEBHOOK'
   | 'BANK_API_POLL'
-  | 'MANUAL_ENTRY';
+  | 'MANUAL_ENTRY'
+  | 'NOTIFIER_APP';
 
 export type SourceEventStatus = 'received' | 'processing' | 'processed' | 'failed' | 'ignored';
 

@@ -1,0 +1,22 @@
+<div
+  class="yep-alert"
+  [class.yep-alert--success]="variant() === 'success'"
+  [class.yep-alert--warning]="variant() === 'warning'"
+  [class.yep-alert--error]="variant() === 'error'"
+  role="status"
+>
+  <span class="yep-alert__marker" aria-hidden="true"></span>
+
+  <div class="yep-alert__body">
+    @if (title()) {
+      <strong>{{ title() }}</strong>
+    }
+    <ng-content></ng-content>
+  </div>
+
+  @if (dismissible()) {
+    <button class="yep-alert__close" type="button" aria-label="Cerrar alerta" (click)="dismissed.emit()">
+      <svg lucideX aria-hidden="true"></svg>
+    </button>
+  }
+</div>
