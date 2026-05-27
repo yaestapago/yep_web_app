@@ -1,0 +1,49 @@
+<label class="yep-input" [class.yep-input--sm]="size() === 'sm'" [class.yep-input--lg]="size() === 'lg'">
+  @if (label()) {
+    <span class="yep-input__label">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </span>
+  }
+
+  <span class="yep-input__control" [class.yep-input__control--invalid]="error()">
+    <input
+      [id]="id()"
+      [type]="inputType()"
+      [value]="value"
+      [placeholder]="placeholder()"
+      [autocomplete]="autocomplete()"
+      [disabled]="disabled() || isControlDisabled"
+      [readOnly]="readonly()"
+      [required]="required()"
+      [attr.aria-invalid]="error() ? 'true' : null"
+      [attr.aria-describedby]="hint() || error() ? id() + '-message' : null"
+      (input)="updateValue($event)"
+      (blur)="markTouched()"
+    />
+
+    @if (type() === 'password') {
+      <button
+        class="yep-input__password-toggle"
+        type="button"
+        [attr.aria-label]="passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        [disabled]="disabled() || isControlDisabled"
+        (click)="togglePasswordVisibility()"
+      >
+        @if (passwordVisible()) {
+          <svg lucideEyeOff aria-hidden="true"></svg>
+        } @else {
+          <svg lucideEye aria-hidden="true"></svg>
+        }
+      </button>
+    }
+  </span>
+
+  @if (error()) {
+    <small class="yep-input__message yep-input__message--error" [id]="id() + '-message'">{{ error() }}</small>
+  } @else if (hint()) {
+    <small class="yep-input__message" [id]="id() + '-message'">{{ hint() }}</small>
+  }
+</label>

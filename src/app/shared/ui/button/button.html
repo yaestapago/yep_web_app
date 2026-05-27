@@ -1,0 +1,19 @@
+<button
+  class="yep-button"
+  [class.yep-button--secondary]="variant() === 'secondary'"
+  [class.yep-button--ghost]="variant() === 'ghost'"
+  [class.yep-button--danger]="variant() === 'danger'"
+  [class.yep-button--sm]="size() === 'sm'"
+  [class.yep-button--lg]="size() === 'lg'"
+  [class.yep-button--full]="fullWidth()"
+  [type]="type()"
+  [disabled]="disabled() || loading()"
+  (click)="onClick($event)"
+>
+  @if (loading()) {
+    <span class="yep-button__loader" aria-hidden="true"></span>
+  }
+  <span class="yep-button__content">
+    <ng-content></ng-content>
+  </span>
+</button>

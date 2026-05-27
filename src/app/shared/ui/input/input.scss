@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+
+.yep-input {
+  display: grid;
+  gap: 8px;
+}
+
+.yep-input__label {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.yep-input__control {
+  align-items: center;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  min-height: 48px;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.yep-input__control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.yep-input__control--invalid {
+  border-color: var(--color-error);
+}
+
+.yep-input__control--invalid:focus-within {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-error) 14%, transparent);
+}
+
+input {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-primary);
+  font: inherit;
+  min-height: 46px;
+  outline: none;
+  padding: 0 14px;
+  width: 100%;
+}
+
+.yep-input__password-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 36px;
+  justify-content: center;
+  margin-right: 6px;
+  padding: 0;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+  width: 36px;
+}
+
+.yep-input__password-toggle:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  color: var(--color-secondary);
+}
+
+.yep-input__password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.yep-input__password-toggle svg {
+  height: 18px;
+  width: 18px;
+}
+
+input::placeholder {
+  color: var(--color-text-muted);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text-primary);
+  box-shadow: 0 0 0 1000px var(--color-input-bg) inset;
+  caret-color: var(--color-text-primary);
+}
+
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.yep-input__message {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.yep-input__message--error {
+  color: var(--color-error);
+}
+
+.yep-input--sm .yep-input__control {
+  min-height: 40px;
+}
+
+.yep-input--sm input {
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.yep-input--lg .yep-input__control {
+  min-height: 54px;
+}
+
+.yep-input--lg input {
+  min-height: 52px;
+  padding: 0 16px;
+}
