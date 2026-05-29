@@ -58,6 +58,34 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequestCodeRequest {
+  email: string;
+}
+
+export interface ForgotPasswordRequestCodeResponse {
+  message?: string;
+  resendInSeconds?: number;
+}
+
+export interface ForgotPasswordVerifyCodeRequest {
+  email: string;
+  code: string;
+}
+
+export interface ForgotPasswordVerifyCodeResponse {
+  resetToken: string;
+  message?: string;
+}
+
+export interface ResetPasswordRequest {
+  resetToken: string;
+  password: string;
+}
+
+export interface ResetPasswordResponse {
+  message?: string;
+}
+
 export interface MeResponse {
   user: User;
   memberships: BusinessMembership[];

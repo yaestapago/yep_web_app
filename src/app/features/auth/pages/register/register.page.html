@@ -1,86 +1,92 @@
 <main class="auth-page register-page">
   <section class="auth-panel">
-    <div class="brand-mark">
-      <svg lucideShieldCheck aria-hidden="true"></svg>
+    <div class="auth-logo" aria-label="Ya Está Pago">
+      <img class="auth-logo__image auth-logo__image--light" src="/brand/yep-logo-light.png" alt="Ya Está Pago" />
+      <img class="auth-logo__image auth-logo__image--dark" src="/brand/yep-logo-dark.png" alt="" aria-hidden="true" />
     </div>
 
     <div class="auth-heading">
-      <p>Nuevo usuario</p>
-      <h1>yep_web</h1>
+      <h3>Crea tu cuenta</h3>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <div class="field-grid">
-        <label>
-          <span>Nombre</span>
-          <input type="text" formControlName="firstName" autocomplete="given-name" />
-          @if (isInvalid('firstName')) {
-            <small>Ingresa tu nombre.</small>
-          }
-        </label>
+        <yep-input
+          label="Nombre"
+          type="text"
+          autocomplete="given-name"
+          formControlName="firstName"
+          [error]="isInvalid('firstName') ? 'Ingresa tu nombre.' : ''"
+        />
 
-        <label>
-          <span>Apellido</span>
-          <input type="text" formControlName="lastName" autocomplete="family-name" />
-          @if (isInvalid('lastName')) {
-            <small>Ingresa tu apellido.</small>
-          }
-        </label>
+        <yep-input
+          label="Apellido"
+          type="text"
+          autocomplete="family-name"
+          formControlName="lastName"
+          [error]="isInvalid('lastName') ? 'Ingresa tu apellido.' : ''"
+        />
 
-        <label>
-          <span>Email</span>
-          <input type="email" formControlName="email" autocomplete="email" />
-          @if (isInvalid('email')) {
-            <small>Ingresa un email valido.</small>
-          }
-        </label>
+        <yep-input
+          label="Correo"
+          type="email"
+          autocomplete="email"
+          formControlName="email"
+          [error]="isInvalid('email') ? 'Ingresa un correo valido.' : ''"
+        />
 
-        <label>
-          <span>Identificacion</span>
-          <input type="text" formControlName="identificationNumber" autocomplete="off" />
-          @if (isInvalid('identificationNumber')) {
-            <small>Ingresa tu numero de identificacion.</small>
-          }
-        </label>
+        <yep-input
+          label="Identificación"
+          type="text"
+          autocomplete="off"
+          formControlName="identificationNumber"
+          [error]="isInvalid('identificationNumber') ? 'Ingresa tu número de identificación.' : ''"
+        />
 
-        <label>
-          <span>Celular</span>
-          <input type="tel" formControlName="cellphoneNumber" autocomplete="tel" />
-          @if (isInvalid('cellphoneNumber')) {
-            <small>Ingresa tu celular.</small>
-          }
-        </label>
+        <yep-input
+          label="Celular"
+          type="tel"
+          autocomplete="tel"
+          formControlName="cellphoneNumber"
+          [error]="isInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
+        />
 
-        <label class="full">
-          <span>Password</span>
-          <input type="password" formControlName="password" autocomplete="new-password" />
-          @if (isInvalid('password')) {
-            <small>Minimo 8 caracteres.</small>
-          }
-        </label>
+        <yep-input
+          label="Contraseña"
+          type="password"
+          autocomplete="new-password"
+          formControlName="password"
+          [error]="isInvalid('password') ? 'Mínimo 8 caracteres.' : ''"
+        />
+
+        <yep-input
+          label="Confirmar contraseña"
+          type="password"
+          autocomplete="new-password"
+          formControlName="confirmPassword"
+          [error]="isInvalid('confirmPassword') ? confirmPasswordError() : ''"
+        />
       </div>
 
       @if (error()) {
-        <p class="form-alert error">{{ error() }}</p>
+        <yep-alert variant="error">{{ error() }}</yep-alert>
       }
 
       @if (success()) {
-        <p class="form-alert success">{{ success() }}</p>
+        <yep-alert variant="success">{{ success() }}</yep-alert>
       }
 
-      <button class="primary-action" type="submit" [disabled]="loading()">
-        @if (loading()) {
-          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-        } @else {
+      <yep-button type="submit" [loading]="loading()" [disabled]="form.invalid || loading()" [fullWidth]="true">
+        @if (!loading()) {
           <svg lucideUserPlus aria-hidden="true"></svg>
         }
-        <span>Crear cuenta</span>
-      </button>
+        <span>{{ loading() ? 'Creando' : 'Crear cuenta' }}</span>
+      </yep-button>
     </form>
 
     <p class="auth-switch">
-      Ya tengo cuenta
-      <a routerLink="/login">Entrar</a>
+      ¿Ya tienes cuenta?
+      <a routerLink="/login">Inicia sesión</a>
     </p>
   </section>
 </main>

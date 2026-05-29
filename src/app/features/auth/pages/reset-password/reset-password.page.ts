@@ -2,82 +2,83 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { LucideUserPlus } from '@lucide/angular';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideKeyRound } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
-import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { RegisterRequest } from '../../../../shared/models/auth.models';
 import { Alert, Button, Input } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
-  selector: 'app-register-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideUserPlus, Alert, Button, Input],
-  templateUrl: './register.page.html',
-  styleUrl: './register.page.scss',
+  selector: 'app-reset-password-page',
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideKeyRound, Alert, Button, Input],
+  templateUrl: './reset-password.page.html',
+  styleUrl: './reset-password.page.scss',
 })
-export class RegisterPage {
+export class ResetPasswordPage {
   private readonly authApi = inject(AuthApiService);
-  private readonly session = inject(AuthSessionService);
-  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly loading = signal(false);
   readonly error = signal('');
   readonly success = signal('');
+  readonly email = this.route.snapshot.queryParamMap.get('email') ?? '';
+  private readonly resetToken = this.route.snapshot.queryParamMap.get('token') ?? '';
 
-  readonly form = this.fb.group({
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]],
-    identificationNumber: ['', [Validators.required, Validators.minLength(5)]],
-    cellphoneNumber: ['', [Validators.required, Validators.minLength(7)]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    confirmPassword: ['', [Validators.required]],
-  }, { validators: [this.passwordsMatchValidator] });
+  readonly form = this.fb.group(
+    {
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', [Validators.required]],
+    },
+    { validators: [this.passwordsMatchValidator] },
+  );
 
   submit(): void {
     this.error.set('');
     this.success.set('');
+
+    if (!this.resetToken) {
+      this.error.set('El enlace para restablecer la contraseña no es válido o expiró.');
+      return;
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const { confirmPassword: _confirmPassword, ...request } = this.form.getRawValue();
-
     this.loading.set(true);
     this.authApi
-      .register(request satisfies RegisterRequest)
+      .resetPassword({
+        resetToken: this.resetToken,
+        password: this.form.controls.password.value,
+      })
       .pipe(
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (response) => {
-          this.session.saveSession(response);
-          this.success.set(`Cuenta creada para ${response.user.firstName}.`);
-          setTimeout(
-            () => void this.router.navigateByUrl(this.session.onboardingRequired() ? '/onboarding' : '/dashboard'),
-            450,
-          );
+          this.form.reset();
+          this.success.set(response.message ?? 'Tu contraseña fue actualizada correctamente.');
+          setTimeout(() => void this.router.navigateByUrl('/login'), 650);
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
   }
 
-  isInvalid(controlName: keyof typeof this.form.controls): boolean {
+  isInvalid(controlName: 'password' | 'confirmPassword'): boolean {
     const control = this.form.controls[controlName];
     const hasMismatch = controlName === 'confirmPassword' && this.form.hasError('passwordMismatch');
     return (control.invalid || hasMismatch) && (control.dirty || control.touched);
   }
 
   confirmPasswordError(): string {
-    if (this.form.controls.confirmPassword.hasError('required')) return 'Confirma tu contraseña.';
+    if (this.form.controls.confirmPassword.hasError('required')) return 'Confirma tu nueva contraseña.';
     if (this.form.hasError('passwordMismatch')) return 'Las contraseñas no coinciden.';
     return '';
   }

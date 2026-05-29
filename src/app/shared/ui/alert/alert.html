@@ -1,11 +1,22 @@
 <div
   class="yep-alert"
+  [class.yep-alert--info]="variant() === 'info'"
   [class.yep-alert--success]="variant() === 'success'"
   [class.yep-alert--warning]="variant() === 'warning'"
   [class.yep-alert--error]="variant() === 'error'"
-  role="status"
+  [attr.role]="variant() === 'error' || variant() === 'warning' ? 'alert' : 'status'"
 >
-  <span class="yep-alert__marker" aria-hidden="true"></span>
+  <span class="yep-alert__icon" aria-hidden="true">
+    @if (variant() === 'success') {
+      <svg lucideCircleCheck></svg>
+    } @else if (variant() === 'warning') {
+      <svg lucideTriangleAlert></svg>
+    } @else if (variant() === 'error') {
+      <svg lucideCircleX></svg>
+    } @else {
+      <svg lucideInfo></svg>
+    }
+  </span>
 
   <div class="yep-alert__body">
     @if (title()) {

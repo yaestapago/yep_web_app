@@ -4,30 +4,33 @@
 
 .yep-input {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .yep-input__label {
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
 }
 
 .yep-input__control {
   align-items: center;
   background: var(--color-input-bg);
+  background-clip: padding-box;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
-  min-height: 48px;
+  min-height: var(--control-height-lg);
+  overflow: hidden;
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+    border-color var(--motion-base),
+    box-shadow var(--motion-base);
 }
 
 .yep-input__control:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: var(--shadow-focus);
 }
 
 .yep-input__control--invalid {
@@ -36,17 +39,20 @@
 
 .yep-input__control--invalid:focus-within {
   border-color: var(--color-error);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-error) 14%, transparent);
+  box-shadow: var(--shadow-focus-error);
 }
 
 input {
   background: transparent;
   border: 0;
+  border-radius: inherit;
   color: var(--color-text-primary);
+  flex: 1 1 auto;
   font: inherit;
-  min-height: 46px;
+  min-height: calc(var(--control-height-lg) - 2px);
+  min-width: 0;
   outline: none;
-  padding: 0 14px;
+  padding: 0 var(--space-3);
   width: 100%;
 }
 
@@ -54,19 +60,19 @@ input {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   cursor: pointer;
   display: inline-flex;
   flex: 0 0 auto;
-  height: 36px;
+  height: 2.25rem;
   justify-content: center;
-  margin-right: 6px;
+  margin-right: var(--space-1);
   padding: 0;
   transition:
     background-color 160ms ease,
     color 160ms ease;
-  width: 36px;
+  width: 2.25rem;
 }
 
 .yep-input__password-toggle:hover:not(:disabled) {
@@ -103,7 +109,8 @@ input:disabled {
 
 .yep-input__message {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
 }
 
 .yep-input__message--error {
@@ -111,19 +118,19 @@ input:disabled {
 }
 
 .yep-input--sm .yep-input__control {
-  min-height: 40px;
+  min-height: var(--control-height-md);
 }
 
 .yep-input--sm input {
-  min-height: 38px;
-  padding: 0 12px;
+  min-height: calc(var(--control-height-md) - 2px);
+  padding: 0 var(--space-3);
 }
 
 .yep-input--lg .yep-input__control {
-  min-height: 54px;
+  min-height: 3.375rem;
 }
 
 .yep-input--lg input {
-  min-height: 52px;
-  padding: 0 16px;
+  min-height: 3.25rem;
+  padding: 0 var(--space-4);
 }

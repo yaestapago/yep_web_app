@@ -1,11 +1,11 @@
 import { Component, input as defineInput, output } from '@angular/core';
-import { LucideX } from '@lucide/angular';
+import { LucideCircleCheck, LucideCircleX, LucideInfo, LucideTriangleAlert, LucideX } from '@lucide/angular';
 
 type AlertVariant = 'info' | 'success' | 'warning' | 'error';
 
 @Component({
   selector: 'yep-alert',
-  imports: [LucideX],
+  imports: [LucideCircleCheck, LucideCircleX, LucideInfo, LucideTriangleAlert, LucideX],
   templateUrl: './alert.html',
   styleUrl: './alert.scss',
 })

@@ -18,6 +18,12 @@ export class App {
 
   readonly isAuthenticated = this.session.isAuthenticated;
   readonly isDark = this.theme.isDark;
+  readonly authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+
+  showTopbar(): boolean {
+    const path = this.router.url.split('?')[0].split('#')[0];
+    return !this.authRoutes.includes(path);
+  }
 
   toggleTheme(): void {
     this.theme.toggleTheme();

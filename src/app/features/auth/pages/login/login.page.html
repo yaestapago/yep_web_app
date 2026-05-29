@@ -1,50 +1,42 @@
 <main class="auth-page">
   <section class="auth-panel">
-    <div class="brand-mark">
-      <svg lucideShieldCheck aria-hidden="true"></svg>
+    <div class="auth-logo" aria-label="Ya Está Pago">
+      <img class="auth-logo__image auth-logo__image--light" src="/brand/yep-logo-light.png" alt="Ya Está Pago" />
+      <img class="auth-logo__image auth-logo__image--dark" src="/brand/yep-logo-dark.png" alt="" aria-hidden="true" />
     </div>
 
     <div class="auth-heading">
-      <p>Acceso seguro</p>
-      <h1>yep_web</h1>
+      <h3>Inicia sesión</h3>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <yep-input
-        label="Email"
-        type="email"
-        autocomplete="email"
-        formControlName="email"
-        [error]="isInvalid('email') ? 'Ingresa un email valido.' : ''"
-      />
+      <yep-input label="Correo" type="email" autocomplete="email" formControlName="email"
+        [error]="isInvalid('email') ? 'Ingresa un correo valido.' : ''" />
 
-      <yep-input
-        label="Password"
-        type="password"
-        autocomplete="current-password"
-        formControlName="password"
-        [error]="isInvalid('password') ? 'El password debe tener al menos 8 caracteres.' : ''"
-      />
+      <yep-input label="Contraseña" type="password" autocomplete="current-password" formControlName="password"
+        [error]="isInvalid('password') ? 'La contraseña debe tener al menos 8 caracteres.' : ''" />
+
+      <a class="auth-recovery-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
 
       @if (error()) {
-        <yep-alert variant="error">{{ error() }}</yep-alert>
+      <yep-alert variant="error">{{ error() }}</yep-alert>
       }
 
       @if (success()) {
-        <yep-alert variant="success">{{ success() }}</yep-alert>
+      <yep-alert variant="success">{{ success() }}</yep-alert>
       }
 
-      <yep-button type="submit" [loading]="loading()" [disabled]="loading()" [fullWidth]="true">
+      <yep-button type="submit" [loading]="loading()" [disabled]="form.invalid || loading()" [fullWidth]="true">
         @if (!loading()) {
-          <svg lucideLogIn aria-hidden="true"></svg>
+        <svg lucideLogIn aria-hidden="true"></svg>
         }
         <span>{{ loading() ? 'Entrando' : 'Entrar' }}</span>
       </yep-button>
     </form>
 
     <p class="auth-switch">
-      Nueva cuenta
-      <a routerLink="/register">Crear registro</a>
+      ¿No tienes cuenta?
+      <a routerLink="/register">Regístrate</a>
     </p>
   </section>
 </main>
