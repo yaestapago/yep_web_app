@@ -123,7 +123,7 @@ export class OnboardingPage implements OnInit {
           this.session.setActiveBusinessAccountId(response.businessAccount.id);
           this.success.set(`Negocio activo: ${response.businessAccount.name}.`);
           this.businessForm.reset();
-          void this.router.navigateByUrl('/dashboard');
+          void this.router.navigate(['/businesses', response.businessAccount.id, 'overview']);
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
@@ -149,7 +149,7 @@ export class OnboardingPage implements OnInit {
     if (existingStatus === 'approved') {
       this.session.setActiveBusinessAccountId(businessAccountId);
       this.success.set('Ya tienes acceso aprobado. Negocio activo seleccionado.');
-      void this.router.navigateByUrl('/dashboard');
+      void this.router.navigate(['/businesses', businessAccountId, 'overview']);
       return;
     }
 
@@ -171,7 +171,11 @@ export class OnboardingPage implements OnInit {
           if (response.membership.status === 'approved') {
             this.session.setActiveBusinessAccountId(response.membership.businessAccountId);
             this.success.set('Ya existe acceso aprobado. Negocio activo seleccionado.');
-            void this.router.navigateByUrl('/dashboard');
+            void this.router.navigate([
+              '/businesses',
+              response.membership.businessAccountId,
+              'overview',
+            ]);
             return;
           }
 
@@ -188,7 +192,7 @@ export class OnboardingPage implements OnInit {
 
   selectBusiness(membership: BusinessMembership): void {
     this.session.setActiveBusinessAccountId(membership.businessAccountId);
-    void this.router.navigateByUrl('/dashboard');
+    void this.router.navigate(['/businesses', membership.businessAccountId, 'overview']);
   }
 
   businessName(membership: BusinessMembership): string {

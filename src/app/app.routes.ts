@@ -2,13 +2,14 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
 import { businessGuard } from './core/guards/business.guard';
+import { businessContextGuard } from './core/guards/business-context.guard';
 import { Shell } from './core/layout/shell/shell';
 
 export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'home',
+    redirectTo: 'businesses',
   },
   {
     path: 'login',
@@ -50,28 +51,82 @@ export const routes: Routes = [
           import('./features/dashboard/pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
       },
       {
-        path: 'negocios',
+        path: 'businesses',
         loadComponent: () =>
           import('./features/business/pages/business-list/business-list.page').then(
             (m) => m.BusinessListPage,
           ),
       },
       {
-        path: 'negocios/:businessAccountId',
+        path: 'businesses/:businessId',
+        canActivate: [businessContextGuard],
         loadComponent: () =>
-          import('./features/business/pages/business-detail/business-detail.page').then(
-            (m) => m.BusinessDetailPage,
+          import('./features/business/pages/business-shell/business-shell.page').then(
+            (m) => m.BusinessShellPage,
           ),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'overview' },
+          {
+            path: 'overview',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-overview.section').then(
+                (m) => m.BusinessOverviewSection,
+              ),
+          },
+          {
+            path: 'dashboard',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-dashboard.section').then(
+                (m) => m.BusinessDashboardSection,
+              ),
+          },
+          {
+            path: 'notifiers',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-notifiers.section').then(
+                (m) => m.BusinessNotifiersSection,
+              ),
+          },
+          {
+            path: 'accounts',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-accounts.section').then(
+                (m) => m.BusinessAccountsSection,
+              ),
+          },
+          {
+            path: 'requests',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-requests.section').then(
+                (m) => m.BusinessRequestsSection,
+              ),
+          },
+          {
+            path: 'settings',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-settings.section').then(
+                (m) => m.BusinessSettingsSection,
+              ),
+          },
+        ],
       },
       {
-        path: 'configuracion',
+        path: 'settings',
         loadComponent: () =>
           import('./features/settings/pages/settings/settings.page').then((m) => m.SettingsPage),
       },
+
+      // Redirects de rutas en español (compatibilidad con enlaces previos).
+      { path: 'negocios', pathMatch: 'full', redirectTo: 'businesses' },
+      {
+        path: 'negocios/:businessId',
+        redirectTo: (route) => `/businesses/${route.params['businessId']}/overview`,
+      },
+      { path: 'configuracion', pathMatch: 'full', redirectTo: 'settings' },
     ],
   },
   {
     path: '**',
-    redirectTo: 'home',
+    redirectTo: 'businesses',
   },
 ];

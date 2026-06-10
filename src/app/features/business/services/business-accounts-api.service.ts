@@ -13,12 +13,14 @@ import {
   UpdateBankAccountRequest,
 } from '../../../shared/models/bank-account.models';
 import {
+  BusinessAccountDetailResponse,
   BusinessAccountRequest,
   BusinessAccountsResponse,
   BusinessMembershipsResponse,
   CreateBusinessAccountResponse,
   MembershipRequest,
   MembershipResponse,
+  UpdateBusinessAccountRequest,
   UpdateMembershipStatusRequest,
 } from '../../../shared/models/business-account.models';
 
@@ -41,6 +43,16 @@ export class BusinessAccountsApiService {
 
   requestMembership(request: MembershipRequest): Observable<MembershipResponse> {
     return this.http.post<MembershipResponse>(`${this.apiUrl}/business-accounts/membership-requests`, request);
+  }
+
+  updateBusinessAccount(
+    businessAccountId: string,
+    request: UpdateBusinessAccountRequest,
+  ): Observable<BusinessAccountDetailResponse> {
+    return this.http.patch<BusinessAccountDetailResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}`,
+      request,
+    );
   }
 
   // Backend pending: owner inbox endpoint does not exist yet.

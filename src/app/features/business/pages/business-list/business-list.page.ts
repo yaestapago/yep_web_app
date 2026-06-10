@@ -1,22 +1,38 @@
-import { Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { LucideChevronRight, LucideMapPin, LucidePlus } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
+import { CreateBusinessModal } from '../../components/create-business-modal/create-business-modal';
 
 @Component({
   selector: 'app-business-list-page',
-  imports: [RouterLink, LucideChevronRight, LucideMapPin, LucidePlus],
+  imports: [RouterLink, CreateBusinessModal, LucideChevronRight, LucideMapPin, LucidePlus],
   templateUrl: './business-list.page.html',
   styleUrl: './business-list.page.scss',
 })
 export class BusinessListPage {
   private readonly session = inject(AuthSessionService);
+  private readonly router = inject(Router);
 
   readonly memberships = this.session.approvedMemberships;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
   readonly hasBusinesses = computed(() => this.memberships().length > 0);
+  readonly createOpen = signal(false);
+
+  openCreate(): void {
+    this.createOpen.set(true);
+  }
+
+  closeCreate(): void {
+    this.createOpen.set(false);
+  }
+
+  onCreated(businessId: string): void {
+    this.createOpen.set(false);
+    void this.router.navigate(['/businesses', businessId, 'overview']);
+  }
 
   businessName(membership: BusinessMembership): string {
     return membership.businessAccount?.name ?? membership.businessAccountId;

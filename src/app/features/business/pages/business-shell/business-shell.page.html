@@ -1,0 +1,60 @@
+<section class="page business-shell">
+  <a class="back-link" routerLink="/businesses">
+    <svg lucideArrowLeft aria-hidden="true"></svg>
+    <span>Negocios</span>
+  </a>
+
+  @if (membership()) {
+    <header class="business-head">
+      <span class="business-avatar" aria-hidden="true">{{ initials() }}</span>
+      <span class="business-head-meta">
+        <h1 class="page-title">{{ businessName() }}</h1>
+        <span class="business-sub">
+          <span class="role-chip">{{ roleLabel() }}</span>
+          @if (businessLocation()) {
+            <span class="business-location">{{ businessLocation() }}</span>
+          }
+        </span>
+      </span>
+    </header>
+
+    <nav class="section-nav" aria-label="Secciones del negocio">
+      @for (section of sections; track section.path) {
+        <a
+          [routerLink]="['./', section.path]"
+          routerLinkActive="active"
+          class="section-tab"
+        >
+          @switch (section.icon) {
+            @case ('layoutGrid') {
+              <svg lucideLayoutGrid aria-hidden="true"></svg>
+            }
+            @case ('layoutDashboard') {
+              <svg lucideLayoutDashboard aria-hidden="true"></svg>
+            }
+            @case ('bell') {
+              <svg lucideBell aria-hidden="true"></svg>
+            }
+            @case ('creditCard') {
+              <svg lucideCreditCard aria-hidden="true"></svg>
+            }
+            @case ('userPlus') {
+              <svg lucideUserPlus aria-hidden="true"></svg>
+            }
+            @default {
+              <svg lucideSettings aria-hidden="true"></svg>
+            }
+          }
+          <span>{{ section.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <router-outlet />
+  } @else {
+    <div class="placeholder">
+      <h2>Negocio no encontrado</h2>
+      <p>No tienes acceso aprobado a este negocio o el enlace ya no es válido.</p>
+    </div>
+  }
+</section>

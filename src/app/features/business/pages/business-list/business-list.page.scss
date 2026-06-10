@@ -104,8 +104,11 @@
   align-items: center;
   border-style: dashed;
   box-shadow: none;
+  cursor: pointer;
+  font: inherit;
   justify-content: center;
   text-align: center;
+  width: 100%;
 }
 
 .business-card--new .business-name {

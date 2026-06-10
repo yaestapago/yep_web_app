@@ -40,6 +40,7 @@ describe('RegisterPage', () => {
       identificationNumber: '123456789',
       cellphoneNumber: '3001234567',
       password: 'secret123',
+      confirmPassword: 'secret123',
     });
 
     component.submit();

@@ -1,11 +1,39 @@
 <aside class="sidebar">
-  <a class="user-card" routerLink="/configuracion" (click)="onNavigate()" aria-label="Perfil y configuración">
+  <a class="user-card" routerLink="/settings" (click)="onNavigate()" aria-label="Perfil y configuración">
     <span class="avatar" aria-hidden="true">{{ initials() }}</span>
     <span class="user-meta">
       <span class="user-name">{{ fullName() }}</span>
       <span class="user-email">{{ user()?.email }}</span>
     </span>
   </a>
+
+  <!-- Negocio activo: contexto siempre visible + cambio rápido -->
+  <div class="business-switcher">
+    <span class="business-switcher__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
+    <span class="business-switcher__meta">
+      <span class="business-switcher__label">Negocio</span>
+      <span class="business-switcher__name">{{ activeBusinessName() }}</span>
+    </span>
+    <svg class="business-switcher__chevron" lucideChevronsUpDown aria-hidden="true"></svg>
+    <label class="visually-hidden" for="business-switcher-select">Cambiar de negocio</label>
+    <select
+      id="business-switcher-select"
+      class="business-switcher__select"
+      [value]="activeBusinessAccountId() ?? ''"
+      (change)="switchBusiness($event)"
+    >
+      @for (membership of memberships(); track membership.businessAccountId) {
+        <option [value]="membership.businessAccountId">
+          {{ businessName(membership.businessAccountId) }}
+        </option>
+      }
+    </select>
+  </div>
+
+  <button type="button" class="create-business" (click)="openCreate()">
+    <svg lucidePlus aria-hidden="true"></svg>
+    <span>Crear negocio</span>
+  </button>
 
   <nav class="nav-group" aria-label="Navegación principal">
     <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
@@ -16,7 +44,7 @@
       <svg lucideLayoutDashboard aria-hidden="true"></svg>
       <span>Dashboard</span>
     </a>
-    <a routerLink="/negocios" routerLinkActive="active" (click)="onNavigate()">
+    <a routerLink="/businesses" routerLinkActive="active" (click)="onNavigate()">
       <svg lucideBuilding2 aria-hidden="true"></svg>
       <span>Negocios</span>
     </a>
@@ -38,7 +66,7 @@
       }
     </button>
 
-    <a class="nav-settings" routerLink="/configuracion" routerLinkActive="active" (click)="onNavigate()">
+    <a class="nav-settings" routerLink="/settings" routerLinkActive="active" (click)="onNavigate()">
       <svg lucideSettings aria-hidden="true"></svg>
       <span>Configuración</span>
     </a>
@@ -49,3 +77,9 @@
     </button>
   </div>
 </aside>
+
+<app-create-business-modal
+  [open]="createOpen()"
+  (closeRequested)="closeCreate()"
+  (created)="onCreated($event)"
+/>

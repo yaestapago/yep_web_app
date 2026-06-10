@@ -1,0 +1,58 @@
+<div class="section">
+  <div class="section-heading">
+    <h2 class="section-title">Dashboard del negocio</h2>
+    <p class="section-subtitle">
+      Métricas de este negocio. Las gráficas comparativas y filtros por fecha llegan en la próxima
+      iteración.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando métricas…
+    </div>
+  } @else {
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Notificadores</span>
+        <span class="kpi-value">{{ total() }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Activos</span>
+        <span class="kpi-value">{{ activeCount() }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Disponibilidad</span>
+        <span class="kpi-value kpi-value--online">{{ availability() | percent: '1.0-0' }}</span>
+      </div>
+    </div>
+
+    @if (total() > 0) {
+      <div class="section-heading">
+        <h2 class="section-title">Distribución de estados</h2>
+      </div>
+      <div
+        class="status-bar"
+        role="img"
+        aria-label="Distribución de notificadores por estado de heartbeat"
+      >
+        <span class="status-bar__seg--online" [style.width.%]="percent('online')"></span>
+        <span class="status-bar__seg--delayed" [style.width.%]="percent('delayed')"></span>
+        <span class="status-bar__seg--offline" [style.width.%]="percent('offline')"></span>
+        <span class="status-bar__seg--unknown" [style.width.%]="percent('unknown')"></span>
+      </div>
+      <div class="legend">
+        <yep-status-dot level="online" [detail]="counts().online + ''" />
+        <yep-status-dot level="delayed" [detail]="counts().delayed + ''" />
+        <yep-status-dot level="offline" [detail]="counts().offline + ''" />
+        <yep-status-dot level="unknown" [detail]="counts().unknown + ''" />
+      </div>
+    } @else {
+      <div class="empty-state">
+        <h3>Sin datos todavía</h3>
+        <p>Cuando este negocio tenga notificadores verás aquí su disponibilidad y tendencias.</p>
+      </div>
+    }
+  }
+</div>

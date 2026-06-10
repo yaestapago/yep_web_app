@@ -25,6 +25,17 @@ export interface CreateBusinessAccountResponse {
   membership: BusinessMembership;
 }
 
+export interface BusinessAccountDetailResponse {
+  businessAccount: BusinessAccount;
+}
+
+export interface UpdateBusinessAccountRequest {
+  name?: string;
+  city?: string;
+  address?: string;
+  phone?: string;
+}
+
 export interface MembershipRequest {
   businessAccountId: string;
   role: BusinessMembershipRole;

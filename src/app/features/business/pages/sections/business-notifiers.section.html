@@ -1,0 +1,175 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Notificadores</h2>
+      <p class="section-subtitle">
+        Estado operativo según el último heartbeat. Se actualiza solo cada
+        {{ thresholds.refreshIntervalMs / 1000 }} s.
+      </p>
+    </div>
+    <div class="list-card__actions">
+      <yep-button variant="ghost" size="sm" (clicked)="load()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+      @if (canManage()) {
+        <yep-button size="sm" (clicked)="openCreate()">
+          <svg lucidePlus aria-hidden="true"></svg>
+          Nuevo notificador
+        </yep-button>
+      }
+    </div>
+  </div>
+
+  <!-- Resumen de estados -->
+  <div class="legend">
+    <yep-status-dot level="online" [detail]="counts().online + ''" />
+    <yep-status-dot level="delayed" [detail]="counts().delayed + ''" />
+    <yep-status-dot level="offline" [detail]="counts().offline + ''" />
+    <yep-status-dot level="unknown" [detail]="counts().unknown + ''" />
+  </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando notificadores…
+    </div>
+  } @else if (statuses().length === 0) {
+    <div class="empty-state">
+      <h3>Aún no hay notificadores</h3>
+      <p>Crea un notificador para emparejar un dispositivo y empezar a recibir heartbeats.</p>
+      @if (canManage()) {
+        <yep-button size="sm" (clicked)="openCreate()">
+          <svg lucidePlus aria-hidden="true"></svg>
+          Nuevo notificador
+        </yep-button>
+      }
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (row of statuses(); track row.notifier.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">
+              {{ row.notifier.displayName || row.notifier.identifier || row.notifier.id }}
+            </h3>
+            <yep-status-dot
+              [level]="row.status.level"
+              [detail]="
+                row.status.lastSeenAt
+                  ? (relative(row.status) + ' · ' + (row.status.lastSeenAt | date: 'short'))
+                  : 'sin heartbeat'
+              "
+            />
+            <span class="list-card__meta">
+              {{ deviceLabel(row.notifier) }} ·
+              {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+
+          @if (canManage()) {
+            <div class="list-card__actions">
+              @if (row.notifier.active) {
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  [loading]="actingId() === row.notifier.id"
+                  (clicked)="deactivate(row.notifier)"
+                >
+                  Desactivar
+                </yep-button>
+              } @else {
+                <yep-button
+                  variant="secondary"
+                  size="sm"
+                  [loading]="actingId() === row.notifier.id"
+                  (clicked)="activate(row.notifier)"
+                >
+                  Activar
+                </yep-button>
+              }
+              @if (row.notifier.pairedDevice) {
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  [loading]="actingId() === row.notifier.id"
+                  (clicked)="unpair(row.notifier)"
+                >
+                  Desemparejar
+                </yep-button>
+              }
+              <yep-button
+                variant="danger"
+                size="sm"
+                [loading]="actingId() === row.notifier.id"
+                (clicked)="remove(row.notifier)"
+              >
+                Eliminar
+              </yep-button>
+            </div>
+          }
+        </article>
+      }
+    </div>
+  }
+</div>
+
+<yep-modal
+  [open]="modalOpen()"
+  title="Nuevo notificador"
+  subtitle="Configura el dispositivo que reportará los pagos de este negocio."
+  [loading]="creating()"
+  [dirty]="form.dirty"
+  (closeRequested)="closeModal()"
+>
+  <form [formGroup]="form" (ngSubmit)="create()" id="notifier-form" class="form-grid">
+    <yep-input
+      formControlName="displayName"
+      label="Nombre visible"
+      placeholder="Caja principal"
+      [error]="isInvalid('displayName') ? 'Ingresa un nombre' : ''"
+    />
+
+    <div class="form-grid form-grid--2">
+      <yep-input
+        formControlName="identifier"
+        label="Identificador (opcional)"
+        placeholder="3001234567 o correo"
+      />
+      <div class="field">
+        <label class="field-label" for="notifier-identifier-type">Tipo</label>
+        <select id="notifier-identifier-type" formControlName="identifierType">
+          <option value="phone">Teléfono</option>
+          <option value="email">Correo</option>
+        </select>
+      </div>
+    </div>
+
+    <yep-input
+      formControlName="bankIds"
+      label="Bancos vigilados"
+      placeholder="nequi, bancolombia"
+      hint="Separa varios con comas."
+    />
+
+    <div class="field">
+      <label class="field-label" for="notifier-packages">Paquetes de apps vigiladas</label>
+      <textarea id="notifier-packages" formControlName="watchedPackages" rows="3"></textarea>
+      <span class="field-error" style="color: var(--color-text-secondary)">
+        Un paquete por línea (Android).
+      </span>
+    </div>
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="creating()" (clicked)="create()">Crear notificador</yep-button>
+  </ng-container>
+</yep-modal>

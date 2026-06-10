@@ -1,0 +1,80 @@
+:host {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.yep-status__dot {
+  border-radius: var(--radius-full);
+  flex: 0 0 auto;
+  height: 0.625rem;
+  position: relative;
+  width: 0.625rem;
+}
+
+.yep-status__text {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+.yep-status__label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.yep-status__detail {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+/* Verde: reportando normalmente */
+.yep-status--online .yep-status__dot {
+  background: var(--color-success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+
+/* Amarillo: lleva tiempo sin heartbeat */
+.yep-status--delayed .yep-status__dot {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-warning) 22%, transparent);
+}
+
+/* Rojo: dejó de reportar / superó el máximo */
+.yep-status--offline .yep-status__dot {
+  background: var(--color-error);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-error) 20%, transparent);
+}
+
+/* Gris: nunca reportó o sin datos */
+.yep-status--unknown .yep-status__dot {
+  background: var(--color-text-muted);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-text-muted) 18%, transparent);
+}
+
+/* Pulso sutil solo para "en línea" (energía en tiempo real, sin exagerar) */
+@media (prefers-reduced-motion: no-preference) {
+  .yep-status--online .yep-status__dot::after {
+    animation: yep-status-pulse 2s ease-out infinite;
+    background: var(--color-success);
+    border-radius: var(--radius-full);
+    content: '';
+    inset: 0;
+    position: absolute;
+  }
+}
+
+@keyframes yep-status-pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}

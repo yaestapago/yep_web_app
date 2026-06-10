@@ -1,0 +1,40 @@
+<yep-modal
+  [open]="open()"
+  title="Crear negocio"
+  subtitle="Serás el propietario y el negocio quedará seleccionado al terminar."
+  [loading]="saving()"
+  [dirty]="form.dirty"
+  (closeRequested)="close()"
+>
+  @if (error()) {
+    <div class="field-error" role="alert" style="color: var(--color-error)">{{ error() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" style="display: grid; gap: var(--space-4)">
+    <yep-input
+      formControlName="name"
+      label="Nombre del negocio"
+      [error]="isInvalid('name') ? 'Mínimo 2 caracteres' : ''"
+    />
+    <yep-input
+      formControlName="city"
+      label="Ciudad"
+      [error]="isInvalid('city') ? 'Requerido' : ''"
+    />
+    <yep-input
+      formControlName="address"
+      label="Dirección"
+      [error]="isInvalid('address') ? 'Requerido' : ''"
+    />
+    <yep-input
+      formControlName="phone"
+      label="Teléfono"
+      [error]="isInvalid('phone') ? 'Mínimo 7 dígitos' : ''"
+    />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="saving()" (clicked)="close()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="saving()" (clicked)="submit()">Crear negocio</yep-button>
+  </ng-container>
+</yep-modal>

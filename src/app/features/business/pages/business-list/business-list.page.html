@@ -9,7 +9,7 @@
 
   <div class="business-grid">
     @for (membership of memberships(); track membership.businessAccountId) {
-      <a class="business-card" [routerLink]="['/negocios', membership.businessAccountId]">
+      <a class="business-card" [routerLink]="['/businesses', membership.businessAccountId]">
         <span class="card-top">
           <span class="business-avatar" aria-hidden="true">{{ initials(membership) }}</span>
           @if (membership.businessAccountId === activeBusinessAccountId()) {
@@ -30,10 +30,16 @@
       </a>
     }
 
-    <a class="business-card business-card--new" routerLink="/onboarding">
+    <button type="button" class="business-card business-card--new" (click)="openCreate()">
       <span class="new-icon" aria-hidden="true"><svg lucidePlus></svg></span>
       <span class="business-name">Nuevo negocio</span>
-      <span class="new-hint">Crea un negocio o solicita acceso a uno existente.</span>
-    </a>
+      <span class="new-hint">Crea un negocio sin salir de esta vista.</span>
+    </button>
   </div>
+
+  <app-create-business-modal
+    [open]="createOpen()"
+    (closeRequested)="closeCreate()"
+    (created)="onCreated($event)"
+  />
 </section>
