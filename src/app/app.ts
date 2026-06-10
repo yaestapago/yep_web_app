@@ -1,40 +1,10 @@
-import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { LucideLogOut, LucideMoon, LucideShieldCheck, LucideSun } from '@lucide/angular';
-
-import { AuthSessionService } from './core/services/auth-session.service';
-import { ThemeService } from './core/services/theme.service';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, LucideLogOut, LucideMoon, LucideShieldCheck, LucideSun],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
-  private readonly router = inject(Router);
-  private readonly session = inject(AuthSessionService);
-  private readonly theme = inject(ThemeService);
-
-  readonly isAuthenticated = this.session.isAuthenticated;
-  readonly isDark = this.theme.isDark;
-  readonly authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-
-  showTopbar(): boolean {
-    const path = this.router.url.split('?')[0].split('#')[0];
-    return !this.authRoutes.includes(path);
-  }
-
-  toggleTheme(): void {
-    this.theme.toggleTheme();
-  }
-
-  themeLabel(): string {
-    return this.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
-  }
-
-  logout(): void {
-    this.session.clearSession();
-    void this.router.navigateByUrl('/login');
-  }
-}
+export class App {}

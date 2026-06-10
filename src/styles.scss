@@ -167,3 +167,67 @@ textarea:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
   outline-offset: 2px;
 }
+
+/* Utilidades de página compartidas por las vistas autenticadas */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.page-title {
+  font-size: var(--font-size-3xl);
+  margin: 0;
+}
+
+.page-subtitle {
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 65ch;
+}
+
+.placeholder {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+}
+
+.placeholder h2 {
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.placeholder p {
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 52ch;
+}
+
+.placeholder-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-secondary);
+  display: flex;
+  height: 56px;
+  justify-content: center;
+  width: 56px;
+}
+
+.placeholder-icon svg {
+  height: 26px;
+  width: 26px;
+}

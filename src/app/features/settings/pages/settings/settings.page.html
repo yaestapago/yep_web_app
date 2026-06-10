@@ -1,0 +1,89 @@
+<section class="page">
+  <header class="page-header">
+    <h1 class="page-title">Configuración</h1>
+    <p class="page-subtitle">
+      Administra tu cuenta y tus preferencias de la aplicación.
+    </p>
+  </header>
+
+  <div class="settings-list">
+    <!-- Perfil -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideUser></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Perfil de usuario</h2>
+        <p class="setting-desc">{{ fullName() }} · {{ user()?.email }}</p>
+      </div>
+      <span class="setting-tag">Próximamente</span>
+    </article>
+
+    <!-- Tema (funcional) -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucidePalette></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Tema visual</h2>
+        <p class="setting-desc">Elige cómo se ve la aplicación.</p>
+      </div>
+      <div class="theme-switch" role="group" aria-label="Tema visual">
+        <button type="button" class="seg" [class.active]="!isDark()" (click)="setLight()">
+          <svg lucideSun aria-hidden="true"></svg>
+          <span>Claro</span>
+        </button>
+        <button type="button" class="seg" [class.active]="isDark()" (click)="setDark()">
+          <svg lucideMoon aria-hidden="true"></svg>
+          <span>Oscuro</span>
+        </button>
+      </div>
+    </article>
+
+    <!-- Correo electrónico -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideMail></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Configuración de correo</h2>
+        <p class="setting-desc">Direcciones y verificación de correo.</p>
+      </div>
+      <span class="setting-tag">Próximamente</span>
+    </article>
+
+    <!-- Notificaciones -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideBell></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Preferencias de notificaciones</h2>
+        <p class="setting-desc">Qué avisos recibes y por qué canal.</p>
+      </div>
+      <span class="setting-tag">Próximamente</span>
+    </article>
+
+    <!-- Seguridad -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideShield></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Seguridad y autenticación</h2>
+        <p class="setting-desc">Contraseña y métodos de acceso.</p>
+      </div>
+      <span class="setting-tag">Próximamente</span>
+    </article>
+
+    <!-- Sesiones -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideMonitorSmartphone></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Gestión de sesiones</h2>
+        <p class="setting-desc">Dispositivos donde tienes sesión iniciada.</p>
+      </div>
+      <span class="setting-tag">Próximamente</span>
+    </article>
+
+    <!-- Preferencias generales -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideSlidersHorizontal></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Preferencias generales</h2>
+        <p class="setting-desc">Idioma, formato y otras opciones de la app.</p>
+      </div>
+      <span class="setting-tag">Próximamente</span>
+    </article>
+  </div>
+</section>

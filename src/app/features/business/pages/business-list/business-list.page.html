@@ -1,0 +1,39 @@
+<section class="page">
+  <header class="page-header">
+    <h1 class="page-title">Negocios</h1>
+    <p class="page-subtitle">
+      Administra tus negocios. Selecciona uno para ver su información, métricas, usuarios e
+      integraciones.
+    </p>
+  </header>
+
+  <div class="business-grid">
+    @for (membership of memberships(); track membership.businessAccountId) {
+      <a class="business-card" [routerLink]="['/negocios', membership.businessAccountId]">
+        <span class="card-top">
+          <span class="business-avatar" aria-hidden="true">{{ initials(membership) }}</span>
+          @if (membership.businessAccountId === activeBusinessAccountId()) {
+            <span class="badge-active">Activo</span>
+          }
+        </span>
+        <span class="business-name">{{ businessName(membership) }}</span>
+        @if (businessLocation(membership)) {
+          <span class="business-location">
+            <svg lucideMapPin aria-hidden="true"></svg>
+            {{ businessLocation(membership) }}
+          </span>
+        }
+        <span class="card-footer">
+          <span class="role-chip">{{ roleLabel(membership) }}</span>
+          <svg class="chevron" lucideChevronRight aria-hidden="true"></svg>
+        </span>
+      </a>
+    }
+
+    <a class="business-card business-card--new" routerLink="/onboarding">
+      <span class="new-icon" aria-hidden="true"><svg lucidePlus></svg></span>
+      <span class="business-name">Nuevo negocio</span>
+      <span class="new-hint">Crea un negocio o solicita acceso a uno existente.</span>
+    </a>
+  </div>
+</section>

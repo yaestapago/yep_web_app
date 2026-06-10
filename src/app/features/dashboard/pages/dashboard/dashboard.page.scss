@@ -119,7 +119,7 @@ button:disabled {
 .metric-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .metric-grid article {
@@ -138,7 +138,8 @@ button:disabled {
 }
 
 .metric-grid span,
-label span {
+label span,
+.form-field > span {
   color: var(--color-text-secondary);
   font-size: 0.88rem;
   font-weight: 700;
@@ -194,6 +195,7 @@ label span {
 .transaction-list,
 .event-list,
 .customer-list,
+.bank-account-list,
 .notifier-list,
 .staff-request-list {
   display: grid;
@@ -203,6 +205,7 @@ label span {
 .transaction-item,
 .event-item,
 .customer-item,
+.bank-account-item,
 .notifier-item,
 .staff-request-item {
   border: 1px solid var(--color-border);
@@ -212,7 +215,12 @@ label span {
   padding: 16px;
 }
 
+.bank-account-item.inactive {
+  opacity: 0.72;
+}
+
 .transaction-main,
+.bank-account-main,
 .notifier-main,
 .event-item {
   align-items: start;
@@ -224,6 +232,7 @@ label span {
 .transaction-main h3,
 .event-item h3,
 .customer-item h3,
+.bank-account-item h3,
 .notifier-item h3,
 .ocr-result h3 {
   color: var(--color-text-primary);
@@ -235,12 +244,14 @@ label span {
 .transaction-main p,
 .event-item p,
 .customer-item p,
+.bank-account-item p,
 .notifier-item p {
   color: var(--color-text-secondary);
   margin: 0;
 }
 
 .transaction-main strong,
+.bank-account-main strong,
 .event-item strong {
   color: var(--color-text-primary);
   flex: 0 0 auto;
@@ -282,6 +293,63 @@ code {
 
 .customer-item dl {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bank-account-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.bank-account-list-panel {
+  grid-column: 1 / -1;
+}
+
+.location-picker {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.location-picker h3 {
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.check-list {
+  display: grid;
+  gap: 8px;
+}
+
+.check-list label {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+.check-list input {
+  flex: 0 0 auto;
+  min-height: 18px;
+  width: 18px;
+}
+
+.check-list span {
+  color: var(--color-text-primary);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.bank-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .notifier-layout {
@@ -342,12 +410,14 @@ form,
 }
 
 .form-grid label,
+.form-field,
 .file-control {
   display: grid;
   gap: 8px;
 }
 
-.form-grid .full {
+.form-grid .full,
+.form-field.full {
   grid-column: 1 / -1;
 }
 
@@ -401,6 +471,10 @@ small {
   text-align: center;
 }
 
+.state-message.compact-state {
+  min-height: 86px;
+}
+
 .state-message.pending-backend {
   background: color-mix(in srgb, var(--color-warning) 8%, transparent);
   border-color: color-mix(in srgb, var(--color-warning) 42%, var(--color-border));
@@ -434,6 +508,7 @@ small {
 
   .metric-grid,
   .capture-grid,
+  .bank-account-layout,
   .notifier-layout,
   .form-grid,
   dl,
@@ -442,6 +517,7 @@ small {
   }
 
   .transaction-main,
+  .bank-account-main,
   .notifier-main,
   .event-item {
     display: grid;

@@ -7,8 +7,10 @@ import {
   LucideActivity,
   LucideBanknote,
   LucideBell,
+  LucideCreditCard,
   LucideFileScan,
   LucideLoaderCircle,
+  LucideMapPin,
   LucideRefreshCw,
   LucideSend,
   LucideShieldCheck,
@@ -19,7 +21,12 @@ import {
 import { finalize, switchMap } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { BusinessMembership } from '../../../../shared/models/auth.models';
+import type {
+  BankAccount,
+  BankAccountType,
+  BusinessLocation,
+} from '../../../../shared/models/bank-account.models';
+import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import {
   TransactionExtractionResponse,
   nullablePartyToRequestParty,
@@ -32,7 +39,7 @@ import {
   TransactionParty,
 } from '../../../../shared/models/transaction.models';
 import { Customer } from '../../../../shared/models/customer.models';
-import { Notifier, NotifierIdentifierType } from '../../../../shared/models/notifier.models';
+import type { Notifier, NotifierIdentifierType } from '../../../../shared/models/notifier.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { CustomersApiService } from '../../../customers/services/customers-api.service';
@@ -41,7 +48,14 @@ import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.s
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 
-type DashboardView = 'transactions' | 'events' | 'customers' | 'notifiers' | 'staffRequests' | 'capture';
+type DashboardView =
+  | 'transactions'
+  | 'events'
+  | 'customers'
+  | 'bankAccounts'
+  | 'notifiers'
+  | 'staffRequests'
+  | 'capture';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -53,8 +67,10 @@ type DashboardView = 'transactions' | 'events' | 'customers' | 'notifiers' | 'st
     LucideActivity,
     LucideBanknote,
     LucideBell,
+    LucideCreditCard,
     LucideFileScan,
     LucideLoaderCircle,
+    LucideMapPin,
     LucideRefreshCw,
     LucideSend,
     LucideShieldCheck,
@@ -85,11 +101,16 @@ export class DashboardPage implements OnInit {
   readonly loadingTransactions = signal(false);
   readonly loadingEvents = signal(false);
   readonly loadingCustomers = signal(false);
+  readonly loadingBankAccounts = signal(false);
+  readonly loadingLocations = signal(false);
   readonly loadingNotifiers = signal(false);
   readonly loadingStaffRequests = signal(false);
   readonly extracting = signal(false);
   readonly creatingTransaction = signal(false);
+  readonly creatingBankAccount = signal(false);
+  readonly creatingLocation = signal(false);
   readonly creatingNotifier = signal(false);
+  readonly actingBankAccountId = signal<string | null>(null);
   readonly actingMembershipId = signal<string | null>(null);
   readonly actingNotifierId = signal<string | null>(null);
   readonly error = signal('');
@@ -105,6 +126,10 @@ export class DashboardPage implements OnInit {
   readonly transactions = signal<PaymentTransaction[]>([]);
   readonly sourceEvents = signal<SourceEvent[]>([]);
   readonly customers = signal<Customer[]>([]);
+  readonly bankAccounts = signal<BankAccount[]>([]);
+  readonly locations = signal<BusinessLocation[]>([]);
+  readonly selectedBankLocationIds = signal<string[]>([]);
+  readonly selectedNotifierBankAccountIds = signal<string[]>([]);
   readonly notifiers = signal<Notifier[]>([]);
   readonly staffRequests = signal<BusinessMembership[]>([]);
 
@@ -128,7 +153,13 @@ export class DashboardPage implements OnInit {
   readonly activeNotifierCount = computed(
     () => this.notifiers().filter((notifier) => notifier.active).length,
   );
+  readonly activeBankAccountCount = computed(
+    () => this.bankAccounts().filter((bankAccount) => bankAccount.isActive).length,
+  );
   readonly canManageNotifiers = computed(
+    () => this.activeMembership()?.role === 'account_owner' || this.user()?.globalRole === 'account_su',
+  );
+  readonly canManageBankAccounts = computed(
     () => this.activeMembership()?.role === 'account_owner' || this.user()?.globalRole === 'account_su',
   );
 
@@ -151,6 +182,20 @@ export class DashboardPage implements OnInit {
     bankIds: ['nequi'],
     watchedPackages: ['com.nequi.mobileapp\ncom.nequi.app'],
   });
+  readonly bankAccountForm = this.fb.group({
+    bankId: ['', [Validators.required, Validators.maxLength(80)]],
+    accountNumber: ['', [Validators.required, Validators.maxLength(80)]],
+    displayName: ['', [Validators.maxLength(120)]],
+    holderName: ['', [Validators.maxLength(160)]],
+    accountType: ['wallet' as BankAccountType],
+    currency: ['COP', [Validators.required, Validators.maxLength(3)]],
+  });
+  readonly locationForm = this.fb.group({
+    name: ['', [Validators.required]],
+    city: [''],
+    address: [''],
+    phone: [''],
+  });
 
   ngOnInit(): void {
     this.loadOverview();
@@ -165,6 +210,8 @@ export class DashboardPage implements OnInit {
     this.loadTransactions();
     this.loadSourceEvents();
     this.loadCustomers();
+    this.loadLocations();
+    this.loadBankAccounts();
     this.loadNotifiers();
   }
 
@@ -212,6 +259,55 @@ export class DashboardPage implements OnInit {
       )
       .subscribe({
         next: (response) => this.customers.set(response.customers),
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  loadBankAccounts(): void {
+    const businessAccountId = this.activeBusinessAccountId();
+
+    if (!businessAccountId) {
+      return;
+    }
+
+    this.loadingBankAccounts.set(true);
+    this.error.set('');
+
+    this.businessApi
+      .listBankAccounts(businessAccountId)
+      .pipe(
+        finalize(() => this.loadingBankAccounts.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => this.bankAccounts.set(response.bankAccounts),
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  loadLocations(): void {
+    const businessAccountId = this.activeBusinessAccountId();
+
+    if (!businessAccountId) {
+      return;
+    }
+
+    this.loadingLocations.set(true);
+    this.error.set('');
+
+    this.businessApi
+      .listLocations(businessAccountId)
+      .pipe(
+        finalize(() => this.loadingLocations.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.locations.set(response.locations);
+          this.selectedBankLocationIds.update((selected) =>
+            selected.filter((id) => response.locations.some((location) => location.id === id)),
+          );
+        },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
   }
@@ -275,6 +371,8 @@ export class DashboardPage implements OnInit {
     const businessAccountId = (event.target as HTMLSelectElement).value;
 
     this.session.setActiveBusinessAccountId(businessAccountId);
+    this.selectedBankLocationIds.set([]);
+    this.selectedNotifierBankAccountIds.set([]);
     this.loadOverview();
   }
 
@@ -329,13 +427,15 @@ export class DashboardPage implements OnInit {
 
     const raw = this.notifierForm.getRawValue();
     const identifier = this.optional(raw.identifier);
+    const bankAccountIds = this.selectedNotifierBankAccountIds();
     const request = {
       displayName: this.optional(raw.displayName),
       identifier,
       identifierType: identifier
         ? this.resolveNotifierIdentifierType(identifier, raw.identifierType)
         : undefined,
-      bankIds: this.toList(raw.bankIds),
+      bankIds: bankAccountIds.length > 0 ? undefined : this.toList(raw.bankIds),
+      bankAccountIds: bankAccountIds.length > 0 ? bankAccountIds : undefined,
       watchedPackages: this.toList(raw.watchedPackages),
     };
 
@@ -358,6 +458,101 @@ export class DashboardPage implements OnInit {
             bankIds: 'nequi',
             watchedPackages: 'com.nequi.mobileapp\ncom.nequi.app',
           });
+          this.selectedNotifierBankAccountIds.set([]);
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  createLocation(): void {
+    const businessAccountId = this.activeBusinessAccountId();
+
+    if (!businessAccountId) {
+      this.error.set('Selecciona un negocio activo para crear sedes.');
+      return;
+    }
+
+    if (this.locationForm.invalid) {
+      this.locationForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.locationForm.getRawValue();
+    this.creatingLocation.set(true);
+    this.error.set('');
+    this.success.set('');
+
+    this.businessApi
+      .createLocation(businessAccountId, {
+        name: raw.name.trim(),
+        city: this.optional(raw.city),
+        address: this.optional(raw.address),
+        phone: this.optional(raw.phone),
+      })
+      .pipe(
+        finalize(() => this.creatingLocation.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.locations.update((locations) => [response.location, ...locations]);
+          this.selectedBankLocationIds.update((ids) => [...ids, response.location.id]);
+          this.locationForm.reset({ name: '', city: '', address: '', phone: '' });
+          this.success.set('Sede creada.');
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  createBankAccount(): void {
+    const businessAccountId = this.activeBusinessAccountId();
+    const locationIds = this.selectedBankLocationIds();
+
+    if (!businessAccountId) {
+      this.error.set('Selecciona un negocio activo para crear cuentas bancarias.');
+      return;
+    }
+
+    if (this.bankAccountForm.invalid || locationIds.length === 0) {
+      this.bankAccountForm.markAllAsTouched();
+      if (locationIds.length === 0) {
+        this.error.set('Selecciona al menos una sede para la cuenta bancaria.');
+      }
+      return;
+    }
+
+    const raw = this.bankAccountForm.getRawValue();
+    this.creatingBankAccount.set(true);
+    this.error.set('');
+    this.success.set('');
+
+    this.businessApi
+      .createBankAccount(businessAccountId, {
+        bankId: raw.bankId.trim(),
+        accountNumber: raw.accountNumber.trim(),
+        displayName: this.optional(raw.displayName),
+        holderName: this.optional(raw.holderName),
+        accountType: raw.accountType,
+        currency: raw.currency.trim().toUpperCase(),
+        locationIds,
+      })
+      .pipe(
+        finalize(() => this.creatingBankAccount.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.bankAccounts.update((bankAccounts) => [response.bankAccount, ...bankAccounts]);
+          this.bankAccountForm.reset({
+            bankId: '',
+            accountNumber: '',
+            displayName: '',
+            holderName: '',
+            accountType: 'wallet',
+            currency: 'COP',
+          });
+          this.selectedBankLocationIds.set([]);
+          this.success.set('Cuenta bancaria creada.');
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
@@ -451,6 +646,16 @@ export class DashboardPage implements OnInit {
       });
   }
 
+  activateBankAccount(bankAccount: BankAccount): void {
+    this.updateBankAccountStatus(bankAccount, true);
+  }
+
+  deactivateBankAccount(bankAccount: BankAccount): void {
+    const confirmed = window.confirm('Desactivar esta cuenta bancaria?');
+    if (!confirmed) return;
+    this.updateBankAccountStatus(bankAccount, false);
+  }
+
   approveStaffRequest(membership: BusinessMembership): void {
     this.updateStaffRequestStatus(membership, 'approved');
   }
@@ -491,6 +696,20 @@ export class DashboardPage implements OnInit {
     this.success.set(`Codigo ${notifier.accessCode} copiado.`);
   }
 
+  toggleBankLocation(locationId: string, checked: boolean): void {
+    this.selectedBankLocationIds.update((ids) =>
+      checked ? Array.from(new Set([...ids, locationId])) : ids.filter((id) => id !== locationId),
+    );
+  }
+
+  toggleNotifierBankAccount(bankAccountId: string, checked: boolean): void {
+    this.selectedNotifierBankAccountIds.update((ids) =>
+      checked
+        ? Array.from(new Set([...ids, bankAccountId]))
+        : ids.filter((id) => id !== bankAccountId),
+    );
+  }
+
   businessName(businessAccountId: string): string {
     return (
       this.approvedMemberships().find(
@@ -511,6 +730,30 @@ export class DashboardPage implements OnInit {
     return customer.displayName ?? customer.account ?? customer.id;
   }
 
+  bankAccountTitle(bankAccount: BankAccount): string {
+    return bankAccount.displayName || `${bankAccount.bankId} ****${bankAccount.accountNumberLast4}`;
+  }
+
+  bankAccountLocationNames(bankAccount: BankAccount): string {
+    const locationNames = bankAccount.locationIds.map(
+      (id) => this.locations().find((location) => location.id === id)?.name ?? id,
+    );
+
+    return locationNames.join(', ') || 'Sin sedes';
+  }
+
+  notifierBankAccountLabel(bankAccount: BankAccount): string {
+    return `${this.bankAccountTitle(bankAccount)} - ${bankAccount.currency}`;
+  }
+
+  notifierBankAccountSummary(notifier: Notifier): string {
+    if ((notifier.bankAccounts?.length ?? 0) > 0) {
+      return notifier.bankAccounts.map((account) => this.bankAccountTitle(account)).join(', ');
+    }
+
+    return notifier.bankIds?.join(', ') || 'Todos';
+  }
+
   requesterLabel(membership: BusinessMembership): string {
     return membership.email ?? membership.identificationNumber ?? membership.userId ?? 'Solicitante sin datos';
   }
@@ -526,6 +769,16 @@ export class DashboardPage implements OnInit {
 
   isNotifierInvalid(controlName: keyof typeof this.notifierForm.controls): boolean {
     const control = this.notifierForm.controls[controlName];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  isBankAccountInvalid(controlName: keyof typeof this.bankAccountForm.controls): boolean {
+    const control = this.bankAccountForm.controls[controlName];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  isLocationInvalid(controlName: keyof typeof this.locationForm.controls): boolean {
+    const control = this.locationForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
   }
 
@@ -563,6 +816,40 @@ export class DashboardPage implements OnInit {
       mechanismKind,
       notes: this.optional(raw.notes),
     };
+  }
+
+  private updateBankAccountStatus(bankAccount: BankAccount, isActive: boolean): void {
+    const businessAccountId = this.activeBusinessAccountId();
+
+    if (!businessAccountId) {
+      this.error.set('Selecciona un negocio activo para actualizar cuentas bancarias.');
+      return;
+    }
+
+    this.actingBankAccountId.set(bankAccount.id);
+    this.error.set('');
+    this.success.set('');
+
+    const request = isActive
+      ? this.businessApi.updateBankAccount(businessAccountId, bankAccount.id, { isActive: true })
+      : this.businessApi.deactivateBankAccount(businessAccountId, bankAccount.id);
+
+    request
+      .pipe(
+        finalize(() => this.actingBankAccountId.set(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.bankAccounts.update((bankAccounts) =>
+            bankAccounts.map((current) =>
+              current.id === response.bankAccount.id ? response.bankAccount : current,
+            ),
+          );
+          this.success.set(isActive ? 'Cuenta bancaria activada.' : 'Cuenta bancaria desactivada.');
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
   }
 
   private updateStaffRequestStatus(

@@ -1,0 +1,51 @@
+<aside class="sidebar">
+  <a class="user-card" routerLink="/configuracion" (click)="onNavigate()" aria-label="Perfil y configuración">
+    <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+    <span class="user-meta">
+      <span class="user-name">{{ fullName() }}</span>
+      <span class="user-email">{{ user()?.email }}</span>
+    </span>
+  </a>
+
+  <nav class="nav-group" aria-label="Navegación principal">
+    <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
+      <svg lucideHouse aria-hidden="true"></svg>
+      <span>Home</span>
+    </a>
+    <a routerLink="/dashboard" routerLinkActive="active" (click)="onNavigate()">
+      <svg lucideLayoutDashboard aria-hidden="true"></svg>
+      <span>Dashboard</span>
+    </a>
+    <a routerLink="/negocios" routerLinkActive="active" (click)="onNavigate()">
+      <svg lucideBuilding2 aria-hidden="true"></svg>
+      <span>Negocios</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button
+      class="theme-toggle"
+      type="button"
+      (click)="toggleTheme()"
+      [attr.aria-label]="themeLabel()"
+    >
+      @if (isDark()) {
+        <svg lucideSun aria-hidden="true"></svg>
+        <span>Modo claro</span>
+      } @else {
+        <svg lucideMoon aria-hidden="true"></svg>
+        <span>Modo oscuro</span>
+      }
+    </button>
+
+    <a class="nav-settings" routerLink="/configuracion" routerLinkActive="active" (click)="onNavigate()">
+      <svg lucideSettings aria-hidden="true"></svg>
+      <span>Configuración</span>
+    </a>
+
+    <button class="logout" type="button" (click)="logout()">
+      <svg lucideLogOut aria-hidden="true"></svg>
+      <span>Cerrar sesión</span>
+    </button>
+  </div>
+</aside>

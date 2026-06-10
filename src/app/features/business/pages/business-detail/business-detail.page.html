@@ -1,0 +1,84 @@
+<section class="page">
+  <a class="back-link" routerLink="/negocios">
+    <svg lucideArrowLeft aria-hidden="true"></svg>
+    <span>Negocios</span>
+  </a>
+
+  @if (membership(); as item) {
+    <header class="business-head">
+      <span class="business-avatar" aria-hidden="true">{{ initials() }}</span>
+      <span class="business-head-meta">
+        <h1 class="page-title">{{ businessName() }}</h1>
+        <span class="role-chip">{{ roleLabel() }}</span>
+      </span>
+    </header>
+
+    <nav class="tabs" aria-label="Secciones del negocio">
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          class="tab"
+          [class.active]="activeTab() === tab.id"
+          [attr.aria-current]="activeTab() === tab.id ? 'page' : null"
+          (click)="selectTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </nav>
+
+    @switch (activeTab()) {
+      @case ('info') {
+        <div class="info-grid">
+          <div class="info-cell">
+            <span class="info-label">Nombre</span>
+            <span class="info-value">{{ item.businessAccount?.name ?? '—' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Ciudad</span>
+            <span class="info-value">{{ item.businessAccount?.city || '—' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Dirección</span>
+            <span class="info-value">{{ item.businessAccount?.address || '—' }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-label">Teléfono</span>
+            <span class="info-value">{{ item.businessAccount?.phone || '—' }}</span>
+          </div>
+        </div>
+      }
+      @default {
+        <div class="placeholder">
+          <span class="placeholder-icon" aria-hidden="true">
+            @switch (activeTab()) {
+              @case ('metrics') {
+                <svg lucideChartColumn></svg>
+              }
+              @case ('users') {
+                <svg lucideUsers></svg>
+              }
+              @case ('integrations') {
+                <svg lucidePlug></svg>
+              }
+              @case ('accounts') {
+                <svg lucideCreditCard></svg>
+              }
+              @default {
+                <svg lucideSettings></svg>
+              }
+            }
+          </span>
+          <h2>{{ currentTabLabel() }}</h2>
+          <p>Esta sección está en construcción. Definiremos su contenido en una próxima iteración.</p>
+        </div>
+      }
+    }
+  } @else {
+    <div class="placeholder">
+      <span class="placeholder-icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
+      <h2>Negocio no encontrado</h2>
+      <p>No tienes acceso aprobado a este negocio o el enlace ya no es válido.</p>
+    </div>
+  }
+</section>

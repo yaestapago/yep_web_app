@@ -1,0 +1,30 @@
+<div class="shell" [class.drawer-open]="drawerOpen()">
+  <div class="sidebar-slot">
+    <app-sidebar (navigated)="closeDrawer()" />
+  </div>
+
+  @if (drawerOpen()) {
+    <div class="scrim" (click)="closeDrawer()" aria-hidden="true"></div>
+  }
+
+  <div class="shell-main">
+    <header class="mobile-topbar">
+      <button
+        class="menu-button"
+        type="button"
+        (click)="openDrawer()"
+        aria-label="Abrir menú de navegación"
+      >
+        <svg lucideMenu aria-hidden="true"></svg>
+      </button>
+      <span class="mobile-brand">
+        <span class="brand-icon"><svg lucideShieldCheck aria-hidden="true"></svg></span>
+        <span>yep_web</span>
+      </span>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

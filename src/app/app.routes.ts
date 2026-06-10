@@ -2,12 +2,13 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
 import { businessGuard } from './core/guards/business.guard';
+import { Shell } from './core/layout/shell/shell';
 
 export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'dashboard',
+    redirectTo: 'home',
   },
   {
     path: 'login',
@@ -35,12 +36,42 @@ export const routes: Routes = [
     loadComponent: () => import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
   },
   {
-    path: 'dashboard',
+    path: '',
+    component: Shell,
     canActivate: [businessGuard],
-    loadComponent: () => import('./features/dashboard/pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
+    children: [
+      {
+        path: 'home',
+        loadComponent: () => import('./features/home/pages/home/home.page').then((m) => m.HomePage),
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
+      },
+      {
+        path: 'negocios',
+        loadComponent: () =>
+          import('./features/business/pages/business-list/business-list.page').then(
+            (m) => m.BusinessListPage,
+          ),
+      },
+      {
+        path: 'negocios/:businessAccountId',
+        loadComponent: () =>
+          import('./features/business/pages/business-detail/business-detail.page').then(
+            (m) => m.BusinessDetailPage,
+          ),
+      },
+      {
+        path: 'configuracion',
+        loadComponent: () =>
+          import('./features/settings/pages/settings/settings.page').then((m) => m.SettingsPage),
+      },
+    ],
   },
   {
     path: '**',
-    redirectTo: 'dashboard',
+    redirectTo: 'home',
   },
 ];
