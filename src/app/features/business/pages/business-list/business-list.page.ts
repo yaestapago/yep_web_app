@@ -31,7 +31,7 @@ export class BusinessListPage {
 
   onCreated(businessId: string): void {
     this.createOpen.set(false);
-    void this.router.navigate(['/businesses', businessId, 'overview']);
+    void this.router.navigate(['/businesses', businessId, 'business-data']);
   }
 
   businessName(membership: BusinessMembership): string {

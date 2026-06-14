@@ -27,4 +27,19 @@
       <router-outlet />
     </main>
   </div>
+
+  <button
+    type="button"
+    class="receipt-fab"
+    (click)="openReceiptCapture()"
+    aria-label="Capturar y validar comprobante"
+  >
+    <svg lucideFileScan aria-hidden="true"></svg>
+    <span>Capturar comprobante</span>
+  </button>
+
+  <app-receipt-capture-modal
+    [open]="receiptCaptureOpen()"
+    (closeRequested)="closeReceiptCapture()"
+  />
 </div>

@@ -57,12 +57,11 @@ export class Sidebar {
 
   /** Subsecciones del negocio activo (dependen del negocio seleccionado). */
   readonly businessSections: BusinessNavItem[] = [
-    { path: 'overview', label: 'Resumen' },
+    { path: 'business-data', label: 'Datos del negocio' },
     { path: 'accounts', label: 'Cuentas bancarias' },
     { path: 'notifiers', label: 'Notificadores' },
     { path: 'requests', label: 'Solicitudes' },
     { path: 'locations', label: 'Sedes' },
-    { path: 'business-data', label: 'Datos del negocio' },
   ];
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */

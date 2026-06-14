@@ -35,6 +35,11 @@
     </select>
   </div>
 
+  <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
+    <svg lucideBuilding2 aria-hidden="true"></svg>
+    <span>Gestionar negocios</span>
+  </button>
+
   <nav class="nav-group" aria-label="Navegación principal">
     <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
       <svg lucideHouse aria-hidden="true"></svg>
@@ -88,11 +93,6 @@
       }
     </div>
   </nav>
-
-  <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
-    <svg lucideBuilding2 aria-hidden="true"></svg>
-    <span>Gestionar negocios</span>
-  </button>
 
   <div class="sidebar-footer">
     <button

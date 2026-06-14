@@ -32,6 +32,36 @@
   display: none;
 }
 
+.receipt-fab {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-full);
+  bottom: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  gap: var(--space-2);
+  min-height: 52px;
+  padding: 0 var(--space-5);
+  position: fixed;
+  right: var(--space-6);
+  z-index: 15;
+}
+
+.receipt-fab:hover {
+  background: color-mix(in srgb, var(--color-primary) 88%, #000000);
+}
+
+.receipt-fab svg {
+  height: 20px;
+  width: 20px;
+}
+
 /* Topbar visible solo en móvil */
 .mobile-topbar {
   display: none;
@@ -127,5 +157,23 @@
 
   .content {
     padding: var(--space-4);
+  }
+
+  .receipt-fab {
+    bottom: var(--space-4);
+    min-height: 48px;
+    padding: 0;
+    right: var(--space-4);
+    width: 48px;
+  }
+
+  .receipt-fab span {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
   }
 }

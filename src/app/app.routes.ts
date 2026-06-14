@@ -78,14 +78,8 @@ export const routes: Routes = [
             (m) => m.BusinessShellPage,
           ),
         children: [
-          { path: '', pathMatch: 'full', redirectTo: 'overview' },
-          {
-            path: 'overview',
-            loadComponent: () =>
-              import('./features/business/pages/sections/business-overview.section').then(
-                (m) => m.BusinessOverviewSection,
-              ),
-          },
+          { path: '', pathMatch: 'full', redirectTo: 'business-data' },
+          { path: 'overview', pathMatch: 'full', redirectTo: 'business-data' },
           {
             path: 'dashboard',
             loadComponent: () =>
@@ -143,7 +137,7 @@ export const routes: Routes = [
       { path: 'negocios', pathMatch: 'full', redirectTo: 'businesses' },
       {
         path: 'negocios/:businessId',
-        redirectTo: (route) => `/businesses/${route.params['businessId']}/overview`,
+        redirectTo: (route) => `/businesses/${route.params['businessId']}/business-data`,
       },
       { path: 'configuracion', pathMatch: 'full', redirectTo: 'settings' },
     ],

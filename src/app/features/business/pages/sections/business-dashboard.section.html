@@ -164,14 +164,14 @@
       <span class="card-sub">Verificación de pagos</span>
     </div>
 
-    @if (captureError()) {
+    @if (operationError()) {
       <div class="state-error" role="alert">
         <svg lucideTriangleAlert aria-hidden="true"></svg>
-        <span>{{ captureError() }}</span>
+        <span>{{ operationError() }}</span>
       </div>
     }
-    @if (captureSuccess()) {
-      <div class="state-success" role="status">{{ captureSuccess() }}</div>
+    @if (operationSuccess()) {
+      <div class="state-success" role="status">{{ operationSuccess() }}</div>
     }
 
     @if (loadingTransactions()) {
@@ -265,120 +265,4 @@
     }
   </article>
 
-  <!-- Captura y validación de comprobantes -->
-  <article class="card capture-card">
-    <div class="card-head">
-      <h3 class="card-title"><svg lucideFileScan aria-hidden="true"></svg> Captura y validación de comprobantes</h3>
-      <span class="card-sub">Sube una imagen, ejecuta OCR, revisa y crea la transacción</span>
-    </div>
-
-    <div class="capture-grid">
-      <div class="capture-ocr">
-        <label class="file-control">
-          <span class="field-label">1 · Imagen del comprobante</span>
-          <input type="file" accept="image/*" (change)="onReceiptSelected($event)" />
-        </label>
-
-        <button type="button" class="primary-btn" (click)="extractReceipt()" [disabled]="extracting()">
-          @if (extracting()) {
-            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-          } @else {
-            <svg lucideUpload aria-hidden="true"></svg>
-          }
-          <span>2 · Ejecutar OCR</span>
-        </button>
-
-        @if (extraction(); as ocr) {
-          <div class="ocr-result">
-            <h4>Resultado OCR</h4>
-            <dl>
-              <div>
-                <dt>Banco</dt>
-                <dd>{{ ocr.transaction.bank || 'Sin datos' }}</dd>
-              </div>
-              <div>
-                <dt>Monto</dt>
-                <dd>{{ (ocr.transaction.amount || 0) | currency: ocr.transaction.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
-              </div>
-              <div>
-                <dt>Confianza</dt>
-                <dd>{{ ocr.transaction.confidence | percent: '1.0-0' }}</dd>
-              </div>
-            </dl>
-          </div>
-        }
-      </div>
-
-      <form [formGroup]="manualForm" (ngSubmit)="createManualTransaction()" class="capture-form" novalidate>
-        <span class="field-label">3 · Revisa y corrige los datos</span>
-        <div class="form-grid">
-          <label class="field">
-            <span>Banco</span>
-            <input type="text" formControlName="bankId" autocomplete="off" />
-            @if (isInvalid('bankId')) {
-              <small>Ingresa el banco.</small>
-            }
-          </label>
-          <label class="field">
-            <span>Fecha</span>
-            <input type="datetime-local" formControlName="transactionDate" />
-            @if (isInvalid('transactionDate')) {
-              <small>Ingresa la fecha.</small>
-            }
-          </label>
-          <label class="field">
-            <span>Monto</span>
-            <input type="number" min="1" step="1" formControlName="amount" />
-            @if (isInvalid('amount')) {
-              <small>Ingresa el monto.</small>
-            }
-          </label>
-          <label class="field">
-            <span>Moneda</span>
-            <input type="text" formControlName="currency" />
-          </label>
-          <label class="field">
-            <span>Referencia</span>
-            <input type="text" formControlName="reference" autocomplete="off" />
-          </label>
-          <label class="field">
-            <span>Pagador</span>
-            <input type="text" formControlName="senderName" autocomplete="off" />
-          </label>
-          <label class="field">
-            <span>Cuenta pagador</span>
-            <input type="text" formControlName="senderAccount" autocomplete="off" />
-          </label>
-          <label class="field">
-            <span>Cuenta destino</span>
-            <input type="text" formControlName="receiverAccount" autocomplete="off" />
-          </label>
-          <label class="field field--full">
-            <span>Notas</span>
-            <input type="text" formControlName="notes" autocomplete="off" />
-          </label>
-        </div>
-
-        <div class="capture-actions">
-          <button type="submit" class="primary-btn" [disabled]="creatingTransaction()">
-            @if (creatingTransaction()) {
-              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-            } @else {
-              <svg lucideSend aria-hidden="true"></svg>
-            }
-            <span>4 · Crear transacción</span>
-          </button>
-          <button
-            type="button"
-            class="secondary-btn"
-            (click)="createTransactionFromOcr()"
-            [disabled]="creatingTransaction() || !extraction()"
-          >
-            <svg lucideFileScan aria-hidden="true"></svg>
-            <span>Crear desde OCR</span>
-          </button>
-        </div>
-      </form>
-    </div>
-  </article>
 </div>

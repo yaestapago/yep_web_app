@@ -1,0 +1,180 @@
+:host {
+  display: contents;
+}
+
+.capture-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.capture-ocr,
+.capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.file-control,
+.field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.field-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.form-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.field--full {
+  grid-column: 1 / -1;
+}
+
+.capture-form input,
+.file-control input {
+  background: var(--color-input-bg, var(--color-background));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  min-height: var(--control-height-md);
+  padding: 0 var(--space-3);
+  width: 100%;
+}
+
+.capture-form small {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+}
+
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.primary-btn,
+.secondary-btn {
+  align-items: center;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: var(--control-height-md);
+  padding: 0 var(--space-4);
+}
+
+.primary-btn {
+  background: var(--color-primary);
+  border: 0;
+  color: #ffffff;
+}
+
+.secondary-btn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.secondary-btn:hover {
+  background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.primary-btn svg,
+.secondary-btn svg {
+  height: 16px;
+  width: 16px;
+}
+
+.ocr-result {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.ocr-result h3 {
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-2);
+}
+
+.ocr-result dl {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.ocr-result dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.ocr-result dd {
+  font-size: var(--font-size-sm);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.state-error,
+.state-success {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.state-error {
+  background: color-mix(in srgb, var(--color-error) 11%, transparent);
+  color: var(--color-error);
+}
+
+.state-error svg {
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+}
+
+.state-success {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success-strong);
+}
+
+.spin {
+  animation: receipt-capture-spin 800ms linear infinite;
+}
+
+@keyframes receipt-capture-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .capture-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

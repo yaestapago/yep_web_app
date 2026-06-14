@@ -72,15 +72,14 @@ describe('Sidebar', () => {
     expect(sidebar.businessLink('accounts')).toEqual(['/businesses', 'b1', 'accounts']);
   });
 
-  it('exposes the six business sections in the expected order', () => {
+  it('exposes the business sections without the old overview', () => {
     const sidebar = create();
     expect(sidebar.businessSections.map((item) => item.path)).toEqual([
-      'overview',
+      'business-data',
       'accounts',
       'notifiers',
       'requests',
       'locations',
-      'business-data',
     ]);
   });
 
