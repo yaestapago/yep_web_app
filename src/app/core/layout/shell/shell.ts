@@ -1,12 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { LucideMenu, LucideShieldCheck } from '@lucide/angular';
+import { LucideMenu } from '@lucide/angular';
 
 import { Sidebar } from '../sidebar/sidebar';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, LucideMenu, LucideShieldCheck],
+  imports: [RouterOutlet, Sidebar, LucideMenu],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })

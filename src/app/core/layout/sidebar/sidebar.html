@@ -1,4 +1,9 @@
 <aside class="sidebar">
+  <div class="brand" aria-label="Ya Está Pago">
+    <img class="brand__logo brand__logo--light" src="/brand/logo-light.png" alt="Ya Está Pago" />
+    <img class="brand__logo brand__logo--dark" src="/brand/logo-dark.png" alt="" aria-hidden="true" />
+  </div>
+
   <a class="user-card" routerLink="/settings" (click)="onNavigate()" aria-label="Perfil y configuración">
     <span class="avatar" aria-hidden="true">{{ initials() }}</span>
     <span class="user-meta">
@@ -7,7 +12,7 @@
     </span>
   </a>
 
-  <!-- Negocio activo: contexto siempre visible + cambio rápido -->
+  <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
   <div class="business-switcher">
     <span class="business-switcher__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
     <span class="business-switcher__meta">
@@ -30,25 +35,64 @@
     </select>
   </div>
 
-  <button type="button" class="create-business" (click)="openCreate()">
-    <svg lucidePlus aria-hidden="true"></svg>
-    <span>Crear negocio</span>
-  </button>
-
   <nav class="nav-group" aria-label="Navegación principal">
     <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
       <svg lucideHouse aria-hidden="true"></svg>
-      <span>Home</span>
+      <span>Novedades</span>
     </a>
-    <a routerLink="/dashboard" routerLinkActive="active" (click)="onNavigate()">
+
+    <a
+      [routerLink]="dashboardLink()"
+      routerLinkActive="active"
+      (click)="onNavigate()"
+    >
       <svg lucideLayoutDashboard aria-hidden="true"></svg>
-      <span>Dashboard</span>
+      <span>Panel de control</span>
     </a>
-    <a routerLink="/businesses" routerLinkActive="active" (click)="onNavigate()">
-      <svg lucideBuilding2 aria-hidden="true"></svg>
-      <span>Negocios</span>
-    </a>
+
+    <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
+    <div class="nav-subgroup" [class.open]="businessGroupOpen()">
+      <button
+        type="button"
+        class="nav-subgroup__header"
+        [attr.aria-expanded]="businessGroupOpen()"
+        aria-controls="business-subnav"
+        (click)="toggleBusinessGroup()"
+      >
+        <svg lucideBuilding2 aria-hidden="true"></svg>
+        <span>Negocio</span>
+        <svg
+          class="nav-subgroup__chevron"
+          [class.open]="businessGroupOpen()"
+          lucideChevronDown
+          aria-hidden="true"
+        ></svg>
+      </button>
+
+      @if (businessGroupOpen()) {
+        <div class="nav-subgroup__items" id="business-subnav">
+          @if (activeBusinessAccountId()) {
+            @for (item of businessSections; track item.path) {
+              <a
+                [routerLink]="businessLink(item.path)"
+                routerLinkActive="active"
+                (click)="onNavigate()"
+              >
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          } @else {
+            <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
+          }
+        </div>
+      }
+    </div>
   </nav>
+
+  <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
+    <svg lucideBuilding2 aria-hidden="true"></svg>
+    <span>Gestionar negocios</span>
+  </button>
 
   <div class="sidebar-footer">
     <button
@@ -77,9 +121,3 @@
     </button>
   </div>
 </aside>
-
-<app-create-business-modal
-  [open]="createOpen()"
-  (closeRequested)="closeCreate()"
-  (created)="onCreated($event)"
-/>

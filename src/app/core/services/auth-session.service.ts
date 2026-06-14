@@ -119,6 +119,20 @@ export class AuthSessionService {
     return true;
   }
 
+  /** Actualiza el usuario en sesión (p. ej. tras editar perfil o preferencias). */
+  updateUser(user: User): void {
+    const current = this.session();
+
+    if (!current) {
+      return;
+    }
+
+    this.persist({
+      ...current,
+      user: { ...current.user, ...user },
+    });
+  }
+
   /** Actualiza el negocio anidado en las membresías (p. ej. tras editar sus datos). */
   patchBusinessAccount(account: BusinessAccount): void {
     const current = this.session();

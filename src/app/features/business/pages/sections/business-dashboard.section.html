@@ -1,58 +1,384 @@
-<div class="section">
-  <div class="section-heading">
-    <h2 class="section-title">Dashboard del negocio</h2>
-    <p class="section-subtitle">
-      Métricas de este negocio. Las gráficas comparativas y filtros por fecha llegan en la próxima
-      iteración.
-    </p>
+<div class="section panel">
+  <!-- Encabezado: nombre del negocio + actualizar -->
+  <header class="panel-head">
+    <div class="section-heading">
+      <p class="panel-eyebrow">Panel de control</p>
+      <h2 class="section-title">{{ businessName() }}</h2>
+    </div>
+    <button
+      type="button"
+      class="refresh-btn"
+      (click)="refresh()"
+      [disabled]="loadingAny()"
+      aria-label="Actualizar panel"
+    >
+      <svg [class.spin]="loadingAny()" lucideRefreshCw aria-hidden="true"></svg>
+      <span>Actualizar</span>
+    </button>
+  </header>
+
+  <!-- Estadísticas operativas -->
+  <div class="kpi-grid" aria-label="Estadísticas operativas">
+    <div class="kpi-card">
+      <span class="kpi-label"><svg lucideBanknote aria-hidden="true"></svg> Total capturado</span>
+      <span class="kpi-value">{{ totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label"><svg lucideShieldCheck aria-hidden="true"></svg> Pagos válidos</span>
+      <span class="kpi-value kpi-value--online">{{ paidCount() }}</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label"><svg lucideActivity aria-hidden="true"></svg> Por revisar</span>
+      <span class="kpi-value kpi-value--delayed">{{ openReviewCount() }}</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label"><svg lucideBell aria-hidden="true"></svg> Eventos</span>
+      <span class="kpi-value">{{ eventsCount() }}</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label"><svg lucideBell aria-hidden="true"></svg> Notificadores activos</span>
+      <span class="kpi-value">
+        {{ activeNotifierCount() }}
+        @if (notifiers().length > 0) {
+          <small class="kpi-sub">· {{ availability() | percent: '1.0-0' }} disponibilidad</small>
+        }
+      </span>
+    </div>
   </div>
 
-  @if (loading()) {
-    <div class="loading-row">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando métricas…
-    </div>
-  } @else {
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <span class="kpi-label">Notificadores</span>
-        <span class="kpi-value">{{ total() }}</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">Activos</span>
-        <span class="kpi-value">{{ activeCount() }}</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">Disponibilidad</span>
-        <span class="kpi-value kpi-value--online">{{ availability() | percent: '1.0-0' }}</span>
-      </div>
+  <!-- Gráfica: capturado por día (datos reales) -->
+  <article class="card chart-card">
+    <div class="card-head">
+      <h3 class="card-title">Capturado por día</h3>
+      <span class="card-sub">Últimos 7 días</span>
     </div>
 
-    @if (total() > 0) {
-      <div class="section-heading">
-        <h2 class="section-title">Distribución de estados</h2>
+    @if (loadingTransactions()) {
+      <div class="loading-row">
+        <svg lucideLoaderCircle aria-hidden="true"></svg>
+        Cargando gráfica…
       </div>
-      <div
-        class="status-bar"
-        role="img"
-        aria-label="Distribución de notificadores por estado de heartbeat"
-      >
-        <span class="status-bar__seg--online" [style.width.%]="percent('online')"></span>
-        <span class="status-bar__seg--delayed" [style.width.%]="percent('delayed')"></span>
-        <span class="status-bar__seg--offline" [style.width.%]="percent('offline')"></span>
-        <span class="status-bar__seg--unknown" [style.width.%]="percent('unknown')"></span>
+    } @else if (transactionsError()) {
+      <div class="state-error" role="alert">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <span>{{ transactionsError() }}</span>
       </div>
-      <div class="legend">
-        <yep-status-dot level="online" [detail]="counts().online + ''" />
-        <yep-status-dot level="delayed" [detail]="counts().delayed + ''" />
-        <yep-status-dot level="offline" [detail]="counts().offline + ''" />
-        <yep-status-dot level="unknown" [detail]="counts().unknown + ''" />
-      </div>
-    } @else {
+    } @else if (!hasChartData()) {
       <div class="empty-state">
         <h3>Sin datos todavía</h3>
-        <p>Cuando este negocio tenga notificadores verás aquí su disponibilidad y tendencias.</p>
+        <p>Cuando registres transacciones verás aquí el monto capturado por día.</p>
+      </div>
+    } @else {
+      <div class="bar-chart" role="img" aria-label="Monto capturado por día en los últimos 7 días">
+        @for (day of dailyTotals(); track $index) {
+          <div class="bar-col">
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                [style.height.%]="day.height"
+                [attr.title]="(day.total | currency: 'COP' : 'symbol-narrow' : '1.0-0') + ' · ' + day.label"
+              ></div>
+            </div>
+            <span class="bar-label">{{ day.label }}</span>
+          </div>
+        }
       </div>
     }
-  }
+  </article>
+
+  <!-- Estado compacto de notificadores -->
+  <article class="card notifier-status-card">
+    <div class="card-head">
+      <h3 class="card-title">Notificadores</h3>
+      <span class="card-sub">Estado de heartbeat</span>
+    </div>
+
+    @if (loadingNotifiers()) {
+      <div class="loading-row">
+        <svg lucideLoaderCircle aria-hidden="true"></svg>
+        Cargando estado…
+      </div>
+    } @else if (notifiersError()) {
+      <div class="state-error" role="alert">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <span>{{ notifiersError() }}</span>
+      </div>
+    } @else if (notifiers().length === 0) {
+      <div class="empty-state">
+        <h3>Sin notificadores</h3>
+        <p>Agrega notificadores desde la sección "Notificadores" del negocio.</p>
+      </div>
+    } @else {
+      <table class="nstatus">
+        <thead>
+          <tr>
+            <th scope="col" class="nstatus__name">Notificador</th>
+            <th scope="col">En línea</th>
+            <th scope="col">Retraso</th>
+            <th scope="col">Fuera de línea</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of notifierStatuses(); track row.notifier.id) {
+            <tr [attr.aria-label]="notifierAriaLabel(notifierName(row.notifier), row.status)">
+              <th scope="row" class="nstatus__name">
+                <span class="nstatus__title">{{ notifierName(row.notifier) }}</span>
+                @if (row.status.level === 'unknown') {
+                  <span class="nstatus__nodata">Sin datos</span>
+                } @else {
+                  <span class="nstatus__rel">{{ relative(row.status) }}</span>
+                }
+              </th>
+              <td>
+                <span
+                  class="nlight nlight--online"
+                  [class.on]="row.status.level === 'online'"
+                  [attr.aria-hidden]="true"
+                ></span>
+              </td>
+              <td>
+                <span
+                  class="nlight nlight--delayed"
+                  [class.on]="row.status.level === 'delayed'"
+                  [attr.aria-hidden]="true"
+                ></span>
+              </td>
+              <td>
+                <span
+                  class="nlight nlight--offline"
+                  [class.on]="row.status.level === 'offline'"
+                  [attr.aria-hidden]="true"
+                ></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </article>
+
+  <!-- Transacciones recientes -->
+  <article class="card">
+    <div class="card-head">
+      <h3 class="card-title">Transacciones recientes</h3>
+      <span class="card-sub">Verificación de pagos</span>
+    </div>
+
+    @if (captureError()) {
+      <div class="state-error" role="alert">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <span>{{ captureError() }}</span>
+      </div>
+    }
+    @if (captureSuccess()) {
+      <div class="state-success" role="status">{{ captureSuccess() }}</div>
+    }
+
+    @if (loadingTransactions()) {
+      <div class="loading-row">
+        <svg lucideLoaderCircle aria-hidden="true"></svg>
+        Cargando transacciones…
+      </div>
+    } @else if (transactionsError()) {
+      <div class="state-error" role="alert">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <span>{{ transactionsError() }}</span>
+      </div>
+    } @else if (recentTransactions().length === 0) {
+      <div class="empty-state">
+        <h3>Sin transacciones</h3>
+        <p>Captura un comprobante o crea una transacción manual para empezar.</p>
+      </div>
+    } @else {
+      <ul class="record-list">
+        @for (transaction of recentTransactions(); track transaction.id) {
+          <li class="record">
+            <div class="record__main">
+              <span class="record__title">{{ transaction.reference || 'Sin referencia' }}</span>
+              <span class="record__meta">
+                {{ transaction.bankId }} · {{ transaction.transactionDate | date: 'short' }} ·
+                {{ transaction.status }}
+              </span>
+            </div>
+            <strong class="record__amount">
+              {{ transaction.amount | currency: transaction.currency : 'symbol-narrow' : '1.0-0' }}
+            </strong>
+            <button
+              type="button"
+              class="ghost-btn"
+              (click)="runVerification(transaction)"
+              [disabled]="verifyingId() === transaction.id"
+            >
+              @if (verifyingId() === transaction.id) {
+                <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+              } @else {
+                <svg lucideShieldCheck aria-hidden="true"></svg>
+              }
+              <span>{{ transaction.verification.canBeConsideredPaid ? 'Pagado' : 'Verificar' }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </article>
+
+  <!-- Eventos recientes -->
+  <article class="card">
+    <div class="card-head">
+      <h3 class="card-title">Eventos recientes</h3>
+      <span class="card-sub">Ingesta de fuentes</span>
+    </div>
+
+    @if (loadingEvents()) {
+      <div class="loading-row">
+        <svg lucideLoaderCircle aria-hidden="true"></svg>
+        Cargando eventos…
+      </div>
+    } @else if (eventsError()) {
+      <div class="state-error" role="alert">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <span>{{ eventsError() }}</span>
+      </div>
+    } @else if (recentEvents().length === 0) {
+      <div class="empty-state">
+        <h3>Sin eventos</h3>
+        <p>Los eventos de fuentes (OCR, WhatsApp, bancos) aparecerán aquí.</p>
+      </div>
+    } @else {
+      <ul class="record-list">
+        @for (event of recentEvents(); track event.id) {
+          <li class="record">
+            <div class="record__main">
+              <span class="record__title">{{ eventTitle(event) }}</span>
+              <span class="record__meta">
+                {{ event.sourceType }} · {{ event.status }} · {{ event.createdAt | date: 'short' }}
+              </span>
+            </div>
+            @if (eventAmount(event) !== null) {
+              <strong class="record__amount">
+                {{ eventAmount(event) | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}
+              </strong>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </article>
+
+  <!-- Captura y validación de comprobantes -->
+  <article class="card capture-card">
+    <div class="card-head">
+      <h3 class="card-title"><svg lucideFileScan aria-hidden="true"></svg> Captura y validación de comprobantes</h3>
+      <span class="card-sub">Sube una imagen, ejecuta OCR, revisa y crea la transacción</span>
+    </div>
+
+    <div class="capture-grid">
+      <div class="capture-ocr">
+        <label class="file-control">
+          <span class="field-label">1 · Imagen del comprobante</span>
+          <input type="file" accept="image/*" (change)="onReceiptSelected($event)" />
+        </label>
+
+        <button type="button" class="primary-btn" (click)="extractReceipt()" [disabled]="extracting()">
+          @if (extracting()) {
+            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          } @else {
+            <svg lucideUpload aria-hidden="true"></svg>
+          }
+          <span>2 · Ejecutar OCR</span>
+        </button>
+
+        @if (extraction(); as ocr) {
+          <div class="ocr-result">
+            <h4>Resultado OCR</h4>
+            <dl>
+              <div>
+                <dt>Banco</dt>
+                <dd>{{ ocr.transaction.bank || 'Sin datos' }}</dd>
+              </div>
+              <div>
+                <dt>Monto</dt>
+                <dd>{{ (ocr.transaction.amount || 0) | currency: ocr.transaction.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}</dd>
+              </div>
+              <div>
+                <dt>Confianza</dt>
+                <dd>{{ ocr.transaction.confidence | percent: '1.0-0' }}</dd>
+              </div>
+            </dl>
+          </div>
+        }
+      </div>
+
+      <form [formGroup]="manualForm" (ngSubmit)="createManualTransaction()" class="capture-form" novalidate>
+        <span class="field-label">3 · Revisa y corrige los datos</span>
+        <div class="form-grid">
+          <label class="field">
+            <span>Banco</span>
+            <input type="text" formControlName="bankId" autocomplete="off" />
+            @if (isInvalid('bankId')) {
+              <small>Ingresa el banco.</small>
+            }
+          </label>
+          <label class="field">
+            <span>Fecha</span>
+            <input type="datetime-local" formControlName="transactionDate" />
+            @if (isInvalid('transactionDate')) {
+              <small>Ingresa la fecha.</small>
+            }
+          </label>
+          <label class="field">
+            <span>Monto</span>
+            <input type="number" min="1" step="1" formControlName="amount" />
+            @if (isInvalid('amount')) {
+              <small>Ingresa el monto.</small>
+            }
+          </label>
+          <label class="field">
+            <span>Moneda</span>
+            <input type="text" formControlName="currency" />
+          </label>
+          <label class="field">
+            <span>Referencia</span>
+            <input type="text" formControlName="reference" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Pagador</span>
+            <input type="text" formControlName="senderName" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Cuenta pagador</span>
+            <input type="text" formControlName="senderAccount" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Cuenta destino</span>
+            <input type="text" formControlName="receiverAccount" autocomplete="off" />
+          </label>
+          <label class="field field--full">
+            <span>Notas</span>
+            <input type="text" formControlName="notes" autocomplete="off" />
+          </label>
+        </div>
+
+        <div class="capture-actions">
+          <button type="submit" class="primary-btn" [disabled]="creatingTransaction()">
+            @if (creatingTransaction()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            } @else {
+              <svg lucideSend aria-hidden="true"></svg>
+            }
+            <span>4 · Crear transacción</span>
+          </button>
+          <button
+            type="button"
+            class="secondary-btn"
+            (click)="createTransactionFromOcr()"
+            [disabled]="creatingTransaction() || !extraction()"
+          >
+            <svg lucideFileScan aria-hidden="true"></svg>
+            <span>Crear desde OCR</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </article>
 </div>

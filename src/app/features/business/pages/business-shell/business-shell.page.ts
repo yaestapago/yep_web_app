@@ -1,38 +1,13 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import {
-  LucideArrowLeft,
-  LucideBell,
-  LucideCreditCard,
-  LucideLayoutDashboard,
-  LucideLayoutGrid,
-  LucideSettings,
-  LucideUserPlus,
-} from '@lucide/angular';
+import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
+import { LucideArrowLeft } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 
-interface BusinessSection {
-  path: string;
-  label: string;
-  icon: string;
-}
-
 @Component({
   selector: 'app-business-shell-page',
-  imports: [
-    RouterLink,
-    RouterLinkActive,
-    RouterOutlet,
-    LucideArrowLeft,
-    LucideBell,
-    LucideCreditCard,
-    LucideLayoutDashboard,
-    LucideLayoutGrid,
-    LucideSettings,
-    LucideUserPlus,
-  ],
+  imports: [RouterLink, RouterOutlet, LucideArrowLeft],
   templateUrl: './business-shell.page.html',
   styleUrl: './business-shell.page.scss',
 })
@@ -43,15 +18,8 @@ export class BusinessShellPage {
 
   readonly businessId = signal<string | null>(null);
 
-  /** Secciones que organizan la vista de un negocio. */
-  readonly sections: BusinessSection[] = [
-    { path: 'overview', label: 'Resumen', icon: 'layoutGrid' },
-    { path: 'dashboard', label: 'Dashboard', icon: 'layoutDashboard' },
-    { path: 'notifiers', label: 'Notificadores', icon: 'bell' },
-    { path: 'accounts', label: 'Cuentas', icon: 'creditCard' },
-    { path: 'requests', label: 'Solicitudes', icon: 'userPlus' },
-    { path: 'settings', label: 'Configuración', icon: 'settings' },
-  ];
+  // La navegación entre secciones del negocio vive ahora en el sidebar (grupo
+  // "Negocio"), por lo que aquí ya no hay pestañas duplicadas.
 
   readonly membership = computed(() => {
     const id = this.businessId();
@@ -65,8 +33,7 @@ export class BusinessShellPage {
   }
 
   businessName(): string {
-    const membership = this.membership();
-    return membership?.businessAccount?.name ?? membership?.businessAccountId ?? 'Negocio';
+    return this.membership()?.businessAccount?.name?.trim() || 'Negocio sin nombre';
   }
 
   businessLocation(): string {

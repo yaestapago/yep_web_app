@@ -1,39 +1,11 @@
 <div class="section">
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <span class="kpi-label">Notificadores</span>
-      <span class="kpi-value">{{ total() }}</span>
-    </div>
-    <div class="kpi-card">
-      <span class="kpi-label">
-        <yep-status-dot level="online" [compact]="true" />
-        En línea
-      </span>
-      <span class="kpi-value kpi-value--online">{{ counts().online }}</span>
-    </div>
-    <div class="kpi-card">
-      <span class="kpi-label">
-        <yep-status-dot level="delayed" [compact]="true" />
-        Con retraso
-      </span>
-      <span class="kpi-value kpi-value--delayed">{{ counts().delayed }}</span>
-    </div>
-    <div class="kpi-card">
-      <span class="kpi-label">
-        <yep-status-dot level="offline" [compact]="true" />
-        Fuera de línea
-      </span>
-      <span class="kpi-value kpi-value--offline">{{ counts().offline + counts().unknown }}</span>
-    </div>
-  </div>
-
   <div class="section-heading">
     <h2 class="section-title">Información</h2>
   </div>
   <div class="info-grid">
     <div class="info-cell">
       <span class="info-label">Nombre</span>
-      <span class="info-value">{{ account()?.name ?? '—' }}</span>
+      <span class="info-value">{{ businessName() }}</span>
     </div>
     <div class="info-cell">
       <span class="info-label">Ciudad</span>

@@ -6,6 +6,13 @@
     </p>
   </header>
 
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="settings-success" role="status">{{ success() }}</div>
+  }
+
   <div class="settings-list">
     <!-- Perfil -->
     <article class="setting-card">
@@ -14,7 +21,10 @@
         <h2 class="setting-title">Perfil de usuario</h2>
         <p class="setting-desc">{{ fullName() }} · {{ user()?.email }}</p>
       </div>
-      <span class="setting-tag">Próximamente</span>
+      <yep-button variant="ghost" size="sm" (clicked)="openProfile()">
+        <svg lucidePencil aria-hidden="true"></svg>
+        Editar
+      </yep-button>
     </article>
 
     <!-- Tema (funcional) -->
@@ -36,24 +46,52 @@
       </div>
     </article>
 
-    <!-- Correo electrónico -->
-    <article class="setting-card">
-      <span class="setting-icon" aria-hidden="true"><svg lucideMail></svg></span>
-      <div class="setting-body">
-        <h2 class="setting-title">Configuración de correo</h2>
-        <p class="setting-desc">Direcciones y verificación de correo.</p>
-      </div>
-      <span class="setting-tag">Próximamente</span>
-    </article>
+    <!-- Notificaciones (acordeón) -->
+    <article class="setting-card setting-card--stacked setting-accordion">
+      <button
+        type="button"
+        class="accordion-header"
+        [attr.aria-expanded]="notificationsOpen()"
+        aria-controls="notifications-panel"
+        (click)="toggleNotifications()"
+      >
+        <span class="setting-icon" aria-hidden="true"><svg lucideBell></svg></span>
+        <div class="setting-body">
+          <h2 class="setting-title">Preferencias de notificaciones</h2>
+          <p class="setting-desc">Qué avisos recibes y por qué canal.</p>
+        </div>
+        <svg
+          class="accordion-chevron"
+          [class.open]="notificationsOpen()"
+          lucideChevronDown
+          aria-hidden="true"
+        ></svg>
+      </button>
 
-    <!-- Notificaciones -->
-    <article class="setting-card">
-      <span class="setting-icon" aria-hidden="true"><svg lucideBell></svg></span>
-      <div class="setting-body">
-        <h2 class="setting-title">Preferencias de notificaciones</h2>
-        <p class="setting-desc">Qué avisos recibes y por qué canal.</p>
-      </div>
-      <span class="setting-tag">Próximamente</span>
+      @if (notificationsOpen()) {
+        <ul class="toggle-list" id="notifications-panel">
+          @for (toggle of notificationToggles; track toggle.key) {
+            <li class="toggle-item">
+              <div class="toggle-text">
+                <span class="toggle-label">{{ toggle.label }}</span>
+                <span class="toggle-desc">{{ toggle.description }}</span>
+              </div>
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                [class.on]="notifications()[toggle.key]"
+                [attr.aria-checked]="notifications()[toggle.key]"
+                [attr.aria-label]="toggle.label"
+                [disabled]="savingNotifications()"
+                (click)="toggleNotification(toggle.key)"
+              >
+                <span class="switch-thumb"></span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </article>
 
     <!-- Seguridad -->
@@ -63,27 +101,138 @@
         <h2 class="setting-title">Seguridad y autenticación</h2>
         <p class="setting-desc">Contraseña y métodos de acceso.</p>
       </div>
-      <span class="setting-tag">Próximamente</span>
+      <yep-button variant="ghost" size="sm" (clicked)="openPassword()">
+        <svg lucidePencil aria-hidden="true"></svg>
+        Cambiar contraseña
+      </yep-button>
     </article>
 
-    <!-- Sesiones -->
-    <article class="setting-card">
-      <span class="setting-icon" aria-hidden="true"><svg lucideMonitorSmartphone></svg></span>
-      <div class="setting-body">
-        <h2 class="setting-title">Gestión de sesiones</h2>
-        <p class="setting-desc">Dispositivos donde tienes sesión iniciada.</p>
-      </div>
-      <span class="setting-tag">Próximamente</span>
-    </article>
+    <!--
+      Preferencias generales: ocultas temporalmente. La implementación (generalForm,
+      saveGeneral, syncGeneralForm en el componente) se conserva para recuperarla
+      después. Descomenta este bloque para volver a renderizarlo.
 
-    <!-- Preferencias generales -->
-    <article class="setting-card">
-      <span class="setting-icon" aria-hidden="true"><svg lucideSlidersHorizontal></svg></span>
-      <div class="setting-body">
-        <h2 class="setting-title">Preferencias generales</h2>
-        <p class="setting-desc">Idioma, formato y otras opciones de la app.</p>
+    <article class="setting-card setting-card--stacked">
+      <div class="setting-row">
+        <span class="setting-icon" aria-hidden="true"><svg lucideSlidersHorizontal></svg></span>
+        <div class="setting-body">
+          <h2 class="setting-title">Preferencias generales</h2>
+          <p class="setting-desc">Idioma, formato y otras opciones de la app.</p>
+        </div>
       </div>
-      <span class="setting-tag">Próximamente</span>
+      <form [formGroup]="generalForm" (ngSubmit)="saveGeneral()" class="general-form">
+        <label class="select-field">
+          <span class="select-label">Idioma</span>
+          <select formControlName="language" class="select-control">
+            <option value="es">Español</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label class="select-field">
+          <span class="select-label">Moneda</span>
+          <select formControlName="currency" class="select-control">
+            <option value="COP">Peso colombiano (COP)</option>
+            <option value="USD">Dólar (USD)</option>
+          </select>
+        </label>
+        <label class="select-field">
+          <span class="select-label">Formato de fecha</span>
+          <select formControlName="dateFormat" class="select-control">
+            <option value="DD/MM/YYYY">DD/MM/AAAA</option>
+            <option value="MM/DD/YYYY">MM/DD/AAAA</option>
+            <option value="YYYY-MM-DD">AAAA-MM-DD</option>
+          </select>
+        </label>
+        <div class="general-actions">
+          <yep-button type="submit" size="sm" [loading]="savingGeneral()" (clicked)="saveGeneral()">
+            Guardar
+          </yep-button>
+        </div>
+      </form>
     </article>
+    -->
   </div>
 </section>
+
+<!-- Modal: editar perfil / correo -->
+<yep-modal
+  [open]="profileOpen()"
+  title="Editar perfil"
+  subtitle="Actualiza tus datos personales y de contacto."
+  [loading]="savingProfile()"
+  [dirty]="profileForm.dirty"
+  (closeRequested)="closeProfile()"
+>
+  <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="form-grid">
+    <div class="form-grid form-grid--2">
+      <yep-input
+        formControlName="firstName"
+        label="Nombre"
+        [error]="isProfileInvalid('firstName') ? 'Mínimo 2 caracteres' : ''"
+      />
+      <yep-input
+        formControlName="lastName"
+        label="Apellido"
+        [error]="isProfileInvalid('lastName') ? 'Mínimo 2 caracteres' : ''"
+      />
+    </div>
+    <yep-input
+      formControlName="email"
+      type="email"
+      label="Correo electrónico"
+      autocomplete="email"
+      [readonly]="true"
+      hint="El correo es tu identificador y no se puede modificar."
+    />
+    <yep-input
+      formControlName="cellphoneNumber"
+      type="tel"
+      label="Celular"
+      [error]="isProfileInvalid('cellphoneNumber') ? 'Mínimo 7 dígitos' : ''"
+    />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingProfile()" (clicked)="closeProfile()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingProfile()" (clicked)="saveProfile()">Guardar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<!-- Modal: cambiar contraseña -->
+<yep-modal
+  [open]="passwordOpen()"
+  title="Cambiar contraseña"
+  subtitle="Ingresa tu contraseña actual y la nueva."
+  [loading]="savingPassword()"
+  [dirty]="passwordForm.dirty"
+  (closeRequested)="closePassword()"
+>
+  <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="form-grid">
+    <yep-input
+      formControlName="currentPassword"
+      type="password"
+      label="Contraseña actual"
+      autocomplete="current-password"
+      [error]="isPasswordInvalid('currentPassword') ? 'Requerido' : ''"
+    />
+    <yep-input
+      formControlName="newPassword"
+      type="password"
+      label="Nueva contraseña"
+      autocomplete="new-password"
+      [error]="isPasswordInvalid('newPassword') ? 'Mínimo 8 caracteres' : ''"
+    />
+    <yep-input
+      formControlName="confirmPassword"
+      type="password"
+      label="Confirmar nueva contraseña"
+      autocomplete="new-password"
+      [error]="isPasswordInvalid('confirmPassword') ? 'Requerido' : ''"
+    />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingPassword()" (clicked)="closePassword()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingPassword()" (clicked)="savePassword()">Actualizar</yep-button>
+  </ng-container>
+</yep-modal>

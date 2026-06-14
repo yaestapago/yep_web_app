@@ -1,9 +1,22 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
 import { businessGuard } from './core/guards/business.guard';
 import { businessContextGuard } from './core/guards/business-context.guard';
 import { Shell } from './core/layout/shell/shell';
+import { AuthSessionService } from './core/services/auth-session.service';
+
+/**
+ * `/dashboard` ahora es solo un alias compatible: redirige al Panel de control
+ * del negocio activo (`/businesses/:businessId/dashboard`). Si no hay negocio
+ * activo, lleva al listado de negocios.
+ */
+function redirectToActiveBusinessDashboard(): string {
+  const session = inject(AuthSessionService);
+  const businessId = session.activeBusinessAccountId();
+  return businessId ? `/businesses/${businessId}/dashboard` : '/businesses';
+}
 
 export const routes: Routes = [
   {
@@ -46,9 +59,9 @@ export const routes: Routes = [
         loadComponent: () => import('./features/home/pages/home/home.page').then((m) => m.HomePage),
       },
       {
+        // Compatibilidad: redirige al Panel de control del negocio activo.
         path: 'dashboard',
-        loadComponent: () =>
-          import('./features/dashboard/pages/dashboard/dashboard.page').then((m) => m.DashboardPage),
+        redirectTo: redirectToActiveBusinessDashboard,
       },
       {
         path: 'businesses',
@@ -102,12 +115,22 @@ export const routes: Routes = [
               ),
           },
           {
-            path: 'settings',
+            path: 'locations',
             loadComponent: () =>
-              import('./features/business/pages/sections/business-settings.section').then(
-                (m) => m.BusinessSettingsSection,
+              import('./features/business/pages/sections/business-locations.section').then(
+                (m) => m.BusinessLocationsSection,
               ),
           },
+          {
+            path: 'business-data',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-data.section').then(
+                (m) => m.BusinessDataSection,
+              ),
+          },
+          // Compatibilidad: la antigua vista combinada de "Configuración" ahora
+          // se divide en "Datos del negocio" y "Sedes".
+          { path: 'settings', pathMatch: 'full', redirectTo: 'business-data' },
         ],
       },
       {

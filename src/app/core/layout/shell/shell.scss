@@ -57,26 +57,29 @@
 
 .mobile-brand {
   align-items: center;
-  color: var(--color-text-primary);
   display: inline-flex;
-  font-weight: var(--font-weight-extrabold);
-  gap: var(--space-2);
 }
 
-.brand-icon {
-  align-items: center;
-  background: var(--color-primary);
-  border-radius: var(--radius-sm);
-  color: #ffffff;
-  display: flex;
-  height: 32px;
-  justify-content: center;
-  width: 32px;
+.mobile-brand__logo {
+  display: block;
+  height: 38px;
+  object-fit: contain;
+  object-position: left center;
+  width: auto;
 }
 
-.brand-icon svg {
-  height: 18px;
-  width: 18px;
+.mobile-brand__logo--dark {
+  display: none;
+}
+
+:host-context([data-theme='dark']) {
+  .mobile-brand__logo--light {
+    display: none;
+  }
+
+  .mobile-brand__logo--dark {
+    display: block;
+  }
 }
 
 @media (max-width: 860px) {

@@ -1,0 +1,75 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Sedes</h2>
+      <p class="section-subtitle">Ubicaciones a las que se asocian cuentas y notificadores.</p>
+    </div>
+    @if (canManage()) {
+      <yep-button size="sm" (clicked)="openLocation()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nueva sede
+      </yep-button>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (loadingLocations()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando sedes…
+    </div>
+  } @else if (locations().length === 0) {
+    <div class="empty-state">
+      <h3>Sin sedes</h3>
+      <p>Crea una sede para poder asociar cuentas bancarias y notificadores.</p>
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (location of locations(); track location.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">
+              <svg lucideMapPin aria-hidden="true" style="height: 14px; width: 14px"></svg>
+              {{ location.name }}
+            </h3>
+            <span class="list-card__meta">
+              {{ location.city || '—' }}@if (location.address) { · {{ location.address }}}
+            </span>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>
+
+<yep-modal
+  [open]="locationOpen()"
+  title="Nueva sede"
+  [loading]="savingLocation()"
+  [dirty]="locationForm.dirty"
+  (closeRequested)="closeLocation()"
+>
+  <form [formGroup]="locationForm" (ngSubmit)="saveLocation()" class="form-grid">
+    <yep-input
+      formControlName="name"
+      label="Nombre"
+      [error]="isLocationInvalid('name') ? 'Requerido' : ''"
+    />
+    <div class="form-grid form-grid--2">
+      <yep-input formControlName="city" label="Ciudad (opcional)" />
+      <yep-input formControlName="phone" label="Teléfono (opcional)" />
+    </div>
+    <yep-input formControlName="address" label="Dirección (opcional)" />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingLocation()" (clicked)="closeLocation()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingLocation()" (clicked)="saveLocation()">Crear sede</yep-button>
+  </ng-container>
+</yep-modal>

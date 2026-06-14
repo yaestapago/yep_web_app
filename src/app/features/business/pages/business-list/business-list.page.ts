@@ -35,7 +35,7 @@ export class BusinessListPage {
   }
 
   businessName(membership: BusinessMembership): string {
-    return membership.businessAccount?.name ?? membership.businessAccountId;
+    return membership.businessAccount?.name?.trim() || 'Negocio sin nombre';
   }
 
   businessLocation(membership: BusinessMembership): string {

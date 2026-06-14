@@ -1,34 +1,37 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideBuilding2,
+  LucideChevronDown,
   LucideChevronsUpDown,
   LucideHouse,
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMoon,
-  LucidePlus,
   LucideSettings,
   LucideSun,
 } from '@lucide/angular';
 
 import { AuthSessionService } from '../../services/auth-session.service';
 import { ThemeService } from '../../services/theme.service';
-import { CreateBusinessModal } from '../../../features/business/components/create-business-modal/create-business-modal';
+
+interface BusinessNavItem {
+  path: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-sidebar',
   imports: [
     RouterLink,
     RouterLinkActive,
-    CreateBusinessModal,
     LucideBuilding2,
+    LucideChevronDown,
     LucideChevronsUpDown,
     LucideHouse,
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMoon,
-    LucidePlus,
     LucideSettings,
     LucideSun,
   ],
@@ -49,7 +52,24 @@ export class Sidebar {
   readonly activeMembership = this.session.activeMembership;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
 
-  readonly createOpen = signal(false);
+  /** Grupo "Negocio" expandible; inicia abierto para dar contexto. */
+  readonly businessGroupOpen = signal(true);
+
+  /** Subsecciones del negocio activo (dependen del negocio seleccionado). */
+  readonly businessSections: BusinessNavItem[] = [
+    { path: 'overview', label: 'Resumen' },
+    { path: 'accounts', label: 'Cuentas bancarias' },
+    { path: 'notifiers', label: 'Notificadores' },
+    { path: 'requests', label: 'Solicitudes' },
+    { path: 'locations', label: 'Sedes' },
+    { path: 'business-data', label: 'Datos del negocio' },
+  ];
+
+  /** Enlace al Panel de control del negocio activo (ruta canónica). */
+  readonly dashboardLink = computed(() => {
+    const id = this.activeBusinessAccountId();
+    return id ? ['/businesses', id, 'dashboard'] : ['/businesses'];
+  });
 
   fullName(): string {
     const user = this.user();
@@ -69,40 +89,59 @@ export class Sidebar {
     return (first + last).toUpperCase() || user.email.charAt(0).toUpperCase();
   }
 
+  /** Nombre del negocio activo; nunca expone IDs. */
   activeBusinessName(): string {
     const membership = this.activeMembership();
-    return membership?.businessAccount?.name ?? 'Selecciona un negocio';
+    if (!membership) {
+      return 'Selecciona un negocio';
+    }
+    return membership.businessAccount?.name?.trim() || 'Negocio sin nombre';
   }
 
+  /** Nombre de un negocio por id; nunca muestra el id como fallback. */
   businessName(businessAccountId: string): string {
-    return (
-      this.memberships().find((m) => m.businessAccountId === businessAccountId)?.businessAccount
-        ?.name ?? businessAccountId
-    );
+    const account = this.memberships().find(
+      (m) => m.businessAccountId === businessAccountId,
+    )?.businessAccount;
+    return account?.name?.trim() || 'Negocio sin nombre';
   }
 
+  /** Enlace a una subsección del negocio activo. */
+  businessLink(path: string): unknown[] {
+    const id = this.activeBusinessAccountId();
+    return id ? ['/businesses', id, path] : ['/businesses'];
+  }
+
+  toggleBusinessGroup(): void {
+    this.businessGroupOpen.update((open) => !open);
+  }
+
+  /**
+   * Cambia el negocio activo desde el selector (única fuente visual de cambio).
+   * Si el usuario está en una vista contextual del negocio, conserva la misma
+   * sección y solo cambia el negocio.
+   */
   switchBusiness(event: Event): void {
     const businessAccountId = (event.target as HTMLSelectElement).value;
     if (!businessAccountId) {
       return;
     }
+
     this.session.setActiveBusinessAccountId(businessAccountId);
     this.navigated.emit();
-    void this.router.navigate(['/businesses', businessAccountId, 'overview']);
-  }
 
-  openCreate(): void {
-    this.createOpen.set(true);
-  }
+    const path = this.router.url.split('?')[0];
+    const match = path.match(/^\/businesses\/[^/]+\/(.+)$/);
 
-  closeCreate(): void {
-    this.createOpen.set(false);
-  }
-
-  onCreated(businessId: string): void {
-    this.createOpen.set(false);
-    this.navigated.emit();
-    void this.router.navigate(['/businesses', businessId, 'overview']);
+    if (match) {
+      // Conserva la sección contextual, solo cambia el negocio.
+      void this.router.navigate(['/businesses', businessAccountId, ...match[1].split('/')]);
+    } else if (path.startsWith('/businesses/')) {
+      // Estaba en el negocio sin subruta: lleva al Panel de control.
+      void this.router.navigate(['/businesses', businessAccountId, 'dashboard']);
+    }
+    // En vistas no contextuales (Novedades, Configuración, listado) solo cambia
+    // el negocio activo sin navegar.
   }
 
   onNavigate(): void {

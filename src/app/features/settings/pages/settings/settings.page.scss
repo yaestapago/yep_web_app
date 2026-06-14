@@ -8,6 +8,40 @@
   gap: var(--space-3);
 }
 
+.settings-success {
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-success-strong);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+
+.field-error {
+  background: color-mix(in srgb, var(--color-error) 14%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+}
+
+/* Forms inside modals */
+.form-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.form-grid--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 520px) {
+  .form-grid--2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 .setting-card {
   align-items: center;
   background: var(--color-surface);
@@ -103,6 +137,175 @@
   background: var(--color-surface);
   box-shadow: var(--shadow-xs);
   color: var(--color-primary);
+}
+
+/* Tarjetas con contenido apilado (notificaciones, preferencias generales) */
+.setting-card--stacked {
+  align-items: stretch;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.setting-row {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+}
+
+/* Acordeón (preferencias de notificaciones) */
+.setting-accordion {
+  gap: 0;
+  padding: 0;
+}
+
+.accordion-header {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-lg);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  text-align: left;
+  width: 100%;
+}
+
+.accordion-header:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.accordion-chevron {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  height: 20px;
+  transition: transform var(--motion-fast);
+  width: 20px;
+}
+
+.accordion-chevron.open {
+  transform: rotate(180deg);
+}
+
+.setting-accordion .toggle-list {
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+/* Toggles de notificaciones */
+.toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toggle-item {
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+}
+
+.toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toggle-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.toggle-desc {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.switch {
+  background: var(--color-border);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 24px;
+  padding: 2px;
+  position: relative;
+  transition: background var(--motion-fast);
+  width: 44px;
+}
+
+.switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.switch.on {
+  background: var(--color-primary);
+}
+
+.switch-thumb {
+  background: var(--color-surface);
+  border-radius: 50%;
+  box-shadow: var(--shadow-xs);
+  display: block;
+  height: 20px;
+  transform: translateX(0);
+  transition: transform var(--motion-fast);
+  width: 20px;
+}
+
+.switch.on .switch-thumb {
+  transform: translateX(20px);
+}
+
+/* Formulario de preferencias generales */
+.general-form {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.select-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.select-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.select-control {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
+.select-control:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.general-actions {
+  align-items: flex-end;
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
 }
 
 @media (max-width: 560px) {

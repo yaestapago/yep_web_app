@@ -18,38 +18,6 @@
       </span>
     </header>
 
-    <nav class="section-nav" aria-label="Secciones del negocio">
-      @for (section of sections; track section.path) {
-        <a
-          [routerLink]="['./', section.path]"
-          routerLinkActive="active"
-          class="section-tab"
-        >
-          @switch (section.icon) {
-            @case ('layoutGrid') {
-              <svg lucideLayoutGrid aria-hidden="true"></svg>
-            }
-            @case ('layoutDashboard') {
-              <svg lucideLayoutDashboard aria-hidden="true"></svg>
-            }
-            @case ('bell') {
-              <svg lucideBell aria-hidden="true"></svg>
-            }
-            @case ('creditCard') {
-              <svg lucideCreditCard aria-hidden="true"></svg>
-            }
-            @case ('userPlus') {
-              <svg lucideUserPlus aria-hidden="true"></svg>
-            }
-            @default {
-              <svg lucideSettings aria-hidden="true"></svg>
-            }
-          }
-          <span>{{ section.label }}</span>
-        </a>
-      }
-    </nav>
-
     <router-outlet />
   } @else {
     <div class="placeholder">

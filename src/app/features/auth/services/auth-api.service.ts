@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   AuthResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   ForgotPasswordRequestCodeRequest,
   ForgotPasswordRequestCodeResponse,
   ForgotPasswordVerifyCodeRequest,
@@ -14,6 +16,10 @@ import {
   RegisterRequest,
   ResetPasswordRequest,
   ResetPasswordResponse,
+  UpdateGeneralPreferencesRequest,
+  UpdateNotificationPreferencesRequest,
+  UpdateProfileRequest,
+  UserResponse,
 } from '../../../shared/models/auth.models';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +37,37 @@ export class AuthApiService {
 
   me(): Observable<MeResponse> {
     return this.http.get<MeResponse>(`${this.apiUrl}/auth/me`);
+  }
+
+  updateProfile(request: UpdateProfileRequest): Observable<UserResponse> {
+    return this.http.patch<UserResponse>(`${this.apiUrl}/auth/me`, request);
+  }
+
+  changePassword(
+    request: ChangePasswordRequest,
+  ): Observable<ChangePasswordResponse> {
+    return this.http.post<ChangePasswordResponse>(
+      `${this.apiUrl}/auth/me/password`,
+      request,
+    );
+  }
+
+  updateNotificationPreferences(
+    request: UpdateNotificationPreferencesRequest,
+  ): Observable<UserResponse> {
+    return this.http.patch<UserResponse>(
+      `${this.apiUrl}/auth/me/notification-preferences`,
+      request,
+    );
+  }
+
+  updateGeneralPreferences(
+    request: UpdateGeneralPreferencesRequest,
+  ): Observable<UserResponse> {
+    return this.http.patch<UserResponse>(
+      `${this.apiUrl}/auth/me/general-preferences`,
+      request,
+    );
   }
 
   requestPasswordResetCode(

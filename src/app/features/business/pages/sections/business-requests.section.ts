@@ -91,12 +91,8 @@ export class BusinessRequestsSection implements OnInit {
   }
 
   requesterLabel(membership: BusinessMembership): string {
-    return (
-      membership.email ??
-      membership.identificationNumber ??
-      membership.userId ??
-      'Solicitante sin datos'
-    );
+    // No exponemos identificadores internos (userId): usamos correo o documento.
+    return membership.email ?? membership.identificationNumber ?? 'Solicitante sin datos';
   }
 
   private updateStatus(membership: BusinessMembership, status: 'approved' | 'rejected'): void {

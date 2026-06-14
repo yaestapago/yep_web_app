@@ -26,16 +26,16 @@
   display: flex;
   justify-content: flex-start;
   margin-bottom: var(--space-7);
-  max-width: 13rem;
+  max-width: 18rem;
 }
 
 .auth-logo__image {
   display: block;
   height: auto;
-  max-height: 3rem;
+  max-height: 4.5rem;
   object-fit: contain;
   object-position: left center;
-  width: min(100%, 12rem);
+  width: min(100%, 16rem);
 }
 
 .auth-logo__image--dark {
