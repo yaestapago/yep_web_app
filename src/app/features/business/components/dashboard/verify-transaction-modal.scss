@@ -1,0 +1,49 @@
+.verify-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+}
+
+.verify-row {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+}
+
+.verify-row:last-child {
+  border-bottom: 0;
+}
+
+.verify-row dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.verify-row dd {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  text-align: right;
+}
+
+.verify-amount {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.verify-note {
+  background: color-mix(in srgb, var(--color-secondary) 8%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  padding: var(--space-3);
+}
+
+svg {
+  height: 16px;
+  width: 16px;
+}

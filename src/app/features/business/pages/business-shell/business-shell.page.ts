@@ -1,7 +1,14 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterOutlet,
+} from '@angular/router';
 import { LucideArrowLeft } from '@lucide/angular';
+import { filter, startWith } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 
@@ -13,10 +20,17 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 })
 export class BusinessShellPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly businessId = signal<string | null>(null);
+
+  /**
+   * Modo inmersivo: la sección hija activa pidió ocupar el viewport completo
+   * (vía `data.immersive`), por lo que la cabecera del negocio se compacta.
+   */
+  readonly immersive = signal(false);
 
   // La navegación entre secciones del negocio vive ahora en el sidebar (grupo
   // "Negocio"), por lo que aquí ya no hay pestañas duplicadas.
@@ -30,6 +44,20 @@ export class BusinessShellPage {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.businessId.set(params.get('businessId'));
     });
+
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        startWith(null),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        let active: ActivatedRoute | null = this.route.firstChild;
+        while (active?.firstChild) {
+          active = active.firstChild;
+        }
+        this.immersive.set(active?.snapshot.data['immersive'] === true);
+      });
   }
 
   businessName(): string {

@@ -1,0 +1,124 @@
+.charts-body {
+  padding: var(--space-3);
+}
+
+.charts-grid {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  min-height: 0;
+}
+
+.chart-cell {
+  background: color-mix(in srgb, var(--color-secondary) 4%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font: inherit;
+  gap: var(--space-1);
+  margin: 0;
+  min-height: 130px;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  text-align: left;
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.chart-cell:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  box-shadow: var(--shadow-xs);
+}
+
+.chart-cell:hover .chart-cell__expand {
+  opacity: 1;
+}
+
+.chart-cell:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+  outline: none;
+}
+
+.chart-cell__title {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  gap: var(--space-1);
+  justify-content: space-between;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.chart-cell__expand {
+  color: var(--color-text-muted);
+  flex: 0 0 auto;
+  height: 13px;
+  opacity: 0.45;
+  transition: opacity var(--motion-fast);
+  width: 13px;
+}
+
+.chart-cell__canvas {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* Gráfica ampliada dentro del modal */
+.chart-expanded {
+  height: min(58vh, 460px);
+  position: relative;
+  width: 100%;
+}
+
+/* Catálogo del modal de configuración */
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.catalog__label {
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.catalog__label:hover {
+  background: color-mix(in srgb, var(--color-secondary) 7%, transparent);
+}
+
+.catalog__label input {
+  accent-color: var(--color-primary);
+  height: 1rem;
+  margin-top: 0.15rem;
+  width: 1rem;
+}
+
+.catalog__text {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.catalog__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.catalog__desc {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}

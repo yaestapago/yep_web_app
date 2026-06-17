@@ -82,6 +82,9 @@ export const routes: Routes = [
           { path: 'overview', pathMatch: 'full', redirectTo: 'business-data' },
           {
             path: 'dashboard',
+            // `immersive`: el panel ocupa el viewport completo, así que la
+            // cabecera del negocio se compacta (ver BusinessShellPage).
+            data: { immersive: true },
             loadComponent: () =>
               import('./features/business/pages/sections/business-dashboard.section').then(
                 (m) => m.BusinessDashboardSection,

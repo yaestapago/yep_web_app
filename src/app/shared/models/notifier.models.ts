@@ -3,6 +3,9 @@ import type { BankAccount } from './bank-account.models';
 export type NotifierType = 'phone_app' | 'email_gmail';
 export type NotifierIdentifierType = 'phone' | 'email';
 
+/** Opciones de tipo mostradas como radio buttons al crear un notificador. */
+export type NotifierKind = 'phone' | 'email' | 'desktop';
+
 export interface NotifierPairedDevice {
   deviceId: string;
   model?: string;
@@ -48,7 +51,13 @@ export interface NotifierResponse {
   notifier: Notifier;
 }
 
+export interface DeleteNotifierResponse {
+  deleted: boolean;
+  id: string;
+}
+
 export interface CreateNotifierRequest {
+  type?: NotifierType;
   displayName?: string;
   identifier?: string;
   identifierType?: NotifierIdentifierType;

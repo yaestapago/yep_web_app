@@ -1,0 +1,42 @@
+<yep-modal
+  [open]="open()"
+  title="Verificar transacción"
+  subtitle="Confirma la verificación manual de este pago."
+  size="sm"
+  [loading]="loading()"
+  (closeRequested)="cancel.emit()"
+>
+  @if (transaction(); as tx) {
+    <dl class="verify-summary">
+      <div class="verify-row">
+        <dt>Referencia</dt>
+        <dd>{{ tx.reference || 'Sin referencia' }}</dd>
+      </div>
+      <div class="verify-row">
+        <dt>Banco</dt>
+        <dd>{{ tx.bankId }}</dd>
+      </div>
+      <div class="verify-row">
+        <dt>Monto</dt>
+        <dd class="verify-amount">{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+      <div class="verify-row">
+        <dt>Estado actual</dt>
+        <dd>{{ statusLabel(tx) }}</dd>
+      </div>
+    </dl>
+
+    <p class="verify-note">
+      Al confirmar, la transacción quedará marcada como verificada y se registrará
+      quién y cuándo realizó la verificación.
+    </p>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="loading()" (clicked)="cancel.emit()">Cancelar</yep-button>
+    <yep-button [loading]="loading()" (clicked)="onConfirm()">
+      <svg lucideShieldCheck aria-hidden="true"></svg>
+      Confirmar verificación
+    </yep-button>
+  </ng-container>
+</yep-modal>

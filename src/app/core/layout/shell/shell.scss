@@ -28,6 +28,18 @@
   width: 100%;
 }
 
+/* Rutas inmersivas (panel de control): ancho completo y altura fija de
+   viewport. El scroll vive dentro de cada zona de la vista, no en la página. */
+.content--immersive {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: none;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--space-4) var(--space-5);
+}
+
 .scrim {
   display: none;
 }
@@ -156,6 +168,14 @@
   }
 
   .content {
+    padding: var(--space-4);
+  }
+
+  /* En móvil hay topbar y se permite apilar/scroll: el panel deja de fijar
+     la altura del viewport. */
+  .content--immersive {
+    height: auto;
+    overflow: visible;
     padding: var(--space-4);
   }
 

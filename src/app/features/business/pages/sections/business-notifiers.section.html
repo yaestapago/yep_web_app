@@ -57,9 +57,27 @@
       @for (row of statuses(); track row.notifier.id) {
         <article class="list-card">
           <div class="list-card__main">
-            <h3 class="list-card__title">
-              {{ row.notifier.displayName || row.notifier.identifier || row.notifier.id }}
-            </h3>
+            <div class="list-card__titlerow">
+              <h3 class="list-card__title">
+                {{ row.notifier.displayName || row.notifier.identifier || row.notifier.id }}
+              </h3>
+              @if (isCodeVisible(row.notifier)) {
+                <span class="pair-code" title="Código de emparejamiento">
+                  <svg class="pair-code__ring" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle class="pair-code__ring-bg" cx="12" cy="12" r="9" />
+                    <circle
+                      class="pair-code__ring-fg"
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      [style.stroke-dasharray]="ringCircumference"
+                      [style.stroke-dashoffset]="codeRingOffset(row.notifier)"
+                    />
+                  </svg>
+                  <span class="pair-code__value">{{ row.notifier.accessCode }}</span>
+                </span>
+              }
+            </div>
             <yep-status-dot
               [level]="row.status.level"
               [detail]="
@@ -76,42 +94,63 @@
 
           @if (canManage()) {
             <div class="list-card__actions">
-              @if (row.notifier.active) {
-                <yep-button
-                  variant="ghost"
-                  size="sm"
-                  [loading]="actingId() === row.notifier.id"
-                  (clicked)="deactivate(row.notifier)"
-                >
-                  Desactivar
-                </yep-button>
-              } @else {
+              <!-- Activar / desactivar (interruptor) -->
+              <button
+                type="button"
+                class="switch"
+                role="switch"
+                [class.switch--on]="row.notifier.active"
+                [attr.aria-checked]="row.notifier.active"
+                [attr.aria-label]="row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'"
+                [title]="row.notifier.active ? 'Activo — toca para desactivar' : 'Inactivo — toca para activar'"
+                [disabled]="actingId() === row.notifier.id"
+                (click)="toggleActive(row.notifier)"
+              >
+                <span class="switch__thumb"></span>
+              </button>
+
+              @if (row.notifier.active && !row.notifier.pairedDevice && !isCodeVisible(row.notifier)) {
                 <yep-button
                   variant="secondary"
                   size="sm"
-                  [loading]="actingId() === row.notifier.id"
-                  (clicked)="activate(row.notifier)"
+                  [title]="'Emparejar'"
+                  [disabled]="actingId() === row.notifier.id"
+                  (clicked)="revealCode(row.notifier)"
                 >
-                  Activar
+                  <svg lucideLink aria-label="Emparejar"></svg>
                 </yep-button>
               }
+
+              <yep-button
+                variant="ghost"
+                size="sm"
+                [title]="'Editar'"
+                [disabled]="actingId() === row.notifier.id"
+                (clicked)="openEdit(row.notifier)"
+              >
+                <svg lucidePencil aria-label="Editar"></svg>
+              </yep-button>
+
               @if (row.notifier.pairedDevice) {
                 <yep-button
                   variant="ghost"
                   size="sm"
+                  [title]="'Desemparejar dispositivo'"
                   [loading]="actingId() === row.notifier.id"
                   (clicked)="unpair(row.notifier)"
                 >
-                  Desemparejar
+                  <svg lucideUnlink aria-label="Desemparejar"></svg>
                 </yep-button>
               }
+
               <yep-button
                 variant="danger"
                 size="sm"
+                [title]="'Eliminar'"
                 [loading]="actingId() === row.notifier.id"
                 (clicked)="remove(row.notifier)"
               >
-                Eliminar
+                <svg lucideTrash2 aria-label="Eliminar"></svg>
               </yep-button>
             </div>
           }
@@ -123,53 +162,107 @@
 
 <yep-modal
   [open]="modalOpen()"
-  title="Nuevo notificador"
-  subtitle="Configura el dispositivo que reportará los pagos de este negocio."
+  [title]="editingId() ? 'Editar notificador' : 'Nuevo notificador'"
+  subtitle="Selecciona las cuentas que este notificador va a monitorear. La configuración de cada banco se aplicará automáticamente."
   [loading]="creating()"
   [dirty]="form.dirty"
   (closeRequested)="closeModal()"
 >
-  <form [formGroup]="form" (ngSubmit)="create()" id="notifier-form" class="form-grid">
+  <form [formGroup]="form" (ngSubmit)="save()" id="notifier-form" class="form-grid">
+    <!-- Tipo de notificador (solo Teléfono activo) -->
+    @if (!editingId()) {
+      <div class="field">
+        <span class="field-label">Tipo de notificador</span>
+        <div class="kind-options">
+          @for (option of kindOptions; track option.value) {
+            <label
+              class="kind-option"
+              [class.kind-option--disabled]="option.disabled"
+            >
+              <input
+                type="radio"
+                formControlName="kind"
+                [value]="option.value"
+                [disabled]="option.disabled"
+              />
+              <span class="kind-option__body">
+                <span class="kind-option__label">
+                  {{ option.label }}
+                  @if (option.disabled) {
+                    <span class="badge-soon">Próximamente</span>
+                  }
+                </span>
+                <span class="kind-option__desc">{{ option.description }}</span>
+              </span>
+            </label>
+          }
+        </div>
+      </div>
+    }
+
     <yep-input
       formControlName="displayName"
-      label="Nombre visible"
+      label="Nombre del notificador"
       placeholder="Caja principal"
       [error]="isInvalid('displayName') ? 'Ingresa un nombre' : ''"
     />
 
-    <div class="form-grid form-grid--2">
-      <yep-input
-        formControlName="identifier"
-        label="Identificador (opcional)"
-        placeholder="3001234567 o correo"
-      />
-      <div class="field">
-        <label class="field-label" for="notifier-identifier-type">Tipo</label>
-        <select id="notifier-identifier-type" formControlName="identifierType">
-          <option value="phone">Teléfono</option>
-          <option value="email">Correo</option>
-        </select>
-      </div>
-    </div>
-
-    <yep-input
-      formControlName="bankIds"
-      label="Bancos vigilados"
-      placeholder="nequi, bancolombia"
-      hint="Separa varios con comas."
-    />
-
-    <div class="field">
-      <label class="field-label" for="notifier-packages">Paquetes de apps vigiladas</label>
-      <textarea id="notifier-packages" formControlName="watchedPackages" rows="3"></textarea>
-      <span class="field-error" style="color: var(--color-text-secondary)">
-        Un paquete por línea (Android).
+    <!-- Selector de cuentas bancarias -->
+    <div class="field full-field">
+      <span class="field-label">Cuentas a monitorear</span>
+      <span class="section-subtitle">
+        Este notificador puede monitorear varias cuentas. Los cambios se
+        sincronizarán con tu app móvil.
       </span>
+
+      @if (selectableAccounts().length === 0) {
+        <p class="section-subtitle">
+          No hay cuentas bancarias activas. Crea una cuenta primero para poder
+          monitorearla.
+        </p>
+      } @else {
+        <div class="account-picker">
+          @for (account of selectableAccounts(); track account.id) {
+            <label
+              class="account-option"
+              [class.account-option--disabled]="!isBankEligible(account)"
+            >
+              <input
+                type="checkbox"
+                [checked]="isSelected(account.id)"
+                [disabled]="!isBankEligible(account)"
+                (change)="toggleAccount(account.id, $any($event.target).checked)"
+              />
+              <span class="account-option__body">
+                <span class="account-option__title">
+                  {{ bankName(account) }} ·
+                  {{ account.displayName || ('****' + account.accountNumberLast4) }}
+                </span>
+                <span class="account-option__meta">
+                  ****{{ account.accountNumberLast4 }}
+                  @if (accountTypeLabel(account)) {
+                    · {{ accountTypeLabel(account) }}
+                  }
+                  · {{ account.isActive ? 'Activa' : 'Inactiva' }}
+                </span>
+                @if (!isBankEligible(account)) {
+                  <span class="field-error">
+                    Esta cuenta todavía no está disponible para monitoreo desde
+                    teléfono.
+                  </span>
+                }
+              </span>
+            </label>
+          }
+        </div>
+      }
     </div>
   </form>
 
   <ng-container modalFooter>
     <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()">Cancelar</yep-button>
-    <yep-button type="submit" [loading]="creating()" (clicked)="create()">Crear notificador</yep-button>
+    <yep-button type="submit" [loading]="creating()" (clicked)="save()">
+      {{ editingId() ? 'Guardar cambios' : 'Crear notificador' }}
+    </yep-button>
   </ng-container>
 </yep-modal>

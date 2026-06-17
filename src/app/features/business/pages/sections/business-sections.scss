@@ -100,10 +100,92 @@
   min-width: 0;
 }
 
+.list-card__titlerow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .list-card__title {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   margin: 0;
+}
+
+/* Código de emparejamiento con anillo de cuenta regresiva */
+.pair-code {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: 2px var(--space-3) 2px 2px;
+}
+
+.pair-code__ring {
+  height: 24px;
+  width: 24px;
+}
+
+.pair-code__ring-bg {
+  fill: none;
+  stroke: rgba(16, 42, 44, 0.15);
+  stroke-width: 3;
+}
+
+.pair-code__ring-fg {
+  fill: none;
+  stroke: var(--color-secondary);
+  stroke-linecap: round;
+  stroke-width: 3;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.pair-code__value {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.1em;
+}
+
+/* Interruptor (switch) activar/desactivar */
+.switch {
+  background: var(--color-border);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  flex: none;
+  height: 22px;
+  padding: 2px;
+  position: relative;
+  transition: background 150ms ease;
+  width: 40px;
+}
+
+.switch--on {
+  background: var(--color-primary);
+}
+
+.switch__thumb {
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: var(--shadow-xs);
+  display: block;
+  height: 18px;
+  transition: transform 150ms ease;
+  width: 18px;
+}
+
+.switch--on .switch__thumb {
+  transform: translateX(18px);
+}
+
+.switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .list-card__meta {
@@ -251,4 +333,106 @@
 
 .full-field {
   grid-column: 1 / -1;
+}
+
+/* Selector de tipo de notificador (radio buttons) */
+.kind-options {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 520px) {
+  .kind-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kind-option {
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.kind-option:has(input:checked) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.kind-option--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.kind-option__body {
+  display: grid;
+  gap: 2px;
+}
+
+.kind-option__label {
+  align-items: center;
+  display: flex;
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-2);
+}
+
+.kind-option__desc {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.badge-soon {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 0 var(--space-2);
+  text-transform: uppercase;
+}
+
+/* Selector de cuentas bancarias */
+.account-picker {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.account-option {
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.account-option:has(input:checked) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.account-option--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.account-option__body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-option__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.account-option__meta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }

@@ -91,12 +91,18 @@
 >
   <form [formGroup]="form" (ngSubmit)="create()" class="form-grid">
     <div class="form-grid form-grid--2">
-      <yep-input
-        formControlName="bankId"
-        label="Banco"
-        placeholder="bancolombia"
-        [error]="isInvalid('bankId') ? 'Requerido' : ''"
-      />
+      <div class="field">
+        <label class="field-label" for="account-bank">Banco</label>
+        <select id="account-bank" formControlName="bankId">
+          <option value="" disabled>Selecciona un banco</option>
+          @for (bank of banks(); track bank.code) {
+            <option [value]="bank.code">{{ bank.name }}</option>
+          }
+        </select>
+        @if (isInvalid('bankId')) {
+          <span class="field-error">Selecciona un banco</span>
+        }
+      </div>
       <yep-input
         formControlName="accountNumber"
         label="Número de cuenta"

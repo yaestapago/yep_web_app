@@ -21,7 +21,9 @@ import type {
   BankAccountType,
   BusinessLocation,
 } from '../../../../shared/models/bank-account.models';
+import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { BanksApiService } from '../../../banks/services/banks-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 @Component({
@@ -41,12 +43,14 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
 })
 export class BusinessAccountsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
+  private readonly banksApi = inject(BanksApiService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly bankAccounts = signal<BankAccount[]>([]);
+  readonly banks = signal<BankPickerEntry[]>([]);
   readonly locations = signal<BusinessLocation[]>([]);
   readonly selectedLocationIds = signal<string[]>([]);
   readonly loading = signal(false);
@@ -73,7 +77,23 @@ export class BusinessAccountsSection implements OnInit {
 
   ngOnInit(): void {
     this.loadLocations();
+    this.loadBanks();
     this.load();
+  }
+
+  loadBanks(): void {
+    this.banksApi
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.banks.set(response.banks),
+        error: () => this.banks.set([]),
+      });
+  }
+
+  /** Nombre del banco a partir de su código (para las tarjetas de la lista). */
+  bankName(bankId: string): string {
+    return this.banks().find((bank) => bank.code === bankId)?.name ?? bankId;
   }
 
   load(): void {
@@ -197,7 +217,8 @@ export class BusinessAccountsSection implements OnInit {
 
   title(bankAccount: BankAccount): string {
     return (
-      bankAccount.displayName || `${bankAccount.bankId} ****${bankAccount.accountNumberLast4}`
+      bankAccount.displayName ||
+      `${this.bankName(bankAccount.bankId)} ****${bankAccount.accountNumberLast4}`
     );
   }
 

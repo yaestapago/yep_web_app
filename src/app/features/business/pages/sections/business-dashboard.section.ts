@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -13,7 +13,8 @@ import {
   LucideActivity,
   LucideBanknote,
   LucideBell,
-  LucideLoaderCircle,
+  LucideInbox,
+  LucideListChecks,
   LucideRefreshCw,
   LucideShieldCheck,
   LucideTriangleAlert,
@@ -27,47 +28,52 @@ import type { Notifier } from '../../../../shared/models/notifier.models';
 import {
   NOTIFIER_STATUS_THRESHOLDS,
   computeNotifierStatus,
-  relativeFromMs,
-  type NotifierStatus,
-  type NotifierStatusLevel,
 } from '../../../../shared/utils/notifier-status';
+import { transactionCategory } from '../../../../shared/utils/transaction-status';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionEventsService } from '../../../transactions/services/transaction-events.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
-
-interface DayBar {
-  label: string;
-  total: number;
-  /** Alto relativo (0-100) respecto al día con mayor total. */
-  height: number;
-}
+import { DashboardChartsPanel } from '../../components/dashboard/dashboard-charts';
+import { DashboardEventsPanel } from '../../components/dashboard/dashboard-events';
+import {
+  DashboardStatusPanel,
+  type NotifierStatusRow,
+  type Semaphore,
+} from '../../components/dashboard/dashboard-status';
+import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard-transactions';
+import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
+import { VerifyTransactionModal } from '../../components/dashboard/verify-transaction-modal';
 
 /**
- * Panel de control del negocio (ruta canónica `/businesses/:businessId/dashboard`).
- * Consolida la operación diaria: estadísticas, gráficas con datos reales, estado
- * compacto de notificadores, transacciones y eventos recientes. La captura de
- * comprobantes está disponible globalmente desde el botón flotante de la app.
+ * Panel de control del negocio (`/businesses/:businessId/dashboard`). Pantalla
+ * operativa de un solo viewport: métricas + gráficas configurables, estado del
+ * sistema (semáforo + notificadores), eventos en lenguaje claro y tabla de
+ * transacciones con filtros, detalle y verificación. El scroll vive dentro de
+ * cada zona; nunca scrollea la página completa.
  */
 @Component({
   selector: 'app-business-dashboard-section',
   imports: [
     CurrencyPipe,
-    DatePipe,
-    PercentPipe,
     LucideActivity,
     LucideBanknote,
     LucideBell,
-    LucideLoaderCircle,
+    LucideInbox,
+    LucideListChecks,
     LucideRefreshCw,
     LucideShieldCheck,
     LucideTriangleAlert,
+    DashboardChartsPanel,
+    DashboardStatusPanel,
+    DashboardEventsPanel,
+    DashboardTransactionsPanel,
+    TransactionDetailModal,
+    VerifyTransactionModal,
   ],
   templateUrl: './business-dashboard.section.html',
-  // Comparte estilos genéricos (kpi, empty-state, loading-row…) con las demás
-  // secciones del negocio; los específicos del panel viven en su propio archivo.
-  styleUrls: ['./business-sections.scss', './business-dashboard.section.scss'],
+  styleUrl: './business-dashboard.section.scss',
 })
 export class BusinessDashboardSection implements OnInit {
   private readonly transactionsApi = inject(TransactionsApiService);
@@ -81,6 +87,7 @@ export class BusinessDashboardSection implements OnInit {
 
   readonly account = computed(() => this.session.activeMembership()?.businessAccount ?? null);
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
+  readonly businessId = computed(() => this.session.activeBusinessAccountId());
 
   // --- Datos ---
   readonly transactions = signal<PaymentTransaction[]>([]);
@@ -101,6 +108,9 @@ export class BusinessDashboardSection implements OnInit {
   /** Tick para recalcular el estado relativo de notificadores sin recargar. */
   private readonly now = signal(Date.now());
 
+  // --- Operación (verificación) ---
+  readonly verifyTarget = signal<PaymentTransaction | null>(null);
+  readonly detailTarget = signal<PaymentTransaction | null>(null);
   readonly verifyingId = signal<string | null>(null);
   readonly operationError = signal('');
   readonly operationSuccess = signal('');
@@ -115,24 +125,30 @@ export class BusinessDashboardSection implements OnInit {
     this.loadSourceEvents();
   });
 
-  // --- Estadísticas ---
+  // --- Métricas (7 KPIs) ---
   readonly totalAmount = computed(() =>
     this.transactions().reduce((total, transaction) => total + transaction.amount, 0),
   );
   readonly paidCount = computed(
     () => this.transactions().filter((t) => t.verification.canBeConsideredPaid).length,
   );
-  readonly openReviewCount = computed(
+  readonly reviewCount = computed(
+    () => this.transactions().filter((t) => t.status === 'NEEDS_REVIEW').length,
+  );
+  readonly receivedCount = computed(() => this.transactions().length);
+  readonly pendingCount = computed(
     () =>
       this.transactions().filter((t) =>
-        ['PENDING_VERIFICATION', 'NEEDS_REVIEW'].includes(t.status),
+        ['CREATED', 'PENDING_VERIFICATION'].includes(t.status),
       ).length,
   );
+  readonly rejectedCount = computed(
+    () => this.transactions().filter((t) => transactionCategory(t.status) === 'rechazada').length,
+  );
   readonly eventsCount = computed(() => this.sourceEvents().length);
-  readonly activeNotifierCount = computed(() => this.notifiers().filter((n) => n.active).length);
 
-  // --- Estado de notificadores (semáforo compacto) ---
-  readonly notifierStatuses = computed<Array<{ notifier: Notifier; status: NotifierStatus }>>(() => {
+  // --- Estado de notificadores ---
+  readonly notifierRows = computed<NotifierStatusRow[]>(() => {
     const now = this.now();
     return this.notifiers().map((notifier) => ({
       notifier,
@@ -140,68 +156,37 @@ export class BusinessDashboardSection implements OnInit {
     }));
   });
 
-  readonly notifierCounts = computed(() => {
-    const base: Record<NotifierStatusLevel, number> = {
-      online: 0,
-      delayed: 0,
-      offline: 0,
-      unknown: 0,
-    };
-    for (const { status } of this.notifierStatuses()) {
-      base[status.level] += 1;
-    }
-    return base;
-  });
+  // --- Semáforo global ---
+  readonly semaphore = computed<Semaphore>(() => {
+    const rejected = this.rejectedCount();
+    const failedEvents = this.sourceEvents().filter((e) => e.status === 'failed').length;
+    const offline = this.notifierRows().filter((r) => r.status.level === 'offline').length;
+    const pending = this.pendingCount() + this.reviewCount();
+    const delayed = this.notifierRows().filter(
+      (r) => r.status.level === 'delayed' || r.status.level === 'unknown',
+    ).length;
 
-  /** Disponibilidad: notificadores en línea sobre el total. */
-  readonly availability = computed(() => {
-    const total = this.notifiers().length;
-    return total === 0 ? 0 : this.notifierCounts().online / total;
-  });
-
-  // --- Gráfica: capturado por día (últimos 7 días), con datos reales ---
-  readonly dailyTotals = computed<DayBar[]>(() => {
-    const now = this.now();
-    const days: DayBar[] = [];
-    const buckets = new Map<string, number>();
-
-    for (const transaction of this.transactions()) {
-      const date = new Date(transaction.transactionDate);
-      if (Number.isNaN(date.getTime())) {
-        continue;
-      }
-      const key = this.dayKey(date);
-      buckets.set(key, (buckets.get(key) ?? 0) + transaction.amount);
+    if (rejected > 0 || failedEvents > 0 || offline > 0) {
+      const reasons: string[] = [];
+      if (rejected > 0) reasons.push(`${rejected} rechazada(s)`);
+      if (failedEvents > 0) reasons.push(`${failedEvents} evento(s) con error`);
+      if (offline > 0) reasons.push(`${offline} notificador(es) fuera de línea`);
+      return { level: 'red', label: 'Atención requerida', detail: reasons.join(' · ') };
     }
 
-    for (let offset = 6; offset >= 0; offset -= 1) {
-      const date = new Date(now - offset * 24 * 60 * 60 * 1000);
-      const key = this.dayKey(date);
-      days.push({
-        label: date.toLocaleDateString('es', { weekday: 'short' }),
-        total: buckets.get(key) ?? 0,
-        height: 0,
-      });
+    if (pending > 0 || delayed > 0) {
+      const reasons: string[] = [];
+      if (pending > 0) reasons.push(`${pending} pago(s) por revisar`);
+      if (delayed > 0) reasons.push(`${delayed} notificador(es) con retraso`);
+      return { level: 'yellow', label: 'Con pendientes', detail: reasons.join(' · ') };
     }
 
-    const max = Math.max(...days.map((day) => day.total), 0);
-    return days.map((day) => ({
-      ...day,
-      height: max === 0 ? 0 : Math.round((day.total / max) * 100),
-    }));
+    return { level: 'green', label: 'Operación normal', detail: 'Sin pendientes ni errores.' };
   });
-
-  readonly hasChartData = computed(() => this.dailyTotals().some((day) => day.total > 0));
-
-  /** Transacciones recientes (las 6 más recientes). */
-  readonly recentTransactions = computed(() => this.transactions().slice(0, 6));
-  /** Eventos recientes (los 6 más recientes). */
-  readonly recentEvents = computed(() => this.sourceEvents().slice(0, 6));
 
   ngOnInit(): void {
     this.refresh();
 
-    // Refresco del tick para recalcular el semáforo de notificadores.
     interval(this.thresholds.refreshIntervalMs)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.now.set(Date.now()));
@@ -270,19 +255,27 @@ export class BusinessDashboardSection implements OnInit {
       });
   }
 
-  // --- Estado de notificadores: helpers de accesibilidad ---
+  // --- Detalle / verificación -------------------------------------------------
 
-  notifierName(notifier: Notifier): string {
-    return notifier.displayName?.trim() || 'Notificador sin nombre';
+  openDetail(transaction: PaymentTransaction): void {
+    this.detailTarget.set(transaction);
   }
 
-  notifierAriaLabel(name: string, status: NotifierStatus): string {
-    return status.level === 'unknown'
-      ? `${name}: sin datos`
-      : `${name}: ${status.label}`;
+  closeDetail(): void {
+    this.detailTarget.set(null);
   }
 
-  runVerification(transaction: PaymentTransaction): void {
+  askVerify(transaction: PaymentTransaction): void {
+    this.operationError.set('');
+    this.operationSuccess.set('');
+    this.verifyTarget.set(transaction);
+  }
+
+  cancelVerify(): void {
+    this.verifyTarget.set(null);
+  }
+
+  confirmVerify(transaction: PaymentTransaction): void {
     this.verifyingId.set(transaction.id);
     this.operationError.set('');
     this.operationSuccess.set('');
@@ -300,25 +293,10 @@ export class BusinessDashboardSection implements OnInit {
               current.id === response.transaction.id ? response.transaction : current,
             ),
           );
-          this.operationSuccess.set('Verificación ejecutada.');
+          this.verifyTarget.set(null);
+          this.operationSuccess.set('Verificación registrada.');
         },
         error: (error) => this.operationError.set(httpErrorMessage(error)),
       });
-  }
-
-  eventTitle(event: SourceEvent): string {
-    return event.normalized?.reference ?? event.externalId ?? event.sourceType;
-  }
-
-  eventAmount(event: SourceEvent): number | null {
-    return event.normalized?.amount ?? null;
-  }
-
-  relative(status: NotifierStatus): string {
-    return relativeFromMs(status.sinceMs);
-  }
-
-  private dayKey(date: Date): string {
-    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }
 }
