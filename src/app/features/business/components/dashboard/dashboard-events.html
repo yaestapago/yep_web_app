@@ -57,31 +57,48 @@
     } @else {
       <ul class="events">
         @for (event of filtered(); track event.id) {
-          <li class="event event--{{ statusTone(event.status) }}">
-            <span class="event__icon" aria-hidden="true">
-              @switch (iconFor(event.sourceType)) {
-                @case ('message') { <svg lucideMessageSquare></svg> }
-                @case ('file') { <svg lucideFileText></svg> }
-                @default { <svg lucideBanknote></svg> }
-              }
-            </span>
+          <li
+            class="event event--{{ statusTone(event.status) }}"
+            [class.event--unread]="isUnread(event)"
+            (click)="markSeen.emit(event.id)"
+          >
             <div class="event__main">
               <div class="event__top">
                 <span class="badge badge--{{ statusTone(event.status) }}">{{ statusLabel(event.status) }}</span>
-                <span class="event__type">{{ sourceLabel(event.sourceType) }}</span>
-                <time class="event__time">{{ event.createdAt | date: 'short' }}</time>
+                <span class="event__type" [attr.title]="sourceLabel(event.sourceType)">
+                  @switch (event.sourceType) {
+                    @case ('NOTIFIER_APP') { <svg lucideSmartphone aria-hidden="true"></svg> }
+                    @default { {{ sourceLabel(event.sourceType) }} }
+                  }
+                </span>
+                @if (platformLabel(event)) {
+                  <span class="event__platform">{{ platformLabel(event) }}</span>
+                }
               </div>
               <p class="event__desc">{{ description(event) }}</p>
-              @if (event.normalized?.reference || event.normalized?.amount) {
-                <div class="event__meta">
-                  @if (event.normalized?.reference) {
-                    <span>Ref. {{ event.normalized?.reference }}</span>
+              @if (accountName(event) || event.normalized?.reference) {
+                <div class="event__source">
+                  @if (accountName(event)) {
+                    <span class="event__account">{{ accountName(event) }}</span>
                   }
-                  @if (event.normalized?.amount) {
-                    <span>{{ event.normalized?.amount | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+                  @if (event.normalized?.reference) {
+                    <span class="event__ref">Ref. {{ event.normalized?.reference }}</span>
                   }
                 </div>
               }
+            </div>
+            <div class="event__aside">
+              @if (event.normalized?.amount) {
+                <span class="event__amount">{{ event.normalized?.amount | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+              }
+              <div class="event__aside-foot">
+                <time class="event__time">{{ event.createdAt | date: 'short' }}</time>
+                @if (isUnread(event)) {
+                  <span class="event__bell" aria-label="Nuevo" title="Nuevo">
+                    <svg lucideBell aria-hidden="true"></svg>
+                  </span>
+                }
+              </div>
             </div>
           </li>
         }

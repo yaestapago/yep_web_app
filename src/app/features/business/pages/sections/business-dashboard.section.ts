@@ -15,16 +15,17 @@ import {
   LucideBell,
   LucideInbox,
   LucideListChecks,
-  LucideRefreshCw,
   LucideShieldCheck,
   LucideTriangleAlert,
 } from '@lucide/angular';
 import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { SourceEvent } from '../../../../shared/models/source-event.models';
 import { PaymentTransaction } from '../../../../shared/models/transaction.models';
 import type { Notifier } from '../../../../shared/models/notifier.models';
+import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 import {
   NOTIFIER_STATUS_THRESHOLDS,
   computeNotifierStatus,
@@ -33,6 +34,7 @@ import { transactionCategory } from '../../../../shared/utils/transaction-status
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
+import { SourceEventsStreamService } from '../../../source-events/services/source-events-stream.service';
 import { TransactionEventsService } from '../../../transactions/services/transaction-events.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 import { DashboardChartsPanel } from '../../components/dashboard/dashboard-charts';
@@ -62,7 +64,6 @@ import { VerifyTransactionModal } from '../../components/dashboard/verify-transa
     LucideBell,
     LucideInbox,
     LucideListChecks,
-    LucideRefreshCw,
     LucideShieldCheck,
     LucideTriangleAlert,
     DashboardChartsPanel,
@@ -78,7 +79,9 @@ import { VerifyTransactionModal } from '../../components/dashboard/verify-transa
 export class BusinessDashboardSection implements OnInit {
   private readonly transactionsApi = inject(TransactionsApiService);
   private readonly sourceEventsApi = inject(SourceEventsApiService);
+  private readonly sourceEventsStream = inject(SourceEventsStreamService);
   private readonly notifiersApi = inject(NotifiersApiService);
+  private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly transactionEvents = inject(TransactionEventsService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
@@ -93,6 +96,15 @@ export class BusinessDashboardSection implements OnInit {
   readonly transactions = signal<PaymentTransaction[]>([]);
   readonly sourceEvents = signal<SourceEvent[]>([]);
   readonly notifiers = signal<Notifier[]>([]);
+
+  /** IDs de eventos llegados en vivo y aún no vistos (estilo bandeja). */
+  readonly unreadEventIds = signal<Set<string>>(new Set());
+
+  /** Cuentas bancarias del negocio, para resolver nombre/plataforma en eventos. */
+  readonly bankAccounts = signal<BankAccount[]>([]);
+  readonly bankAccountsById = computed(
+    () => new Map(this.bankAccounts().map((account) => [account.id, account])),
+  );
 
   readonly loadingTransactions = signal(false);
   readonly loadingEvents = signal(false);
@@ -186,10 +198,57 @@ export class BusinessDashboardSection implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+    this.loadBankAccounts();
 
     interval(this.thresholds.refreshIntervalMs)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.now.set(Date.now()));
+
+    // Eventos en vivo (SSE): aparecen al instante en la lista, sin recargar.
+    this.sourceEventsStream.events$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.onLiveEvent(event));
+  }
+
+  /** Inserta/actualiza un evento llegado en vivo y lo marca como no leído. */
+  private onLiveEvent(event: SourceEvent): void {
+    this.sourceEvents.update((events) => {
+      const index = events.findIndex((current) => current.id === event.id);
+      if (index >= 0) {
+        const next = [...events];
+        next[index] = event;
+        return next;
+      }
+      return [event, ...events];
+    });
+    this.unreadEventIds.update((ids) => new Set(ids).add(event.id));
+    this.now.set(Date.now());
+  }
+
+  /** Marca un evento como visto (al abrirlo en la lista, estilo bandeja). */
+  markEventSeen(eventId: string): void {
+    if (!this.unreadEventIds().has(eventId)) {
+      return;
+    }
+    this.unreadEventIds.update((ids) => {
+      const next = new Set(ids);
+      next.delete(eventId);
+      return next;
+    });
+  }
+
+  loadBankAccounts(): void {
+    const businessId = this.businessId();
+    if (!businessId) {
+      return;
+    }
+    this.businessApi
+      .listBankAccounts(businessId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.bankAccounts.set(response.bankAccounts),
+        error: () => this.bankAccounts.set([]),
+      });
   }
 
   refresh(): void {

@@ -23,6 +23,8 @@ export interface SourceEvent {
   id: string;
   accountId: string;
   sourceType: SourceEventType;
+  notifierId?: string;
+  reportedBankAccountId?: string;
   externalId?: string;
   rawPayload: Record<string, unknown>;
   normalized?: SourceEventNormalized;

@@ -1,15 +1,22 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, computed, input as defineInput, signal } from '@angular/core';
 import {
-  LucideBanknote,
+  Component,
+  computed,
+  input as defineInput,
+  output,
+  signal,
+} from '@angular/core';
+import {
+  LucideBell,
   LucideCircleCheck,
   LucideFileText,
   LucideLoaderCircle,
-  LucideMessageSquare,
   LucideSearch,
+  LucideSmartphone,
   LucideTriangleAlert,
 } from '@lucide/angular';
 
+import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type {
   SourceEvent,
   SourceEventStatus,
@@ -62,12 +69,12 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
   imports: [
     CurrencyPipe,
     DatePipe,
-    LucideBanknote,
+    LucideBell,
     LucideCircleCheck,
     LucideFileText,
     LucideLoaderCircle,
-    LucideMessageSquare,
     LucideSearch,
+    LucideSmartphone,
     LucideTriangleAlert,
   ],
   templateUrl: './dashboard-events.html',
@@ -77,6 +84,12 @@ export class DashboardEventsPanel {
   readonly events = defineInput.required<SourceEvent[]>();
   readonly loading = defineInput(false);
   readonly error = defineInput('');
+  /** IDs llegados en vivo y aún no vistos (resaltado estilo bandeja). */
+  readonly unreadIds = defineInput<Set<string>>(new Set());
+  /** Catálogo de cuentas bancarias por id, para mostrar nombre/plataforma. */
+  readonly bankAccounts = defineInput<Map<string, BankAccount>>(new Map());
+  /** Emite el id del evento que el usuario marcó como leído (al abrirlo). */
+  readonly markSeen = output<string>();
 
   readonly search = signal('');
   readonly typeFilter = signal<string>('');
@@ -137,6 +150,31 @@ export class DashboardEventsPanel {
     });
   });
 
+  isUnread(event: SourceEvent): boolean {
+    return this.unreadIds().has(event.id);
+  }
+
+  /** Plataforma/banco del evento (Nequi, Bancolombia…) desde el normalizado. */
+  platformLabel(event: SourceEvent): string {
+    const bankId = event.normalized?.bankId;
+    if (!bankId) {
+      return '';
+    }
+    return bankId.charAt(0).toUpperCase() + bankId.slice(1);
+  }
+
+  /** Nombre de la cuenta bancaria asociada (o sus últimos 4 dígitos). */
+  accountName(event: SourceEvent): string {
+    if (!event.reportedBankAccountId) {
+      return '';
+    }
+    const account = this.bankAccounts().get(event.reportedBankAccountId);
+    if (!account) {
+      return '';
+    }
+    return account.displayName?.trim() || `****${account.accountNumberLast4}`;
+  }
+
   sourceLabel(type: SourceEventType): string {
     return SOURCE_LABELS[type] ?? type;
   }
@@ -149,9 +187,31 @@ export class DashboardEventsPanel {
     return STATUS_TONES[status] ?? 'neutral';
   }
 
+  /**
+   * Texto crudo que envió la app notificadora (título + cuerpo de la push),
+   * para mostrar exactamente lo que llegó al teléfono. Vacío si no aplica.
+   */
+  private notifierText(event: SourceEvent): string {
+    const notification = event.rawPayload?.['notification'] as
+      | { title?: unknown; text?: unknown; bigText?: unknown }
+      | undefined;
+    if (!notification) {
+      return '';
+    }
+    const parts = [notification.title, notification.text, notification.bigText]
+      .map((part) => (typeof part === 'string' ? part.trim() : ''))
+      .filter((part) => part.length > 0);
+    return [...new Set(parts)].join(' — ');
+  }
+
   /** Traduce el evento a una frase clara para el usuario. */
   description(event: SourceEvent): string {
-    const base = SOURCE_PHRASES[event.sourceType] ?? 'Se registró un evento';
+    // Para la app notificadora mostramos el texto real de la notificación; el
+    // resto de fuentes conservan su frase genérica.
+    const base =
+      (event.sourceType === 'NOTIFIER_APP' ? this.notifierText(event) : '') ||
+      SOURCE_PHRASES[event.sourceType] ||
+      'Se registró un evento';
     if (event.status === 'failed') {
       return `${base}, pero no pudo procesarse. Requiere revisión manual.`;
     }
@@ -167,16 +227,7 @@ export class DashboardEventsPanel {
     if (event.status === 'processing') {
       return `${base}. Se está procesando.`;
     }
-    return `${base}.`;
-  }
-
-  iconFor(type: SourceEventType): 'message' | 'bank' | 'file' {
-    if (type === 'WHATSAPP_INBOUND') {
-      return 'message';
-    }
-    if (type === 'OCR_UPLOAD' || type === 'MANUAL_ENTRY') {
-      return 'file';
-    }
-    return 'bank';
+    // Evita duplicar signos si el texto crudo ya termina en puntuación.
+    return /[.!?…]$/.test(base) ? base : `${base}.`;
   }
 }

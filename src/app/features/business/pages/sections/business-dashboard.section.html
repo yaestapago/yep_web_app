@@ -1,31 +1,17 @@
 <div class="panel">
-  <!-- Barra compacta: negocio + estado + actualizar -->
-  <header class="panel-bar">
-    <div class="panel-bar__heading">
-      <p class="panel-bar__eyebrow">Panel de control</p>
-      <h2 class="panel-bar__title">{{ businessName() }}</h2>
+  <!-- Feedback de operaciones (verificación); solo aparece cuando hay mensaje -->
+  @if (operationSuccess() || operationError()) {
+    <div class="op-banner">
+      @if (operationSuccess()) {
+        <span class="op-msg op-msg--ok" role="status">{{ operationSuccess() }}</span>
+      }
+      @if (operationError()) {
+        <span class="op-msg op-msg--err" role="alert">
+          <svg lucideTriangleAlert aria-hidden="true"></svg> {{ operationError() }}
+        </span>
+      }
     </div>
-
-    @if (operationSuccess()) {
-      <span class="op-msg op-msg--ok" role="status">{{ operationSuccess() }}</span>
-    }
-    @if (operationError()) {
-      <span class="op-msg op-msg--err" role="alert">
-        <svg lucideTriangleAlert aria-hidden="true"></svg> {{ operationError() }}
-      </span>
-    }
-
-    <button
-      type="button"
-      class="refresh-btn"
-      (click)="refresh()"
-      [disabled]="loadingAny()"
-      aria-label="Actualizar panel"
-    >
-      <svg [class.spin]="loadingAny()" lucideRefreshCw aria-hidden="true"></svg>
-      <span>Actualizar</span>
-    </button>
-  </header>
+  }
 
   <!-- KPIs (fila compacta) -->
   <div class="kpi-row" aria-label="Métricas operativas">
@@ -79,6 +65,9 @@
       [events]="sourceEvents()"
       [loading]="loadingEvents()"
       [error]="eventsError()"
+      [unreadIds]="unreadEventIds()"
+      [bankAccounts]="bankAccountsById()"
+      (markSeen)="markEventSeen($event)"
     />
     <app-dashboard-transactions
       class="grid__transactions"
