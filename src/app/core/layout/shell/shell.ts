@@ -5,11 +5,14 @@ import { LucideFileScan, LucideMenu } from '@lucide/angular';
 import { filter, startWith } from 'rxjs';
 
 import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
+import { Button } from '../../../shared/ui/button/button';
+import { Modal } from '../../../shared/ui/modal/modal';
+import { AuthSessionService } from '../../services/auth-session.service';
 import { Sidebar } from '../sidebar/sidebar';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, LucideFileScan, LucideMenu],
+  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, LucideFileScan, LucideMenu],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -17,10 +20,14 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly session = inject(AuthSessionService);
 
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);
   readonly receiptCaptureOpen = signal(false);
+
+  /** Controla el modal de confirmación de cierre de sesión. */
+  readonly logoutModalOpen = signal(false);
 
   /**
    * Modo inmersivo: la ruta activa pidió ocupar el viewport completo (vía
@@ -59,5 +66,23 @@ export class Shell {
 
   closeReceiptCapture(): void {
     this.receiptCaptureOpen.set(false);
+  }
+
+  /** Abre la confirmación de cierre de sesión solicitada desde el sidebar. */
+  openLogout(): void {
+    this.logoutModalOpen.set(true);
+  }
+
+  /** Cierra el modal sin cerrar sesión. */
+  cancelLogout(): void {
+    this.logoutModalOpen.set(false);
+  }
+
+  /** Confirma y ejecuta el cierre de sesión. */
+  confirmLogout(): void {
+    this.logoutModalOpen.set(false);
+    this.closeDrawer();
+    this.session.clearSession();
+    void this.router.navigateByUrl('/login');
   }
 }

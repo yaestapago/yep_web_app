@@ -46,6 +46,9 @@ export class Sidebar {
   /** Emitido al navegar o cerrar sesión para que el shell cierre el drawer en móvil. */
   readonly navigated = output<void>();
 
+  /** Solicita cerrar sesión; el shell muestra la confirmación y ejecuta el cierre. */
+  readonly logoutRequested = output<void>();
+
   readonly user = this.session.user;
   readonly isDark = this.theme.isDark;
   readonly memberships = this.session.approvedMemberships;
@@ -155,9 +158,8 @@ export class Sidebar {
     return this.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
   }
 
-  logout(): void {
-    this.session.clearSession();
-    this.navigated.emit();
-    void this.router.navigateByUrl('/login');
+  /** Pide al shell que confirme y ejecute el cierre de sesión. */
+  requestLogout(): void {
+    this.logoutRequested.emit();
   }
 }

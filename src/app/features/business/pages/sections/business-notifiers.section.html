@@ -86,10 +86,22 @@
                   : 'sin heartbeat'
               "
             />
-            <span class="list-card__meta">
-              {{ deviceLabel(row.notifier) }} ·
-              {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
-            </span>
+            @if (usesPairing(row.notifier)) {
+              <span class="list-card__meta">
+                {{ deviceLabel(row.notifier) }} ·
+                {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            } @else {
+              <span class="list-card__meta">
+                {{ row.notifier.identifier }} ·
+                {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
+              </span>
+              @if (row.notifier.inboundAlias) {
+                <span class="list-card__meta">
+                  Reenviar a: {{ row.notifier.inboundAlias }}
+                </span>
+              }
+            }
           </div>
 
           @if (canManage()) {
@@ -109,7 +121,7 @@
                 <span class="switch__thumb"></span>
               </button>
 
-              @if (row.notifier.active && !row.notifier.pairedDevice && !isCodeVisible(row.notifier)) {
+              @if (usesPairing(row.notifier) && row.notifier.active && !row.notifier.pairedDevice && !isCodeVisible(row.notifier)) {
                 <yep-button
                   variant="secondary"
                   size="sm"
@@ -163,7 +175,7 @@
 <yep-modal
   [open]="modalOpen()"
   [title]="editingId() ? 'Editar notificador' : 'Nuevo notificador'"
-  subtitle="Selecciona las cuentas que este notificador va a monitorear. La configuración de cada banco se aplicará automáticamente."
+  [subtitle]="modalSubtitle()"
   [loading]="creating()"
   [dirty]="form.dirty"
   (closeRequested)="closeModal()"
@@ -174,7 +186,7 @@
       <div class="field">
         <span class="field-label">Tipo de notificador</span>
         <div class="kind-options">
-          @for (option of kindOptions; track option.value) {
+          @for (option of kindOptions(); track option.value) {
             <label
               class="kind-option"
               [class.kind-option--disabled]="option.disabled"
@@ -188,8 +200,8 @@
               <span class="kind-option__body">
                 <span class="kind-option__label">
                   {{ option.label }}
-                  @if (option.disabled) {
-                    <span class="badge-soon">Próximamente</span>
+                  @if (option.badge) {
+                    <span class="badge-soon">{{ option.badge }}</span>
                   }
                 </span>
                 <span class="kind-option__desc">{{ option.description }}</span>
@@ -207,12 +219,34 @@
       [error]="isInvalid('displayName') ? 'Ingresa un nombre' : ''"
     />
 
+    <!-- Correo remitente (solo notificadores de correo) -->
+    @if (isEmailKind()) {
+      <yep-input
+        formControlName="senderEmail"
+        label="Correo remitente"
+        placeholder="alertas@tubanco.com"
+        type="email"
+        [error]="isInvalid('senderEmail') ? 'Ingresa un correo válido' : ''"
+      />
+      <p class="section-subtitle full-field">
+        Registra el correo desde el que reenviarás las notificaciones de tu
+        banco. Tras crearlo te daremos un alias al que debes reenviarlas.
+      </p>
+    }
+
     <!-- Selector de cuentas bancarias -->
     <div class="field full-field">
-      <span class="field-label">Cuentas a monitorear</span>
+      <span class="field-label">
+        {{ isEmailKind() ? 'Cuenta bancaria del correo' : 'Cuentas a monitorear' }}
+      </span>
       <span class="section-subtitle">
-        Este notificador puede monitorear varias cuentas. Los cambios se
-        sincronizarán con tu app móvil.
+        @if (isEmailKind()) {
+          Selecciona la cuenta a la que llegan estos correos. Solo se permiten
+          cuentas de bancos compatibles ({{ emailEligibleBankNames().join(', ') || 'Bancolombia' }}).
+        } @else {
+          Este notificador puede monitorear varias cuentas. Los cambios se
+          sincronizarán con tu app móvil.
+        }
       </span>
 
       @if (selectableAccounts().length === 0) {
@@ -247,8 +281,7 @@
                 </span>
                 @if (!isBankEligible(account)) {
                   <span class="field-error">
-                    Esta cuenta todavía no está disponible para monitoreo desde
-                    teléfono.
+                    {{ ineligibleReason() }}
                   </span>
                 }
               </span>

@@ -2,28 +2,191 @@
   display: contents;
 }
 
-.capture-grid {
-  display: grid;
-  gap: var(--space-5);
-  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
-.capture-ocr,
+/* ---------- Paso 1: captura con cámara ---------- */
+
+.capture-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.camera-frame {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: center;
+  max-height: 46vh;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.camera-frame--error {
+  background: var(--color-surface);
+}
+
+.camera-video {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.camera-overlay {
+  align-items: center;
+  background: rgba(8, 15, 20, 0.62);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-5);
+  position: absolute;
+  text-align: center;
+}
+
+.camera-overlay--message {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.camera-overlay p {
+  font-size: var(--font-size-sm);
+  margin: 0;
+  max-width: 32ch;
+}
+
+.camera-overlay svg {
+  height: 32px;
+  width: 32px;
+}
+
+.capture-controls {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.shutter-btn {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-pill, 999px);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: var(--control-height-lg, 52px);
+  padding: 0 var(--space-6);
+  width: 100%;
+}
+
+.shutter-btn svg {
+  height: 20px;
+  width: 20px;
+}
+
+.attach-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  gap: var(--space-2);
+  justify-content: center;
+  padding: var(--space-1) var(--space-2);
+}
+
+.attach-btn:hover:not(:disabled) {
+  color: var(--color-text-primary);
+}
+
+.attach-btn svg {
+  height: 14px;
+  width: 14px;
+}
+
+/* ---------- Paso 2: revisión y formulario ---------- */
+
+.review-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.review-summary {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3);
+}
+
+.review-thumb {
+  border-radius: var(--radius-md);
+  flex: 0 0 auto;
+  height: 56px;
+  object-fit: cover;
+  width: 56px;
+}
+
+.review-meta {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  min-width: 0;
+}
+
+.review-meta dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.review-meta dd {
+  font-size: var(--font-size-sm);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .capture-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.file-control,
 .field {
   display: grid;
   gap: var(--space-1);
-}
-
-.field-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
 }
 
 .form-grid {
@@ -42,8 +205,7 @@
   grid-column: 1 / -1;
 }
 
-.capture-form input,
-.file-control input {
+.capture-form input {
   background: var(--color-input-bg, var(--color-background));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -61,16 +223,18 @@
 
 .capture-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-3);
 }
 
-.primary-btn,
-.secondary-btn {
+.primary-btn {
   align-items: center;
+  background: var(--color-primary);
+  border: 0;
   border-radius: var(--radius-md);
+  color: #ffffff;
   cursor: pointer;
   display: inline-flex;
+  flex: 1 1 auto;
   font: inherit;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -80,20 +244,9 @@
   padding: 0 var(--space-4);
 }
 
-.primary-btn {
-  background: var(--color-primary);
-  border: 0;
-  color: #ffffff;
-}
-
-.secondary-btn {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.secondary-btn:hover {
-  background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+.primary-btn svg {
+  height: 16px;
+  width: 16px;
 }
 
 button:disabled {
@@ -101,40 +254,7 @@ button:disabled {
   opacity: 0.65;
 }
 
-.primary-btn svg,
-.secondary-btn svg {
-  height: 16px;
-  width: 16px;
-}
-
-.ocr-result {
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--space-3);
-}
-
-.ocr-result h3 {
-  font-size: var(--font-size-sm);
-  margin: 0 0 var(--space-2);
-}
-
-.ocr-result dl {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.ocr-result dt {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-}
-
-.ocr-result dd {
-  font-size: var(--font-size-sm);
-  margin: 0;
-  overflow-wrap: anywhere;
-}
+/* ---------- Estados ---------- */
 
 .state-error,
 .state-success {
@@ -173,8 +293,11 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
-  .capture-grid,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .camera-frame {
+    max-height: 40vh;
   }
 }

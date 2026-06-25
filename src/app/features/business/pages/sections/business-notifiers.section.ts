@@ -7,7 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   LucideLink,
@@ -27,7 +27,11 @@ import { Modal } from '../../../../shared/ui/modal/modal';
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
-import type { Notifier, NotifierKind } from '../../../../shared/models/notifier.models';
+import type {
+  Notifier,
+  NotifierKind,
+  NotifierType,
+} from '../../../../shared/models/notifier.models';
 import {
   NOTIFIER_STATUS_THRESHOLDS,
   computeNotifierStatus,
@@ -45,6 +49,8 @@ interface NotifierKindOption {
   label: string;
   description: string;
   disabled: boolean;
+  /** Etiqueta corta junto al nombre cuando la opción no está disponible. */
+  badge?: string;
 }
 
 @Component({
@@ -90,27 +96,38 @@ export class BusinessNotifiersSection implements OnInit {
   readonly success = signal('');
   readonly modalOpen = signal(false);
 
-  /** Opciones de tipo. Solo Teléfono está activo; el resto, "Próximamente". */
-  readonly kindOptions: NotifierKindOption[] = [
-    {
-      value: 'phone',
-      label: 'Teléfono',
-      description: 'Recibe pagos desde la app móvil emparejada.',
-      disabled: false,
-    },
-    {
-      value: 'email',
-      label: 'Correo',
-      description: 'Próximamente',
-      disabled: true,
-    },
-    {
-      value: 'desktop',
-      label: 'Desktop',
-      description: 'Próximamente',
-      disabled: true,
-    },
-  ];
+  /**
+   * Opciones de tipo mostradas como radio buttons al crear un notificador.
+   * "Correo" solo está disponible si el dueño tiene al menos una cuenta de un
+   * banco que lo permita (hoy, Bancolombia); en el futuro pueden ser otros.
+   */
+  readonly kindOptions = computed<NotifierKindOption[]>(() => {
+    const emailDisabled = !this.hasEmailEligibleAccount();
+    const eligibleNames = this.emailEligibleBankNames();
+    return [
+      {
+        value: 'phone',
+        label: 'Teléfono',
+        description: 'Recibe pagos desde la app móvil emparejada.',
+        disabled: false,
+      },
+      {
+        value: 'desktop',
+        label: 'Escritorio',
+        description: 'Recibe pagos desde la app de escritorio (Vínculo con Windows).',
+        disabled: false,
+      },
+      {
+        value: 'email',
+        label: 'Correo',
+        description: emailDisabled
+          ? `Necesitas una cuenta de: ${eligibleNames.join(', ') || 'un banco compatible'}.`
+          : 'Reenvía los correos del banco a un alias y los registramos.',
+        disabled: emailDisabled,
+        badge: emailDisabled ? 'Requiere cuenta compatible' : undefined,
+      },
+    ];
+  });
 
   /** Tick para recalcular el estado relativo sin recargar la página. */
   private readonly now = signal(Date.now());
@@ -137,6 +154,25 @@ export class BusinessNotifiersSection implements OnInit {
     this.bankAccounts().filter((account) => account.isActive),
   );
 
+  /** Nombres de los bancos que hoy permiten notificador de correo. */
+  readonly emailEligibleBankNames = computed(() =>
+    Array.from(this.banksByCode().values())
+      .filter((bank) => bank.email?.enabled)
+      .map((bank) => bank.name),
+  );
+
+  /**
+   * ¿Hay al menos una cuenta activa de un banco que permita correo? Si el
+   * catálogo aún no cargó, no bloqueamos: dejamos que el backend valide.
+   */
+  readonly hasEmailEligibleAccount = computed(() => {
+    const banks = this.banksByCode();
+    if (banks.size === 0) return true;
+    return this.selectableAccounts().some(
+      (account) => banks.get(account.bankId)?.email?.enabled,
+    );
+  });
+
   readonly statuses = computed<Array<{ notifier: Notifier; status: NotifierStatus }>>(() => {
     const now = this.now();
     return this.notifiers().map((notifier) => ({
@@ -161,12 +197,53 @@ export class BusinessNotifiersSection implements OnInit {
   readonly form = this.fb.group({
     kind: ['phone' as NotifierKind, [Validators.required]],
     displayName: ['', [Validators.required, Validators.maxLength(120)]],
+    // Solo para `email`: correo remitente desde el que se reenviarán las
+    // notificaciones del banco. El validador `required` se activa/desactiva
+    // según el tipo seleccionado (ver `ngOnInit`).
+    senderEmail: ['', [Validators.email, Validators.maxLength(200)]],
+  });
+
+  /** Tipo seleccionado, como signal para conducir el render zoneless. */
+  readonly selectedKind = toSignal(this.form.controls.kind.valueChanges, {
+    initialValue: this.form.controls.kind.value,
+  });
+
+  /** Teléfono y Escritorio monitorean cuentas y se emparejan; el correo no. */
+  readonly isEmailKind = computed(() => this.selectedKind() === 'email');
+  readonly monitorsBanks = computed(() => !this.isEmailKind());
+
+  readonly modalSubtitle = computed(() => {
+    if (this.editingId()) {
+      return 'Actualiza la configuración de este notificador.';
+    }
+    switch (this.selectedKind()) {
+      case 'email':
+        return 'Registra el correo desde el que reenviarás las notificaciones del banco. Te daremos un alias al que reenviarlas.';
+      case 'desktop':
+        return 'Selecciona las cuentas que la app de escritorio va a monitorear.';
+      default:
+        return 'Selecciona las cuentas que este notificador va a monitorear. La configuración de cada banco se aplicará automáticamente.';
+    }
   });
 
   ngOnInit(): void {
     this.load();
     this.loadBankAccounts();
     this.loadBanks();
+
+    // El correo remitente solo es obligatorio para notificadores de correo.
+    this.form.controls.kind.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((kind) => {
+        const control = this.form.controls.senderEmail;
+        if (kind === 'email') {
+          control.addValidators(Validators.required);
+        } else {
+          control.removeValidators(Validators.required);
+          control.setValue('');
+        }
+        control.updateValueAndValidity();
+      });
 
     // Refresco periódico: recalcula el tick y vuelve a pedir los notifiers.
     interval(this.thresholds.refreshIntervalMs)
@@ -244,7 +321,7 @@ export class BusinessNotifiersSection implements OnInit {
     this.success.set('');
     this.editingId.set(null);
     this.selectedBankAccountIds.set([]);
-    this.form.reset({ kind: 'phone', displayName: '' });
+    this.form.reset({ kind: 'phone', displayName: '', senderEmail: '' });
     this.loadBankAccounts();
     this.modalOpen.set(true);
   }
@@ -254,9 +331,40 @@ export class BusinessNotifiersSection implements OnInit {
     this.success.set('');
     this.editingId.set(notifier.id);
     this.selectedBankAccountIds.set([...notifier.bankAccountIds]);
-    this.form.reset({ kind: 'phone', displayName: notifier.displayName ?? '' });
+    this.form.reset({
+      kind: this.typeToKind(notifier.type),
+      displayName: notifier.displayName ?? '',
+      senderEmail: notifier.identifier ?? '',
+    });
     this.loadBankAccounts();
     this.modalOpen.set(true);
+  }
+
+  private kindToType(kind: NotifierKind): NotifierType {
+    switch (kind) {
+      case 'email':
+        return 'email_gmail';
+      case 'desktop':
+        return 'desktop_app';
+      default:
+        return 'phone_app';
+    }
+  }
+
+  private typeToKind(type: NotifierType): NotifierKind {
+    switch (type) {
+      case 'email_gmail':
+        return 'email';
+      case 'desktop_app':
+        return 'desktop';
+      default:
+        return 'phone';
+    }
+  }
+
+  /** ¿Este notificador usa emparejamiento de dispositivo (no el de correo)? */
+  usesPairing(notifier: Notifier): boolean {
+    return notifier.type !== 'email_gmail';
   }
 
   closeModal(): void {
@@ -266,12 +374,22 @@ export class BusinessNotifiersSection implements OnInit {
     this.modalOpen.set(false);
   }
 
-  /** ¿El banco de esta cuenta soporta notificador de teléfono? */
+  /** ¿El banco de esta cuenta soporta el canal del tipo seleccionado? */
   isBankEligible(account: BankAccount): boolean {
     const entry = this.banksByCode().get(account.bankId);
     // Si el catálogo aún no cargó o el banco no está listado, deja que el
     // backend valide; solo bloqueamos cuando sabemos que NO está disponible.
-    return entry ? entry.phone.enabled : true;
+    if (this.isEmailKind()) {
+      return entry ? Boolean(entry.email?.enabled) : true;
+    }
+    return entry ? Boolean(entry.phone?.enabled) : true;
+  }
+
+  /** Mensaje de por qué una cuenta no es elegible para el tipo actual. */
+  ineligibleReason(): string {
+    return this.isEmailKind()
+      ? 'Esta cuenta todavía no permite un notificador de correo.'
+      : 'Esta cuenta todavía no está disponible para monitoreo desde teléfono.';
   }
 
   toggleAccount(accountId: string, checked: boolean): void {
@@ -306,28 +424,57 @@ export class BusinessNotifiersSection implements OnInit {
   }
 
   save(): void {
+    const kind = this.form.controls.kind.value;
+    const isEmail = kind === 'email';
     const bankAccountIds = this.selectedBankAccountIds();
 
+    // Tanto monitoreo (teléfono/escritorio) como correo requieren ahora al menos
+    // una cuenta: el correo solo se permite sobre un banco compatible (Bancolombia).
     if (this.form.invalid || bankAccountIds.length === 0) {
       this.form.markAllAsTouched();
       if (bankAccountIds.length === 0) {
-        this.error.set('Selecciona al menos una cuenta para monitorear.');
+        this.error.set(
+          isEmail
+            ? 'Selecciona la cuenta bancaria a la que llegan estos correos.'
+            : 'Selecciona al menos una cuenta para monitorear.',
+        );
       }
       return;
     }
 
     const displayName = this.form.controls.displayName.value.trim();
+    const senderEmail = this.form.controls.senderEmail.value.trim();
     this.creating.set(true);
     this.error.set('');
 
     const editingId = this.editingId();
     const request$ = editingId
-      ? this.notifiersApi.update(editingId, { displayName, bankAccountIds })
-      : this.notifiersApi.create({
-          type: 'phone_app',
-          displayName,
-          bankAccountIds,
-        });
+      ? this.notifiersApi.update(
+          editingId,
+          isEmail
+            ? {
+                displayName,
+                identifier: senderEmail,
+                identifierType: 'email',
+                bankAccountIds,
+              }
+            : { displayName, bankAccountIds },
+        )
+      : this.notifiersApi.create(
+          isEmail
+            ? {
+                type: 'email_gmail',
+                displayName,
+                identifier: senderEmail,
+                identifierType: 'email',
+                bankAccountIds,
+              }
+            : {
+                type: this.kindToType(kind),
+                displayName,
+                bankAccountIds,
+              },
+        );
 
     request$
       .pipe(
@@ -345,10 +492,19 @@ export class BusinessNotifiersSection implements OnInit {
             this.success.set('Cambios guardados. Se sincronizarán con tu app móvil.');
           } else {
             this.notifiers.update((notifiers) => [response.notifier, ...notifiers]);
-            this.success.set(
-              'Notificador creado. Ingresa el código en tu dispositivo para emparejar.',
-            );
-            this.revealCode(response.notifier);
+            if (response.notifier.type === 'email_gmail') {
+              const alias = response.notifier.inboundAlias;
+              this.success.set(
+                alias
+                  ? `Notificador de correo creado. Reenvía los correos del banco a ${alias}.`
+                  : 'Notificador de correo creado.',
+              );
+            } else {
+              this.success.set(
+                'Notificador creado. Ingresa el código en tu dispositivo para emparejar.',
+              );
+              this.revealCode(response.notifier);
+            }
           }
           this.now.set(Date.now());
           this.modalOpen.set(false);
@@ -418,7 +574,7 @@ export class BusinessNotifiersSection implements OnInit {
 
   /** ¿El código sigue visible? Se oculta al expirar o al emparejarse. */
   isCodeVisible(notifier: Notifier): boolean {
-    if (notifier.pairedDevice || !notifier.accessCode) {
+    if (!this.usesPairing(notifier) || notifier.pairedDevice || !notifier.accessCode) {
       return false;
     }
     const until = this.revealedUntil().get(notifier.id);

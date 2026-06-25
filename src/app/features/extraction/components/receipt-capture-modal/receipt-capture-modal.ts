@@ -1,13 +1,26 @@
-import { CurrencyPipe, PercentPipe } from '@angular/common';
-import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { CurrencyPipe, DOCUMENT, PercentPipe } from '@angular/common';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
-  LucideFileScan,
+  LucideCamera,
+  LucideCameraOff,
   LucideLoaderCircle,
+  LucidePaperclip,
+  LucideRotateCcw,
   LucideSend,
   LucideTriangleAlert,
-  LucideUpload,
 } from '@lucide/angular';
 import { finalize, switchMap } from 'rxjs';
 
@@ -28,6 +41,8 @@ import { TransactionEventsService } from '../../../transactions/services/transac
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 import { ExtractionApiService } from '../../services/extraction-api.service';
 
+type CaptureStep = 'capture' | 'review';
+
 @Component({
   selector: 'app-receipt-capture-modal',
   imports: [
@@ -35,11 +50,13 @@ import { ExtractionApiService } from '../../services/extraction-api.service';
     PercentPipe,
     ReactiveFormsModule,
     Modal,
-    LucideFileScan,
+    LucideCamera,
+    LucideCameraOff,
     LucideLoaderCircle,
+    LucidePaperclip,
+    LucideRotateCcw,
     LucideSend,
     LucideTriangleAlert,
-    LucideUpload,
   ],
   templateUrl: './receipt-capture-modal.html',
   styleUrl: './receipt-capture-modal.scss',
@@ -51,19 +68,27 @@ export class ReceiptCaptureModal {
   private readonly transactionEvents = inject(TransactionEventsService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
   private readonly fb = inject(FormBuilder).nonNullable;
 
   readonly open = input(false);
   readonly closeRequested = output<void>();
 
+  private readonly videoRef = viewChild<ElementRef<HTMLVideoElement>>('video');
+  private stream: MediaStream | null = null;
+
   readonly businessName = computed(
     () => this.session.activeMembership()?.businessAccount?.name?.trim() || 'Negocio sin nombre',
   );
+  readonly step = signal<CaptureStep>('capture');
+  readonly cameraReady = signal(false);
+  readonly cameraError = signal('');
   readonly extracting = signal(false);
   readonly creatingTransaction = signal(false);
   readonly error = signal('');
   readonly success = signal('');
   readonly selectedReceipt = signal<File | null>(null);
+  readonly previewUrl = signal('');
   readonly extraction = signal<TransactionExtractionResponse | null>(null);
   readonly loading = computed(() => this.extracting() || this.creatingTransaction());
 
@@ -80,6 +105,25 @@ export class ReceiptCaptureModal {
     notes: [''],
   });
 
+  constructor() {
+    // Enciende la cámara solo mientras el modal está abierto en el paso de
+    // captura y todavía no hay una foto tomada; en cualquier otro caso libera
+    // el dispositivo (la captura congela la imagen mostrando la foto tomada).
+    effect(() => {
+      const video = this.videoRef()?.nativeElement ?? null;
+      if (this.open() && this.step() === 'capture' && !this.selectedReceipt() && video) {
+        void this.startCamera(video);
+      } else {
+        this.stopCamera();
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.stopCamera();
+      this.revokePreview();
+    });
+  }
+
   close(): void {
     if (this.loading()) {
       return;
@@ -88,67 +132,71 @@ export class ReceiptCaptureModal {
     this.closeRequested.emit();
   }
 
+  capturePhoto(): void {
+    const video = this.videoRef()?.nativeElement;
+    if (!video || !this.cameraReady() || this.loading()) {
+      return;
+    }
+
+    const canvas = this.document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (!context || !canvas.width || !canvas.height) {
+      this.error.set('No se pudo capturar la imagen. Inténtalo de nuevo.');
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          this.error.set('No se pudo capturar la imagen. Inténtalo de nuevo.');
+          return;
+        }
+        const file = new File([blob], `comprobante-${blob.size}.jpg`, { type: 'image/jpeg' });
+        this.setReceiptPreview(file);
+        this.runOcr(file);
+      },
+      'image/jpeg',
+      0.92,
+    );
+  }
+
   onReceiptSelected(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
-    this.selectedReceipt.set(file);
-    this.extraction.set(null);
-    this.success.set('');
-    this.error.set('');
-  }
-
-  extractReceipt(): void {
-    const file = this.selectedReceipt();
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
     if (!file) {
-      this.error.set('Selecciona una imagen de comprobante.');
       return;
     }
-
-    this.extracting.set(true);
-    this.error.set('');
-    this.success.set('');
-
-    this.extractionApi
-      .extractReceipt(file)
-      .pipe(
-        finalize(() => this.extracting.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => {
-          this.extraction.set(response);
-          this.patchFormFromExtraction(response);
-          this.success.set('OCR completado. Revisa los datos antes de crear la transacción.');
-        },
-        error: (error) => this.error.set(httpErrorMessage(error)),
-      });
+    this.setReceiptPreview(file);
+    this.runOcr(file);
   }
 
-  createManualTransaction(): void {
-    const request = this.buildTransactionRequest('manual');
-    if (!request) {
+  retake(): void {
+    if (this.loading()) {
       return;
     }
-
-    this.creatingTransaction.set(true);
+    this.revokePreview();
+    this.selectedReceipt.set(null);
+    this.extraction.set(null);
     this.error.set('');
     this.success.set('');
-
-    this.transactionsApi
-      .create(request)
-      .pipe(
-        finalize(() => this.creatingTransaction.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => this.afterTransactionCreated(response.action),
-        error: (error) => this.error.set(httpErrorMessage(error)),
-      });
+    this.step.set('capture');
   }
 
-  createTransactionFromOcr(): void {
+  retryOcr(): void {
+    const file = this.selectedReceipt();
+    if (file && !this.loading()) {
+      this.runOcr(file);
+    }
+  }
+
+  createTransaction(): void {
     const extraction = this.extraction();
     if (!extraction) {
-      this.error.set('Primero ejecuta OCR sobre un comprobante.');
+      this.error.set('Primero captura o adjunta un comprobante.');
       return;
     }
 
@@ -200,6 +248,87 @@ export class ReceiptCaptureModal {
     return this.manualForm.dirty || this.selectedReceipt() !== null || this.extraction() !== null;
   }
 
+  private async startCamera(video: HTMLVideoElement): Promise<void> {
+    if (this.stream) {
+      return;
+    }
+    this.cameraError.set('');
+
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.getUserMedia) {
+      this.cameraError.set('Este dispositivo no permite usar la cámara. Adjunta una imagen.');
+      return;
+    }
+
+    try {
+      const stream = await mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+        audio: false,
+      });
+
+      // El usuario pudo cerrar el modal, capturar o avanzar mientras se
+      // resolvía el permiso.
+      if (!this.open() || this.step() !== 'capture' || this.selectedReceipt()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      this.stream = stream;
+      video.srcObject = stream;
+      await video.play().catch(() => undefined);
+      this.cameraReady.set(true);
+    } catch {
+      this.cameraError.set(
+        'No pudimos activar la cámara. Revisa los permisos del navegador o adjunta una imagen.',
+      );
+    }
+  }
+
+  private stopCamera(): void {
+    this.stream?.getTracks().forEach((track) => track.stop());
+    this.stream = null;
+    this.cameraReady.set(false);
+    const video = this.videoRef()?.nativeElement;
+    if (video) {
+      video.srcObject = null;
+    }
+  }
+
+  private runOcr(file: File): void {
+    this.extracting.set(true);
+    this.error.set('');
+    this.success.set('');
+
+    this.extractionApi
+      .extractReceipt(file)
+      .pipe(
+        finalize(() => this.extracting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.extraction.set(response);
+          this.patchFormFromExtraction(response);
+          this.step.set('review');
+          this.success.set('OCR completado. Revisa los datos antes de crear la transacción.');
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  private setReceiptPreview(file: File): void {
+    this.revokePreview();
+    this.selectedReceipt.set(file);
+    this.previewUrl.set(URL.createObjectURL(file));
+    this.extraction.set(null);
+    this.error.set('');
+    this.success.set('');
+  }
+
   private buildTransactionRequest(mechanismKind: MechanismKind): CreateTransactionRequest | null {
     this.error.set('');
 
@@ -237,6 +366,7 @@ export class ReceiptCaptureModal {
         : 'Ya existía una transacción con los mismos datos.',
     );
     this.resetForm();
+    this.step.set('capture');
     this.transactionEvents.notifyChanged();
   }
 
@@ -262,6 +392,7 @@ export class ReceiptCaptureModal {
     this.resetForm();
     this.error.set('');
     this.success.set('');
+    this.step.set('capture');
   }
 
   private resetForm(): void {
@@ -279,6 +410,15 @@ export class ReceiptCaptureModal {
     });
     this.extraction.set(null);
     this.selectedReceipt.set(null);
+    this.revokePreview();
+  }
+
+  private revokePreview(): void {
+    const url = this.previewUrl();
+    if (url) {
+      URL.revokeObjectURL(url);
+      this.previewUrl.set('');
+    }
   }
 
   private party(name: string, account: string): TransactionParty | undefined {

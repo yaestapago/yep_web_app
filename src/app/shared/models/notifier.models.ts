@@ -1,6 +1,6 @@
 import type { BankAccount } from './bank-account.models';
 
-export type NotifierType = 'phone_app' | 'email_gmail';
+export type NotifierType = 'phone_app' | 'email_gmail' | 'desktop_app';
 export type NotifierIdentifierType = 'phone' | 'email';
 
 /** Opciones de tipo mostradas como radio buttons al crear un notificador. */
@@ -39,6 +39,10 @@ export interface Notifier {
   lastLoginAt?: string;
   isOnline: boolean;
   accessCode?: string;
+  /** Solo `email_gmail`: etiqueta única del alias de correo entrante. */
+  inboundTag?: string;
+  /** Solo `email_gmail`: alias completo (`buzón+tag@gmail.com`) al que reenviar. */
+  inboundAlias?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,6 +1,6 @@
 <div class="shell" [class.drawer-open]="drawerOpen()">
   <div class="sidebar-slot">
-    <app-sidebar (navigated)="closeDrawer()" />
+    <app-sidebar (navigated)="closeDrawer()" (logoutRequested)="openLogout()" />
   </div>
 
   @if (drawerOpen()) {
@@ -42,4 +42,17 @@
     [open]="receiptCaptureOpen()"
     (closeRequested)="closeReceiptCapture()"
   />
+
+  <yep-modal
+    [open]="logoutModalOpen()"
+    size="sm"
+    title="Cerrar sesión"
+    subtitle="¿Seguro que quieres cerrar sesión?"
+    (closeRequested)="cancelLogout()"
+  >
+    <ng-container modalFooter>
+      <yep-button variant="ghost" (clicked)="cancelLogout()">Cancelar</yep-button>
+      <yep-button variant="danger" (clicked)="confirmLogout()">Cerrar sesión</yep-button>
+    </ng-container>
+  </yep-modal>
 </div>
