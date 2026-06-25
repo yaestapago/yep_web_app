@@ -39,7 +39,10 @@
               {{ location.name }}
             </h3>
             <span class="list-card__meta">
-              {{ location.city || '—' }}@if (location.address) { · {{ location.address }}}
+              {{ location.city || '—' }}
+              @if (location.address) {
+                · {{ location.address }}
+              }
             </span>
           </div>
         </article>
@@ -63,13 +66,21 @@
     />
     <div class="form-grid form-grid--2">
       <yep-input formControlName="city" label="Ciudad (opcional)" />
-      <yep-input formControlName="phone" label="Teléfono (opcional)" />
+      <yep-phone-input
+        formControlName="phone"
+        label="Teléfono (opcional)"
+        placeholder="300 123 4567"
+      ></yep-phone-input>
     </div>
     <yep-input formControlName="address" label="Dirección (opcional)" />
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="savingLocation()" (clicked)="closeLocation()">Cancelar</yep-button>
-    <yep-button type="submit" [loading]="savingLocation()" (clicked)="saveLocation()">Crear sede</yep-button>
+    <yep-button variant="ghost" [disabled]="savingLocation()" (clicked)="closeLocation()"
+      >Cancelar</yep-button
+    >
+    <yep-button type="submit" [loading]="savingLocation()" (clicked)="saveLocation()"
+      >Crear sede</yep-button
+    >
   </ng-container>
 </yep-modal>

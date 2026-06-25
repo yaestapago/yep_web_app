@@ -1,11 +1,4 @@
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -31,6 +24,7 @@ import type {
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
 
@@ -62,6 +56,7 @@ interface NotificationToggle {
     Button,
     Input,
     Modal,
+    PhoneInput,
     LucideBell,
     LucideChevronDown,
     LucideMoon,
@@ -146,7 +141,7 @@ export class SettingsPage implements OnInit {
     firstName: ['', [Validators.required, Validators.minLength(2)]],
     lastName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    cellphoneNumber: ['', [Validators.required, Validators.minLength(7)]],
+    cellphoneNumber: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
   readonly passwordForm = this.fb.group({
@@ -227,9 +222,15 @@ export class SettingsPage implements OnInit {
 
     this.savingProfile.set(true);
     this.error.set('');
+    const raw = this.profileForm.getRawValue();
 
     this.authApi
-      .updateProfile(this.profileForm.getRawValue())
+      .updateProfile({
+        firstName: raw.firstName,
+        lastName: raw.lastName,
+        email: raw.email,
+        cellphoneNumber: this.phoneValue(raw.cellphoneNumber),
+      })
       .pipe(
         finalize(() => this.savingProfile.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -303,9 +304,7 @@ export class SettingsPage implements OnInit {
       });
   }
 
-  isPasswordInvalid(
-    controlName: keyof typeof this.passwordForm.controls,
-  ): boolean {
+  isPasswordInvalid(controlName: keyof typeof this.passwordForm.controls): boolean {
     const control = this.passwordForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
   }
@@ -369,5 +368,12 @@ export class SettingsPage implements OnInit {
       currency: general.currency,
       dateFormat: general.dateFormat,
     });
+  }
+
+  private phoneValue(value: PhoneInputValue | string | null): string {
+    if (!value) {
+      return '';
+    }
+    return typeof value === 'string' ? value : value.e164;
   }
 }

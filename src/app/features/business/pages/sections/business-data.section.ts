@@ -8,6 +8,7 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -18,7 +19,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-business-data-section',
-  imports: [ReactiveFormsModule, Button, Input, Modal, LucidePencil],
+  imports: [ReactiveFormsModule, Button, Input, Modal, PhoneInput, LucidePencil],
   templateUrl: './business-data.section.html',
   styleUrl: './business-sections.scss',
 })
@@ -47,7 +48,7 @@ export class BusinessDataSection {
     name: ['', [Validators.required, Validators.minLength(2)]],
     city: ['', [Validators.required, Validators.minLength(2)]],
     address: ['', [Validators.required, Validators.minLength(4)]],
-    phone: ['', [Validators.required, Validators.minLength(7)]],
+    phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
   openEdit(): void {
@@ -79,9 +80,15 @@ export class BusinessDataSection {
 
     this.savingBusiness.set(true);
     this.error.set('');
+    const raw = this.businessForm.getRawValue();
 
     this.businessApi
-      .updateBusinessAccount(businessId, this.businessForm.getRawValue())
+      .updateBusinessAccount(businessId, {
+        name: raw.name,
+        city: raw.city,
+        address: raw.address,
+        phone: this.phoneValue(raw.phone),
+      })
       .pipe(
         finalize(() => this.savingBusiness.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -99,5 +106,12 @@ export class BusinessDataSection {
   isBusinessInvalid(controlName: keyof typeof this.businessForm.controls): boolean {
     const control = this.businessForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  private phoneValue(value: PhoneInputValue | string | null): string {
+    if (!value) {
+      return '';
+    }
+    return typeof value === 'string' ? value : value.e164;
   }
 }

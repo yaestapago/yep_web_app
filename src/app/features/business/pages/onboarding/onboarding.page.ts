@@ -16,6 +16,7 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { BusinessAccount, BusinessMembership } from '../../../../shared/models/auth.models';
+import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -31,6 +32,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     LucideRefreshCw,
     LucideSend,
     LucideTriangleAlert,
+    PhoneInput,
   ],
   templateUrl: './onboarding.page.html',
   styleUrl: './onboarding.page.scss',
@@ -58,7 +60,7 @@ export class OnboardingPage implements OnInit {
     name: ['', [Validators.required, Validators.minLength(2)]],
     city: ['', [Validators.required, Validators.minLength(2)]],
     address: ['', [Validators.required, Validators.minLength(4)]],
-    phone: ['', [Validators.required, Validators.minLength(7)]],
+    phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
   readonly requestForm = this.fb.group({
@@ -105,9 +107,15 @@ export class OnboardingPage implements OnInit {
       return;
     }
 
+    const raw = this.businessForm.getRawValue();
     this.creatingBusiness.set(true);
     this.businessApi
-      .createBusinessAccount(this.businessForm.getRawValue())
+      .createBusinessAccount({
+        name: raw.name,
+        city: raw.city,
+        address: raw.address,
+        phone: this.phoneValue(raw.phone),
+      })
       .pipe(
         finalize(() => this.creatingBusiness.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -214,7 +222,9 @@ export class OnboardingPage implements OnInit {
     this.requestForm.patchValue({ businessAccountId });
   }
 
-  private membershipStatusForBusiness(businessAccountId: string): BusinessMembership['status'] | null {
+  private membershipStatusForBusiness(
+    businessAccountId: string,
+  ): BusinessMembership['status'] | null {
     return (
       this.session
         .memberships()
@@ -231,5 +241,12 @@ export class OnboardingPage implements OnInit {
     }
 
     return memberships.map((current, index) => (index === existingIndex ? membership : current));
+  }
+
+  private phoneValue(value: PhoneInputValue | string | null): string {
+    if (!value) {
+      return '';
+    }
+    return typeof value === 'string' ? value : value.e164;
   }
 }

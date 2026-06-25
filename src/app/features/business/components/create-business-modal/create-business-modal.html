@@ -26,11 +26,13 @@
       label="Dirección"
       [error]="isInvalid('address') ? 'Requerido' : ''"
     />
-    <yep-input
+    <yep-phone-input
       formControlName="phone"
       label="Teléfono"
-      [error]="isInvalid('phone') ? 'Mínimo 7 dígitos' : ''"
-    />
+      placeholder="300 123 4567"
+      [required]="true"
+      [error]="isInvalid('phone') ? 'Ingresa un teléfono válido' : ''"
+    ></yep-phone-input>
   </form>
 
   <ng-container modalFooter>

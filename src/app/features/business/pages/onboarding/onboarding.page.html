@@ -6,7 +6,12 @@
       <span>{{ user()?.firstName }} {{ user()?.lastName }}</span>
     </div>
 
-    <button class="secondary-action" type="button" (click)="loadMemberships()" [disabled]="loadingMemberships()">
+    <button
+      class="secondary-action"
+      type="button"
+      (click)="loadMemberships()"
+      [disabled]="loadingMemberships()"
+    >
       @if (loadingMemberships()) {
         <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
       } @else {
@@ -104,13 +109,13 @@
           }
         </label>
 
-        <label>
-          <span>Telefono</span>
-          <input type="tel" formControlName="phone" autocomplete="tel" />
-          @if (isBusinessInvalid('phone')) {
-            <small>Ingresa un telefono valido.</small>
-          }
-        </label>
+        <yep-phone-input
+          label="Teléfono"
+          placeholder="300 123 4567"
+          formControlName="phone"
+          [required]="true"
+          [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
+        ></yep-phone-input>
 
         <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
           @if (creatingBusiness()) {
@@ -135,7 +140,10 @@
         @if (knownBusinessAccounts().length > 0) {
           <label>
             <span>Seleccionar negocio conocido</span>
-            <select (change)="selectKnownBusiness($event)" [value]="requestForm.controls.businessAccountId.value">
+            <select
+              (change)="selectKnownBusiness($event)"
+              [value]="requestForm.controls.businessAccountId.value"
+            >
               <option value="">Ingresar ID manualmente</option>
               @for (business of knownBusinessAccounts(); track business.id) {
                 <option [value]="business.id">{{ business.name }} · {{ business.id }}</option>
@@ -166,7 +174,10 @@
         <div class="pending-list">
           <h3>Solicitudes pendientes</h3>
           @for (membership of pendingMemberships(); track membership.id) {
-            <p>{{ businessName(membership) }} · {{ membership.businessAccountId }} · {{ membership.role }}</p>
+            <p>
+              {{ businessName(membership) }} · {{ membership.businessAccountId }} ·
+              {{ membership.role }}
+            </p>
           }
         </div>
       }

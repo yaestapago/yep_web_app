@@ -8,6 +8,7 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -24,6 +25,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     Button,
     Input,
     Modal,
+    PhoneInput,
     LucideLoaderCircle,
     LucideMapPin,
     LucidePlus,
@@ -56,7 +58,7 @@ export class BusinessLocationsSection implements OnInit {
     name: ['', [Validators.required]],
     city: [''],
     address: [''],
-    phone: [''],
+    phone: this.fb.control<PhoneInputValue | string | null>(null),
   });
 
   ngOnInit(): void {
@@ -112,7 +114,7 @@ export class BusinessLocationsSection implements OnInit {
         name: raw.name.trim(),
         city: this.optional(raw.city),
         address: this.optional(raw.address),
-        phone: this.optional(raw.phone),
+        phone: this.optionalPhone(raw.phone),
       })
       .pipe(
         finalize(() => this.savingLocation.set(false)),
@@ -136,5 +138,12 @@ export class BusinessLocationsSection implements OnInit {
   private optional(value: string): string | undefined {
     const trimmed = value.trim();
     return trimmed ? trimmed : undefined;
+  }
+
+  private optionalPhone(value: PhoneInputValue | string | null): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+    return this.optional(typeof value === 'string' ? value : value.e164);
   }
 }
