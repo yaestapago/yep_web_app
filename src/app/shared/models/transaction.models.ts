@@ -73,6 +73,7 @@ export interface CreateTransactionRequest {
 
 export interface TransactionsResponse {
   transactions: PaymentTransaction[];
+  nextCursor?: string;
 }
 
 export interface TransactionResponse {
@@ -89,12 +90,23 @@ export interface TransactionQuery {
   bankId?: string;
   locationId?: string;
   status?: TransactionStatus;
+  /** Varios estados (CSV), para filtrar por categoría amigable. */
+  statuses?: string;
   level?: VerificationLevel;
   amountMin?: number;
   amountMax?: number;
   reference?: string;
+  /** Búsqueda por referencia (prefijo). */
+  q?: string;
+  cursor?: string;
   limit?: number;
 }
+
+/** Filtros aplicables a la lista de transacciones (sin paginación). */
+export type TransactionFilters = Pick<
+  TransactionQuery,
+  'from' | 'to' | 'bankId' | 'statuses' | 'amountMin' | 'amountMax' | 'q'
+>;
 
 export type PaymentSupportType =
   | 'OCR_RECEIPT'
@@ -140,4 +152,19 @@ export interface PaymentSupport {
 
 export interface PaymentSupportsResponse {
   paymentSupports: PaymentSupport[];
+}
+
+export interface AttachSupportRequest {
+  type: PaymentSupportType;
+  mechanismKind?: MechanismKind;
+  locationId?: string;
+  sourceEventId?: string;
+  file?: PaymentSupportFile;
+  extracted?: PaymentSupportExtracted;
+}
+
+export interface AttachSupportResponse {
+  action: 'CREATED' | 'DUPLICATE_DETECTED';
+  paymentSupport: PaymentSupport;
+  duplicateOf?: string;
 }

@@ -1,7 +1,7 @@
 <div class="zone">
   <div class="zone__head">
     <h3 class="zone__title"><svg lucideFileText aria-hidden="true"></svg> Eventos</h3>
-    <span class="zone__count">{{ filtered().length }}</span>
+    <span class="zone__count">{{ events().length }}{{ hasMore() ? '+' : '' }}</span>
   </div>
 
   <div class="filters">
@@ -12,13 +12,13 @@
         type="search"
         [value]="search()"
         (input)="search.set($any($event.target).value)"
-        placeholder="Buscar referencia, monto o texto…"
-        aria-label="Buscar eventos"
+        placeholder="Buscar referencia o ID…"
+        aria-label="Buscar eventos por referencia o ID"
       />
     </span>
     <select class="control" [value]="typeFilter()" (change)="typeFilter.set($any($event.target).value)" aria-label="Filtrar por tipo">
       <option value="">Todo tipo</option>
-      @for (option of typeOptions(); track option.value) {
+      @for (option of typeOptions; track option.value) {
         <option [value]="option.value">{{ option.label }}</option>
       }
     </select>
@@ -40,7 +40,19 @@
     }
   </div>
 
-  <div class="zone__body events-body">
+  @if (newCount() > 0) {
+    <button type="button" class="new-pill" (click)="showNew.emit()">
+      <svg lucideArrowUp aria-hidden="true"></svg>
+      {{ newCount() }} {{ newCount() === 1 ? 'evento nuevo' : 'eventos nuevos' }}
+    </button>
+  }
+
+  <div
+    class="zone__body events-body"
+    appAutoFitRows="li.event"
+    [autoFitGap]="8"
+    (fit)="pageSize.set($event)"
+  >
     @if (loading()) {
       <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
     } @else if (error()) {
@@ -48,7 +60,7 @@
         <svg lucideTriangleAlert aria-hidden="true"></svg>
         <p>{{ error() }}</p>
       </div>
-    } @else if (filtered().length === 0) {
+    } @else if (events().length === 0) {
       <div class="state">
         <svg lucideCircleCheck aria-hidden="true"></svg>
         <h4>Sin eventos</h4>
@@ -56,7 +68,7 @@
       </div>
     } @else {
       <ul class="events">
-        @for (event of filtered(); track event.id) {
+        @for (event of paged(); track event.id) {
           <li
             class="event event--{{ statusTone(event.status) }}"
             [class.event--unread]="isUnread(event)"
@@ -66,8 +78,10 @@
               <div class="event__top">
                 <span class="badge badge--{{ statusTone(event.status) }}">{{ statusLabel(event.status) }}</span>
                 <span class="event__type" [attr.title]="sourceLabel(event.sourceType)">
-                  @switch (event.sourceType) {
-                    @case ('NOTIFIER_APP') { <svg lucideSmartphone aria-hidden="true"></svg> }
+                  @switch (eventIcon(event)) {
+                    @case ('smartphone') { <svg lucideSmartphone aria-hidden="true"></svg> }
+                    @case ('monitor') { <svg lucideMonitor aria-hidden="true"></svg> }
+                    @case ('mail') { <svg lucideMail aria-hidden="true"></svg> }
                     @default { {{ sourceLabel(event.sourceType) }} }
                   }
                 </span>
@@ -105,4 +119,23 @@
       </ul>
     }
   </div>
+
+  @if (!loading() && !error() && events().length > 0) {
+    <app-dashboard-pager
+      class="zone__foot"
+      [page]="currentPage()"
+      [totalPages]="totalPages()"
+      [total]="events().length"
+      (pageChange)="page.set($event)"
+    />
+    @if (hasMore() && onLastPage()) {
+      <button type="button" class="load-more" (click)="loadMore.emit()" [disabled]="loadingMore()">
+        @if (loadingMore()) {
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando…
+        } @else {
+          Cargar más
+        }
+      </button>
+    }
+  }
 </div>

@@ -44,6 +44,8 @@
   display: none;
 }
 
+/* FAB circular (solo icono) que se expande mostrando la etiqueta al pasar el
+   cursor o al enfocar con teclado. Más llamativo y sin texto largo permanente. */
 .receipt-fab {
   align-items: center;
   background: var(--color-primary);
@@ -57,21 +59,52 @@
   font: inherit;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
-  gap: var(--space-2);
-  min-height: 52px;
-  padding: 0 var(--space-5);
+  gap: 0;
+  height: 56px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
   position: fixed;
   right: var(--space-6);
+  transition:
+    width 0.2s ease,
+    gap 0.2s ease,
+    padding 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+  width: 56px;
   z-index: 15;
 }
 
-.receipt-fab:hover {
+.receipt-fab span {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.2s ease,
+    opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.receipt-fab:hover,
+.receipt-fab:focus-visible {
   background: color-mix(in srgb, var(--color-primary) 88%, #000000);
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  transform: translateY(-1px);
+  width: auto;
+}
+
+.receipt-fab:hover span,
+.receipt-fab:focus-visible span {
+  max-width: 180px;
+  opacity: 1;
 }
 
 .receipt-fab svg {
-  height: 20px;
-  width: 20px;
+  flex: none;
+  height: 22px;
+  width: 22px;
 }
 
 /* Topbar visible solo en móvil */

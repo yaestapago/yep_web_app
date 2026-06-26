@@ -173,21 +173,65 @@
   color: var(--color-error);
 }
 
-/* Cuadrícula de 4 zonas ----------------------------------------------------*/
+/* Cuadrícula de zonas ------------------------------------------------------*/
 .grid {
   display: grid;
   flex: 1;
   gap: var(--space-3);
-  grid-template-areas:
-    'charts charts status'
-    'events transactions transactions';
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) clamp(260px, 22vw, 340px);
-  grid-template-rows: minmax(0, 0.1fr) minmax(0, 1.15fr);
   min-height: 0;
 }
 
 .grid > * {
   min-height: 0;
+  min-width: 0;
+}
+
+/* Por defecto el contenedor de la fila superior es transparente al layout:
+   gráficas y estado caen directamente en sus áreas del grid (modo expandido). */
+.grid__top {
+  display: contents;
+}
+
+/* Con gráficas: 3 columnas, gráficas + estado arriba, tablas abajo. La fila de
+   gráficas tiene una altura compacta y ACOTADA (no escala con el alto de la
+   pantalla); las tablas se llevan TODO el alto restante con `1fr`, así ocupan
+   el máximo vertical disponible. Para ver las gráficas grandes está el modal. */
+.grid--with-charts {
+  grid-template-areas:
+    'charts charts status'
+    'events transactions transactions';
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) clamp(260px, 22vw, 340px);
+  grid-template-rows: clamp(170px, 24vh, 230px) minmax(0, 1fr);
+}
+
+/* Gráficas colapsadas: la fila superior pasa a ser una fila flex con gráficas
+   (angosta) y estado (ocupa todo el ancho restante), ambas a la MISMA altura.
+   Las tablas de eventos/transacciones se llevan el alto restante. */
+.grid--no-charts {
+  grid-template-areas:
+    'top top'
+    'events transactions';
+  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 2fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.grid--no-charts .grid__top {
+  align-items: stretch;
+  display: flex;
+  gap: var(--space-3);
+  grid-area: top;
+  min-width: 0;
+}
+
+/* Gráficas: angostas (ancho de su contenido), misma altura que el estado. */
+.grid--no-charts .grid__charts {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* Estado: ocupa todo el ancho restante de la fila. */
+.grid--no-charts .grid__status {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -207,7 +251,8 @@
 /* Pantallas estrechas / bajas: se apila y se permite scroll de página (el
    requisito de "sin scroll general" aplica a escritorio 1366×768 y 1440×900). */
 @media (max-width: 1024px), (max-height: 680px) {
-  .grid {
+  .grid--with-charts,
+  .grid--no-charts {
     grid-template-areas:
       'charts'
       'status'
@@ -216,5 +261,28 @@
     grid-template-columns: 1fr;
     grid-template-rows: none;
     grid-auto-rows: minmax(320px, auto);
+  }
+
+  /* En móvil deshacemos la fila flex: cada módulo vuelve a apilarse. */
+  .grid__top {
+    display: contents;
+  }
+
+  .grid--no-charts {
+    grid-template-areas:
+      'charts'
+      'status'
+      'events'
+      'transactions';
+    grid-auto-rows: auto;
+  }
+
+  .grid--no-charts .grid__charts {
+    flex: initial;
+  }
+
+  .grid--no-charts .grid__events,
+  .grid--no-charts .grid__transactions {
+    min-height: 320px;
   }
 }

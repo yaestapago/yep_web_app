@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DOCUMENT } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -22,8 +22,14 @@ import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
-import type { SourceEvent } from '../../../../shared/models/source-event.models';
-import { PaymentTransaction } from '../../../../shared/models/transaction.models';
+import type {
+  SourceEvent,
+  SourceEventFilters,
+} from '../../../../shared/models/source-event.models';
+import {
+  PaymentTransaction,
+  type TransactionFilters,
+} from '../../../../shared/models/transaction.models';
 import type { Notifier } from '../../../../shared/models/notifier.models';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 import {
@@ -48,12 +54,21 @@ import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard
 import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
 import { VerifyTransactionModal } from '../../components/dashboard/verify-transaction-modal';
 
+/** Tamaño de página (cursor) de cada tabla. */
+const EVENTS_PAGE_LIMIT = 50;
+const TRANSACTIONS_PAGE_LIMIT = 100;
+
 /**
  * Panel de control del negocio (`/businesses/:businessId/dashboard`). Pantalla
  * operativa de un solo viewport: métricas + gráficas configurables, estado del
  * sistema (semáforo + notificadores), eventos en lenguaje claro y tabla de
  * transacciones con filtros, detalle y verificación. El scroll vive dentro de
  * cada zona; nunca scrollea la página completa.
+ *
+ * Los filtros de las tablas se aplican server-side (con cursor para "cargar
+ * más"). Los KPIs y el semáforo usan instantáneas SIN filtrar para que sean un
+ * resumen estable del negocio, independiente de lo que el usuario esté filtrando
+ * en cada tabla.
  */
 @Component({
   selector: 'app-business-dashboard-section',
@@ -86,16 +101,51 @@ export class BusinessDashboardSection implements OnInit {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
+  private readonly document = inject(DOCUMENT);
   private transactionEventsReady = false;
+
+  /**
+   * Gráficas visibles u ocultas. Al ocultarlas, el módulo de estado pasa a
+   * barra horizontal y las tablas de eventos/transacciones ganan alto. La
+   * preferencia se guarda en `localStorage` (SSR-safe vía defaultView).
+   */
+  private static readonly CHARTS_STORAGE_KEY = 'yep_web.dashboard.chartsVisible';
+  readonly chartsVisible = signal<boolean>(this.readChartsVisible());
+
+  private readonly chartsVisiblePersistEffect = effect(() => {
+    const visible = this.chartsVisible();
+    this.document.defaultView?.localStorage.setItem(
+      BusinessDashboardSection.CHARTS_STORAGE_KEY,
+      visible ? '1' : '0',
+    );
+  });
 
   readonly account = computed(() => this.session.activeMembership()?.businessAccount ?? null);
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
 
-  // --- Datos ---
+  // --- Datos de las tablas (filtrados server-side) ---
   readonly transactions = signal<PaymentTransaction[]>([]);
   readonly sourceEvents = signal<SourceEvent[]>([]);
   readonly notifiers = signal<Notifier[]>([]);
+
+  // --- Instantáneas SIN filtrar para KPIs/semáforo/gráficas ---
+  readonly metricsTransactions = signal<PaymentTransaction[]>([]);
+  readonly metricsEvents = signal<SourceEvent[]>([]);
+
+  // --- Filtros + cursor de cada tabla ---
+  private readonly eventFilters = signal<SourceEventFilters>({});
+  private readonly txFilters = signal<TransactionFilters>({});
+  readonly eventsCursor = signal<string | undefined>(undefined);
+  readonly txCursor = signal<string | undefined>(undefined);
+  readonly loadingMoreEvents = signal(false);
+  readonly loadingMoreTransactions = signal(false);
+  readonly eventsHasMore = computed(() => this.eventsCursor() !== undefined);
+  readonly txHasMore = computed(() => this.txCursor() !== undefined);
+
+  /** Eventos llegados en vivo que encajan en el filtro y esperan ser mostrados. */
+  private readonly newEventsBuffer = signal<SourceEvent[]>([]);
+  readonly newEventsCount = computed(() => this.newEventsBuffer().length);
 
   /** IDs de eventos llegados en vivo y aún no vistos (estilo bandeja). */
   readonly unreadEventIds = signal<Set<string>>(new Set());
@@ -105,6 +155,14 @@ export class BusinessDashboardSection implements OnInit {
   readonly bankAccountsById = computed(
     () => new Map(this.bankAccounts().map((account) => [account.id, account])),
   );
+  /** Bancos del negocio (fuente estable de opciones para los selects). */
+  readonly bankOptions = computed(() => {
+    const set = new Set<string>();
+    for (const account of this.bankAccounts()) {
+      if (account.bankId) set.add(account.bankId);
+    }
+    return [...set].sort();
+  });
 
   readonly loadingTransactions = signal(false);
   readonly loadingEvents = signal(false);
@@ -135,29 +193,32 @@ export class BusinessDashboardSection implements OnInit {
     }
     this.loadTransactions();
     this.loadSourceEvents();
+    this.loadMetrics();
   });
 
-  // --- Métricas (7 KPIs) ---
+  // --- Métricas (7 KPIs) — sobre la instantánea SIN filtrar ---
   readonly totalAmount = computed(() =>
-    this.transactions().reduce((total, transaction) => total + transaction.amount, 0),
+    this.metricsTransactions().reduce((total, transaction) => total + transaction.amount, 0),
   );
   readonly paidCount = computed(
-    () => this.transactions().filter((t) => t.verification.canBeConsideredPaid).length,
+    () => this.metricsTransactions().filter((t) => t.verification.canBeConsideredPaid).length,
   );
   readonly reviewCount = computed(
-    () => this.transactions().filter((t) => t.status === 'NEEDS_REVIEW').length,
+    () => this.metricsTransactions().filter((t) => t.status === 'NEEDS_REVIEW').length,
   );
-  readonly receivedCount = computed(() => this.transactions().length);
+  readonly receivedCount = computed(() => this.metricsTransactions().length);
   readonly pendingCount = computed(
     () =>
-      this.transactions().filter((t) =>
+      this.metricsTransactions().filter((t) =>
         ['CREATED', 'PENDING_VERIFICATION'].includes(t.status),
       ).length,
   );
   readonly rejectedCount = computed(
-    () => this.transactions().filter((t) => transactionCategory(t.status) === 'rechazada').length,
+    () =>
+      this.metricsTransactions().filter((t) => transactionCategory(t.status) === 'rechazada')
+        .length,
   );
-  readonly eventsCount = computed(() => this.sourceEvents().length);
+  readonly eventsCount = computed(() => this.metricsEvents().length);
 
   // --- Estado de notificadores ---
   readonly notifierRows = computed<NotifierStatusRow[]>(() => {
@@ -168,10 +229,10 @@ export class BusinessDashboardSection implements OnInit {
     }));
   });
 
-  // --- Semáforo global ---
+  // --- Semáforo global (sobre la instantánea SIN filtrar) ---
   readonly semaphore = computed<Semaphore>(() => {
     const rejected = this.rejectedCount();
-    const failedEvents = this.sourceEvents().filter((e) => e.status === 'failed').length;
+    const failedEvents = this.metricsEvents().filter((e) => e.status === 'failed').length;
     const offline = this.notifierRows().filter((r) => r.status.level === 'offline').length;
     const pending = this.pendingCount() + this.reviewCount();
     const delayed = this.notifierRows().filter(
@@ -210,19 +271,95 @@ export class BusinessDashboardSection implements OnInit {
       .subscribe((event) => this.onLiveEvent(event));
   }
 
-  /** Inserta/actualiza un evento llegado en vivo y lo marca como no leído. */
+  /**
+   * Procesa un evento llegado en vivo. Siempre alimenta la instantánea de
+   * métricas (para el semáforo). En la tabla solo se ofrece si encaja en el
+   * filtro activo: si encaja se acumula en un buffer y se muestra el pill
+   * "N nuevos" (sin saltar la vista del usuario); si no encaja, se ignora.
+   */
   private onLiveEvent(event: SourceEvent): void {
-    this.sourceEvents.update((events) => {
-      const index = events.findIndex((current) => current.id === event.id);
-      if (index >= 0) {
-        const next = [...events];
-        next[index] = event;
-        return next;
-      }
-      return [event, ...events];
-    });
-    this.unreadEventIds.update((ids) => new Set(ids).add(event.id));
+    this.metricsEvents.update((events) => this.upsert(events, event));
     this.now.set(Date.now());
+
+    if (!this.matchesEventFilter(event, this.eventFilters())) {
+      return;
+    }
+    // Ya visible en la tabla (p. ej. tras recargar): solo refrescarlo.
+    if (this.sourceEvents().some((current) => current.id === event.id)) {
+      this.sourceEvents.update((events) => this.upsert(events, event));
+      return;
+    }
+    this.newEventsBuffer.update((buffer) =>
+      buffer.some((current) => current.id === event.id) ? buffer : [event, ...buffer],
+    );
+  }
+
+  /** Funde los eventos en vivo acumulados al tope de la tabla. */
+  flushNewEvents(): void {
+    const buffer = this.newEventsBuffer();
+    if (buffer.length === 0) {
+      return;
+    }
+    this.sourceEvents.update((events) => {
+      const ids = new Set(events.map((e) => e.id));
+      const fresh = buffer.filter((e) => !ids.has(e.id));
+      return [...fresh, ...events];
+    });
+    this.unreadEventIds.update((ids) => {
+      const next = new Set(ids);
+      buffer.forEach((e) => next.add(e.id));
+      return next;
+    });
+    this.newEventsBuffer.set([]);
+    this.now.set(Date.now());
+  }
+
+  /** ¿El evento encaja en el filtro activo de la tabla de eventos? */
+  private matchesEventFilter(event: SourceEvent, filters: SourceEventFilters): boolean {
+    if (filters.sourceType && event.sourceType !== filters.sourceType) {
+      return false;
+    }
+    if (filters.status && event.status !== filters.status) {
+      return false;
+    }
+    if (
+      filters.bankId &&
+      (event.normalized?.bankId ?? '').toLowerCase() !== filters.bankId.toLowerCase()
+    ) {
+      return false;
+    }
+    if (filters.q) {
+      const term = filters.q.trim().toLowerCase();
+      const externalId = (event.externalId ?? '').toLowerCase();
+      const reference = (event.normalized?.reference ?? '').toLowerCase();
+      if (!externalId.startsWith(term) && !reference.startsWith(term)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Inserta o reemplaza un evento por id, manteniendo el orden por recientes. */
+  private upsert(events: SourceEvent[], event: SourceEvent): SourceEvent[] {
+    const index = events.findIndex((current) => current.id === event.id);
+    if (index >= 0) {
+      const next = [...events];
+      next[index] = event;
+      return next;
+    }
+    return [event, ...events];
+  }
+
+  toggleCharts(): void {
+    this.chartsVisible.update((visible) => !visible);
+  }
+
+  private readChartsVisible(): boolean {
+    const raw = this.document.defaultView?.localStorage.getItem(
+      BusinessDashboardSection.CHARTS_STORAGE_KEY,
+    );
+    // Por defecto visibles; solo se ocultan si el usuario lo guardó así.
+    return raw !== '0';
   }
 
   /** Marca un evento como visto (al abrirlo en la lista, estilo bandeja). */
@@ -257,15 +394,30 @@ export class BusinessDashboardSection implements OnInit {
     }
     this.loadTransactions();
     this.loadSourceEvents();
+    this.loadMetrics();
     this.loadNotifiers();
   }
+
+  // --- Filtros (server-side) --------------------------------------------------
+
+  onEventFiltersChange(filters: SourceEventFilters): void {
+    this.eventFilters.set(filters);
+    this.loadSourceEvents();
+  }
+
+  onTransactionFiltersChange(filters: TransactionFilters): void {
+    this.txFilters.set(filters);
+    this.loadTransactions();
+  }
+
+  // --- Carga de datos ---------------------------------------------------------
 
   loadTransactions(): void {
     this.loadingTransactions.set(true);
     this.transactionsError.set('');
 
     this.transactionsApi
-      .list({ limit: 100 })
+      .list({ ...this.txFilters(), limit: TRANSACTIONS_PAGE_LIMIT })
       .pipe(
         finalize(() => this.loadingTransactions.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -273,7 +425,30 @@ export class BusinessDashboardSection implements OnInit {
       .subscribe({
         next: (response) => {
           this.transactions.set(response.transactions);
+          this.txCursor.set(response.nextCursor);
           this.now.set(Date.now());
+        },
+        error: (error) => this.transactionsError.set(httpErrorMessage(error)),
+      });
+  }
+
+  loadMoreTransactions(): void {
+    const cursor = this.txCursor();
+    if (!cursor || this.loadingMoreTransactions()) {
+      return;
+    }
+    this.loadingMoreTransactions.set(true);
+
+    this.transactionsApi
+      .list({ ...this.txFilters(), limit: TRANSACTIONS_PAGE_LIMIT, cursor })
+      .pipe(
+        finalize(() => this.loadingMoreTransactions.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.transactions.update((current) => [...current, ...response.transactions]);
+          this.txCursor.set(response.nextCursor);
         },
         error: (error) => this.transactionsError.set(httpErrorMessage(error)),
       });
@@ -282,16 +457,67 @@ export class BusinessDashboardSection implements OnInit {
   loadSourceEvents(): void {
     this.loadingEvents.set(true);
     this.eventsError.set('');
+    // Al recargar (filtro o refresh) descartamos lo acumulado en vivo: la nueva
+    // página ya trae el estado más reciente que encaja en el filtro.
+    this.newEventsBuffer.set([]);
 
     this.sourceEventsApi
-      .list()
+      .list({ ...this.eventFilters(), limit: EVENTS_PAGE_LIMIT })
       .pipe(
         finalize(() => this.loadingEvents.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.sourceEvents.set(response.sourceEvents),
+        next: (response) => {
+          this.sourceEvents.set(response.sourceEvents);
+          this.eventsCursor.set(response.nextCursor);
+        },
         error: (error) => this.eventsError.set(httpErrorMessage(error)),
+      });
+  }
+
+  loadMoreEvents(): void {
+    const cursor = this.eventsCursor();
+    if (!cursor || this.loadingMoreEvents()) {
+      return;
+    }
+    this.loadingMoreEvents.set(true);
+
+    this.sourceEventsApi
+      .list({ ...this.eventFilters(), limit: EVENTS_PAGE_LIMIT, cursor })
+      .pipe(
+        finalize(() => this.loadingMoreEvents.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.sourceEvents.update((current) => [...current, ...response.sourceEvents]);
+          this.eventsCursor.set(response.nextCursor);
+        },
+        error: (error) => this.eventsError.set(httpErrorMessage(error)),
+      });
+  }
+
+  /** Instantáneas SIN filtrar para KPIs/semáforo (últimas N). */
+  private loadMetrics(): void {
+    this.transactionsApi
+      .list({ limit: TRANSACTIONS_PAGE_LIMIT })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.metricsTransactions.set(response.transactions),
+        error: () => {
+          /* Los KPIs degradan a 0 silenciosamente; la tabla ya muestra error. */
+        },
+      });
+
+    this.sourceEventsApi
+      .list({ limit: EVENTS_PAGE_LIMIT })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.metricsEvents.set(response.sourceEvents),
+        error: () => {
+          /* idem */
+        },
       });
   }
 

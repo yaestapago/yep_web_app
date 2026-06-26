@@ -1,7 +1,7 @@
 <div class="zone">
   <div class="zone__head">
     <h3 class="zone__title"><svg lucideListChecks aria-hidden="true"></svg> Transacciones</h3>
-    <span class="zone__count">{{ filtered().length }}</span>
+    <span class="zone__count">{{ transactions().length }}{{ hasMore() ? '+' : '' }}</span>
   </div>
 
   <div class="filters">
@@ -12,8 +12,8 @@
         type="search"
         [value]="search()"
         (input)="search.set($any($event.target).value)"
-        placeholder="Buscar referencia, banco, monto o usuario…"
-        aria-label="Buscar transacciones"
+        placeholder="Buscar por referencia…"
+        aria-label="Buscar transacciones por referencia"
       />
     </span>
     <select class="control" [value]="statusFilter()" (change)="statusFilter.set($any($event.target).value)" aria-label="Filtrar por estado">
@@ -37,12 +37,6 @@
       <option value="7d">7 días</option>
       <option value="30d">30 días</option>
     </select>
-    <select class="control" [value]="levelFilter()" (change)="levelFilter.set($any($event.target).value)" aria-label="Filtrar por método de validación">
-      <option value="">Toda validación</option>
-      @for (level of levels; track level) {
-        <option [value]="level">{{ levelLabel(level) }}</option>
-      }
-    </select>
     <input
       class="control amount"
       type="number"
@@ -61,13 +55,14 @@
       placeholder="Monto máx."
       aria-label="Monto máximo"
     />
-    <label class="toggle">
-      <input type="checkbox" [checked]="onlyActionable()" (change)="onlyActionable.set($any($event.target).checked)" />
-      Solo pendientes de acción
-    </label>
   </div>
 
-  <div class="zone__body table-body">
+  <div
+    class="zone__body table-body"
+    appAutoFitRows="tbody tr"
+    autoFitHeader="thead"
+    (fit)="pageSize.set($event)"
+  >
     @if (loading()) {
       <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
     } @else if (error()) {
@@ -75,7 +70,7 @@
         <svg lucideTriangleAlert aria-hidden="true"></svg>
         <p>{{ error() }}</p>
       </div>
-    } @else if (filtered().length === 0) {
+    } @else if (transactions().length === 0) {
       <div class="state">
         <svg lucideListChecks aria-hidden="true"></svg>
         <h4>Sin transacciones</h4>
@@ -94,7 +89,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (tx of filtered(); track tx.id) {
+          @for (tx of paged(); track tx.id) {
             <tr>
               <td class="ref">
                 <span class="ref__main">{{ tx.reference || 'Sin referencia' }}</span>
@@ -135,4 +130,23 @@
       </table>
     }
   </div>
+
+  @if (!loading() && !error() && transactions().length > 0) {
+    <app-dashboard-pager
+      class="zone__foot"
+      [page]="currentPage()"
+      [totalPages]="totalPages()"
+      [total]="transactions().length"
+      (pageChange)="page.set($event)"
+    />
+    @if (hasMore() && onLastPage()) {
+      <button type="button" class="load-more" (click)="loadMore.emit()" [disabled]="loadingMore()">
+        @if (loadingMore()) {
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando…
+        } @else {
+          Cargar más
+        }
+      </button>
+    }
+  }
 </div>

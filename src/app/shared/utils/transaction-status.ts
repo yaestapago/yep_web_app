@@ -91,6 +91,20 @@ export function transactionCategoryTone(category: TransactionCategory): Transact
 /** Orden estable de categorías para gráficas/segmentos. */
 export const TRANSACTION_CATEGORIES = CATEGORY_ORDER;
 
+/**
+ * Estados técnicos que componen una categoría amigable. Lo usa el filtro
+ * server-side: la UI elige una categoría y enviamos al backend la lista de
+ * `TransactionStatus` que la integran (parámetro `statuses`), de modo que el
+ * filtrado ocurra sobre toda la colección y no solo sobre lo ya cargado.
+ */
+export function statusesForCategory(
+  category: TransactionCategory,
+): TransactionStatus[] {
+  return (Object.keys(STATUS_TO_CATEGORY) as TransactionStatus[]).filter(
+    (status) => STATUS_TO_CATEGORY[status].category === category,
+  );
+}
+
 const LEVEL_LABELS: Record<VerificationLevel, string> = {
   NONE: 'Sin validar',
   LOW: 'Confianza baja',

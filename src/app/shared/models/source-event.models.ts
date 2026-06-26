@@ -5,7 +5,8 @@ export type SourceEventType =
   | 'BANK_WEBHOOK'
   | 'BANK_API_POLL'
   | 'MANUAL_ENTRY'
-  | 'NOTIFIER_APP';
+  | 'NOTIFIER_APP'
+  | 'EMAIL_GMAIL';
 
 export type SourceEventStatus = 'received' | 'processing' | 'processed' | 'failed' | 'ignored';
 
@@ -35,7 +36,28 @@ export interface SourceEvent {
 
 export interface SourceEventsResponse {
   sourceEvents: SourceEvent[];
+  nextCursor?: string;
 }
+
+export interface SourceEventQuery {
+  cursor?: string;
+  limit?: number;
+  sourceType?: SourceEventType;
+  status?: SourceEventStatus;
+  /** Banco/plataforma normalizado (ej. "bancolombia"). */
+  bankId?: string;
+  /** Rango sobre createdAt (ISO 8601). */
+  from?: string;
+  to?: string;
+  /** Búsqueda por referencia/ID (prefijo). */
+  q?: string;
+}
+
+/** Filtros aplicables a la lista de eventos (sin paginación). */
+export type SourceEventFilters = Pick<
+  SourceEventQuery,
+  'sourceType' | 'status' | 'bankId' | 'from' | 'to' | 'q'
+>;
 
 export interface IngestSourceEventRequest {
   sourceType: SourceEventType;

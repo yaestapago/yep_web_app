@@ -5,10 +5,17 @@ import {
   effect,
   inject,
   input as defineInput,
+  output,
   signal,
 } from '@angular/core';
 import type { ChartData, ChartOptions, ChartType } from 'chart.js';
-import { LucideChartPie, LucideMaximize2, LucideSettings2 } from '@lucide/angular';
+import {
+  LucideChartPie,
+  LucideChevronDown,
+  LucideChevronUp,
+  LucideMaximize2,
+  LucideSettings2,
+} from '@lucide/angular';
 
 import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
@@ -63,7 +70,16 @@ const SOURCE_LABELS: Record<string, string> = {
  */
 @Component({
   selector: 'app-dashboard-charts',
-  imports: [Button, ChartCanvas, Modal, LucideChartPie, LucideMaximize2, LucideSettings2],
+  imports: [
+    Button,
+    ChartCanvas,
+    Modal,
+    LucideChartPie,
+    LucideChevronDown,
+    LucideChevronUp,
+    LucideMaximize2,
+    LucideSettings2,
+  ],
   templateUrl: './dashboard-charts.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-charts.scss'],
 })
@@ -73,6 +89,10 @@ export class DashboardChartsPanel {
   readonly transactions = defineInput.required<PaymentTransaction[]>();
   readonly sourceEvents = defineInput.required<SourceEvent[]>();
   readonly businessId = defineInput<string | null>(null);
+  /** Colapsado: solo se muestra la cabecera (las gráficas se ocultan). */
+  readonly collapsed = defineInput<boolean>(false);
+  /** Pide alternar el colapso (el dueño del estado decide y lo persiste). */
+  readonly toggleCollapse = output<void>();
 
   readonly catalog = CATALOG;
   readonly configOpen = signal(false);

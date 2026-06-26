@@ -45,21 +45,29 @@
     </div>
   </div>
 
-  <!-- Cuadrícula de 4 zonas -->
-  <div class="grid">
-    <app-dashboard-charts
-      class="grid__charts"
-      [transactions]="transactions()"
-      [sourceEvents]="sourceEvents()"
-      [businessId]="businessId()"
-    />
-    <app-dashboard-status
-      class="grid__status"
-      [semaphore]="semaphore()"
-      [rows]="notifierRows()"
-      [loading]="loadingNotifiers()"
-      [error]="notifiersError()"
-    />
+  <!-- Cuadrícula de zonas (cambia según las gráficas estén abiertas o colapsadas) -->
+  <div class="grid" [class.grid--with-charts]="chartsVisible()" [class.grid--no-charts]="!chartsVisible()">
+    <!-- Fila superior: gráficas + estado del sistema. En modo colapsado se
+         comporta como una fila flex (misma altura, estado a lo ancho); en modo
+         expandido es `display:contents` y cada módulo cae en su área del grid. -->
+    <div class="grid__top">
+      <app-dashboard-charts
+        class="grid__charts"
+        [transactions]="metricsTransactions()"
+        [sourceEvents]="metricsEvents()"
+        [businessId]="businessId()"
+        [collapsed]="!chartsVisible()"
+        (toggleCollapse)="toggleCharts()"
+      />
+      <app-dashboard-status
+        class="grid__status"
+        [semaphore]="semaphore()"
+        [rows]="notifierRows()"
+        [loading]="loadingNotifiers()"
+        [error]="notifiersError()"
+        [layout]="chartsVisible() ? 'vertical' : 'horizontal'"
+      />
+    </div>
     <app-dashboard-events
       class="grid__events"
       [events]="sourceEvents()"
@@ -67,7 +75,14 @@
       [error]="eventsError()"
       [unreadIds]="unreadEventIds()"
       [bankAccounts]="bankAccountsById()"
+      [bankOptions]="bankOptions()"
+      [hasMore]="eventsHasMore()"
+      [loadingMore]="loadingMoreEvents()"
+      [newCount]="newEventsCount()"
       (markSeen)="markEventSeen($event)"
+      (filtersChange)="onEventFiltersChange($event)"
+      (loadMore)="loadMoreEvents()"
+      (showNew)="flushNewEvents()"
     />
     <app-dashboard-transactions
       class="grid__transactions"
@@ -75,8 +90,13 @@
       [loading]="loadingTransactions()"
       [error]="transactionsError()"
       [verifyingId]="verifyingId()"
+      [bankOptions]="bankOptions()"
+      [hasMore]="txHasMore()"
+      [loadingMore]="loadingMoreTransactions()"
       (view)="openDetail($event)"
       (verify)="askVerify($event)"
+      (filtersChange)="onTransactionFiltersChange($event)"
+      (loadMore)="loadMoreTransactions()"
     />
   </div>
 </div>

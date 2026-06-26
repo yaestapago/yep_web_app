@@ -1,5 +1,15 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, computed, input as defineInput, output, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  input as defineInput,
+  output,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   LucideEye,
   LucideLoaderCircle,
@@ -8,26 +18,29 @@ import {
   LucideShieldCheck,
   LucideTriangleAlert,
 } from '@lucide/angular';
+import { debounceTime, distinctUntilChanged, skip } from 'rxjs';
 
 import type {
   PaymentTransaction,
-  VerificationLevel,
+  TransactionFilters,
 } from '../../../../shared/models/transaction.models';
 import {
+  statusesForCategory,
   transactionCategory,
   transactionStatusLabel,
   transactionTone,
-  verificationLevelLabel,
   type TransactionCategory,
 } from '../../../../shared/utils/transaction-status';
+import { AutoFitRowsDirective } from './auto-fit-rows.directive';
+import { DashboardPager } from './dashboard-pager';
 
 type PeriodFilter = 'all' | 'today' | '7d' | '30d';
 
-const LEVELS: VerificationLevel[] = ['NONE', 'LOW', 'MEDIUM', 'HIGH', 'MANUAL'];
-
 /**
- * Zona 4: tabla dinámica y compacta de transacciones con filtros client-side.
- * Las acciones "Ver" y "Verificar" se delegan al orquestador vía outputs.
+ * Zona 4: tabla compacta de transacciones. Los filtros (búsqueda por
+ * referencia, estado, banco, periodo y rango de monto) se aplican server-side:
+ * el panel emite los valores y la sección recarga con cursor. La paginación
+ * dentro de la ventana cargada sigue siendo client-side para ajustarse al alto.
  */
 @Component({
   selector: 'app-dashboard-transactions',
@@ -40,98 +53,110 @@ const LEVELS: VerificationLevel[] = ['NONE', 'LOW', 'MEDIUM', 'HIGH', 'MANUAL'];
     LucideSearch,
     LucideShieldCheck,
     LucideTriangleAlert,
+    AutoFitRowsDirective,
+    DashboardPager,
   ],
   templateUrl: './dashboard-transactions.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-transactions.scss'],
 })
 export class DashboardTransactionsPanel {
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Transacciones ya filtradas y paginadas por el servidor. */
   readonly transactions = defineInput.required<PaymentTransaction[]>();
   readonly loading = defineInput(false);
   readonly error = defineInput('');
   readonly verifyingId = defineInput<string | null>(null);
+  /** Bancos disponibles para el select (fuente estable: cuentas del negocio). */
+  readonly bankOptions = defineInput<string[]>([]);
+  /** Hay más páginas en el servidor más allá de lo cargado. */
+  readonly hasMore = defineInput(false);
+  readonly loadingMore = defineInput(false);
 
   readonly view = output<PaymentTransaction>();
   readonly verify = output<PaymentTransaction>();
+  /** Cambios de filtro (con debounce) para que la sección recargue server-side. */
+  readonly filtersChange = output<TransactionFilters>();
+  /** Solicita la siguiente página del servidor (cursor). */
+  readonly loadMore = output<void>();
 
   readonly search = signal('');
   readonly statusFilter = signal<string>('');
   readonly bankFilter = signal<string>('');
-  readonly levelFilter = signal<string>('');
   readonly period = signal<PeriodFilter>('all');
   readonly amountMin = signal<string>('');
   readonly amountMax = signal<string>('');
-  readonly onlyActionable = signal(false);
 
-  readonly levels = LEVELS;
-
-  readonly bankOptions = computed(() => {
-    const set = new Set<string>();
-    for (const tx of this.transactions()) {
-      if (tx.bankId) {
-        set.add(tx.bankId);
-      }
-    }
-    return [...set];
-  });
-
-  readonly filtered = computed(() => {
-    const term = this.search().trim().toLowerCase();
-    const status = this.statusFilter();
-    const bank = this.bankFilter();
-    const level = this.levelFilter();
-    const min = this.amountMin() ? Number(this.amountMin()) : null;
-    const max = this.amountMax() ? Number(this.amountMax()) : null;
-    const onlyActionable = this.onlyActionable();
+  /** Filtros normalizados que se envían al servidor. */
+  private readonly filterValue = computed<TransactionFilters>(() => {
     const since = this.periodStart(this.period());
-
-    return this.transactions()
-      .filter((tx) => {
-        if (status && transactionCategory(tx.status) !== status) {
-          return false;
-        }
-        if (bank && tx.bankId !== bank) {
-          return false;
-        }
-        if (level && tx.verification.level !== level) {
-          return false;
-        }
-        if (min !== null && tx.amount < min) {
-          return false;
-        }
-        if (max !== null && tx.amount > max) {
-          return false;
-        }
-        if (onlyActionable && !this.isActionable(tx)) {
-          return false;
-        }
-        if (since !== null) {
-          const time = new Date(tx.transactionDate).getTime();
-          if (Number.isNaN(time) || time < since) {
-            return false;
-          }
-        }
-        if (term) {
-          const haystack = [
-            tx.reference,
-            tx.bankId,
-            tx.amount.toString(),
-            tx.sender?.name,
-            tx.sender?.account,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-          if (!haystack.includes(term)) {
-            return false;
-          }
-        }
-        return true;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime(),
-      );
+    const category = this.statusFilter();
+    const min = this.amountMin() ? Number(this.amountMin()) : undefined;
+    const max = this.amountMax() ? Number(this.amountMax()) : undefined;
+    return {
+      q: this.search().trim() || undefined,
+      statuses: category
+        ? statusesForCategory(category as TransactionCategory).join(',')
+        : undefined,
+      bankId: this.bankFilter() || undefined,
+      from: since !== null ? new Date(since).toISOString() : undefined,
+      amountMin: Number.isFinite(min) ? min : undefined,
+      amountMax: Number.isFinite(max) ? max : undefined,
+    };
   });
+
+  // --- Paginado client-side sobre la ventana cargada --------------------------
+  /** Filas que caben en el alto disponible (lo calcula AutoFitRowsDirective). */
+  readonly pageSize = signal(8);
+  readonly page = signal(1);
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.transactions().length / this.pageSize())),
+  );
+
+  /** Página efectiva acotada a [1, totalPages] (autocorrige si los datos
+   *  encogen sin esperar interacción del usuario). */
+  readonly currentPage = computed(() =>
+    Math.min(Math.max(1, this.page()), this.totalPages()),
+  );
+
+  /** Página actual recortada. */
+  readonly paged = computed(() => {
+    const size = this.pageSize();
+    const start = (this.currentPage() - 1) * size;
+    return this.transactions().slice(start, start + size);
+  });
+
+  /** Estamos en la última página cargada (donde ofrecemos "cargar más"). */
+  readonly onLastPage = computed(() => this.currentPage() >= this.totalPages());
+
+  constructor() {
+    // Cualquier cambio de filtro vuelve a la primera página. Depende solo de los
+    // signals de filtro (no de los datos ni del tamaño), así un refresh o un
+    // evento en vivo no patean al usuario fuera de su página actual.
+    effect(() => {
+      this.search();
+      this.statusFilter();
+      this.bankFilter();
+      this.period();
+      this.amountMin();
+      this.amountMax();
+      this.page.set(1);
+    });
+
+    // Emite los filtros a la sección con debounce (el primer valor —el estado
+    // inicial vacío— se omite porque la sección ya hace la carga inicial).
+    toObservable(this.filterValue)
+      .pipe(
+        skip(1),
+        debounceTime(300),
+        distinctUntilChanged(
+          (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((filters) => this.filtersChange.emit(filters));
+  }
 
   category(tx: PaymentTransaction): TransactionCategory {
     return transactionCategory(tx.status);
@@ -145,10 +170,6 @@ export class DashboardTransactionsPanel {
     return transactionTone(tx.status);
   }
 
-  levelLabel(level: VerificationLevel): string {
-    return verificationLevelLabel(level);
-  }
-
   isActionable(tx: PaymentTransaction): boolean {
     return (
       !tx.verification.canBeConsideredPaid &&
@@ -160,11 +181,9 @@ export class DashboardTransactionsPanel {
     this.search.set('');
     this.statusFilter.set('');
     this.bankFilter.set('');
-    this.levelFilter.set('');
     this.period.set('all');
     this.amountMin.set('');
     this.amountMax.set('');
-    this.onlyActionable.set(false);
   }
 
   private periodStart(period: PeriodFilter): number | null {

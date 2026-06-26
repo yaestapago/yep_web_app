@@ -2,6 +2,62 @@
   gap: var(--space-3);
 }
 
+/* Variante horizontal: barra a lo ancho cuando se ocultan las gráficas. El
+   cuerpo deja de scrollear en vertical; el semáforo queda fijo a la izquierda y
+   los notificadores fluyen como chips que envuelven a lo ancho. */
+.zone--horizontal {
+  flex: 0 0 auto;
+}
+
+.zone--horizontal .zone__body {
+  overflow-y: visible;
+}
+
+.zone--horizontal .status-body {
+  align-items: stretch;
+  flex-direction: row;
+}
+
+.zone--horizontal .semaphore {
+  flex: 0 0 auto;
+  max-width: 22rem;
+}
+
+.zone--horizontal .notifiers {
+  min-width: 0;
+}
+
+.zone--horizontal .nlist {
+  align-items: center;
+  column-gap: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-x: visible;
+  overflow-y: visible;
+  row-gap: var(--space-1);
+}
+
+/* Sin caja: cada notificador se separa del anterior por una línea vertical
+   sutil, para que no se vean apretujados. */
+.zone--horizontal .nlist__row {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  border-radius: 0;
+  flex: 0 0 auto;
+  max-width: none;
+  padding: var(--space-1) var(--space-3);
+}
+
+.zone--horizontal .nlist__row:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.zone--horizontal .nlist__row:hover {
+  background: transparent;
+}
+
 /* Semáforo global ----------------------------------------------------------*/
 .semaphore {
   align-items: center;

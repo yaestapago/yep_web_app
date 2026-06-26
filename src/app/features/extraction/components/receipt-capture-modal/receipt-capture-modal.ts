@@ -22,7 +22,7 @@ import {
   LucideSend,
   LucideTriangleAlert,
 } from '@lucide/angular';
-import { finalize, switchMap } from 'rxjs';
+import { finalize, map, of, switchMap } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import {
@@ -32,7 +32,9 @@ import {
 import {
   CreateTransactionRequest,
   MechanismKind,
+  PaymentTransaction,
   TransactionParty,
+  VerificationLevel,
 } from '../../../../shared/models/transaction.models';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -229,12 +231,49 @@ export class ReceiptCaptureModal {
         },
       })
       .pipe(
-        switchMap((event) => this.transactionsApi.create({ ...request, sourceEventId: event.id })),
+        switchMap((event) =>
+          this.transactionsApi
+            .create({ ...request, sourceEventId: event.id })
+            .pipe(map((response) => ({ response, sourceEventId: event.id }))),
+        ),
+        // Tras crear: adjuntar el comprobante como soporte OCR y disparar la
+        // verificación, que además enlaza eventos de banco coincidentes. Si la
+        // transacción ya existía no re-procesamos.
+        switchMap(({ response, sourceEventId }) => {
+          if (response.action !== 'CREATED') {
+            return of({ action: response.action, transaction: response.transaction });
+          }
+          const transactionId = response.transaction.id;
+          return this.transactionsApi
+            .attachSupport(transactionId, {
+              type: 'OCR_RECEIPT',
+              mechanismKind: 'ocr_extraction',
+              sourceEventId,
+              extracted: {
+                bankId: request.bankId,
+                amount: request.amount,
+                currency: request.currency,
+                reference: request.reference,
+                transactionDate: request.transactionDate,
+                sender: request.sender,
+                receiver: request.receiver,
+              },
+            })
+            .pipe(
+              switchMap(() =>
+                this.transactionsApi.runVerification(transactionId, 'support_aggregation'),
+              ),
+              map((verified) => ({
+                action: response.action,
+                transaction: verified.transaction,
+              })),
+            );
+        }),
         finalize(() => this.creatingTransaction.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.afterTransactionCreated(response.action),
+        next: ({ action, transaction }) => this.afterTransactionCreated(action, transaction),
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
   }
@@ -359,15 +398,33 @@ export class ReceiptCaptureModal {
 
   private afterTransactionCreated(
     action: 'CREATED' | 'RETURNED_EXISTING' | 'DUPLICATE_DETECTED',
+    transaction?: PaymentTransaction,
   ): void {
-    this.success.set(
+    const base =
       action === 'CREATED'
-        ? 'Transacción creada.'
-        : 'Ya existía una transacción con los mismos datos.',
-    );
+        ? 'Transacción creada'
+        : 'Ya existía una transacción con los mismos datos';
+    const verdict = transaction
+      ? this.verificationSummary(transaction.verification.level)
+      : '';
+    this.success.set(verdict ? `${base}. ${verdict}` : `${base}.`);
     this.resetForm();
     this.step.set('capture');
     this.transactionEvents.notifyChanged();
+  }
+
+  private verificationSummary(level: VerificationLevel): string {
+    switch (level) {
+      case 'HIGH':
+      case 'MANUAL':
+        return 'Pago confirmado por el banco ✓';
+      case 'MEDIUM':
+        return 'Coincide con eventos del banco; falta confirmación final.';
+      case 'LOW':
+        return 'Validando con el banco; aún sin eventos relacionados.';
+      default:
+        return '';
+    }
   }
 
   private patchFormFromExtraction(response: TransactionExtractionResponse): void {

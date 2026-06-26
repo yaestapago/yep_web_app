@@ -1,28 +1,39 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
   Component,
+  DestroyRef,
   computed,
+  effect,
+  inject,
   input as defineInput,
   output,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
+  LucideArrowUp,
   LucideBell,
   LucideCircleCheck,
   LucideFileText,
   LucideLoaderCircle,
+  LucideMail,
+  LucideMonitor,
   LucideSearch,
   LucideSmartphone,
   LucideTriangleAlert,
 } from '@lucide/angular';
+import { debounceTime, distinctUntilChanged, skip } from 'rxjs';
 
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type {
   SourceEvent,
+  SourceEventFilters,
   SourceEventStatus,
   SourceEventType,
 } from '../../../../shared/models/source-event.models';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
+import { AutoFitRowsDirective } from './auto-fit-rows.directive';
+import { DashboardPager } from './dashboard-pager';
 
 const SOURCE_LABELS: Record<SourceEventType, string> = {
   WHATSAPP_INBOUND: 'WhatsApp',
@@ -32,6 +43,7 @@ const SOURCE_LABELS: Record<SourceEventType, string> = {
   BANK_API_POLL: 'API bancaria',
   MANUAL_ENTRY: 'Manual',
   NOTIFIER_APP: 'App notificadora',
+  EMAIL_GMAIL: 'Correo',
 };
 
 const STATUS_LABELS: Record<SourceEventStatus, string> = {
@@ -50,6 +62,11 @@ const STATUS_TONES: Record<SourceEventStatus, TransactionTone> = {
   ignored: 'neutral',
 };
 
+/** Opciones de tipo, estáticas y completas (no dependen de lo cargado). */
+const SOURCE_OPTIONS: { value: SourceEventType; label: string }[] = (
+  Object.keys(SOURCE_LABELS) as SourceEventType[]
+).map((value) => ({ value, label: SOURCE_LABELS[value] }));
+
 const SOURCE_PHRASES: Record<SourceEventType, string> = {
   WHATSAPP_INBOUND: 'Llegó un mensaje de WhatsApp con un posible comprobante',
   OCR_UPLOAD: 'Se subió un comprobante para lectura automática',
@@ -58,6 +75,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
   BANK_API_POLL: 'Se consultó al banco una transacción',
   MANUAL_ENTRY: 'Se registró un movimiento de forma manual',
   NOTIFIER_APP: 'La app notificadora reportó un movimiento del banco',
+  EMAIL_GMAIL: 'Llegó un correo del banco con un posible comprobante',
 };
 
 /**
@@ -69,18 +87,26 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
   imports: [
     CurrencyPipe,
     DatePipe,
+    LucideArrowUp,
     LucideBell,
     LucideCircleCheck,
     LucideFileText,
     LucideLoaderCircle,
+    LucideMail,
+    LucideMonitor,
     LucideSearch,
     LucideSmartphone,
     LucideTriangleAlert,
+    AutoFitRowsDirective,
+    DashboardPager,
   ],
   templateUrl: './dashboard-events.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-events.scss'],
 })
 export class DashboardEventsPanel {
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Eventos ya filtrados y paginados por el servidor (la ventana cargada). */
   readonly events = defineInput.required<SourceEvent[]>();
   readonly loading = defineInput(false);
   readonly error = defineInput('');
@@ -88,67 +114,87 @@ export class DashboardEventsPanel {
   readonly unreadIds = defineInput<Set<string>>(new Set());
   /** Catálogo de cuentas bancarias por id, para mostrar nombre/plataforma. */
   readonly bankAccounts = defineInput<Map<string, BankAccount>>(new Map());
+  /** Bancos disponibles para el select (fuente estable: cuentas del negocio). */
+  readonly bankOptions = defineInput<string[]>([]);
+  /** Hay más páginas en el servidor más allá de lo cargado. */
+  readonly hasMore = defineInput(false);
+  readonly loadingMore = defineInput(false);
+  /** Eventos en vivo que encajan en el filtro y esperan ser mostrados. */
+  readonly newCount = defineInput(0);
+
   /** Emite el id del evento que el usuario marcó como leído (al abrirlo). */
   readonly markSeen = output<string>();
+  /** Cambios de filtro (con debounce) para que la sección recargue server-side. */
+  readonly filtersChange = output<SourceEventFilters>();
+  /** Solicita la siguiente página del servidor (cursor). */
+  readonly loadMore = output<void>();
+  /** Fundir los eventos en vivo acumulados al tope de la lista. */
+  readonly showNew = output<void>();
 
   readonly search = signal('');
   readonly typeFilter = signal<string>('');
   readonly statusFilter = signal<string>('');
   readonly bankFilter = signal<string>('');
 
-  readonly typeOptions = computed(() => {
-    const set = new Set<SourceEventType>();
-    for (const event of this.events()) {
-      set.add(event.sourceType);
-    }
-    return [...set].map((value) => ({ value, label: SOURCE_LABELS[value] ?? value }));
+  readonly typeOptions = SOURCE_OPTIONS;
+
+  /** Filtros normalizados que se envían al servidor. */
+  private readonly filterValue = computed<SourceEventFilters>(() => ({
+    sourceType: (this.typeFilter() || undefined) as SourceEventType | undefined,
+    status: (this.statusFilter() || undefined) as SourceEventStatus | undefined,
+    bankId: this.bankFilter() || undefined,
+    q: this.search().trim() || undefined,
+  }));
+
+  // --- Paginado client-side sobre la ventana cargada --------------------------
+  /** Filas que caben en el alto disponible (lo calcula AutoFitRowsDirective). */
+  readonly pageSize = signal(6);
+  readonly page = signal(1);
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.events().length / this.pageSize())),
+  );
+
+  /** Página efectiva acotada a [1, totalPages] (autocorrige si los datos
+   *  encogen sin esperar interacción del usuario). */
+  readonly currentPage = computed(() =>
+    Math.min(Math.max(1, this.page()), this.totalPages()),
+  );
+
+  /** Página actual recortada. */
+  readonly paged = computed(() => {
+    const size = this.pageSize();
+    const start = (this.currentPage() - 1) * size;
+    return this.events().slice(start, start + size);
   });
 
-  readonly bankOptions = computed(() => {
-    const set = new Set<string>();
-    for (const event of this.events()) {
-      const bank = event.normalized?.bankId;
-      if (bank) {
-        set.add(bank);
-      }
-    }
-    return [...set];
-  });
+  /** Estamos en la última página cargada (donde ofrecemos "cargar más"). */
+  readonly onLastPage = computed(() => this.currentPage() >= this.totalPages());
 
-  readonly filtered = computed(() => {
-    const term = this.search().trim().toLowerCase();
-    const type = this.typeFilter();
-    const status = this.statusFilter();
-    const bank = this.bankFilter();
-
-    return this.events().filter((event) => {
-      if (type && event.sourceType !== type) {
-        return false;
-      }
-      if (status && event.status !== status) {
-        return false;
-      }
-      if (bank && event.normalized?.bankId !== bank) {
-        return false;
-      }
-      if (term) {
-        const haystack = [
-          event.normalized?.reference,
-          event.externalId,
-          event.normalized?.amount?.toString(),
-          this.description(event),
-          SOURCE_LABELS[event.sourceType],
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase();
-        if (!haystack.includes(term)) {
-          return false;
-        }
-      }
-      return true;
+  constructor() {
+    // Volver a la primera página cuando cambia un filtro: depende solo de los
+    // signals de filtro (no de los datos ni de los eventos en vivo).
+    effect(() => {
+      this.search();
+      this.typeFilter();
+      this.statusFilter();
+      this.bankFilter();
+      this.page.set(1);
     });
-  });
+
+    // Emite los filtros a la sección con debounce (el primer valor —el estado
+    // inicial vacío— se omite porque la sección ya hace la carga inicial).
+    toObservable(this.filterValue)
+      .pipe(
+        skip(1),
+        debounceTime(300),
+        distinctUntilChanged(
+          (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((filters) => this.filtersChange.emit(filters));
+  }
 
   isUnread(event: SourceEvent): boolean {
     return this.unreadIds().has(event.id);
@@ -177,6 +223,33 @@ export class DashboardEventsPanel {
 
   sourceLabel(type: SourceEventType): string {
     return SOURCE_LABELS[type] ?? type;
+  }
+
+  /**
+   * Icono Lucide que representa el origen del evento, o `null` cuando no hay
+   * icono y se muestra la etiqueta de texto. La app notificadora se desdobla en
+   * celular (`smartphone`) o escritorio (`monitor`) según el sistema operativo
+   * reportado en el payload; el correo usa `mail`.
+   */
+  eventIcon(event: SourceEvent): 'smartphone' | 'monitor' | 'mail' | null {
+    if (event.sourceType === 'EMAIL_GMAIL') {
+      return 'mail';
+    }
+    if (event.sourceType === 'NOTIFIER_APP') {
+      return this.isDesktopNotifier(event) ? 'monitor' : 'smartphone';
+    }
+    return null;
+  }
+
+  /**
+   * Distingue un evento de notificador de escritorio (Windows/macOS/Linux) de
+   * uno móvil mirando `rawPayload.device.osVersion`. Ante la duda asume móvil,
+   * que era el comportamiento previo de la app notificadora.
+   */
+  private isDesktopNotifier(event: SourceEvent): boolean {
+    const device = event.rawPayload?.['device'] as { osVersion?: unknown } | undefined;
+    const os = typeof device?.osVersion === 'string' ? device.osVersion.toLowerCase() : '';
+    return os.includes('windows') || os.includes('mac') || os.includes('linux');
   }
 
   statusLabel(status: SourceEventStatus): string {

@@ -1,17 +1,34 @@
-<div class="zone">
+<div class="zone" [class.zone--collapsed]="collapsed()">
   <div class="zone__head">
     <h3 class="zone__title"><svg lucideChartPie aria-hidden="true"></svg> Gráficas</h3>
-    <button
-      type="button"
-      class="icon-btn"
-      (click)="openConfig()"
-      aria-label="Configurar gráficas"
-      title="Elegir gráficas"
-    >
-      <svg lucideSettings2 aria-hidden="true"></svg>
-    </button>
+    <div class="zone__actions">
+      <button
+        type="button"
+        class="icon-btn"
+        (click)="openConfig()"
+        aria-label="Configurar gráficas"
+        title="Elegir gráficas"
+      >
+        <svg lucideSettings2 aria-hidden="true"></svg>
+      </button>
+      <button
+        type="button"
+        class="icon-btn"
+        (click)="toggleCollapse.emit()"
+        [attr.aria-expanded]="!collapsed()"
+        [attr.aria-label]="collapsed() ? 'Mostrar gráficas' : 'Ocultar gráficas'"
+        [title]="collapsed() ? 'Mostrar gráficas' : 'Ocultar gráficas'"
+      >
+        @if (collapsed()) {
+          <svg lucideChevronDown aria-hidden="true"></svg>
+        } @else {
+          <svg lucideChevronUp aria-hidden="true"></svg>
+        }
+      </button>
+    </div>
   </div>
 
+  @if (!collapsed()) {
   <div class="zone__body charts-body">
     @if (!hasData()) {
       <div class="state">
@@ -51,6 +68,7 @@
       </div>
     }
   </div>
+  }
 </div>
 
 <yep-modal

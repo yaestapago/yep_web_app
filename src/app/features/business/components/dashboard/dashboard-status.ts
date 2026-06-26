@@ -42,6 +42,12 @@ export class DashboardStatusPanel {
   readonly rows = defineInput.required<NotifierStatusRow[]>();
   readonly loading = defineInput(false);
   readonly error = defineInput('');
+  /**
+   * `vertical` (por defecto): columna estrecha junto a las gráficas.
+   * `horizontal`: barra a lo ancho (cuando las gráficas están ocultas), con el
+   * semáforo a la izquierda y los notificadores como chips que envuelven.
+   */
+  readonly layout = defineInput<'vertical' | 'horizontal'>('vertical');
 
   notifierName(notifier: Notifier): string {
     return notifier.displayName?.trim() || 'Notificador sin nombre';

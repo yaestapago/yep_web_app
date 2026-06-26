@@ -1,3 +1,34 @@
+.zone__actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: var(--space-1);
+}
+
+/* Colapsado: solo se muestra la cabecera, pero la tarjeta llena el alto de su
+   contenedor (a la par del estado). La cabecera se vuelve una columna que
+   rellena ese alto: título arriba (mismo tamaño que el del estado) y los
+   botones repartidos abajo, ocupando todo el ancho de la cajita. */
+.zone--collapsed .zone__head {
+  align-items: stretch;
+  border-bottom: 0;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100%;
+  justify-content: space-between;
+  padding: var(--space-3);
+}
+
+.zone--collapsed .zone__actions {
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.zone--collapsed .icon-btn {
+  width: 100%;
+}
+
 .charts-body {
   padding: var(--space-3);
 }
