@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yaestapago-stage",
+  "compatibility_date": "2026-06-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "dist/yep-web/browser",
+    "not_found_handling": "single-page-application"
+  }
+}
