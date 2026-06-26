@@ -1,0 +1,132 @@
+:host {
+  display: block;
+}
+
+.business-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.business-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 168px;
+  padding: var(--space-5);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-base),
+    transform var(--motion-base);
+}
+
+.business-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.card-top {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.business-avatar {
+  align-items: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  display: flex;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.badge-active {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px var(--space-2);
+}
+
+.business-name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.business-location {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+}
+
+.business-location svg {
+  height: 16px;
+  width: 16px;
+}
+
+.card-footer {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.role-chip {
+  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 2px var(--space-3);
+}
+
+.chevron {
+  color: var(--color-text-secondary);
+  height: 18px;
+  width: 18px;
+}
+
+.business-card--new {
+  align-items: center;
+  border-style: dashed;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+}
+
+.business-card--new .business-name {
+  font-size: var(--font-size-md);
+}
+
+.new-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-primary);
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.new-hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

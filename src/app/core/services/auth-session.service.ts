@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-import { AuthResponse, BusinessMembership, User } from '../../shared/models/auth.models';
+import { AuthResponse, BusinessAccount, BusinessMembership, User } from '../../shared/models/auth.models';
 
 interface StoredSession {
   accessToken: string;
@@ -117,6 +117,38 @@ export class AuthSessionService {
     }
 
     return true;
+  }
+
+  /** Actualiza el usuario en sesión (p. ej. tras editar perfil o preferencias). */
+  updateUser(user: User): void {
+    const current = this.session();
+
+    if (!current) {
+      return;
+    }
+
+    this.persist({
+      ...current,
+      user: { ...current.user, ...user },
+    });
+  }
+
+  /** Actualiza el negocio anidado en las membresías (p. ej. tras editar sus datos). */
+  patchBusinessAccount(account: BusinessAccount): void {
+    const current = this.session();
+
+    if (!current) {
+      return;
+    }
+
+    this.persist({
+      ...current,
+      memberships: current.memberships.map((membership) =>
+        membership.businessAccountId === account.id
+          ? { ...membership, businessAccount: { ...membership.businessAccount, ...account } }
+          : membership,
+      ),
+    });
   }
 
   clearSession(): void {

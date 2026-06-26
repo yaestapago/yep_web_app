@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import {
+  AttachSupportRequest,
+  AttachSupportResponse,
   CreateTransactionRequest,
   CreateTransactionResponse,
   PaymentSupportsResponse,
@@ -33,6 +35,16 @@ export class TransactionsApiService {
 
   listSupports(transactionId: string): Observable<PaymentSupportsResponse> {
     return this.http.get<PaymentSupportsResponse>(`${this.apiUrl}/transactions/${transactionId}/supports`);
+  }
+
+  attachSupport(
+    transactionId: string,
+    request: AttachSupportRequest,
+  ): Observable<AttachSupportResponse> {
+    return this.http.post<AttachSupportResponse>(
+      `${this.apiUrl}/transactions/${transactionId}/supports`,
+      request,
+    );
   }
 
   runVerification(transactionId: string, mechanismKind?: string): Observable<TransactionResponse> {

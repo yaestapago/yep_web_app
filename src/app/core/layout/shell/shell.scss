@@ -1,0 +1,232 @@
+:host {
+  --sidebar-width: 264px;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 100vh;
+}
+
+.sidebar-slot {
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.content {
+  flex: 1;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: var(--space-6);
+  width: 100%;
+}
+
+/* Rutas inmersivas (panel de control): ancho completo y altura fija de
+   viewport. El scroll vive dentro de cada zona de la vista, no en la página. */
+.content--immersive {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: none;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--space-4) var(--space-5);
+}
+
+.scrim {
+  display: none;
+}
+
+/* FAB circular (solo icono) que se expande mostrando la etiqueta al pasar el
+   cursor o al enfocar con teclado. Más llamativo y sin texto largo permanente. */
+.receipt-fab {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-full);
+  bottom: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  gap: 0;
+  height: 56px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  position: fixed;
+  right: var(--space-6);
+  transition:
+    width 0.2s ease,
+    gap 0.2s ease,
+    padding 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+  width: 56px;
+  z-index: 15;
+}
+
+.receipt-fab span {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.2s ease,
+    opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.receipt-fab:hover,
+.receipt-fab:focus-visible {
+  background: color-mix(in srgb, var(--color-primary) 88%, #000000);
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  transform: translateY(-1px);
+  width: auto;
+}
+
+.receipt-fab:hover span,
+.receipt-fab:focus-visible span {
+  max-width: 180px;
+  opacity: 1;
+}
+
+.receipt-fab svg {
+  flex: none;
+  height: 22px;
+  width: 22px;
+}
+
+/* Topbar visible solo en móvil */
+.mobile-topbar {
+  display: none;
+}
+
+.menu-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  height: var(--control-height-md);
+  justify-content: center;
+  width: var(--control-height-md);
+}
+
+.menu-button svg {
+  height: 22px;
+  width: 22px;
+}
+
+.mobile-brand {
+  align-items: center;
+  display: inline-flex;
+}
+
+.mobile-brand__logo {
+  display: block;
+  height: 38px;
+  object-fit: contain;
+  object-position: left center;
+  width: auto;
+}
+
+.mobile-brand__logo--dark {
+  display: none;
+}
+
+:host-context([data-theme='dark']) {
+  .mobile-brand__logo--light {
+    display: none;
+  }
+
+  .mobile-brand__logo--dark {
+    display: block;
+  }
+}
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-slot {
+    height: 100dvh;
+    left: 0;
+    position: fixed;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform var(--motion-base);
+    width: var(--sidebar-width);
+    z-index: 30;
+  }
+
+  .shell.drawer-open .sidebar-slot {
+    box-shadow: var(--shadow-lg);
+    transform: translateX(0);
+  }
+
+  .scrim {
+    background: rgba(8, 15, 20, 0.5);
+    display: block;
+    inset: 0;
+    position: fixed;
+    z-index: 20;
+  }
+
+  .mobile-topbar {
+    align-items: center;
+    backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--color-background) 88%, transparent);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    gap: var(--space-3);
+    min-height: 60px;
+    padding: 0 var(--space-4);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
+
+  /* En móvil hay topbar y se permite apilar/scroll: el panel deja de fijar
+     la altura del viewport. */
+  .content--immersive {
+    height: auto;
+    overflow: visible;
+    padding: var(--space-4);
+  }
+
+  .receipt-fab {
+    bottom: var(--space-4);
+    min-height: 48px;
+    padding: 0;
+    right: var(--space-4);
+    width: 48px;
+  }
+
+  .receipt-fab span {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+}

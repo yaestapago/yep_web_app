@@ -1,0 +1,64 @@
+<div
+  class="yep-otp"
+  [class.yep-otp--error]="status() === 'error'"
+  [class.yep-otp--success]="status() === 'success'"
+  [class.yep-otp--disabled]="isDisabled()"
+>
+  <div class="yep-otp__inputs" role="group" aria-label="Código de verificación de 6 dígitos">
+    @for (index of indexes; track index) {
+      <input
+        #otpInput
+        class="yep-otp__input"
+        [id]="inputId(index)"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="6"
+        [autocomplete]="index === 0 ? 'one-time-code' : 'off'"
+        [value]="digits()[index]"
+        [disabled]="isDisabled()"
+        [class.yep-otp__input--focused]="focusedIndex() === index"
+        [class.yep-otp__input--filled]="digits()[index]"
+        [attr.aria-label]="'Dígito ' + (index + 1) + ' del código'"
+        [attr.aria-invalid]="status() === 'error' ? 'true' : null"
+        (input)="handleInput($event, index)"
+        (keydown)="handleKeydown($event, index)"
+        (paste)="handlePaste($event, index)"
+        (focus)="handleFocus(index)"
+        (blur)="handleBlur()"
+      />
+    }
+  </div>
+
+  <div class="yep-otp__feedback" aria-live="polite">
+    @if (status() === 'error') {
+      <p class="yep-otp__message yep-otp__message--error">
+        <svg lucideCircleX aria-hidden="true"></svg>
+        <span>{{ errorMessage() || 'El código no es válido.' }}</span>
+      </p>
+    } @else if (status() === 'validating') {
+      <p class="yep-otp__message">
+        <svg lucideInfo aria-hidden="true"></svg>
+        <span>Validando código...</span>
+      </p>
+    } @else if (status() === 'sending') {
+      <p class="yep-otp__message">
+        <svg lucideInfo aria-hidden="true"></svg>
+        <span>Enviando código...</span>
+      </p>
+    } @else if (status() === 'success') {
+      <p class="yep-otp__message yep-otp__message--success">
+        <svg lucideCircleCheck aria-hidden="true"></svg>
+        <span>Código verificado.</span>
+      </p>
+    }
+
+    @if (resendSeconds() > 0) {
+      <p class="yep-otp__resend">Podrás solicitar otro código en {{ resendLabel() }}</p>
+    } @else {
+      <button class="yep-otp__resend-action" type="button" [disabled]="isDisabled()" (click)="requestResend()">
+        Volver a enviar
+      </button>
+    }
+  </div>
+</div>

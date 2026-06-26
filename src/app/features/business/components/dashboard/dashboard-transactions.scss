@@ -1,0 +1,109 @@
+.search {
+  position: relative;
+}
+
+.search__icon {
+  color: var(--color-text-muted);
+  height: 14px;
+  left: var(--space-2);
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+}
+
+.search__input {
+  padding-left: calc(var(--space-2) * 2 + 14px);
+  width: 100%;
+}
+
+.amount {
+  flex: 0 0 92px;
+  width: 92px;
+}
+
+.table-body {
+  padding: 0;
+}
+
+.txtable {
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  width: 100%;
+}
+
+.txtable thead th {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.03em;
+  padding: var(--space-2) var(--space-3);
+  position: sticky;
+  text-align: left;
+  text-transform: uppercase;
+  top: 0;
+  z-index: 1;
+}
+
+.txtable tbody td {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  padding: var(--space-2) var(--space-3);
+  vertical-align: middle;
+}
+
+.txtable tbody tr:hover {
+  background: color-mix(in srgb, var(--color-secondary) 6%, transparent);
+}
+
+.num {
+  text-align: right;
+}
+
+.strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.ref {
+  max-width: 220px;
+}
+
+.ref__main {
+  display: block;
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ref__sub {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.actions-col {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.icon-btn--verify {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  color: var(--color-primary);
+}
+
+.icon-btn--verify:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}

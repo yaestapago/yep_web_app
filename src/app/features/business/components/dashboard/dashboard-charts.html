@@ -1,0 +1,121 @@
+<div class="zone" [class.zone--collapsed]="collapsed()">
+  <div class="zone__head">
+    <h3 class="zone__title"><svg lucideChartPie aria-hidden="true"></svg> Gráficas</h3>
+    <div class="zone__actions">
+      <button
+        type="button"
+        class="icon-btn"
+        (click)="openConfig()"
+        aria-label="Configurar gráficas"
+        title="Elegir gráficas"
+      >
+        <svg lucideSettings2 aria-hidden="true"></svg>
+      </button>
+      <button
+        type="button"
+        class="icon-btn"
+        (click)="toggleCollapse.emit()"
+        [attr.aria-expanded]="!collapsed()"
+        [attr.aria-label]="collapsed() ? 'Mostrar gráficas' : 'Ocultar gráficas'"
+        [title]="collapsed() ? 'Mostrar gráficas' : 'Ocultar gráficas'"
+      >
+        @if (collapsed()) {
+          <svg lucideChevronDown aria-hidden="true"></svg>
+        } @else {
+          <svg lucideChevronUp aria-hidden="true"></svg>
+        }
+      </button>
+    </div>
+  </div>
+
+  @if (!collapsed()) {
+  <div class="zone__body charts-body">
+    @if (!hasData()) {
+      <div class="state">
+        <svg lucideChartPie aria-hidden="true"></svg>
+        <h4>Sin datos todavía</h4>
+        <p>Cuando registres transacciones y eventos verás aquí tus gráficas.</p>
+      </div>
+    } @else if (views().length === 0) {
+      <div class="state">
+        <svg lucideChartPie aria-hidden="true"></svg>
+        <h4>Ninguna gráfica seleccionada</h4>
+        <p>Usa el botón de configurar para elegir qué gráficas mostrar.</p>
+      </div>
+    } @else {
+      <div class="charts-grid">
+        @for (view of views(); track view.id) {
+          <button
+            type="button"
+            class="chart-cell"
+            (click)="expand(view.id)"
+            [attr.aria-label]="'Ampliar: ' + chartTitle(view.id)"
+          >
+            <span class="chart-cell__title">
+              {{ chartTitle(view.id) }}
+              <svg class="chart-cell__expand" lucideMaximize2 aria-hidden="true"></svg>
+            </span>
+            <span class="chart-cell__canvas">
+              <yep-chart-canvas
+                [type]="view.type"
+                [data]="view.data"
+                [options]="view.options"
+                [ariaLabel]="view.ariaLabel"
+              />
+            </span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+  }
+</div>
+
+<yep-modal
+  [open]="configOpen()"
+  title="Configurar gráficas"
+  subtitle="Elige qué gráficas quieres ver en el panel."
+  size="sm"
+  (closeRequested)="closeConfig()"
+>
+  <ul class="catalog">
+    @for (item of catalog; track item.id) {
+      <li class="catalog__item">
+        <label class="catalog__label">
+          <input
+            type="checkbox"
+            [checked]="isDraftSelected(item.id)"
+            (change)="toggleDraft(item.id)"
+          />
+          <span class="catalog__text">
+            <span class="catalog__title">{{ item.title }}</span>
+            <span class="catalog__desc">{{ item.description }}</span>
+          </span>
+        </label>
+      </li>
+    }
+  </ul>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeConfig()">Cancelar</yep-button>
+    <yep-button (clicked)="applyConfig()">Guardar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="expandedView() !== null"
+  [title]="expandedId() ? chartTitle(expandedId()!) : ''"
+  size="lg"
+  (closeRequested)="closeExpanded()"
+>
+  @if (expandedView(); as view) {
+    <div class="chart-expanded">
+      <yep-chart-canvas
+        [type]="view.type"
+        [data]="view.data"
+        [options]="view.options"
+        [ariaLabel]="view.ariaLabel"
+      />
+    </div>
+  }
+</yep-modal>

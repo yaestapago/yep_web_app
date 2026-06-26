@@ -1,0 +1,32 @@
+<section class="page business-shell" [class.business-shell--immersive]="immersive()">
+  @if (!immersive()) {
+    <a class="back-link" routerLink="/businesses">
+      <svg lucideArrowLeft aria-hidden="true"></svg>
+      <span>Negocios</span>
+    </a>
+  }
+
+  @if (membership()) {
+    @if (!immersive()) {
+      <header class="business-head">
+        <span class="business-avatar" aria-hidden="true">{{ initials() }}</span>
+        <span class="business-head-meta">
+          <h1 class="page-title">{{ businessName() }}</h1>
+          <span class="business-sub">
+            <span class="role-chip">{{ roleLabel() }}</span>
+            @if (businessLocation()) {
+              <span class="business-location">{{ businessLocation() }}</span>
+            }
+          </span>
+        </span>
+      </header>
+    }
+
+    <router-outlet />
+  } @else {
+    <div class="placeholder">
+      <h2>Negocio no encontrado</h2>
+      <p>No tienes acceso aprobado a este negocio o el enlace ya no es válido.</p>
+    </div>
+  }
+</section>

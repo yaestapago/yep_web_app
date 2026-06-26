@@ -1,0 +1,123 @@
+<aside class="sidebar">
+  <div class="brand" aria-label="Ya Está Pago">
+    <img class="brand__logo brand__logo--light" src="/brand/logo-light.png" alt="Ya Está Pago" />
+    <img class="brand__logo brand__logo--dark" src="/brand/logo-dark.png" alt="" aria-hidden="true" />
+  </div>
+
+  <a class="user-card" routerLink="/settings" (click)="onNavigate()" aria-label="Perfil y configuración">
+    <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+    <span class="user-meta">
+      <span class="user-name">{{ fullName() }}</span>
+      <span class="user-email">{{ user()?.email }}</span>
+    </span>
+  </a>
+
+  <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
+  <div class="business-switcher">
+    <span class="business-switcher__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
+    <span class="business-switcher__meta">
+      <span class="business-switcher__label">Negocio</span>
+      <span class="business-switcher__name">{{ activeBusinessName() }}</span>
+    </span>
+    <svg class="business-switcher__chevron" lucideChevronsUpDown aria-hidden="true"></svg>
+    <label class="visually-hidden" for="business-switcher-select">Cambiar de negocio</label>
+    <select
+      id="business-switcher-select"
+      class="business-switcher__select"
+      [value]="activeBusinessAccountId() ?? ''"
+      (change)="switchBusiness($event)"
+    >
+      @for (membership of memberships(); track membership.businessAccountId) {
+        <option [value]="membership.businessAccountId">
+          {{ businessName(membership.businessAccountId) }}
+        </option>
+      }
+    </select>
+  </div>
+
+  <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
+    <svg lucideBuilding2 aria-hidden="true"></svg>
+    <span>Gestionar negocios</span>
+  </button>
+
+  <nav class="nav-group" aria-label="Navegación principal">
+    <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
+      <svg lucideHouse aria-hidden="true"></svg>
+      <span>Novedades</span>
+    </a>
+
+    <a
+      [routerLink]="dashboardLink()"
+      routerLinkActive="active"
+      (click)="onNavigate()"
+    >
+      <svg lucideLayoutDashboard aria-hidden="true"></svg>
+      <span>Panel de control</span>
+    </a>
+
+    <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
+    <div class="nav-subgroup" [class.open]="businessGroupOpen()">
+      <button
+        type="button"
+        class="nav-subgroup__header"
+        [attr.aria-expanded]="businessGroupOpen()"
+        aria-controls="business-subnav"
+        (click)="toggleBusinessGroup()"
+      >
+        <svg lucideBuilding2 aria-hidden="true"></svg>
+        <span>Negocio</span>
+        <svg
+          class="nav-subgroup__chevron"
+          [class.open]="businessGroupOpen()"
+          lucideChevronDown
+          aria-hidden="true"
+        ></svg>
+      </button>
+
+      @if (businessGroupOpen()) {
+        <div class="nav-subgroup__items" id="business-subnav">
+          @if (activeBusinessAccountId()) {
+            @for (item of businessSections; track item.path) {
+              <a
+                [routerLink]="businessLink(item.path)"
+                routerLinkActive="active"
+                (click)="onNavigate()"
+              >
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          } @else {
+            <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
+          }
+        </div>
+      }
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button
+      class="theme-toggle"
+      type="button"
+      (click)="toggleTheme()"
+      [attr.aria-label]="themeLabel()"
+    >
+      @if (isDark()) {
+        <svg lucideSun aria-hidden="true"></svg>
+        <span>Modo claro</span>
+      } @else {
+        <svg lucideMoon aria-hidden="true"></svg>
+        <span>Modo oscuro</span>
+      }
+    </button>
+
+    <a class="nav-settings" routerLink="/settings" routerLinkActive="active" (click)="onNavigate()">
+      <svg lucideSettings aria-hidden="true"></svg>
+      <span>Configuración</span>
+    </a>
+
+    <button class="logout" type="button" (click)="requestLogout()">
+      <svg lucideLogOut aria-hidden="true"></svg>
+      <span>Cerrar sesión</span>
+    </button>
+  </div>
+</aside>

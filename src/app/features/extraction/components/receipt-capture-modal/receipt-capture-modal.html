@@ -1,0 +1,187 @@
+<yep-modal
+  [open]="open()"
+  title="Captura de comprobante"
+  [subtitle]="'Registra el comprobante para ' + businessName()"
+  size="lg"
+  [loading]="loading()"
+  [dirty]="isDirty()"
+  (closeRequested)="close()"
+>
+  @if (error()) {
+    <div class="state-error" role="alert">
+      <svg lucideTriangleAlert aria-hidden="true"></svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+  @if (success()) {
+    <div class="state-success" role="status">{{ success() }}</div>
+  }
+
+  <!-- Input de archivo oculto: la opción principal es la cámara. -->
+  <input
+    #fileInput
+    type="file"
+    accept="image/*"
+    class="visually-hidden"
+    (change)="onReceiptSelected($event)"
+  />
+
+  @if (step() === 'capture') {
+    <div class="capture-stage">
+      <div class="camera-frame" [class.camera-frame--error]="cameraError() && !selectedReceipt()">
+        @if (selectedReceipt()) {
+          <!-- Foto congelada: el usuario ve exactamente lo que se capturó. -->
+          <img class="camera-video" [src]="previewUrl()" alt="Comprobante capturado" />
+        } @else {
+          <!-- El video siempre existe para que el viewChild esté disponible. -->
+          <video #video class="camera-video" playsinline muted autoplay></video>
+        }
+
+        @if (extracting()) {
+          <div class="camera-overlay">
+            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            <p>Procesando comprobante…</p>
+          </div>
+        } @else if (cameraError() && !selectedReceipt()) {
+          <div class="camera-overlay camera-overlay--message">
+            <svg lucideCameraOff aria-hidden="true"></svg>
+            <p>{{ cameraError() }}</p>
+          </div>
+        }
+      </div>
+
+      @if (selectedReceipt()) {
+        <!-- Ya hay foto: ofrecer reintentar OCR o volver a capturar. -->
+        @if (!extracting()) {
+          <div class="capture-controls">
+            <button type="button" class="shutter-btn" (click)="retryOcr()" [disabled]="loading()">
+              <svg lucideRotateCcw aria-hidden="true"></svg>
+              <span>Reintentar OCR</span>
+            </button>
+            <button type="button" class="attach-btn" (click)="retake()" [disabled]="loading()">
+              <svg lucideCamera aria-hidden="true"></svg>
+              <span>Volver a capturar</span>
+            </button>
+          </div>
+        }
+      } @else {
+        <div class="capture-controls">
+          <button
+            type="button"
+            class="shutter-btn"
+            (click)="capturePhoto()"
+            [disabled]="!cameraReady() || loading()"
+            aria-label="Capturar comprobante"
+          >
+            <svg lucideCamera aria-hidden="true"></svg>
+            <span>Capturar</span>
+          </button>
+
+          <button
+            type="button"
+            class="attach-btn"
+            (click)="fileInput.click()"
+            [disabled]="loading()"
+          >
+            <svg lucidePaperclip aria-hidden="true"></svg>
+            <span>Adjuntar archivo</span>
+          </button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="review-stage">
+      <div class="review-summary">
+        @if (previewUrl()) {
+          <img class="review-thumb" [src]="previewUrl()" alt="Comprobante capturado" />
+        }
+        @if (extraction(); as ocr) {
+          <dl class="review-meta">
+            <div>
+              <dt>Banco</dt>
+              <dd>{{ ocr.transaction.bank || 'Sin datos' }}</dd>
+            </div>
+            <div>
+              <dt>Monto</dt>
+              <dd>
+                {{
+                  ocr.transaction.amount || 0
+                    | currency: ocr.transaction.currency || 'COP' : 'symbol-narrow' : '1.0-0'
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Confianza</dt>
+              <dd>{{ ocr.transaction.confidence | percent: '1.0-0' }}</dd>
+            </div>
+          </dl>
+        }
+        <button type="button" class="attach-btn" (click)="retake()" [disabled]="loading()">
+          <svg lucideRotateCcw aria-hidden="true"></svg>
+          <span>Volver a capturar</span>
+        </button>
+      </div>
+
+      <form [formGroup]="manualForm" (ngSubmit)="createTransaction()" class="capture-form" novalidate>
+        <div class="form-grid">
+          <label class="field">
+            <span>Banco</span>
+            <input type="text" formControlName="bankId" autocomplete="off" />
+            @if (isInvalid('bankId')) {
+              <small>Ingresa el banco.</small>
+            }
+          </label>
+          <label class="field">
+            <span>Fecha</span>
+            <input type="datetime-local" formControlName="transactionDate" />
+            @if (isInvalid('transactionDate')) {
+              <small>Ingresa la fecha.</small>
+            }
+          </label>
+          <label class="field">
+            <span>Monto</span>
+            <input type="number" min="1" step="1" formControlName="amount" />
+            @if (isInvalid('amount')) {
+              <small>Ingresa el monto.</small>
+            }
+          </label>
+          <label class="field">
+            <span>Moneda</span>
+            <input type="text" formControlName="currency" />
+          </label>
+          <label class="field">
+            <span>Referencia</span>
+            <input type="text" formControlName="reference" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Pagador</span>
+            <input type="text" formControlName="senderName" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Cuenta pagador</span>
+            <input type="text" formControlName="senderAccount" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Cuenta destino</span>
+            <input type="text" formControlName="receiverAccount" autocomplete="off" />
+          </label>
+          <label class="field field--full">
+            <span>Notas</span>
+            <input type="text" formControlName="notes" autocomplete="off" />
+          </label>
+        </div>
+
+        <div class="capture-actions">
+          <button type="submit" class="primary-btn" [disabled]="loading()">
+            @if (creatingTransaction()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            } @else {
+              <svg lucideSend aria-hidden="true"></svg>
+            }
+            <span>Crear transacción</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</yep-modal>

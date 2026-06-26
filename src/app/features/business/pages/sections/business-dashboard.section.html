@@ -1,0 +1,110 @@
+<div class="panel">
+  <!-- Feedback de operaciones (verificación); solo aparece cuando hay mensaje -->
+  @if (operationSuccess() || operationError()) {
+    <div class="op-banner">
+      @if (operationSuccess()) {
+        <span class="op-msg op-msg--ok" role="status">{{ operationSuccess() }}</span>
+      }
+      @if (operationError()) {
+        <span class="op-msg op-msg--err" role="alert">
+          <svg lucideTriangleAlert aria-hidden="true"></svg> {{ operationError() }}
+        </span>
+      }
+    </div>
+  }
+
+  <!-- KPIs (fila compacta) -->
+  <div class="kpi-row" aria-label="Métricas operativas">
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideBanknote aria-hidden="true"></svg> Total capturado</span>
+      <span class="kpi__value">{{ totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideShieldCheck aria-hidden="true"></svg> Pagos validados</span>
+      <span class="kpi__value kpi__value--ok">{{ paidCount() }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideActivity aria-hidden="true"></svg> Pagos por revisar</span>
+      <span class="kpi__value kpi__value--warn">{{ reviewCount() }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideBell aria-hidden="true"></svg> Eventos detectados</span>
+      <span class="kpi__value">{{ eventsCount() }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideInbox aria-hidden="true"></svg> Transacciones recibidas</span>
+      <span class="kpi__value">{{ receivedCount() }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideListChecks aria-hidden="true"></svg> Pendientes</span>
+      <span class="kpi__value kpi__value--warn">{{ pendingCount() }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi__label"><svg lucideTriangleAlert aria-hidden="true"></svg> Rechazadas</span>
+      <span class="kpi__value kpi__value--err">{{ rejectedCount() }}</span>
+    </div>
+  </div>
+
+  <!-- Cuadrícula de zonas (cambia según las gráficas estén abiertas o colapsadas) -->
+  <div class="grid" [class.grid--with-charts]="chartsVisible()" [class.grid--no-charts]="!chartsVisible()">
+    <!-- Fila superior: gráficas + estado del sistema. En modo colapsado se
+         comporta como una fila flex (misma altura, estado a lo ancho); en modo
+         expandido es `display:contents` y cada módulo cae en su área del grid. -->
+    <div class="grid__top">
+      <app-dashboard-charts
+        class="grid__charts"
+        [transactions]="metricsTransactions()"
+        [sourceEvents]="metricsEvents()"
+        [businessId]="businessId()"
+        [collapsed]="!chartsVisible()"
+        (toggleCollapse)="toggleCharts()"
+      />
+      <app-dashboard-status
+        class="grid__status"
+        [semaphore]="semaphore()"
+        [rows]="notifierRows()"
+        [loading]="loadingNotifiers()"
+        [error]="notifiersError()"
+        [layout]="chartsVisible() ? 'vertical' : 'horizontal'"
+      />
+    </div>
+    <app-dashboard-events
+      class="grid__events"
+      [events]="sourceEvents()"
+      [loading]="loadingEvents()"
+      [error]="eventsError()"
+      [unreadIds]="unreadEventIds()"
+      [bankAccounts]="bankAccountsById()"
+      [bankOptions]="bankOptions()"
+      [hasMore]="eventsHasMore()"
+      [loadingMore]="loadingMoreEvents()"
+      [newCount]="newEventsCount()"
+      (markSeen)="markEventSeen($event)"
+      (filtersChange)="onEventFiltersChange($event)"
+      (loadMore)="loadMoreEvents()"
+      (showNew)="flushNewEvents()"
+    />
+    <app-dashboard-transactions
+      class="grid__transactions"
+      [transactions]="transactions()"
+      [loading]="loadingTransactions()"
+      [error]="transactionsError()"
+      [verifyingId]="verifyingId()"
+      [bankOptions]="bankOptions()"
+      [hasMore]="txHasMore()"
+      [loadingMore]="loadingMoreTransactions()"
+      (view)="openDetail($event)"
+      (verify)="askVerify($event)"
+      (filtersChange)="onTransactionFiltersChange($event)"
+      (loadMore)="loadMoreTransactions()"
+    />
+  </div>
+</div>
+
+<app-transaction-detail-modal [transaction]="detailTarget()" (close)="closeDetail()" />
+<app-verify-transaction-modal
+  [transaction]="verifyTarget()"
+  [loading]="verifyingId() !== null"
+  (cancel)="cancelVerify()"
+  (confirm)="confirmVerify($event)"
+/>

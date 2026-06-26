@@ -1,0 +1,88 @@
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { LucideFileScan, LucideMenu } from '@lucide/angular';
+import { filter, startWith } from 'rxjs';
+
+import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
+import { Button } from '../../../shared/ui/button/button';
+import { Modal } from '../../../shared/ui/modal/modal';
+import { AuthSessionService } from '../../services/auth-session.service';
+import { Sidebar } from '../sidebar/sidebar';
+
+@Component({
+  selector: 'app-shell',
+  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, LucideFileScan, LucideMenu],
+  templateUrl: './shell.html',
+  styleUrl: './shell.scss',
+})
+export class Shell {
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly session = inject(AuthSessionService);
+
+  /** Controla el drawer del sidebar en móvil. */
+  readonly drawerOpen = signal(false);
+  readonly receiptCaptureOpen = signal(false);
+
+  /** Controla el modal de confirmación de cierre de sesión. */
+  readonly logoutModalOpen = signal(false);
+
+  /**
+   * Modo inmersivo: la ruta activa pidió ocupar el viewport completo (vía
+   * `data.immersive`), así que el contenido se vuelve a ancho completo y altura
+   * fija para que la página no scrollee (el scroll vive dentro de la vista).
+   */
+  readonly immersive = signal(false);
+
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        startWith(null),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        let active: ActivatedRoute | null = this.route.firstChild;
+        while (active?.firstChild) {
+          active = active.firstChild;
+        }
+        this.immersive.set(active?.snapshot.data['immersive'] === true);
+      });
+  }
+
+  openDrawer(): void {
+    this.drawerOpen.set(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
+  }
+
+  openReceiptCapture(): void {
+    this.receiptCaptureOpen.set(true);
+  }
+
+  closeReceiptCapture(): void {
+    this.receiptCaptureOpen.set(false);
+  }
+
+  /** Abre la confirmación de cierre de sesión solicitada desde el sidebar. */
+  openLogout(): void {
+    this.logoutModalOpen.set(true);
+  }
+
+  /** Cierra el modal sin cerrar sesión. */
+  cancelLogout(): void {
+    this.logoutModalOpen.set(false);
+  }
+
+  /** Confirma y ejecuta el cierre de sesión. */
+  confirmLogout(): void {
+    this.logoutModalOpen.set(false);
+    this.closeDrawer();
+    this.session.clearSession();
+    void this.router.navigateByUrl('/login');
+  }
+}

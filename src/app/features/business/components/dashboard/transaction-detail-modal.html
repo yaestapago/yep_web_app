@@ -1,0 +1,101 @@
+<yep-modal
+  [open]="open()"
+  title="Detalle de la transacción"
+  [subtitle]="transaction()?.reference || ''"
+  size="lg"
+  (closeRequested)="close.emit()"
+>
+  @if (transaction(); as tx) {
+    <!-- Resumen + estado destacado -->
+    <section class="detail-summary">
+      <div class="summary-amount">
+        <span class="summary-amount__label">Monto</span>
+        <strong class="summary-amount__value">
+          {{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}
+        </strong>
+        <span class="badge badge--{{ tone(tx) }}">{{ statusLabel(tx) }}</span>
+      </div>
+      <dl class="summary-grid">
+        <div><dt>Banco</dt><dd>{{ tx.bankId }}</dd></div>
+        <div><dt>Fecha / hora</dt><dd>{{ tx.transactionDate | date: 'medium' }}</dd></div>
+        <div><dt>Referencia</dt><dd>{{ tx.reference || '—' }}</dd></div>
+        <div><dt>Origen / pagador</dt><dd>{{ sender(tx) }}</dd></div>
+      </dl>
+    </section>
+
+    <!-- Validación -->
+    <section class="detail-section">
+      <h3 class="detail-section__title">Validación</h3>
+      <div class="validation">
+        <span class="validation__method validation__method--{{ method() }}">{{ methodLabel() }}</span>
+        <span class="validation__level">Nivel: {{ levelLabel(tx) }}</span>
+      </div>
+    </section>
+
+    <!-- Verificadores -->
+    <section class="detail-section">
+      <h3 class="detail-section__title">Verificadores</h3>
+      @if (loadingSupports()) {
+        <div class="inline-state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando evidencias…</div>
+      } @else if (supportsError()) {
+        <div class="inline-state inline-state--error">
+          <svg lucideTriangleAlert aria-hidden="true"></svg> {{ supportsError() }}
+        </div>
+      }
+      <ul class="verifiers">
+        @for (verifier of verifiers(); track verifier.label) {
+          <li class="verifier verifier--{{ verifier.matched === true ? 'ok' : verifier.matched === false ? 'no' : 'na' }}">
+            <span class="verifier__mark" aria-hidden="true">
+              {{ verifier.matched === true ? '✓' : verifier.matched === false ? '✕' : '–' }}
+            </span>
+            <span class="verifier__text">
+              <span class="verifier__label">{{ verifier.label }}</span>
+              <span class="verifier__detail">{{ verifier.detail }}</span>
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Eventos / soportes relacionados -->
+    @if (supports().length > 0) {
+      <section class="detail-section">
+        <h3 class="detail-section__title">Soportes relacionados</h3>
+        <ul class="supports">
+          @for (support of supports(); track support.id) {
+            <li class="support">
+              <svg lucideFileText aria-hidden="true"></svg>
+              <span class="support__main">
+                <span class="support__type">{{ support.type }}</span>
+                <span class="support__sub">
+                  {{ support.linkStatus }}
+                  @if (support.extracted?.amount) {
+                    · {{ support.extracted?.amount | currency: support.extracted?.currency || tx.currency : 'symbol-narrow' : '1.0-0' }}
+                  }
+                  @if (support.extracted?.reference) { · Ref. {{ support.extracted?.reference }} }
+                </span>
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <!-- Auditoría -->
+    <section class="detail-section">
+      <h3 class="detail-section__title">Auditoría</h3>
+      <dl class="summary-grid">
+        <div><dt>Estado actual</dt><dd>{{ statusLabel(tx) }}</dd></div>
+        <div>
+          <dt>Última verificación</dt>
+          <dd>{{ tx.verification.lastRunAt ? (tx.verification.lastRunAt | date: 'medium') : 'Sin ejecutar' }}</dd>
+        </div>
+        <div><dt>ID de ejecución</dt><dd>{{ tx.verification.lastRunId || '—' }}</dd></div>
+        <div><dt>Creada</dt><dd>{{ tx.createdAt | date: 'short' }}</dd></div>
+        @if (tx.notes) {
+          <div class="span-2"><dt>Observaciones</dt><dd>{{ tx.notes }}</dd></div>
+        }
+      </dl>
+    </section>
+  }
+</yep-modal>

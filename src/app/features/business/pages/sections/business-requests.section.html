@@ -1,0 +1,74 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Solicitudes de acceso</h2>
+      <p class="section-subtitle">Usuarios que solicitan unirse como staff de este negocio.</p>
+    </div>
+    @if (canManage()) {
+      <yep-button variant="ghost" size="sm" (clicked)="load()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+    }
+  </div>
+
+  @if (!canManage()) {
+    <div class="empty-state">
+      <h3>Solo para propietarios</h3>
+      <p>Necesitas rol de propietario para revisar y aprobar solicitudes de acceso.</p>
+    </div>
+  } @else {
+    @if (error()) {
+      <div class="field-error" role="alert">{{ error() }}</div>
+    }
+    @if (success()) {
+      <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="loading-row">
+        <svg lucideLoaderCircle aria-hidden="true"></svg>
+        Cargando solicitudes…
+      </div>
+    } @else if (message()) {
+      <div class="empty-state">
+        <h3>Bandeja no disponible</h3>
+        <p>{{ message() }}</p>
+      </div>
+    } @else if (requests().length === 0) {
+      <div class="empty-state">
+        <h3>Sin solicitudes pendientes</h3>
+        <p>Cuando alguien pida acceso a este negocio aparecerá aquí para tu aprobación.</p>
+      </div>
+    } @else {
+      <div class="card-list">
+        @for (request of requests(); track request.id) {
+          <article class="list-card">
+            <div class="list-card__main">
+              <h3 class="list-card__title">{{ requesterLabel(request) }}</h3>
+              <span class="list-card__meta">Rol solicitado: Staff · Estado: Pendiente</span>
+            </div>
+            <div class="list-card__actions">
+              <yep-button
+                variant="secondary"
+                size="sm"
+                [loading]="actingId() === request.id"
+                (clicked)="approve(request)"
+              >
+                Aprobar
+              </yep-button>
+              <yep-button
+                variant="danger"
+                size="sm"
+                [loading]="actingId() === request.id"
+                (clicked)="reject(request)"
+              >
+                Rechazar
+              </yep-button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+</div>

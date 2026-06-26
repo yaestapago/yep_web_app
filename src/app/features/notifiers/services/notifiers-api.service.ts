@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   CreateNotifierRequest,
+  DeleteNotifierResponse,
   NotifierResponse,
   NotifiersResponse,
   UpdateNotifierRequest,
@@ -31,8 +32,8 @@ export class NotifiersApiService {
     return this.http.patch<NotifierResponse>(`${this.apiUrl}/notifiers/${id}`, request);
   }
 
-  remove(id: string): Observable<NotifierResponse> {
-    return this.http.delete<NotifierResponse>(`${this.apiUrl}/notifiers/${id}`);
+  remove(id: string): Observable<DeleteNotifierResponse> {
+    return this.http.delete<DeleteNotifierResponse>(`${this.apiUrl}/notifiers/${id}`);
   }
 
   activate(id: string): Observable<NotifierResponse> {

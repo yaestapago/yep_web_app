@@ -1,0 +1,203 @@
+.search {
+  position: relative;
+}
+
+.search__icon {
+  color: var(--color-text-muted);
+  height: 14px;
+  left: var(--space-2);
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+}
+
+.search__input {
+  padding-left: calc(var(--space-2) * 2 + 14px);
+  width: 100%;
+}
+
+.events-body {
+  gap: var(--space-2);
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.event {
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  transition: background var(--motion-fast);
+}
+
+.event:hover {
+  background: color-mix(in srgb, var(--color-secondary) 5%, transparent);
+}
+
+.event--success {
+  border-left-color: var(--color-success);
+}
+.event--warning {
+  border-left-color: var(--color-warning);
+}
+.event--error {
+  border-left-color: var(--color-error);
+}
+.event--neutral {
+  border-left-color: var(--color-border);
+}
+
+/* Evento recién llegado en vivo, aún no visto (estilo bandeja de correo). */
+.event--unread {
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+}
+
+/* Campana de "no leído", a la derecha de la fila, con vibración sutil. */
+.event__bell {
+  align-items: center;
+  color: var(--color-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  transform-origin: top center;
+  animation: event-bell-shake 1.6s ease-in-out infinite;
+}
+
+.event__bell svg {
+  height: 16px;
+  width: 16px;
+}
+
+@keyframes event-bell-shake {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0deg);
+  }
+  5% {
+    transform: rotate(14deg);
+  }
+  10% {
+    transform: rotate(-12deg);
+  }
+  15% {
+    transform: rotate(9deg);
+  }
+  20% {
+    transform: rotate(-6deg);
+  }
+  25% {
+    transform: rotate(3deg);
+  }
+  30% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event__bell {
+    animation: none;
+  }
+}
+
+.event__main {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+/* Columna derecha: monto prominente, hora y campana. */
+.event__aside {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event__amount {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.event__aside-foot {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.event__top {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.event__type {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.event__type svg {
+  height: 15px;
+  width: 15px;
+}
+
+/* Plataforma (Nequi/Bancolombia) + nombre de la cuenta bancaria asociada. */
+.event__source {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.event__platform {
+  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-secondary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.1rem 0.45rem;
+}
+
+.event__account {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.event__time {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xxs);
+  white-space: nowrap;
+}
+
+.event__desc {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+.event__ref {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}

@@ -1,0 +1,152 @@
+<div class="zone">
+  <div class="zone__head">
+    <h3 class="zone__title"><svg lucideListChecks aria-hidden="true"></svg> Transacciones</h3>
+    <span class="zone__count">{{ transactions().length }}{{ hasMore() ? '+' : '' }}</span>
+  </div>
+
+  <div class="filters">
+    <span class="search">
+      <svg class="search__icon" lucideSearch aria-hidden="true"></svg>
+      <input
+        class="control search__input"
+        type="search"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+        placeholder="Buscar por referencia…"
+        aria-label="Buscar transacciones por referencia"
+      />
+    </span>
+    <select class="control" [value]="statusFilter()" (change)="statusFilter.set($any($event.target).value)" aria-label="Filtrar por estado">
+      <option value="">Todo estado</option>
+      <option value="recibida">Recibida</option>
+      <option value="verificada">Verificada</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="rechazada">Rechazada</option>
+    </select>
+    @if (bankOptions().length > 0) {
+      <select class="control" [value]="bankFilter()" (change)="bankFilter.set($any($event.target).value)" aria-label="Filtrar por banco">
+        <option value="">Todo banco</option>
+        @for (bank of bankOptions(); track bank) {
+          <option [value]="bank">{{ bank }}</option>
+        }
+      </select>
+    }
+    <select class="control" [value]="period()" (change)="period.set($any($event.target).value)" aria-label="Filtrar por fecha">
+      <option value="all">Cualquier fecha</option>
+      <option value="today">Hoy</option>
+      <option value="7d">7 días</option>
+      <option value="30d">30 días</option>
+    </select>
+    <input
+      class="control amount"
+      type="number"
+      inputmode="numeric"
+      [value]="amountMin()"
+      (input)="amountMin.set($any($event.target).value)"
+      placeholder="Monto mín."
+      aria-label="Monto mínimo"
+    />
+    <input
+      class="control amount"
+      type="number"
+      inputmode="numeric"
+      [value]="amountMax()"
+      (input)="amountMax.set($any($event.target).value)"
+      placeholder="Monto máx."
+      aria-label="Monto máximo"
+    />
+  </div>
+
+  <div
+    class="zone__body table-body"
+    appAutoFitRows="tbody tr"
+    autoFitHeader="thead"
+    (fit)="pageSize.set($event)"
+  >
+    @if (loading()) {
+      <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
+    } @else if (error()) {
+      <div class="state state--error">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (transactions().length === 0) {
+      <div class="state">
+        <svg lucideListChecks aria-hidden="true"></svg>
+        <h4>Sin transacciones</h4>
+        <p>No hay transacciones que coincidan con los filtros.</p>
+      </div>
+    } @else {
+      <table class="txtable">
+        <thead>
+          <tr>
+            <th scope="col">Referencia</th>
+            <th scope="col">Banco</th>
+            <th scope="col" class="num">Monto</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="actions-col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tx of paged(); track tx.id) {
+            <tr>
+              <td class="ref">
+                <span class="ref__main">{{ tx.reference || 'Sin referencia' }}</span>
+                @if (tx.sender?.name) {
+                  <span class="ref__sub">{{ tx.sender?.name }}</span>
+                }
+              </td>
+              <td>{{ tx.bankId }}</td>
+              <td class="num strong">{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</td>
+              <td class="muted">{{ tx.transactionDate | date: 'short' }}</td>
+              <td><span class="badge badge--{{ tone(tx) }}">{{ statusLabel(tx) }}</span></td>
+              <td class="actions-col">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" (click)="view.emit(tx)" aria-label="Ver detalle" title="Ver detalle">
+                    <svg lucideEye aria-hidden="true"></svg>
+                  </button>
+                  @if (isActionable(tx)) {
+                    <button
+                      type="button"
+                      class="icon-btn icon-btn--verify"
+                      (click)="verify.emit(tx)"
+                      [disabled]="verifyingId() === tx.id"
+                      aria-label="Verificar"
+                      title="Verificar"
+                    >
+                      @if (verifyingId() === tx.id) {
+                        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+                      } @else {
+                        <svg lucideShieldCheck aria-hidden="true"></svg>
+                      }
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  @if (!loading() && !error() && transactions().length > 0) {
+    <app-dashboard-pager
+      class="zone__foot"
+      [page]="currentPage()"
+      [totalPages]="totalPages()"
+      [total]="transactions().length"
+      (pageChange)="page.set($event)"
+    />
+    @if (hasMore() && onLastPage()) {
+      <button type="button" class="load-more" (click)="loadMore.emit()" [disabled]="loadingMore()">
+        @if (loadingMore()) {
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando…
+        } @else {
+          Cargar más
+        }
+      </button>
+    }
+  }
+</div>

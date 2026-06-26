@@ -5,53 +5,74 @@
 .yep-alert {
   align-items: flex-start;
   background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-secondary) 28%, transparent);
-  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 42%, transparent);
+  border-radius: var(--radius-md);
   color: var(--color-text-primary);
   display: flex;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: var(--space-3);
+  padding: var(--space-4);
 }
 
-.yep-alert__marker {
-  background: var(--color-secondary);
-  border-radius: 999px;
+.yep-alert__icon {
+  align-items: center;
+  color: var(--color-secondary);
+  display: inline-flex;
   flex: 0 0 auto;
-  height: 10px;
-  margin-top: 5px;
-  width: 10px;
+  height: 1.25rem;
+  justify-content: center;
+  margin-top: 0.0625rem;
+  width: 1.25rem;
+}
+
+.yep-alert__icon svg {
+  height: 1.25rem;
+  stroke-width: 2.25;
+  width: 1.25rem;
 }
 
 .yep-alert__body {
+  color: var(--color-text-secondary);
   display: grid;
   flex: 1;
-  gap: 4px;
-  line-height: 1.45;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  min-width: 0;
 }
 
 .yep-alert__body strong {
   color: var(--color-text-primary);
-  font-size: 0.92rem;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .yep-alert__body ::ng-deep p {
   margin: 0;
 }
 
+.yep-alert__body ::ng-deep * {
+  overflow-wrap: anywhere;
+}
+
 .yep-alert__close {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 8px;
-  color: currentColor;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  height: 28px;
+  height: 1.75rem;
   justify-content: center;
   line-height: 1;
   padding: 0;
-  width: 28px;
+  width: 1.75rem;
+}
+
+.yep-alert__close:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: var(--color-text-primary);
 }
 
 .yep-alert__close svg {
@@ -59,29 +80,38 @@
   width: 16px;
 }
 
-.yep-alert--success {
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: color-mix(in srgb, var(--color-success) 32%, transparent);
+.yep-alert--info {
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-secondary) 42%, transparent);
 }
 
-.yep-alert--success .yep-alert__marker {
-  background: var(--color-success);
+.yep-alert--info .yep-alert__icon {
+  color: var(--color-secondary);
+}
+
+.yep-alert--success {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 46%, transparent);
+}
+
+.yep-alert--success .yep-alert__icon {
+  color: var(--color-success-strong);
 }
 
 .yep-alert--warning {
   background: color-mix(in srgb, var(--color-warning) 13%, transparent);
-  border-color: color-mix(in srgb, var(--color-warning) 32%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 48%, transparent);
 }
 
-.yep-alert--warning .yep-alert__marker {
-  background: var(--color-warning);
+.yep-alert--warning .yep-alert__icon {
+  color: var(--color-warning);
 }
 
 .yep-alert--error {
   background: color-mix(in srgb, var(--color-error) 11%, transparent);
-  border-color: color-mix(in srgb, var(--color-error) 32%, transparent);
+  border-color: color-mix(in srgb, var(--color-error) 46%, transparent);
 }
 
-.yep-alert--error .yep-alert__marker {
-  background: var(--color-error);
+.yep-alert--error .yep-alert__icon {
+  color: var(--color-error);
 }

@@ -3,7 +3,7 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { LucideLogIn, LucideShieldCheck } from '@lucide/angular';
+import { LucideLogIn } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -13,7 +13,7 @@ import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
   selector: 'app-login-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideLogIn, LucideShieldCheck, Alert, Button, Input],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideLogIn, Alert, Button, Input],
   templateUrl: './login.page.html',
   styleUrl: './login.page.scss',
 })

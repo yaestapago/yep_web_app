@@ -38,8 +38,13 @@ describe('RegisterPage', () => {
       lastName: 'Ramirez',
       email: 'pedro@example.com',
       identificationNumber: '123456789',
-      cellphoneNumber: '3001234567',
+      cellphoneNumber: {
+        countryCode: '57',
+        nationalNumber: '3001234567',
+        e164: '+573001234567',
+      },
       password: 'secret123',
+      confirmPassword: 'secret123',
     });
 
     component.submit();
@@ -50,7 +55,7 @@ describe('RegisterPage', () => {
       lastName: 'Ramirez',
       email: 'pedro@example.com',
       identificationNumber: '123456789',
-      cellphoneNumber: '3001234567',
+      cellphoneNumber: '+573001234567',
       password: 'secret123',
     });
     expect(request.request.body).not.toHaveProperty('accountName');

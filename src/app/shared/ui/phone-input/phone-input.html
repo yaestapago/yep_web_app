@@ -1,0 +1,61 @@
+<div
+  class="yep-phone-input"
+  [class.yep-phone-input--sm]="size() === 'sm'"
+  [class.yep-phone-input--lg]="size() === 'lg'"
+>
+  @if (label()) {
+    <label class="yep-phone-input__label" [for]="id()">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <span class="yep-phone-input__row" [class.yep-phone-input__row--invalid]="validationMessage()">
+    <span class="yep-phone-input__country">
+      <yep-select
+        size="sm"
+        placeholder="Pais"
+        dataCy="area-code-input"
+        [options]="countryOptions()"
+        [showCountryFlags]="true"
+        [searchable]="true"
+        [embedded]="true"
+        [disabled]="disabled() || isControlDisabled"
+        [ngModel]="selectedCountryIso()"
+        [ngModelOptions]="{ standalone: true }"
+        (selectionChange)="updateCountry($event)"
+      ></yep-select>
+    </span>
+
+    <input
+      [id]="id()"
+      data-cy="phone-input"
+      type="tel"
+      inputmode="numeric"
+      autocomplete="tel-national"
+      [value]="phoneNumber()"
+      [placeholder]="placeholder()"
+      [maxLength]="maxLength()"
+      [disabled]="disabled() || isControlDisabled"
+      [required]="required()"
+      [attr.aria-invalid]="validationMessage() ? 'true' : null"
+      [attr.aria-describedby]="hint() || validationMessage() ? id() + '-message' : null"
+      (input)="updatePhone($event)"
+      (paste)="handlePaste($event)"
+      (blur)="markTouched()"
+    />
+  </span>
+
+  @if (validationMessage()) {
+    <small
+      class="yep-phone-input__message yep-phone-input__message--error"
+      [id]="id() + '-message'"
+    >
+      {{ validationMessage() }}
+    </small>
+  } @else if (hint()) {
+    <small class="yep-phone-input__message" [id]="id() + '-message'">{{ hint() }}</small>
+  }
+</div>

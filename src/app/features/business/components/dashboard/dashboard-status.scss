@@ -1,0 +1,224 @@
+.status-body {
+  gap: var(--space-3);
+}
+
+/* Variante horizontal: barra a lo ancho cuando se ocultan las gráficas. El
+   cuerpo deja de scrollear en vertical; el semáforo queda fijo a la izquierda y
+   los notificadores fluyen como chips que envuelven a lo ancho. */
+.zone--horizontal {
+  flex: 0 0 auto;
+}
+
+.zone--horizontal .zone__body {
+  overflow-y: visible;
+}
+
+.zone--horizontal .status-body {
+  align-items: stretch;
+  flex-direction: row;
+}
+
+.zone--horizontal .semaphore {
+  flex: 0 0 auto;
+  max-width: 22rem;
+}
+
+.zone--horizontal .notifiers {
+  min-width: 0;
+}
+
+.zone--horizontal .nlist {
+  align-items: center;
+  column-gap: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-x: visible;
+  overflow-y: visible;
+  row-gap: var(--space-1);
+}
+
+/* Sin caja: cada notificador se separa del anterior por una línea vertical
+   sutil, para que no se vean apretujados. */
+.zone--horizontal .nlist__row {
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--color-border);
+  border-radius: 0;
+  flex: 0 0 auto;
+  max-width: none;
+  padding: var(--space-1) var(--space-3);
+}
+
+.zone--horizontal .nlist__row:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.zone--horizontal .nlist__row:hover {
+  background: transparent;
+}
+
+/* Semáforo global ----------------------------------------------------------*/
+.semaphore {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: row-reverse;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.semaphore__lights {
+  /* Fondo que sigue el tema: claro en light mode, oscuro en dark mode. */
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.35rem 0.3rem;
+}
+
+.slight {
+  border-radius: var(--radius-full);
+  height: 0.7rem;
+  opacity: 0.22;
+  width: 0.7rem;
+}
+
+.slight--red {
+  background: var(--color-error);
+}
+.slight--yellow {
+  background: var(--color-warning);
+}
+.slight--green {
+  background: var(--color-success);
+}
+
+.semaphore--red .slight--red,
+.semaphore--yellow .slight--yellow,
+.semaphore--green .slight--green {
+  opacity: 1;
+}
+
+.semaphore--red .slight--red {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 30%, transparent);
+}
+.semaphore--yellow .slight--yellow {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 30%, transparent);
+}
+.semaphore--green .slight--green {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 30%, transparent);
+}
+
+.semaphore__text {
+  display: grid;
+  flex: 1;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.semaphore__label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.semaphore--red .semaphore__label {
+  color: var(--color-error);
+}
+.semaphore--yellow .semaphore__label {
+  color: color-mix(in srgb, var(--color-warning) 72%, var(--color-text-primary));
+}
+.semaphore--green .semaphore__label {
+  color: var(--color-success-strong);
+}
+
+.semaphore__detail {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+/* Notificadores ------------------------------------------------------------*/
+.notifiers {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+}
+
+.notifiers__caption {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nlist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  list-style: none;
+  margin: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.nlist__row {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.nlist__row:hover {
+  background: color-mix(in srgb, var(--color-secondary) 7%, transparent);
+}
+
+.nlist__main {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.nlist__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nlist__rel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xxs);
+}
+
+.nlight {
+  border-radius: var(--radius-full);
+  flex: 0 0 auto;
+  height: 0.7rem;
+  width: 0.7rem;
+}
+
+.nlight--online {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+.nlight--delayed {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 22%, transparent);
+}
+.nlight--offline {
+  background: var(--color-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 20%, transparent);
+}
+.nlight--unknown {
+  background: var(--color-text-muted);
+}

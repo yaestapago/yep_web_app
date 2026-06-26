@@ -1,0 +1,59 @@
+<div class="shell" [class.drawer-open]="drawerOpen()">
+  <div class="sidebar-slot">
+    <app-sidebar (navigated)="closeDrawer()" (logoutRequested)="openLogout()" />
+  </div>
+
+  @if (drawerOpen()) {
+    <div class="scrim" (click)="closeDrawer()" aria-hidden="true"></div>
+  }
+
+  <div class="shell-main">
+    <header class="mobile-topbar">
+      <button
+        class="menu-button"
+        type="button"
+        (click)="openDrawer()"
+        aria-label="Abrir menú de navegación"
+      >
+        <svg lucideMenu aria-hidden="true"></svg>
+      </button>
+      <span class="mobile-brand" aria-label="Ya Está Pago">
+        <img class="mobile-brand__logo mobile-brand__logo--light" src="/brand/logo-light.png" alt="Ya Está Pago" />
+        <img class="mobile-brand__logo mobile-brand__logo--dark" src="/brand/logo-dark.png" alt="" aria-hidden="true" />
+      </span>
+    </header>
+
+    <main class="content" [class.content--immersive]="immersive()">
+      <router-outlet />
+    </main>
+  </div>
+
+  <button
+    type="button"
+    class="receipt-fab"
+    (click)="openReceiptCapture()"
+    aria-label="Capturar y validar comprobante"
+    title="Capturar y validar comprobante"
+  >
+    <svg lucideFileScan aria-hidden="true"></svg>
+    <span>Validar pago</span>
+  </button>
+
+  <app-receipt-capture-modal
+    [open]="receiptCaptureOpen()"
+    (closeRequested)="closeReceiptCapture()"
+  />
+
+  <yep-modal
+    [open]="logoutModalOpen()"
+    size="sm"
+    title="Cerrar sesión"
+    subtitle="¿Seguro que quieres cerrar sesión?"
+    (closeRequested)="cancelLogout()"
+  >
+    <ng-container modalFooter>
+      <yep-button variant="ghost" (clicked)="cancelLogout()">Cancelar</yep-button>
+      <yep-button variant="danger" (clicked)="confirmLogout()">Cerrar sesión</yep-button>
+    </ng-container>
+  </yep-modal>
+</div>
