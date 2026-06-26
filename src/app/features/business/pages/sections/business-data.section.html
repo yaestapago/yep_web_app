@@ -58,11 +58,13 @@
         label="Ciudad"
         [error]="isBusinessInvalid('city') ? 'Requerido' : ''"
       />
-      <yep-input
+      <yep-phone-input
         formControlName="phone"
         label="Teléfono"
-        [error]="isBusinessInvalid('phone') ? 'Mínimo 7 dígitos' : ''"
-      />
+        placeholder="300 123 4567"
+        [required]="true"
+        [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido' : ''"
+      ></yep-phone-input>
     </div>
     <yep-input
       formControlName="address"
@@ -72,7 +74,11 @@
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="savingBusiness()" (clicked)="closeEdit()">Cancelar</yep-button>
-    <yep-button type="submit" [loading]="savingBusiness()" (clicked)="saveBusiness()">Guardar</yep-button>
+    <yep-button variant="ghost" [disabled]="savingBusiness()" (clicked)="closeEdit()"
+      >Cancelar</yep-button
+    >
+    <yep-button type="submit" [loading]="savingBusiness()" (clicked)="saveBusiness()"
+      >Guardar</yep-button
+    >
   </ng-container>
 </yep-modal>

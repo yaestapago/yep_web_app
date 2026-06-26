@@ -1,20 +1,35 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { LucideUserPlus } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { RegisterRequest } from '../../../../shared/models/auth.models';
-import { Alert, Button, Input } from '../../../../shared/ui';
+import { Alert, Button, Input, PhoneInput, type PhoneInputValue } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../services/auth-api.service';
 
 @Component({
   selector: 'app-register-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideUserPlus, Alert, Button, Input],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    LucideUserPlus,
+    Alert,
+    Button,
+    Input,
+    PhoneInput,
+  ],
   templateUrl: './register.page.html',
   styleUrl: './register.page.scss',
 })
@@ -29,15 +44,18 @@ export class RegisterPage {
   readonly error = signal('');
   readonly success = signal('');
 
-  readonly form = this.fb.group({
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]],
-    identificationNumber: ['', [Validators.required, Validators.minLength(5)]],
-    cellphoneNumber: ['', [Validators.required, Validators.minLength(7)]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    confirmPassword: ['', [Validators.required]],
-  }, { validators: [this.passwordsMatchValidator] });
+  readonly form = this.fb.group(
+    {
+      firstName: ['', [Validators.required, Validators.minLength(2)]],
+      lastName: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      identificationNumber: ['', [Validators.required, Validators.minLength(5)]],
+      cellphoneNumber: this.fb.control<PhoneInputValue | null>(null, [Validators.required]),
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', [Validators.required]],
+    },
+    { validators: [this.passwordsMatchValidator] },
+  );
 
   submit(): void {
     this.error.set('');
@@ -48,7 +66,15 @@ export class RegisterPage {
       return;
     }
 
-    const { confirmPassword: _confirmPassword, ...request } = this.form.getRawValue();
+    const {
+      confirmPassword: _confirmPassword,
+      cellphoneNumber,
+      ...rawRequest
+    } = this.form.getRawValue();
+    const request = {
+      ...rawRequest,
+      cellphoneNumber: cellphoneNumber?.e164 ?? '',
+    };
 
     this.loading.set(true);
     this.authApi
@@ -62,7 +88,10 @@ export class RegisterPage {
           this.session.saveSession(response);
           this.success.set(`Cuenta creada para ${response.user.firstName}.`);
           setTimeout(
-            () => void this.router.navigateByUrl(this.session.onboardingRequired() ? '/onboarding' : '/dashboard'),
+            () =>
+              void this.router.navigateByUrl(
+                this.session.onboardingRequired() ? '/onboarding' : '/dashboard',
+              ),
             450,
           );
         },

@@ -30,3 +30,5 @@ Regla practica: si un componente necesita un valor visual repetible, primero bus
 - `Input`: campo base compatible con formularios reactivos.
 - `Alert`: mensajes informativos, exito, advertencia y error.
 - `OtpInput`: codigo de 6 digitos compatible con formularios reactivos, paste/autofill y reenvio.
+- `PhoneInput`: telefono con selector de pais, prefijo, bandera y validacion de longitud por pais.
+- `Select`: dropdown compatible con formularios reactivos, busqueda, grupos, multiseleccion y banderas por pais.

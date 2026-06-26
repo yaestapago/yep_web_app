@@ -4,4 +4,6 @@ export * from './chart-canvas/chart-canvas';
 export * from './input/input';
 export * from './modal/modal';
 export * from './otp-input/otp-input';
+export * from './phone-input/phone-input';
+export * from './select/select';
 export * from './status-dot/status-dot';

@@ -1,9 +1,7 @@
 <section class="page">
   <header class="page-header">
     <h1 class="page-title">Configuración</h1>
-    <p class="page-subtitle">
-      Administra tu cuenta y tus preferencias de la aplicación.
-    </p>
+    <p class="page-subtitle">Administra tu cuenta y tus preferencias de la aplicación.</p>
   </header>
 
   @if (error()) {
@@ -184,17 +182,22 @@
       [readonly]="true"
       hint="El correo es tu identificador y no se puede modificar."
     />
-    <yep-input
+    <yep-phone-input
       formControlName="cellphoneNumber"
-      type="tel"
       label="Celular"
-      [error]="isProfileInvalid('cellphoneNumber') ? 'Mínimo 7 dígitos' : ''"
-    />
+      placeholder="300 123 4567"
+      [required]="true"
+      [error]="isProfileInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
+    ></yep-phone-input>
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="savingProfile()" (clicked)="closeProfile()">Cancelar</yep-button>
-    <yep-button type="submit" [loading]="savingProfile()" (clicked)="saveProfile()">Guardar</yep-button>
+    <yep-button variant="ghost" [disabled]="savingProfile()" (clicked)="closeProfile()"
+      >Cancelar</yep-button
+    >
+    <yep-button type="submit" [loading]="savingProfile()" (clicked)="saveProfile()"
+      >Guardar</yep-button
+    >
   </ng-container>
 </yep-modal>
 
@@ -232,7 +235,11 @@
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="savingPassword()" (clicked)="closePassword()">Cancelar</yep-button>
-    <yep-button type="submit" [loading]="savingPassword()" (clicked)="savePassword()">Actualizar</yep-button>
+    <yep-button variant="ghost" [disabled]="savingPassword()" (clicked)="closePassword()"
+      >Cancelar</yep-button
+    >
+    <yep-button type="submit" [loading]="savingPassword()" (clicked)="savePassword()"
+      >Actualizar</yep-button
+    >
   </ng-container>
 </yep-modal>

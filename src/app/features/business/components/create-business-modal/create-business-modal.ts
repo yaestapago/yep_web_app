@@ -1,11 +1,4 @@
-import {
-  Component,
-  DestroyRef,
-  inject,
-  input as defineInput,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, inject, input as defineInput, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -14,6 +7,7 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -25,7 +19,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-create-business-modal',
-  imports: [ReactiveFormsModule, Button, Input, Modal],
+  imports: [ReactiveFormsModule, Button, Input, Modal, PhoneInput],
   templateUrl: './create-business-modal.html',
 })
 export class CreateBusinessModal {
@@ -45,7 +39,7 @@ export class CreateBusinessModal {
     name: ['', [Validators.required, Validators.minLength(2)]],
     city: ['', [Validators.required, Validators.minLength(2)]],
     address: ['', [Validators.required, Validators.minLength(4)]],
-    phone: ['', [Validators.required, Validators.minLength(7)]],
+    phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
   reset(): void {
@@ -68,9 +62,15 @@ export class CreateBusinessModal {
 
     this.saving.set(true);
     this.error.set('');
+    const raw = this.form.getRawValue();
 
     this.businessApi
-      .createBusinessAccount(this.form.getRawValue())
+      .createBusinessAccount({
+        name: raw.name,
+        city: raw.city,
+        address: raw.address,
+        phone: this.phoneValue(raw.phone),
+      })
       .pipe(
         finalize(() => this.saving.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -103,5 +103,12 @@ export class CreateBusinessModal {
     }
 
     return memberships.map((current, i) => (i === index ? membership : current));
+  }
+
+  private phoneValue(value: PhoneInputValue | string | null): string {
+    if (!value) {
+      return '';
+    }
+    return typeof value === 'string' ? value : value.e164;
   }
 }

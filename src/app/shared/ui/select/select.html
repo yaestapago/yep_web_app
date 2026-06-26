@@ -1,0 +1,134 @@
+<div
+  class="yep-select"
+  [class.yep-select--sm]="size() === 'sm'"
+  [class.yep-select--lg]="size() === 'lg'"
+  [class.yep-select--open]="open()"
+  [class.yep-select--embedded]="embedded()"
+  [class.yep-select--up]="opensUpward()"
+>
+  @if (label()) {
+    <label class="yep-select__label" [for]="id()">
+      {{ label() }}
+      @if (required()) {
+        <span aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="yep-select__anchor">
+    <button
+      class="yep-select__button"
+      type="button"
+      [id]="id()"
+      [class.yep-select__button--placeholder]="selectedOptions().length === 0"
+      [class.yep-select__button--invalid]="error()"
+      [attr.data-cy]="dataCy() || null"
+      [attr.aria-expanded]="open()"
+      [attr.aria-invalid]="error() ? 'true' : null"
+      [attr.aria-describedby]="hint() || error() ? id() + '-message' : null"
+      [disabled]="disabled() || isControlDisabled"
+      (click)="toggle()"
+      (keydown)="handleButtonKeydown($event)"
+    >
+      <span class="yep-select__value">
+        @if (showCountryFlags() && selectedOptions()[0]?.countryCode) {
+          <img
+            class="yep-select__flag"
+            [src]="flagImageUrl(selectedOptions()[0]?.countryCode)"
+            alt=""
+            aria-hidden="true"
+          />
+        }
+        {{ buttonText() }}
+      </span>
+
+      @if (clearable() && selectedOptions().length > 0) {
+        <span
+          class="yep-select__clear"
+          role="button"
+          tabindex="0"
+          aria-label="Limpiar seleccion"
+          (click)="clear($event)"
+          (keydown.enter)="clear()"
+        >
+          <svg lucideX aria-hidden="true"></svg>
+        </span>
+      }
+
+      <svg class="yep-select__chevron" lucideChevronDown aria-hidden="true"></svg>
+    </button>
+
+    @if (open()) {
+      <div class="yep-select__panel" role="listbox" [attr.aria-multiselectable]="multiple()">
+        @if (searchable()) {
+          <label class="yep-select__search">
+            <svg lucideSearch aria-hidden="true"></svg>
+            <input
+              type="search"
+              autocomplete="off"
+              placeholder="Buscar"
+              [value]="query()"
+              (input)="updateSearch($event)"
+              (keydown)="handleSearchKeydown($event)"
+            />
+          </label>
+        }
+
+        <div class="yep-select__options" (scroll)="handleScroll($event)">
+          @if (filteredGroups().length === 0) {
+            <p class="yep-select__empty">Sin resultados</p>
+          }
+
+          @for (group of filteredGroups(); track group.category) {
+            @if (group.category) {
+              <p class="yep-select__group">{{ group.category }}</p>
+            }
+
+            @for (option of group.options; track option.id) {
+              <button
+                class="yep-select__option"
+                type="button"
+                role="option"
+                [class.yep-select__option--selected]="isSelected(option)"
+                [class.yep-select__option--highlight]="highlightSelected() && isSelected(option)"
+                [disabled]="option.disabled"
+                [attr.aria-selected]="isSelected(option)"
+                (click)="selectOption(option)"
+              >
+                @if (showCountryFlags() && option.countryCode) {
+                  <img
+                    class="yep-select__flag"
+                    [src]="flagImageUrl(option.countryCode)"
+                    alt=""
+                    aria-hidden="true"
+                  />
+                } @else if (option.imageUrl) {
+                  <img class="yep-select__image" [src]="option.imageUrl" alt="" />
+                }
+
+                <span class="yep-select__option-text">
+                  <span>{{ option.label }}</span>
+                  @if (option.secondLabel) {
+                    <small>{{ option.secondLabel }}</small>
+                  }
+                </span>
+
+                @if (isSelected(option)) {
+                  <svg class="yep-select__check" lucideCheck aria-hidden="true"></svg>
+                }
+              </button>
+            }
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <small class="yep-select__message yep-select__message--error" [id]="id() + '-message'">
+      {{ error() }}
+    </small>
+  } @else if (hint()) {
+    <small class="yep-select__message" [id]="id() + '-message'">{{ hint() }}</small>
+  }
+</div>
