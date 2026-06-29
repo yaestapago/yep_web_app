@@ -30,7 +30,10 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": [
+              "node_modules/@schedule-x/theme-default/dist/index.css",
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {

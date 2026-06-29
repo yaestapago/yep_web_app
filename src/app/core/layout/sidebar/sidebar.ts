@@ -65,6 +65,7 @@ export class Sidebar {
     { path: 'notifiers', label: 'Notificadores' },
     { path: 'requests', label: 'Solicitudes' },
     { path: 'locations', label: 'Sedes' },
+    { path: 'schedules', label: 'Horarios' },
   ];
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */

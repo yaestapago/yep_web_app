@@ -119,6 +119,13 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'schedules',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-schedules.section').then(
+                (m) => m.BusinessSchedulesSection,
+              ),
+          },
+          {
             path: 'business-data',
             loadComponent: () =>
               import('./features/business/pages/sections/business-data.section').then(

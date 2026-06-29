@@ -24,6 +24,13 @@ import {
   UpdateBusinessAccountRequest,
   UpdateMembershipStatusRequest,
 } from '../../../shared/models/business-account.models';
+import {
+  ApprovedMembersResponse,
+  SchedulesResponse,
+  ShiftRequest,
+  ShiftResponse,
+  UpdateShiftRequest,
+} from '../../../shared/models/schedule.models';
 
 @Injectable({ providedIn: 'root' })
 export class BusinessAccountsApiService {
@@ -84,6 +91,48 @@ export class BusinessAccountsApiService {
     return this.http.patch<MembershipResponse>(
       `${this.apiUrl}/business-accounts/${businessAccountId}/memberships/${membershipId}/status`,
       request,
+    );
+  }
+
+  listApprovedMembers(businessAccountId: string): Observable<ApprovedMembersResponse> {
+    return this.http.get<ApprovedMembersResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/members`,
+    );
+  }
+
+  listSchedules(businessAccountId: string): Observable<SchedulesResponse> {
+    return this.http.get<SchedulesResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules`,
+    );
+  }
+
+  createShift(
+    businessAccountId: string,
+    request: ShiftRequest,
+  ): Observable<ShiftResponse> {
+    return this.http.post<ShiftResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules`,
+      request,
+    );
+  }
+
+  updateShift(
+    businessAccountId: string,
+    shiftId: string,
+    request: UpdateShiftRequest,
+  ): Observable<ShiftResponse> {
+    return this.http.patch<ShiftResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules/${shiftId}`,
+      request,
+    );
+  }
+
+  deleteShift(
+    businessAccountId: string,
+    shiftId: string,
+  ): Observable<ShiftResponse> {
+    return this.http.delete<ShiftResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules/${shiftId}`,
     );
   }
 
