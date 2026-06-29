@@ -1,0 +1,143 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Horarios</h2>
+      <p class="section-subtitle">
+        Programa los turnos de tus empleados por sede. El turno define en qué negocio se
+        registran los comprobantes que cada empleado envía por WhatsApp.
+      </p>
+    </div>
+    @if (canManage()) {
+      <yep-button variant="ghost" size="sm" (clicked)="openShift()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nuevo turno
+      </yep-button>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (locations().length > 1) {
+    <div class="schedule-filter">
+      <yep-select
+        label="Sede"
+        [options]="filterOptions()"
+        (selectionChange)="onLocationFilter($event)"
+      />
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando horarios…
+    </div>
+  } @else if (message()) {
+    <div class="empty-state">
+      <h3>Horarios no disponibles</h3>
+      <p>{{ message() }}</p>
+    </div>
+  } @else if (locations().length === 0) {
+    <div class="empty-state">
+      <h3>Sin sedes</h3>
+      <p>Crea una sede antes de programar turnos.</p>
+    </div>
+  } @else {
+    <div class="schedule-calendar">
+      <sx-calendar [calendarApp]="calendarApp"></sx-calendar>
+    </div>
+
+    @if (visibleShifts().length === 0) {
+      <div class="empty-state">
+        <h3>Sin turnos</h3>
+        <p>Agrega el primer turno para esta semana.</p>
+      </div>
+    } @else {
+      <div class="card-list">
+        @for (shift of visibleShifts(); track shift.id) {
+          <article class="list-card">
+            <div class="list-card__main">
+              <h3 class="list-card__title">{{ employeeLabelForUser(shift.userId) }}</h3>
+              <span class="list-card__meta">
+                {{ dayLabel(shift.dayOfWeek) }} · {{ shift.startTime }}–{{ shift.endTime }} ·
+                {{ locationName(shift.locationId) }}
+              </span>
+            </div>
+            @if (canManage()) {
+              <div class="list-card__actions">
+                <yep-button variant="secondary" size="sm" (clicked)="openShift(shift)">
+                  Editar
+                </yep-button>
+                <yep-button
+                  variant="danger"
+                  size="sm"
+                  [loading]="deletingId() === shift.id"
+                  (clicked)="deleteShift(shift)"
+                >
+                  <svg lucideTrash2 aria-hidden="true"></svg>
+                </yep-button>
+              </div>
+            }
+          </article>
+        }
+      </div>
+    }
+  }
+</div>
+
+<yep-modal
+  [open]="shiftOpen()"
+  [title]="editingShiftId() ? 'Editar turno' : 'Nuevo turno'"
+  [loading]="savingShift()"
+  [dirty]="shiftForm.dirty"
+  (closeRequested)="closeShift()"
+>
+  <form [formGroup]="shiftForm" (ngSubmit)="saveShift()" class="form-grid">
+    <yep-select
+      formControlName="locationId"
+      label="Sede"
+      [options]="locationOptions()"
+      [error]="isInvalid('locationId') ? 'Selecciona una sede' : ''"
+    />
+    <yep-select
+      formControlName="userId"
+      label="Empleado"
+      [searchable]="true"
+      [options]="memberOptions()"
+      [error]="isInvalid('userId') ? 'Selecciona un empleado' : ''"
+    />
+    <yep-select
+      formControlName="dayOfWeek"
+      label="Día"
+      [options]="dayOptions"
+      [error]="isInvalid('dayOfWeek') ? 'Selecciona un día' : ''"
+    />
+    <div class="form-grid form-grid--2">
+      <label class="time-field">
+        <span class="time-field__label">Hora inicio</span>
+        <input class="time-field__input" type="time" formControlName="startTime" />
+      </label>
+      <label class="time-field">
+        <span class="time-field__label">Hora fin</span>
+        <input class="time-field__input" type="time" formControlName="endTime" />
+      </label>
+    </div>
+    @if (shiftForm.errors?.['endBeforeStart']) {
+      <div class="field-error">La hora de fin debe ser mayor a la de inicio.</div>
+    }
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingShift()" (clicked)="closeShift()">
+      Cancelar
+    </yep-button>
+    <yep-button type="submit" [loading]="savingShift()" (clicked)="saveShift()">
+      {{ editingShiftId() ? 'Guardar' : 'Crear turno' }}
+    </yep-button>
+  </ng-container>
+</yep-modal>

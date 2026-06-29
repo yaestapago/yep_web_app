@@ -282,6 +282,42 @@
   font-weight: var(--font-weight-medium);
 }
 
+.schedule-filter {
+  max-width: 280px;
+}
+
+.schedule-calendar {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  height: 640px;
+  overflow: hidden;
+}
+
+.time-field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.time-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.time-field__input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  padding: var(--space-2) var(--space-3);
+}
+
+.time-field__input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
 .code-value {
   align-items: center;
   display: flex;
