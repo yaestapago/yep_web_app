@@ -63,7 +63,7 @@ export class BusinessListPage {
     if (!account) {
       return '';
     }
-    return [account.city, account.address].filter(Boolean).join(' · ');
+    return [account.cityName, account.departmentName, account.address].filter(Boolean).join(' · ');
   }
 
   roleLabel(membership: BusinessMembership): string {

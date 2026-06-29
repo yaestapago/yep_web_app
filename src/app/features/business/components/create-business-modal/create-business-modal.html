@@ -16,10 +16,11 @@
       label="Nombre del negocio"
       [error]="isInvalid('name') ? 'Mínimo 2 caracteres' : ''"
     />
-    <yep-input
-      formControlName="city"
-      label="Ciudad"
-      [error]="isInvalid('city') ? 'Requerido' : ''"
+    <yep-address-location-select
+      formControlName="location"
+      [required]="true"
+      [error]="isInvalid('location') ? 'Selecciona departamento y ciudad' : ''"
+      dataCy="create-business-location"
     />
     <yep-input
       formControlName="address"

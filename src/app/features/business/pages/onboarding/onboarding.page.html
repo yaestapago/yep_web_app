@@ -93,13 +93,12 @@
           }
         </label>
 
-        <label>
-          <span>Ciudad</span>
-          <input type="text" formControlName="city" autocomplete="address-level2" />
-          @if (isBusinessInvalid('city')) {
-            <small>Ingresa la ciudad.</small>
-          }
-        </label>
+        <yep-address-location-select
+          formControlName="location"
+          [required]="true"
+          [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad.' : ''"
+          dataCy="onboarding-business-location"
+        />
 
         <label>
           <span>Direccion</span>

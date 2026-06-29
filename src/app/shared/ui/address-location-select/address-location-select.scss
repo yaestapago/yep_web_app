@@ -1,0 +1,14 @@
+:host {
+  display: block;
+}
+
+.address-location-select {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .address-location-select {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

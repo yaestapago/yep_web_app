@@ -15,7 +15,10 @@ export interface BusinessMembershipsResponse {
 
 export interface BusinessAccountRequest {
   name: string;
-  city: string;
+  departmentCode: string;
+  departmentName: string;
+  cityCode: string;
+  cityName: string;
   address: string;
   phone: string;
 }
@@ -31,7 +34,10 @@ export interface BusinessAccountDetailResponse {
 
 export interface UpdateBusinessAccountRequest {
   name?: string;
-  city?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  cityCode?: string;
+  cityName?: string;
   address?: string;
   phone?: string;
 }

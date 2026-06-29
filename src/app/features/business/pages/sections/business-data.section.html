@@ -25,8 +25,13 @@
       <span class="info-value">{{ businessName() }}</span>
     </div>
     <div class="info-cell">
-      <span class="info-label">Ciudad</span>
-      <span class="info-value">{{ account()?.city || '—' }}</span>
+      <span class="info-label">Ubicación</span>
+      <span class="info-value">
+        {{ account()?.cityName || '—' }}
+        @if (account()?.departmentName) {
+          · {{ account()?.departmentName }}
+        }
+      </span>
     </div>
     <div class="info-cell">
       <span class="info-label">Dirección</span>
@@ -72,20 +77,19 @@
       label="Nombre"
       [error]="isBusinessInvalid('name') ? 'Mínimo 2 caracteres' : ''"
     />
-    <div class="form-grid form-grid--2">
-      <yep-input
-        formControlName="city"
-        label="Ciudad"
-        [error]="isBusinessInvalid('city') ? 'Requerido' : ''"
-      />
-      <yep-phone-input
-        formControlName="phone"
-        label="Teléfono"
-        placeholder="300 123 4567"
-        [required]="true"
-        [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido' : ''"
-      ></yep-phone-input>
-    </div>
+    <yep-address-location-select
+      formControlName="location"
+      [required]="true"
+      [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad' : ''"
+      dataCy="edit-business-location"
+    />
+    <yep-phone-input
+      formControlName="phone"
+      label="Teléfono"
+      placeholder="300 123 4567"
+      [required]="true"
+      [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido' : ''"
+    ></yep-phone-input>
     <yep-input
       formControlName="address"
       label="Dirección"
@@ -94,11 +98,11 @@
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="savingBusiness()" (clicked)="closeEdit()"
-      >Cancelar</yep-button
-    >
-    <yep-button type="submit" [loading]="savingBusiness()" (clicked)="saveBusiness()"
-      >Guardar</yep-button
-    >
+    <yep-button variant="ghost" [disabled]="savingBusiness()" (clicked)="closeEdit()">
+      Cancelar
+    </yep-button>
+    <yep-button type="submit" [loading]="savingBusiness()" (clicked)="saveBusiness()">
+      Guardar
+    </yep-button>
   </ng-container>
 </yep-modal>
