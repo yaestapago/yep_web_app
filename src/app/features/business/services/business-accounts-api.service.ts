@@ -16,6 +16,7 @@ import {
   BusinessAccountDetailResponse,
   BusinessAccountRequest,
   BusinessAccountsResponse,
+  BusinessLookupResponse,
   BusinessMembershipsResponse,
   CreateBusinessAccountResponse,
   MembershipRequest,
@@ -45,6 +46,14 @@ export class BusinessAccountsApiService {
     return this.http.post<MembershipResponse>(`${this.apiUrl}/business-accounts/membership-requests`, request);
   }
 
+  // Resuelve un código corto (los últimos caracteres del ID del negocio) a los
+  // negocios que coinciden, para unirse sin pegar el ID completo.
+  lookupBusinessByCode(code: string): Observable<BusinessLookupResponse> {
+    return this.http.get<BusinessLookupResponse>(`${this.apiUrl}/business-accounts/lookup`, {
+      params: { code },
+    });
+  }
+
   updateBusinessAccount(
     businessAccountId: string,
     request: UpdateBusinessAccountRequest,
@@ -55,8 +64,7 @@ export class BusinessAccountsApiService {
     );
   }
 
-  // Backend pending: owner inbox endpoint does not exist yet.
-  // Expected contract:
+  // Owner inbox: lists membership requests/memberships for a business account.
   // GET /business-accounts/:businessAccountId/membership-requests?status=pending
   // Response: { memberships: BusinessMembership[] }
   listPendingStaffRequests(businessAccountId: string): Observable<BusinessMembershipsResponse> {

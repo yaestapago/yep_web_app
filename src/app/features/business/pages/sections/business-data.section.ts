@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LucidePencil } from '@lucide/angular';
+import { LucideClipboardCheck, LucideClipboardCopy, LucidePencil } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -19,7 +19,16 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-business-data-section',
-  imports: [ReactiveFormsModule, Button, Input, Modal, PhoneInput, LucidePencil],
+  imports: [
+    ReactiveFormsModule,
+    Button,
+    Input,
+    Modal,
+    PhoneInput,
+    LucidePencil,
+    LucideClipboardCopy,
+    LucideClipboardCheck,
+  ],
   templateUrl: './business-data.section.html',
   styleUrl: './business-sections.scss',
 })
@@ -43,6 +52,28 @@ export class BusinessDataSection {
   readonly error = signal('');
   readonly success = signal('');
   readonly editOpen = signal(false);
+  readonly copied = signal(false);
+
+  /**
+   * Código corto para compartir: los últimos 6 caracteres del ID del negocio.
+   * El staff lo usa en "Unirme a un negocio" para solicitar acceso sin pegar
+   * el ID completo.
+   */
+  readonly shareCode = computed(() => {
+    const id = this.businessId();
+    return id ? id.slice(-6).toUpperCase() : '';
+  });
+
+  copyCode(): void {
+    const code = this.shareCode();
+    if (!code) {
+      return;
+    }
+    void navigator.clipboard?.writeText(code).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 1500);
+    });
+  }
 
   readonly businessForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],

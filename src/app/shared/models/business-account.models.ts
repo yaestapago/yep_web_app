@@ -36,6 +36,16 @@ export interface UpdateBusinessAccountRequest {
   phone?: string;
 }
 
+export interface BusinessLookupResult {
+  id: string;
+  name: string;
+  city: string;
+}
+
+export interface BusinessLookupResponse {
+  businessAccounts: BusinessLookupResult[];
+}
+
 export interface MembershipRequest {
   businessAccountId: string;
   role: BusinessMembershipRole;

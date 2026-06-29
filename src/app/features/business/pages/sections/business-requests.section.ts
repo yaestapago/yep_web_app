@@ -69,10 +69,7 @@ export class BusinessRequestsSection implements OnInit {
         next: (response) => {
           this.backendPending.set(false);
           this.requests.set(
-            response.memberships.filter(
-              (membership) =>
-                membership.role === 'account_staff' && membership.status === 'pending',
-            ),
+            response.memberships.filter((membership) => membership.status === 'pending'),
           );
         },
         error: (error) => this.handleError(error),
@@ -93,6 +90,10 @@ export class BusinessRequestsSection implements OnInit {
   requesterLabel(membership: BusinessMembership): string {
     // No exponemos identificadores internos (userId): usamos correo o documento.
     return membership.email ?? membership.identificationNumber ?? 'Solicitante sin datos';
+  }
+
+  roleLabel(membership: BusinessMembership): string {
+    return membership.role === 'account_owner' ? 'Propietario' : 'Staff';
   }
 
   private updateStatus(membership: BusinessMembership, status: 'approved' | 'rejected'): void {

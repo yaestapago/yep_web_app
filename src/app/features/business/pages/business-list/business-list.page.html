@@ -1,10 +1,22 @@
 <section class="page">
   <header class="page-header">
-    <h1 class="page-title">Negocios</h1>
-    <p class="page-subtitle">
-      Administra tus negocios. Selecciona uno para ver su información, métricas, usuarios e
-      integraciones.
-    </p>
+    <div class="page-header__text">
+      <h1 class="page-title">Negocios</h1>
+      <p class="page-subtitle">
+        Administra tus negocios. Selecciona uno para ver su información, métricas, usuarios e
+        integraciones.
+      </p>
+    </div>
+    <div class="page-header__actions">
+      <yep-button (clicked)="openCreate()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        <span>Nuevo negocio</span>
+      </yep-button>
+      <yep-button variant="secondary" (clicked)="openRequest()">
+        <svg lucideUserPlus aria-hidden="true"></svg>
+        <span>Unirme a un negocio</span>
+      </yep-button>
+    </div>
   </header>
 
   <div class="business-grid">
@@ -30,16 +42,16 @@
       </a>
     }
 
-    <button type="button" class="business-card business-card--new" (click)="openCreate()">
-      <span class="new-icon" aria-hidden="true"><svg lucidePlus></svg></span>
-      <span class="business-name">Nuevo negocio</span>
-      <span class="new-hint">Crea un negocio sin salir de esta vista.</span>
-    </button>
   </div>
 
   <app-create-business-modal
     [open]="createOpen()"
     (closeRequested)="closeCreate()"
     (created)="onCreated($event)"
+  />
+
+  <app-request-membership-modal
+    [open]="requestOpen()"
+    (closeRequested)="closeRequest()"
   />
 </section>

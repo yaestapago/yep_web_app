@@ -2,7 +2,7 @@
   <div class="section-toolbar">
     <div class="section-heading">
       <h2 class="section-title">Solicitudes de acceso</h2>
-      <p class="section-subtitle">Usuarios que solicitan unirse como staff de este negocio.</p>
+      <p class="section-subtitle">Usuarios que solicitan unirse como staff o propietario de este negocio.</p>
     </div>
     @if (canManage()) {
       <yep-button variant="ghost" size="sm" (clicked)="load()">
@@ -46,7 +46,7 @@
           <article class="list-card">
             <div class="list-card__main">
               <h3 class="list-card__title">{{ requesterLabel(request) }}</h3>
-              <span class="list-card__meta">Rol solicitado: Staff · Estado: Pendiente</span>
+              <span class="list-card__meta">Rol solicitado: {{ roleLabel(request) }} · Estado: Pendiente</span>
             </div>
             <div class="list-card__actions">
               <yep-button

@@ -2,6 +2,34 @@
   display: block;
 }
 
+.page-header {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.page-header__text {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.page-header__actions svg {
+  height: 18px;
+  width: 18px;
+}
+
 .business-grid {
   display: grid;
   gap: var(--space-4);
@@ -98,35 +126,4 @@
   color: var(--color-text-secondary);
   height: 18px;
   width: 18px;
-}
-
-.business-card--new {
-  align-items: center;
-  border-style: dashed;
-  box-shadow: none;
-  cursor: pointer;
-  font: inherit;
-  justify-content: center;
-  text-align: center;
-  width: 100%;
-}
-
-.business-card--new .business-name {
-  font-size: var(--font-size-md);
-}
-
-.new-icon {
-  align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-primary);
-  display: flex;
-  height: 44px;
-  justify-content: center;
-  width: 44px;
-}
-
-.new-hint {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
 }

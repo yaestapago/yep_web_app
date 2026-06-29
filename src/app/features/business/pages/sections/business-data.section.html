@@ -36,6 +36,26 @@
       <span class="info-label">Teléfono</span>
       <span class="info-value">{{ account()?.phone || '—' }}</span>
     </div>
+    <div class="info-cell">
+      <span class="info-label">Código para compartir</span>
+      <span class="info-value code-value">
+        <code class="code-chip">{{ shareCode() }}</code>
+        <button
+          type="button"
+          class="code-copy"
+          (click)="copyCode()"
+          [attr.aria-label]="copied() ? 'Código copiado' : 'Copiar código'"
+          [title]="copied() ? 'Copiado' : 'Copiar'"
+        >
+          @if (copied()) {
+            <svg lucideClipboardCheck aria-hidden="true"></svg>
+          } @else {
+            <svg lucideClipboardCopy aria-hidden="true"></svg>
+          }
+        </button>
+      </span>
+      <span class="info-hint">Compártelo con quien quiera unirse a este negocio.</span>
+    </div>
   </div>
 </div>
 
