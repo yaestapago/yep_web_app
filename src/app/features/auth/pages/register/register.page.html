@@ -16,6 +16,11 @@
 
     <div class="auth-heading">
       <h3>Crea tu cuenta</h3>
+      @if (inviteBusinessName()) {
+        <span>Te registrarás como staff de {{ inviteBusinessName() }}.</span>
+      } @else if (inviteCode()) {
+        <span>Te registrarás como staff de este negocio.</span>
+      }
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -41,7 +46,7 @@
           type="email"
           autocomplete="email"
           formControlName="email"
-          [error]="isInvalid('email') ? 'Ingresa un correo valido.' : ''"
+          [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
         />
 
         <yep-input
@@ -100,7 +105,7 @@
 
     <p class="auth-switch">
       ¿Ya tienes cuenta?
-      <a routerLink="/login">Inicia sesión</a>
+      <a routerLink="/login" [queryParams]="loginQueryParams()">Inicia sesión</a>
     </p>
   </section>
 </main>

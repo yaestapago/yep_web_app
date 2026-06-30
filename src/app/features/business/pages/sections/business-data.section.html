@@ -61,6 +61,30 @@
       </span>
       <span class="info-hint">Compártelo con quien quiera unirse a este negocio.</span>
     </div>
+    <div class="info-cell">
+      <span class="info-label">Link de registro staff</span>
+      <span class="info-value code-value code-value--link">
+        <code class="code-chip code-chip--link">
+          /register?code={{ shareCode() }}&amp;businessName={{ businessName() }}
+        </code>
+        <button
+          type="button"
+          class="code-copy code-copy--wide"
+          (click)="copyRegistrationLink()"
+          [attr.aria-label]="linkCopied() ? 'Link copiado' : 'Copiar link de registro'"
+          [title]="linkCopied() ? 'Link copiado' : 'Copiar link de registro'"
+        >
+          @if (linkCopied()) {
+            <svg lucideClipboardCheck aria-hidden="true"></svg>
+            <span>Copiado</span>
+          } @else {
+            <svg lucideClipboardCopy aria-hidden="true"></svg>
+            <span>Copiar link</span>
+          }
+        </button>
+      </span>
+      <span class="info-hint">Envíalo a quien deba registrarse como staff.</span>
+    </div>
   </div>
 </div>
 

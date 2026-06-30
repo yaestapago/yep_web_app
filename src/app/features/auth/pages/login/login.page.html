@@ -1,34 +1,63 @@
 <main class="auth-page">
   <section class="auth-panel">
     <div class="auth-logo" aria-label="Ya Está Pago">
-      <img class="auth-logo__image auth-logo__image--light" src="/brand/logo-light.png" alt="Ya Está Pago" />
-      <img class="auth-logo__image auth-logo__image--dark" src="/brand/logo-dark.png" alt="" aria-hidden="true" />
+      <img
+        class="auth-logo__image auth-logo__image--light"
+        src="/brand/logo-light.png"
+        alt="Ya Está Pago"
+      />
+      <img
+        class="auth-logo__image auth-logo__image--dark"
+        src="/brand/logo-dark.png"
+        alt=""
+        aria-hidden="true"
+      />
     </div>
 
     <div class="auth-heading">
       <h3>Inicia sesión</h3>
+      @if (inviteBusinessName()) {
+        <span>Entrarás para solicitar acceso staff a {{ inviteBusinessName() }}.</span>
+      } @else if (inviteCode()) {
+        <span>Entrarás para solicitar acceso staff a este negocio.</span>
+      }
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <yep-input label="Correo" type="email" autocomplete="email" formControlName="email"
-        [error]="isInvalid('email') ? 'Ingresa un correo valido.' : ''" />
+      <yep-input
+        label="Correo"
+        type="email"
+        autocomplete="email"
+        formControlName="email"
+        [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
+      />
 
-      <yep-input label="Contraseña" type="password" autocomplete="current-password" formControlName="password"
-        [error]="isInvalid('password') ? 'La contraseña debe tener al menos 8 caracteres.' : ''" />
+      <yep-input
+        label="Contraseña"
+        type="password"
+        autocomplete="current-password"
+        formControlName="password"
+        [error]="isInvalid('password') ? 'La contraseña debe tener al menos 8 caracteres.' : ''"
+      />
 
       <a class="auth-recovery-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
 
       @if (error()) {
-      <yep-alert variant="error">{{ error() }}</yep-alert>
+        <yep-alert variant="error">{{ error() }}</yep-alert>
       }
 
       @if (success()) {
-      <yep-alert variant="success">{{ success() }}</yep-alert>
+        <yep-alert variant="success">{{ success() }}</yep-alert>
       }
 
-      <yep-button type="submit" [loading]="loading()" [disabled]="form.invalid || loading()" [fullWidth]="true">
+      <yep-button
+        type="submit"
+        [loading]="loading()"
+        [disabled]="form.invalid || loading()"
+        [fullWidth]="true"
+      >
         @if (!loading()) {
-        <svg lucideLogIn aria-hidden="true"></svg>
+          <svg lucideLogIn aria-hidden="true"></svg>
         }
         <span>{{ loading() ? 'Entrando' : 'Entrar' }}</span>
       </yep-button>
@@ -36,7 +65,7 @@
 
     <p class="auth-switch">
       ¿No tienes cuenta?
-      <a routerLink="/register">Regístrate</a>
+      <a routerLink="/register" [queryParams]="registerQueryParams()">Regístrate</a>
     </p>
   </section>
 </main>

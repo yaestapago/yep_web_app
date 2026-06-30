@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -52,6 +52,9 @@ export class OnboardingPage implements OnInit {
   readonly pendingMemberships = this.session.pendingMemberships;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
   readonly knownBusinessAccounts = signal<BusinessAccount[]>([]);
+  readonly waitingForApproval = computed(
+    () => this.approvedMemberships().length === 0 && this.pendingMemberships().length > 0,
+  );
 
   readonly loadingMemberships = signal(false);
   readonly creatingBusiness = signal(false);

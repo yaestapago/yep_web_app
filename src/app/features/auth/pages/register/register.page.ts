@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -8,15 +8,26 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideUserPlus } from '@lucide/angular';
-import { finalize } from 'rxjs';
+import { Observable, catchError, finalize, map, of, switchMap } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { RegisterRequest } from '../../../../shared/models/auth.models';
+import type {
+  AuthResponse,
+  BusinessMembership,
+  RegisterRequest,
+} from '../../../../shared/models/auth.models';
 import { Alert, Button, Input, PhoneInput, type PhoneInputValue } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { AuthApiService } from '../../services/auth-api.service';
+
+interface RegisterFlowResult {
+  response: AuthResponse;
+  requestedAccess: boolean;
+  requestError?: string;
+}
 
 @Component({
   selector: 'app-register-page',
@@ -35,7 +46,9 @@ import { AuthApiService } from '../../services/auth-api.service';
 })
 export class RegisterPage {
   private readonly authApi = inject(AuthApiService);
+  private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
@@ -43,6 +56,16 @@ export class RegisterPage {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly success = signal('');
+  readonly inviteCode = signal('');
+  readonly inviteBusinessName = signal('');
+  readonly loginQueryParams = computed(() => {
+    const code = this.inviteCode();
+    const businessName = this.inviteBusinessName();
+    return {
+      ...(code ? { code } : {}),
+      ...(businessName ? { businessName } : {}),
+    };
+  });
 
   readonly form = this.fb.group(
     {
@@ -56,6 +79,13 @@ export class RegisterPage {
     },
     { validators: [this.passwordsMatchValidator] },
   );
+
+  constructor() {
+    const code = this.route.snapshot.queryParamMap.get('code')?.trim() ?? '';
+    const businessName = this.route.snapshot.queryParamMap.get('businessName')?.trim() ?? '';
+    this.inviteCode.set(code.toUpperCase());
+    this.inviteBusinessName.set(businessName);
+  }
 
   submit(): void {
     this.error.set('');
@@ -80,13 +110,20 @@ export class RegisterPage {
     this.authApi
       .register(request satisfies RegisterRequest)
       .pipe(
+        switchMap((response) => this.requestStaffAccessFromInvite(response)),
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => {
-          this.session.saveSession(response);
-          this.success.set(`Cuenta creada para ${response.user.firstName}.`);
+        next: (result) => {
+          if (result.requestError) {
+            this.error.set(result.requestError);
+          }
+          this.success.set(
+            result.requestedAccess
+              ? `Cuenta creada para ${result.response.user.firstName}. Solicitud enviada al negocio.`
+              : `Cuenta creada para ${result.response.user.firstName}.`,
+          );
           setTimeout(
             () =>
               void this.router.navigateByUrl(
@@ -95,7 +132,7 @@ export class RegisterPage {
             450,
           );
         },
-        error: (error) => this.error.set(httpErrorMessage(error)),
+        error: (error) => this.handleRegisterError(error),
       });
   }
 
@@ -117,5 +154,89 @@ export class RegisterPage {
 
     if (!password || !confirmPassword) return null;
     return password === confirmPassword ? null : { passwordMismatch: true };
+  }
+
+  private handleRegisterError(error: unknown): void {
+    const message = httpErrorMessage(error);
+    this.error.set(message);
+
+    if (!this.isExistingEmailError(message)) {
+      return;
+    }
+
+    this.success.set('Ya tienes una cuenta. Te llevaremos al inicio de sesión.');
+    setTimeout(
+      () =>
+        void this.router.navigate(['/login'], {
+          queryParams: this.loginQueryParams(),
+        }),
+      1000,
+    );
+  }
+
+  private isExistingEmailError(message: string): boolean {
+    return message.toLowerCase().includes('ya existe un usuario con este email');
+  }
+
+  private requestStaffAccessFromInvite(response: AuthResponse): Observable<RegisterFlowResult> {
+    this.session.saveSession(response);
+    const code = this.inviteCode();
+
+    if (!code) {
+      return of({ response, requestedAccess: false } satisfies RegisterFlowResult);
+    }
+
+    return this.businessApi.lookupBusinessByCode(code).pipe(
+      switchMap((lookup) => {
+        const matches = lookup.businessAccounts;
+        if (matches.length === 0) {
+          return of({
+            response,
+            requestedAccess: false,
+            requestError:
+              'Cuenta creada, pero no encontramos el negocio asociado al link de registro.',
+          } satisfies RegisterFlowResult);
+        }
+
+        if (matches.length > 1) {
+          return of({
+            response,
+            requestedAccess: false,
+            requestError:
+              'Cuenta creada, pero el link coincide con mas de un negocio. Solicita un nuevo link al propietario.',
+          } satisfies RegisterFlowResult);
+        }
+
+        return this.businessApi
+          .requestMembership({
+            businessAccountId: matches[0].id,
+            role: 'account_staff',
+          })
+          .pipe(
+            map((membershipResponse) => {
+              this.session.updateMemberships(this.mergeMembership(membershipResponse.membership));
+              return { response, requestedAccess: true } satisfies RegisterFlowResult;
+            }),
+          );
+      }),
+      catchError((error) =>
+        of({
+          response,
+          requestedAccess: false,
+          requestError: `Cuenta creada, pero no pudimos enviar la solicitud al negocio. ${httpErrorMessage(error)}`,
+        } satisfies RegisterFlowResult),
+      ),
+    );
+  }
+
+  private mergeMembership(membership: BusinessMembership): BusinessMembership[] {
+    const memberships = this.session.memberships();
+    const index = memberships.findIndex((current) => current.id === membership.id);
+
+    if (index === -1) {
+      return [membership, ...memberships];
+    }
+
+    return memberships.map((current, i) => (i === index ? membership : current));
   }
 }

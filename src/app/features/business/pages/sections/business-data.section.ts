@@ -56,6 +56,7 @@ export class BusinessDataSection {
   readonly success = signal('');
   readonly editOpen = signal(false);
   readonly copied = signal(false);
+  readonly linkCopied = signal(false);
 
   /**
    * Código corto para compartir: los últimos 6 caracteres del ID del negocio.
@@ -67,6 +68,19 @@ export class BusinessDataSection {
     return id ? id.slice(-6).toUpperCase() : '';
   });
 
+  readonly registrationLink = computed(() => {
+    const code = this.shareCode();
+    if (!code) {
+      return '';
+    }
+    const origin = globalThis.location?.origin ?? '';
+    const params = new URLSearchParams({
+      code,
+      businessName: this.businessName(),
+    });
+    return `${origin}/register?${params.toString()}`;
+  });
+
   copyCode(): void {
     const code = this.shareCode();
     if (!code) {
@@ -75,6 +89,17 @@ export class BusinessDataSection {
     void navigator.clipboard?.writeText(code).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 1500);
+    });
+  }
+
+  copyRegistrationLink(): void {
+    const link = this.registrationLink();
+    if (!link) {
+      return;
+    }
+    void navigator.clipboard?.writeText(link).then(() => {
+      this.linkCopied.set(true);
+      setTimeout(() => this.linkCopied.set(false), 1500);
     });
   }
 
