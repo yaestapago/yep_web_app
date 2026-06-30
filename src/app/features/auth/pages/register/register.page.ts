@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -9,7 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideUserPlus } from '@lucide/angular';
+import { LucideMail } from '@lucide/angular';
 import { Observable, catchError, finalize, map, of, switchMap } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -18,7 +18,14 @@ import type {
   BusinessMembership,
   RegisterRequest,
 } from '../../../../shared/models/auth.models';
-import { Alert, Button, Input, PhoneInput, type PhoneInputValue } from '../../../../shared/ui';
+import {
+  Alert,
+  Button,
+  Input,
+  OtpInput,
+  PhoneInput,
+  type PhoneInputValue,
+} from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { AuthApiService } from '../../services/auth-api.service';
@@ -29,22 +36,26 @@ interface RegisterFlowResult {
   requestError?: string;
 }
 
+type RegisterStep = 'form' | 'code';
+type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
+
 @Component({
   selector: 'app-register-page',
   imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
-    LucideUserPlus,
+    LucideMail,
     Alert,
     Button,
     Input,
+    OtpInput,
     PhoneInput,
   ],
   templateUrl: './register.page.html',
   styleUrl: './register.page.scss',
 })
-export class RegisterPage {
+export class RegisterPage implements OnDestroy {
   private readonly authApi = inject(AuthApiService);
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly session = inject(AuthSessionService);
@@ -54,10 +65,15 @@ export class RegisterPage {
   private readonly fb = inject(FormBuilder).nonNullable;
 
   readonly loading = signal(false);
+  readonly step = signal<RegisterStep>('form');
+  readonly otpStatus = signal<OtpStatus>('idle');
   readonly error = signal('');
   readonly success = signal('');
+  readonly otpError = signal('');
+  readonly resendSeconds = signal(0);
   readonly inviteCode = signal('');
   readonly inviteBusinessName = signal('');
+  readonly maskedEmail = computed(() => this.maskEmail(this.form.controls.email.value));
   readonly loginQueryParams = computed(() => {
     const code = this.inviteCode();
     const businessName = this.inviteBusinessName();
@@ -80,11 +96,21 @@ export class RegisterPage {
     { validators: [this.passwordsMatchValidator] },
   );
 
+  readonly codeForm = this.fb.group({
+    code: ['', [Validators.required]],
+  });
+
+  private resendInterval: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     const code = this.route.snapshot.queryParamMap.get('code')?.trim() ?? '';
     const businessName = this.route.snapshot.queryParamMap.get('businessName')?.trim() ?? '';
     this.inviteCode.set(code.toUpperCase());
     this.inviteBusinessName.set(businessName);
+  }
+
+  ngOnDestroy(): void {
+    this.clearResendTimer();
   }
 
   submit(): void {
@@ -96,19 +122,50 @@ export class RegisterPage {
       return;
     }
 
-    const {
-      confirmPassword: _confirmPassword,
-      cellphoneNumber,
-      ...rawRequest
-    } = this.form.getRawValue();
-    const request = {
-      ...rawRequest,
-      cellphoneNumber: cellphoneNumber?.e164 ?? '',
-    };
-
     this.loading.set(true);
+    this.otpStatus.set('sending');
     this.authApi
-      .register(request satisfies RegisterRequest)
+      .requestRegistrationVerificationCode({
+        email: this.form.controls.email.value,
+        identificationNumber: this.form.controls.identificationNumber.value,
+      })
+      .pipe(
+        finalize(() => {
+          this.loading.set(false);
+          if (this.otpStatus() === 'sending') this.otpStatus.set('idle');
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.step.set('code');
+          this.codeForm.reset();
+          this.otpError.set('');
+          this.success.set(response.message ?? 'Te enviamos un código de 6 dígitos.');
+          this.startResendTimer(response.resendInSeconds ?? 60);
+        },
+        error: (error) => this.handleRegisterError(error),
+      });
+  }
+
+  resendCode(): void {
+    if (this.resendSeconds() > 0 || this.loading()) return;
+    this.submit();
+  }
+
+  completeRegistration(code: string): void {
+    if (code.length !== 6 || this.otpStatus() === 'validating' || this.otpStatus() === 'success') {
+      return;
+    }
+
+    this.error.set('');
+    this.success.set('');
+    this.otpError.set('');
+    this.otpStatus.set('validating');
+    this.loading.set(true);
+
+    this.authApi
+      .register(this.buildRegisterRequest(code))
       .pipe(
         switchMap((response) => this.requestStaffAccessFromInvite(response)),
         finalize(() => this.loading.set(false)),
@@ -116,6 +173,7 @@ export class RegisterPage {
       )
       .subscribe({
         next: (result) => {
+          this.otpStatus.set('success');
           if (result.requestError) {
             this.error.set(result.requestError);
           }
@@ -132,8 +190,27 @@ export class RegisterPage {
             450,
           );
         },
-        error: (error) => this.handleRegisterError(error),
+        error: (error) => {
+          this.otpStatus.set('error');
+          this.otpError.set(httpErrorMessage(error));
+        },
       });
+  }
+
+  handleCodeChanged(value: string): void {
+    if (value.length < 6 && (this.otpStatus() === 'error' || this.otpStatus() === 'success')) {
+      this.otpStatus.set('idle');
+      this.otpError.set('');
+    }
+  }
+
+  editForm(): void {
+    this.step.set('form');
+    this.codeForm.reset();
+    this.error.set('');
+    this.success.set('');
+    this.otpError.set('');
+    this.otpStatus.set('idle');
   }
 
   isInvalid(controlName: keyof typeof this.form.controls): boolean {
@@ -176,6 +253,45 @@ export class RegisterPage {
 
   private isExistingEmailError(message: string): boolean {
     return message.toLowerCase().includes('ya existe un usuario con este email');
+  }
+
+  private buildRegisterRequest(verificationCode: string): RegisterRequest {
+    const {
+      confirmPassword: _confirmPassword,
+      cellphoneNumber,
+      ...rawRequest
+    } = this.form.getRawValue();
+
+    return {
+      ...rawRequest,
+      cellphoneNumber: cellphoneNumber?.e164 ?? '',
+      verificationCode,
+    };
+  }
+
+  private startResendTimer(seconds: number): void {
+    this.clearResendTimer();
+    this.resendSeconds.set(Math.max(0, seconds));
+
+    this.resendInterval = setInterval(() => {
+      const nextSeconds = Math.max(0, this.resendSeconds() - 1);
+      this.resendSeconds.set(nextSeconds);
+      if (nextSeconds === 0) this.clearResendTimer();
+    }, 1000);
+  }
+
+  private clearResendTimer(): void {
+    if (!this.resendInterval) return;
+    clearInterval(this.resendInterval);
+    this.resendInterval = null;
+  }
+
+  private maskEmail(email: string): string {
+    const [name = '', domain = ''] = email.split('@');
+    if (!name || !domain) return email;
+
+    const visible = name.slice(0, Math.min(3, name.length));
+    return `${visible}${'*'.repeat(Math.max(3, name.length - visible.length))}@${domain}`;
   }
 
   private requestStaffAccessFromInvite(response: AuthResponse): Observable<RegisterFlowResult> {
