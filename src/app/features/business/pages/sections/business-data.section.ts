@@ -5,6 +5,8 @@ import { LucideClipboardCheck, LucideClipboardCopy, LucidePencil } from '@lucide
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -21,6 +23,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   selector: 'app-business-data-section',
   imports: [
     ReactiveFormsModule,
+    AddressLocationSelect,
     Button,
     Input,
     Modal,
@@ -77,7 +80,7 @@ export class BusinessDataSection {
 
   readonly businessForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
+    location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
@@ -88,7 +91,7 @@ export class BusinessDataSection {
     this.success.set('');
     this.businessForm.reset({
       name: account?.name ?? '',
-      city: account?.city ?? '',
+      location: this.accountLocationValue(),
       address: account?.address ?? '',
       phone: account?.phone ?? '',
     });
@@ -116,7 +119,10 @@ export class BusinessDataSection {
     this.businessApi
       .updateBusinessAccount(businessId, {
         name: raw.name,
-        city: raw.city,
+        departmentCode: raw.location?.departmentCode,
+        departmentName: raw.location?.departmentName,
+        cityCode: raw.location?.cityCode,
+        cityName: raw.location?.cityName,
         address: raw.address,
         phone: this.phoneValue(raw.phone),
       })
@@ -144,5 +150,19 @@ export class BusinessDataSection {
       return '';
     }
     return typeof value === 'string' ? value : value.e164;
+  }
+
+  private accountLocationValue(): AddressLocationValue | null {
+    const account = this.account();
+    if (!account) {
+      return null;
+    }
+
+    return {
+      departmentCode: account.departmentCode,
+      departmentName: account.departmentName,
+      cityCode: account.cityCode,
+      cityName: account.cityName,
+    };
   }
 }

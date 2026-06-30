@@ -16,6 +16,8 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { BusinessAccount, BusinessMembership } from '../../../../shared/models/auth.models';
+import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -32,6 +34,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     LucideRefreshCw,
     LucideSend,
     LucideTriangleAlert,
+    AddressLocationSelect,
     PhoneInput,
   ],
   templateUrl: './onboarding.page.html',
@@ -58,7 +61,7 @@ export class OnboardingPage implements OnInit {
 
   readonly businessForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
+    location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
@@ -112,7 +115,10 @@ export class OnboardingPage implements OnInit {
     this.businessApi
       .createBusinessAccount({
         name: raw.name,
-        city: raw.city,
+        departmentCode: raw.location?.departmentCode ?? '',
+        departmentName: raw.location?.departmentName ?? '',
+        cityCode: raw.location?.cityCode ?? '',
+        cityName: raw.location?.cityName ?? '',
         address: raw.address,
         phone: this.phoneValue(raw.phone),
       })

@@ -1,0 +1,32 @@
+<div class="address-location-select" [formGroup]="form">
+  <yep-select
+    formControlName="departmentCode"
+    [label]="departmentLabel()"
+    [placeholder]="loadingDepartments() ? 'Cargando departamentos...' : departmentPlaceholder()"
+    [options]="departmentOptions()"
+    [required]="required()"
+    [disabled]="isDisabled() || loadingDepartments()"
+    [searchable]="true"
+    [clearable]="true"
+    [dataCy]="dataCy() ? dataCy() + '-department' : ''"
+  />
+
+  <yep-select
+    formControlName="cityCode"
+    [label]="cityLabel()"
+    [placeholder]="
+      loadingCities()
+        ? 'Cargando ciudades...'
+        : selectedDepartmentCode()
+          ? cityPlaceholder()
+          : 'Selecciona primero un departamento'
+    "
+    [options]="cityOptions()"
+    [required]="required()"
+    [disabled]="cityDisabled()"
+    [searchable]="true"
+    [clearable]="true"
+    [error]="error() || loadError()"
+    [dataCy]="dataCy() ? dataCy() + '-city' : ''"
+  />
+</div>

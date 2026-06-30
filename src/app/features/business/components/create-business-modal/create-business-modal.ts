@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -19,7 +21,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-create-business-modal',
-  imports: [ReactiveFormsModule, Button, Input, Modal, PhoneInput],
+  imports: [ReactiveFormsModule, AddressLocationSelect, Button, Input, Modal, PhoneInput],
   templateUrl: './create-business-modal.html',
 })
 export class CreateBusinessModal {
@@ -37,14 +39,14 @@ export class CreateBusinessModal {
 
   readonly form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
+    location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
   reset(): void {
     this.error.set('');
-    this.form.reset({ name: '', city: '', address: '', phone: '' });
+    this.form.reset({ name: '', location: null, address: '', phone: '' });
   }
 
   close(): void {
@@ -67,7 +69,10 @@ export class CreateBusinessModal {
     this.businessApi
       .createBusinessAccount({
         name: raw.name,
-        city: raw.city,
+        departmentCode: raw.location?.departmentCode ?? '',
+        departmentName: raw.location?.departmentName ?? '',
+        cityCode: raw.location?.cityCode ?? '',
+        cityName: raw.location?.cityName ?? '',
         address: raw.address,
         phone: this.phoneValue(raw.phone),
       })

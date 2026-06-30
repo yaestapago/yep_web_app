@@ -1,4 +1,5 @@
 export * from './alert/alert';
+export * from './address-location-select/address-location-select';
 export * from './button/button';
 export * from './chart-canvas/chart-canvas';
 export * from './input/input';

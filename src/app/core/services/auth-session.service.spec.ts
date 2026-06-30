@@ -20,7 +20,10 @@ const approvedMembership: BusinessMembership = {
   businessAccount: {
     id: 'business-1',
     name: 'Tienda Don Pedro',
-    city: 'Bogota',
+    departmentCode: '11',
+    departmentName: 'Bogotá D.C.',
+    cityCode: '11001',
+    cityName: 'Bogotá, D.C.',
     address: 'Calle 10 # 20-30',
     phone: '6011234567',
   },
