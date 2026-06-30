@@ -3,12 +3,17 @@
     <div class="section-heading">
       <h2 class="section-title">Horarios</h2>
       <p class="section-subtitle">
-        Programa los turnos de tus empleados por sede. El turno define en qué negocio se
-        registran los comprobantes que cada empleado envía por WhatsApp.
+        @if (canManage()) {
+          Plantilla semanal de turnos por sede. Haz clic en una franja para crear un turno o
+          en un bloque para editarlo. Define en qué negocio se registran los comprobantes de
+          WhatsApp de cada empleado.
+        } @else {
+          Tu horario semanal de turnos. Lo gestiona el propietario del negocio.
+        }
       </p>
     </div>
     @if (canManage()) {
-      <yep-button variant="ghost" size="sm" (clicked)="openShift()">
+      <yep-button variant="primary" size="sm" (clicked)="openShift()">
         <svg lucidePlus aria-hidden="true"></svg>
         Nuevo turno
       </yep-button>
@@ -20,6 +25,16 @@
   }
   @if (success()) {
     <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (selectedUserId()) {
+    <div class="employee-filter">
+      <span>Mostrando turnos de <strong>{{ activeEmployeeName() }}</strong></span>
+      <button type="button" class="employee-filter__clear" (click)="clearEmployeeFilter()">
+        <svg lucideX aria-hidden="true"></svg>
+        Quitar filtro
+      </button>
+    </div>
   }
 
   @if (locations().length > 1) {
@@ -48,45 +63,72 @@
       <p>Crea una sede antes de programar turnos.</p>
     </div>
   } @else {
-    <div class="schedule-calendar">
-      <sx-calendar [calendarApp]="calendarApp"></sx-calendar>
-    </div>
-
-    @if (visibleShifts().length === 0) {
-      <div class="empty-state">
-        <h3>Sin turnos</h3>
-        <p>Agrega el primer turno para esta semana.</p>
-      </div>
-    } @else {
-      <div class="card-list">
-        @for (shift of visibleShifts(); track shift.id) {
-          <article class="list-card">
-            <div class="list-card__main">
-              <h3 class="list-card__title">{{ employeeLabelForUser(shift.userId) }}</h3>
-              <span class="list-card__meta">
-                {{ dayLabel(shift.dayOfWeek) }} · {{ shift.startTime }}–{{ shift.endTime }} ·
-                {{ locationName(shift.locationId) }}
-              </span>
-            </div>
-            @if (canManage()) {
-              <div class="list-card__actions">
-                <yep-button variant="secondary" size="sm" (clicked)="openShift(shift)">
-                  Editar
-                </yep-button>
-                <yep-button
-                  variant="danger"
-                  size="sm"
-                  [loading]="deletingId() === shift.id"
-                  (clicked)="deleteShift(shift)"
-                >
-                  <svg lucideTrash2 aria-hidden="true"></svg>
-                </yep-button>
-              </div>
-            }
-          </article>
+    @if (legend().length > 0) {
+      <div class="legend">
+        @for (entry of legend(); track entry.userId) {
+          <span class="legend__item">
+            <span class="legend__dot" [style.background]="entry.color"></span>
+            {{ entry.label }}
+          </span>
         }
       </div>
     }
+
+    <div class="week-board" [class.week-board--empty]="visibleShifts().length === 0">
+      <div class="week-board__head">
+        <div class="week-board__corner"></div>
+        @for (col of dayColumns; track col.day) {
+          <div class="week-board__dayname">{{ col.label }}</div>
+        }
+      </div>
+
+      <div class="week-board__body" [style.height.px]="bodyHeight()">
+        <div class="week-board__axis">
+          @for (hour of hourMarks(); track hour) {
+            <div class="week-board__hour" [style.height.px]="hourHeight">
+              <span>{{ hourLabel(hour) }}</span>
+            </div>
+          }
+        </div>
+
+        @for (col of dayColumns; track col.day) {
+          <div
+            class="week-board__col"
+            [class.week-board__col--clickable]="canManage()"
+            [style.background-size]="'100% ' + hourHeight + 'px'"
+            (click)="onColumnClick(col.day, $event)"
+          >
+            @for (item of layoutForDay(col.day); track item.shift.id) {
+              <button
+                type="button"
+                class="shift-block"
+                [class.shift-block--readonly]="!canManage()"
+                [style.top.px]="item.top"
+                [style.height.px]="item.height"
+                [style.left.%]="item.leftPct"
+                [style.width.%]="item.widthPct"
+                [style.--shift-color]="item.color"
+                (click)="onBlockClick(item.shift, $event)"
+              >
+                <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
+                <span class="shift-block__time">{{ item.shift.startTime }}–{{ item.shift.endTime }}</span>
+                <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      @if (visibleShifts().length === 0) {
+        <p class="week-board__hint">
+          @if (canManage()) {
+            Sin turnos esta semana. Haz clic en una franja del día para crear el primero.
+          } @else {
+            No tienes turnos asignados.
+          }
+        </p>
+      }
+    </div>
   }
 </div>
 
@@ -133,6 +175,15 @@
   </form>
 
   <ng-container modalFooter>
+    @if (editingShiftId()) {
+      <yep-button
+        variant="danger"
+        [loading]="deletingId() === editingShiftId()"
+        (clicked)="deleteEditing()"
+      >
+        Eliminar
+      </yep-button>
+    }
     <yep-button variant="ghost" [disabled]="savingShift()" (clicked)="closeShift()">
       Cancelar
     </yep-button>

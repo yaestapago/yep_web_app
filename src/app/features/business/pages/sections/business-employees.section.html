@@ -1,0 +1,52 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Empleados</h2>
+      <p class="section-subtitle">
+        Miembros aprobados de este negocio. Abre los horarios de cada empleado para programar
+        sus turnos.
+      </p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando empleados…
+    </div>
+  } @else if (message()) {
+    <div class="empty-state">
+      <h3>No disponible</h3>
+      <p>{{ message() }}</p>
+    </div>
+  } @else if (members().length === 0) {
+    <div class="empty-state">
+      <h3>Sin empleados</h3>
+      <p>Aprueba solicitudes de acceso para ver empleados aquí.</p>
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (member of members(); track member.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">{{ employeeLabel(member) }}</h3>
+            <span class="list-card__meta">
+              {{ roleLabel(member) }}@if (contactLabel(member)) { · {{ contactLabel(member) }} }
+            </span>
+          </div>
+          <div class="list-card__actions">
+            <a
+              [routerLink]="scheduleLink()"
+              [queryParams]="{ userId: member.userId ?? member.id }"
+            >
+              <yep-button variant="secondary" size="sm">
+                <svg lucideCalendarClock aria-hidden="true"></svg>
+                Ver horarios
+              </yep-button>
+            </a>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

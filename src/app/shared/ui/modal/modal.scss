@@ -7,7 +7,8 @@
   justify-content: center;
   padding: var(--space-4);
   position: fixed;
-  z-index: 50;
+  // Por encima de librerías embebidas (p. ej. Schedule-X usa z-index hasta 102).
+  z-index: 1000;
   animation: yep-modal-fade var(--motion-fast);
 }
 
