@@ -17,7 +17,8 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { LucideLoaderCircle, LucidePlus, LucideTrash2 } from '@lucide/angular';
+import { ActivatedRoute } from '@angular/router';
+import { LucideLoaderCircle, LucidePlus, LucideTrash2, LucideX } from '@lucide/angular';
 import {
   createCalendar,
   createViewWeek,
@@ -29,6 +30,7 @@ import { Temporal } from 'temporal-polyfill';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { ThemeService } from '../../../../core/services/theme.service';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type {
   ApprovedMember,
@@ -78,6 +80,7 @@ function endAfterStart(group: AbstractControl): ValidationErrors | null {
     LucideLoaderCircle,
     LucidePlus,
     LucideTrash2,
+    LucideX,
   ],
   templateUrl: './business-schedules.section.html',
   styleUrl: './business-sections.scss',
@@ -87,6 +90,8 @@ export class BusinessSchedulesSection implements OnInit {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly zone = inject(NgZone);
+  private readonly theme = inject(ThemeService);
+  private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder).nonNullable;
 
   readonly businessId = this.session.activeBusinessAccountId;
@@ -110,6 +115,13 @@ export class BusinessSchedulesSection implements OnInit {
   readonly shiftOpen = signal(false);
   readonly editingShiftId = signal<string | null>(null);
   readonly selectedLocationId = signal<string>('all');
+  /** Filtro por empleado (desde la sección Empleados vía ?userId=). */
+  readonly selectedUserId = signal<string | null>(null);
+
+  readonly activeEmployeeName = computed(() => {
+    const userId = this.selectedUserId();
+    return userId ? this.employeeLabelForUser(userId) : '';
+  });
 
   /** Inicio (PlainDate) de la semana visible en el calendario. */
   private readonly weekStart = signal<Temporal.PlainDate | null>(null);
@@ -142,11 +154,12 @@ export class BusinessSchedulesSection implements OnInit {
 
   readonly visibleShifts = computed<Shift[]>(() => {
     const location = this.selectedLocationId();
-    const shifts = this.shifts();
-    const filtered =
-      location === 'all'
-        ? shifts
-        : shifts.filter((shift) => shift.locationId === location);
+    const userId = this.selectedUserId();
+    const filtered = this.shifts().filter(
+      (shift) =>
+        (location === 'all' || shift.locationId === location) &&
+        (!userId || shift.userId === userId),
+    );
     return [...filtered].sort(
       (a, b) =>
         a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime),
@@ -171,6 +184,7 @@ export class BusinessSchedulesSection implements OnInit {
       locale: 'es-ES',
       firstDayOfWeek: 1,
       timezone: TZ,
+      isDark: this.theme.isDark(),
       events: [],
       callbacks: {
         onRangeUpdate: (range) =>
@@ -179,6 +193,8 @@ export class BusinessSchedulesSection implements OnInit {
           ),
         onEventClick: (event) =>
           this.zone.run(() => this.onEventClick(String(event.id))),
+        onClickDateTime: (dateTime) =>
+          this.zone.run(() => this.onClickSlot(dateTime)),
       },
     });
 
@@ -192,12 +208,30 @@ export class BusinessSchedulesSection implements OnInit {
       }
       this.calendarApp.events.set(this.materialize(shifts, start));
     });
+
+    // Sincroniza el tema del calendario con el modo claro/oscuro de la app.
+    effect(() => {
+      const dark = this.theme.isDark();
+      try {
+        this.calendarApp.setTheme(dark ? 'dark' : 'light');
+      } catch {
+        // El calendario aún no se ha renderizado; isDark del config lo cubre.
+      }
+    });
   }
 
   ngOnInit(): void {
     this.loadLocations();
     this.loadMembers();
     this.loadSchedules();
+
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.selectedUserId.set(params.get('userId')));
+  }
+
+  clearEmployeeFilter(): void {
+    this.selectedUserId.set(null);
   }
 
   loadSchedules(): void {
@@ -396,6 +430,30 @@ export class BusinessSchedulesSection implements OnInit {
     if (shift) {
       this.openShift(shift);
     }
+  }
+
+  /** Click en una franja del calendario: abre "Nuevo turno" prellenado. */
+  private onClickSlot(dateTime: Temporal.ZonedDateTime): void {
+    if (!this.canManage()) {
+      return;
+    }
+    const our: DayOfWeek = (dateTime.dayOfWeek === 7 ? 0 : dateTime.dayOfWeek) as DayOfWeek;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const startTime = `${pad(dateTime.hour)}:${pad(dateTime.minute)}`;
+    const endTime = `${pad(Math.min(dateTime.hour + 1, 23))}:${pad(dateTime.minute)}`;
+    const location = this.selectedLocationId();
+
+    this.error.set('');
+    this.success.set('');
+    this.editingShiftId.set(null);
+    this.shiftForm.reset({
+      locationId: location !== 'all' ? location : '',
+      userId: this.selectedUserId() ?? '',
+      dayOfWeek: our,
+      startTime,
+      endTime,
+    });
+    this.shiftOpen.set(true);
   }
 
   private materialize(

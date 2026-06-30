@@ -3,8 +3,9 @@
     <div class="section-heading">
       <h2 class="section-title">Horarios</h2>
       <p class="section-subtitle">
-        Programa los turnos de tus empleados por sede. El turno define en qué negocio se
-        registran los comprobantes que cada empleado envía por WhatsApp.
+        Programa los turnos de tus empleados por sede. Haz clic en una franja del calendario
+        para crear un turno. El turno define en qué negocio se registran los comprobantes que
+        cada empleado envía por WhatsApp.
       </p>
     </div>
     @if (canManage()) {
@@ -20,6 +21,16 @@
   }
   @if (success()) {
     <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (selectedUserId()) {
+    <div class="employee-filter">
+      <span>Mostrando turnos de <strong>{{ activeEmployeeName() }}</strong></span>
+      <button type="button" class="employee-filter__clear" (click)="clearEmployeeFilter()">
+        <svg lucideX aria-hidden="true"></svg>
+        Quitar filtro
+      </button>
+    </div>
   }
 
   @if (locations().length > 1) {

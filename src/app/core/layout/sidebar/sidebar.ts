@@ -64,6 +64,7 @@ export class Sidebar {
     { path: 'accounts', label: 'Cuentas bancarias' },
     { path: 'notifiers', label: 'Notificadores' },
     { path: 'requests', label: 'Solicitudes' },
+    { path: 'employees', label: 'Empleados' },
     { path: 'locations', label: 'Sedes' },
     { path: 'schedules', label: 'Horarios' },
   ];
