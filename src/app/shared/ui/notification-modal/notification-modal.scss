@@ -1,0 +1,110 @@
+:host {
+  display: contents;
+}
+
+.notification-modal {
+  align-items: center;
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  text-align: center;
+}
+
+.notification-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--notification-color) 12%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--notification-color);
+  display: inline-flex;
+  height: 72px;
+  justify-content: center;
+  width: 72px;
+}
+
+.notification-icon svg {
+  height: 38px;
+  width: 38px;
+}
+
+.notification-icon--info,
+.notification-icon--question {
+  --notification-color: var(--color-secondary);
+}
+
+.notification-icon--success {
+  --notification-color: var(--color-success-strong);
+}
+
+.notification-icon--warning,
+.notification-icon--loading {
+  --notification-color: var(--color-warning);
+}
+
+.notification-icon--error {
+  --notification-color: var(--color-error);
+}
+
+.notification-icon__spinner {
+  animation: yep-notification-spin 800ms linear infinite;
+}
+
+.notification-modal__content {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 36ch;
+}
+
+.notification-modal__content h2 {
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.notification-modal__content p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.notification-modal__countdown {
+  color: var(--color-text-primary) !important;
+  font-weight: var(--font-weight-semibold);
+}
+
+.notification-progress {
+  background: color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-radius: var(--radius-full);
+  height: 6px;
+  overflow: hidden;
+  position: relative;
+  width: min(220px, 100%);
+}
+
+.notification-progress span {
+  animation: yep-notification-progress 1.2s ease-in-out infinite;
+  background: var(--color-primary);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  left: -40%;
+  position: absolute;
+  width: 40%;
+}
+
+@keyframes yep-notification-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes yep-notification-progress {
+  to {
+    left: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .notification-modal {
+    padding-bottom: var(--space-2);
+  }
+}

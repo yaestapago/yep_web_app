@@ -3,7 +3,6 @@
   title="Unirme a un negocio"
   subtitle="Ingresa el código que te compartió el dueño del negocio y elige el rol. Un owner debe aprobar la solicitud."
   [loading]="saving() || searching()"
-  [dirty]="form.dirty"
   (closeRequested)="close()"
 >
   @if (error()) {
@@ -15,9 +14,9 @@
       <p>{{ success() }}</p>
     </div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="submit()" style="display: grid; gap: var(--space-4)">
-      <div style="display: flex; gap: var(--space-3); align-items: flex-end">
-        <div style="flex: 1">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="request-form">
+      <div class="lookup-row">
+        <div class="lookup-row__field">
           <yep-input
             formControlName="code"
             label="Código del negocio"
@@ -27,10 +26,12 @@
         </div>
         <yep-button
           variant="secondary"
+          class="lookup-row__button"
           [loading]="searching()"
           [disabled]="saving()"
           (clicked)="search()"
-        >Buscar</yep-button>
+          >Buscar</yep-button
+        >
       </div>
 
       @if (matches().length > 1) {
@@ -46,9 +47,16 @@
         <div
           class="field-hint"
           role="status"
-          style="color: var(--color-success); display: flex; gap: var(--space-2); align-items: center"
+          style="
+            color: var(--color-success);
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+          "
         >
-          <span>Negocio: <strong>{{ selectedLabel() }}</strong></span>
+          <span
+            >Negocio: <strong>{{ selectedLabel() }}</strong></span
+          >
         </div>
       }
 
@@ -65,13 +73,16 @@
     @if (success()) {
       <yep-button (clicked)="close()">Cerrar</yep-button>
     } @else {
-      <yep-button variant="ghost" [disabled]="saving() || searching()" (clicked)="close()">Cancelar</yep-button>
+      <yep-button variant="ghost" [disabled]="saving() || searching()" (clicked)="close()"
+        >Cancelar</yep-button
+      >
       <yep-button
         type="submit"
         [loading]="saving()"
         [disabled]="!selected() || searching()"
         (clicked)="submit()"
-      >Enviar solicitud</yep-button>
+        >Enviar solicitud</yep-button
+      >
     }
   </ng-container>
 </yep-modal>

@@ -4,9 +4,9 @@
       <h2 class="section-title">Horarios</h2>
       <p class="section-subtitle">
         @if (canManage()) {
-          Plantilla semanal de turnos por sede. Haz clic en una franja para crear un turno o
-          en un bloque para editarlo. Define en qué negocio se registran los comprobantes de
-          WhatsApp de cada empleado.
+          Plantilla semanal de turnos por sede. Haz clic en una franja para crear un turno o en un
+          bloque para editarlo. Define en qué negocio se registran los comprobantes de WhatsApp de
+          cada empleado.
         } @else {
           Tu horario semanal de turnos. Lo gestiona el propietario del negocio.
         }
@@ -29,7 +29,9 @@
 
   @if (selectedUserId()) {
     <div class="employee-filter">
-      <span>Mostrando turnos de <strong>{{ activeEmployeeName() }}</strong></span>
+      <span
+        >Mostrando turnos de <strong>{{ activeEmployeeName() }}</strong></span
+      >
       <button type="button" class="employee-filter__clear" (click)="clearEmployeeFilter()">
         <svg lucideX aria-hidden="true"></svg>
         Quitar filtro
@@ -111,7 +113,9 @@
                 (click)="onBlockClick(item.shift, $event)"
               >
                 <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
-                <span class="shift-block__time">{{ item.shift.startTime }}–{{ item.shift.endTime }}</span>
+                <span class="shift-block__time"
+                  >{{ item.shift.startTime }}–{{ item.shift.endTime }}</span
+                >
                 <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
               </button>
             }
@@ -136,7 +140,6 @@
   [open]="shiftOpen()"
   [title]="editingShiftId() ? 'Editar turno' : 'Nuevo turno'"
   [loading]="savingShift()"
-  [dirty]="shiftForm.dirty"
   (closeRequested)="closeShift()"
 >
   <form [formGroup]="shiftForm" (ngSubmit)="saveShift()" class="form-grid">

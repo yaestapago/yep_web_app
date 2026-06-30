@@ -1,12 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -21,13 +14,10 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
-import type {
-  ApprovedMember,
-  DayOfWeek,
-  Shift,
-} from '../../../../shared/models/schedule.models';
+import type { ApprovedMember, DayOfWeek, Shift } from '../../../../shared/models/schedule.models';
 import { Button } from '../../../../shared/ui/button/button';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -118,15 +108,7 @@ function endAfterStart(group: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'app-business-schedules-section',
-  imports: [
-    ReactiveFormsModule,
-    Button,
-    Modal,
-    Select,
-    LucideLoaderCircle,
-    LucidePlus,
-    LucideX,
-  ],
+  imports: [ReactiveFormsModule, Button, Modal, Select, LucideLoaderCircle, LucidePlus, LucideX],
   templateUrl: './business-schedules.section.html',
   styleUrl: './business-sections.scss',
 })
@@ -136,6 +118,7 @@ export class BusinessSchedulesSection implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notifications = inject(NotificationModalService);
 
   readonly hourHeight = HOUR_HEIGHT;
   readonly dayColumns = DAY_COLUMNS;
@@ -209,9 +192,7 @@ export class BusinessSchedulesSection implements OnInit {
   });
 
   readonly legend = computed<LegendEntry[]>(() => {
-    const ids = Array.from(
-      new Set(this.visibleShifts().map((s) => s.userId)),
-    ).sort();
+    const ids = Array.from(new Set(this.visibleShifts().map((s) => s.userId))).sort();
     return ids.map((userId) => ({
       userId,
       label: this.employeeLabelForUser(userId),
@@ -350,10 +331,24 @@ export class BusinessSchedulesSection implements OnInit {
     this.shiftOpen.set(true);
   }
 
-  closeShift(): void {
+  async closeShift(): Promise<void> {
     if (this.savingShift()) {
       return;
     }
+
+    if (this.shiftForm.dirty) {
+      const confirmed = await this.notifications.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en el turno.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.shiftOpen.set(false);
   }
 
@@ -409,11 +404,22 @@ export class BusinessSchedulesSection implements OnInit {
     }
   }
 
-  deleteShift(shift: Shift): void {
+  async deleteShift(shift: Shift): Promise<void> {
     const businessId = this.businessId();
-    if (!businessId || !confirm('¿Eliminar este turno?')) {
+    if (!businessId) {
       return;
     }
+
+    const confirmed = await this.notifications.confirm({
+      title: 'Eliminar turno',
+      message: 'Este turno se eliminara del horario semanal.',
+      type: 'error',
+      confirmText: 'Eliminar',
+    });
+    if (!confirmed) {
+      return;
+    }
+
     this.deletingId.set(shift.id);
     this.error.set('');
     this.success.set('');
@@ -425,9 +431,7 @@ export class BusinessSchedulesSection implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.shifts.update((shifts) =>
-            shifts.filter((s) => s.id !== shift.id),
-          );
+          this.shifts.update((shifts) => shifts.filter((s) => s.id !== shift.id));
           this.success.set('Turno eliminado.');
           this.shiftOpen.set(false);
         },
@@ -436,16 +440,8 @@ export class BusinessSchedulesSection implements OnInit {
   }
 
   employeeLabel(member: ApprovedMember): string {
-    const name = [member.firstName, member.lastName]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
-    return (
-      name ||
-      member.email ||
-      member.identificationNumber ||
-      'Empleado sin datos'
-    );
+    const name = [member.firstName, member.lastName].filter(Boolean).join(' ').trim();
+    return name || member.email || member.identificationNumber || 'Empleado sin datos';
   }
 
   employeeLabelForUser(userId: string): string {
@@ -454,10 +450,7 @@ export class BusinessSchedulesSection implements OnInit {
   }
 
   locationName(locationId: string): string {
-    return (
-      this.locations().find((location) => location.id === locationId)?.name ||
-      'Sede'
-    );
+    return this.locations().find((location) => location.id === locationId)?.name || 'Sede';
   }
 
   isInvalid(controlName: keyof typeof this.shiftForm.controls): boolean {
@@ -516,11 +509,7 @@ export class BusinessSchedulesSection implements OnInit {
       });
   }
 
-  private openShiftPrefilled(
-    day: DayOfWeek,
-    startTime: string,
-    endTime: string,
-  ): void {
+  private openShiftPrefilled(day: DayOfWeek, startTime: string, endTime: string): void {
     this.error.set('');
     this.success.set('');
     this.editingShiftId.set(null);

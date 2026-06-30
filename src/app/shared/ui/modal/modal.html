@@ -12,25 +12,27 @@
       [attr.aria-label]="title()"
       (click)="$event.stopPropagation()"
     >
-      <header class="yep-modal__header">
-        <div class="yep-modal__heading">
-          @if (title()) {
-            <h2 class="yep-modal__title">{{ title() }}</h2>
-          }
-          @if (subtitle()) {
-            <p class="yep-modal__subtitle">{{ subtitle() }}</p>
-          }
-        </div>
-        <button
-          type="button"
-          class="yep-modal__close"
-          (click)="requestClose()"
-          [disabled]="loading()"
-          aria-label="Cerrar"
-        >
-          <svg lucideX aria-hidden="true"></svg>
-        </button>
-      </header>
+      @if (showHeader()) {
+        <header class="yep-modal__header">
+          <div class="yep-modal__heading">
+            @if (title()) {
+              <h2 class="yep-modal__title">{{ title() }}</h2>
+            }
+            @if (subtitle()) {
+              <p class="yep-modal__subtitle">{{ subtitle() }}</p>
+            }
+          </div>
+          <button
+            type="button"
+            class="yep-modal__close"
+            (click)="requestClose()"
+            [disabled]="loading()"
+            aria-label="Cerrar"
+          >
+            <svg lucideX aria-hidden="true"></svg>
+          </button>
+        </header>
+      }
 
       <div class="yep-modal__body">
         <ng-content />

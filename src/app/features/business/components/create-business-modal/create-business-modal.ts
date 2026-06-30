@@ -9,6 +9,7 @@ import { AddressLocationSelect } from '../../../../shared/ui/address-location-se
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -29,6 +30,7 @@ export class CreateBusinessModal {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly open = defineInput(false);
   readonly closeRequested = output<void>();
@@ -49,10 +51,24 @@ export class CreateBusinessModal {
     this.form.reset({ name: '', location: null, address: '', phone: '' });
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.saving()) {
       return;
     }
+
+    if (this.form.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en el nuevo negocio.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.closeRequested.emit();
   }
 

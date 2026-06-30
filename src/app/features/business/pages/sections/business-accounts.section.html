@@ -86,23 +86,19 @@
   title="Nueva cuenta bancaria"
   subtitle="Asocia una cuenta a una o más sedes del negocio."
   [loading]="creating()"
-  [dirty]="form.dirty"
   (closeRequested)="closeModal()"
 >
   <form [formGroup]="form" (ngSubmit)="create()" class="form-grid">
     <div class="form-grid form-grid--2">
-      <div class="field">
-        <label class="field-label" for="account-bank">Banco</label>
-        <select id="account-bank" formControlName="bankId">
-          <option value="" disabled>Selecciona un banco</option>
-          @for (bank of banks(); track bank.code) {
-            <option [value]="bank.code">{{ bank.name }}</option>
-          }
-        </select>
-        @if (isInvalid('bankId')) {
-          <span class="field-error">Selecciona un banco</span>
-        }
-      </div>
+      <yep-select
+        formControlName="bankId"
+        label="Banco"
+        placeholder="Selecciona un banco"
+        [options]="bankOptions()"
+        [searchable]="true"
+        [required]="true"
+        [error]="isInvalid('bankId') ? 'Selecciona un banco' : ''"
+      />
       <yep-input
         formControlName="accountNumber"
         label="Número de cuenta"
@@ -117,19 +113,18 @@
     </div>
 
     <div class="form-grid form-grid--2">
-      <div class="field">
-        <label class="field-label" for="account-type">Tipo</label>
-        <select id="account-type" formControlName="accountType">
-          <option value="wallet">Billetera</option>
-          <option value="savings">Ahorros</option>
-          <option value="checking">Corriente</option>
-          <option value="other">Otro</option>
-        </select>
-      </div>
-      <yep-input
+      <yep-select
+        formControlName="accountType"
+        label="Tipo"
+        placeholder="Selecciona un tipo"
+        [options]="accountTypeOptions"
+      />
+      <yep-select
         formControlName="currency"
         label="Moneda"
         placeholder="COP"
+        [options]="currencyOptions"
+        [required]="true"
         [error]="isInvalid('currency') ? 'Requerido' : ''"
       />
     </div>
@@ -157,7 +152,9 @@
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()">Cancelar</yep-button>
+    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()"
+      >Cancelar</yep-button
+    >
     <yep-button
       type="submit"
       [loading]="creating()"

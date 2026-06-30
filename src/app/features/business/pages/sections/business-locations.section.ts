@@ -8,6 +8,7 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -38,6 +39,7 @@ export class BusinessLocationsSection implements OnInit {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly membership = this.session.activeMembership;
@@ -91,10 +93,24 @@ export class BusinessLocationsSection implements OnInit {
     this.locationOpen.set(true);
   }
 
-  closeLocation(): void {
+  async closeLocation(): Promise<void> {
     if (this.savingLocation()) {
       return;
     }
+
+    if (this.locationForm.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en la sede.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.locationOpen.set(false);
   }
 

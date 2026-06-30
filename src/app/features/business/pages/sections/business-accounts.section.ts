@@ -1,11 +1,4 @@
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -16,6 +9,8 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import type {
   BankAccount,
   BankAccountType,
@@ -34,6 +29,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     Button,
     Input,
     Modal,
+    Select,
     LucideLoaderCircle,
     LucidePlus,
     LucideRefreshCw,
@@ -47,6 +43,7 @@ export class BusinessAccountsSection implements OnInit {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notifications = inject(NotificationModalService);
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly bankAccounts = signal<BankAccount[]>([]);
@@ -59,11 +56,25 @@ export class BusinessAccountsSection implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
   readonly modalOpen = signal(false);
+  readonly accountTypeOptions: readonly SelectOption[] = [
+    { id: 'wallet', label: 'Billetera' },
+    { id: 'savings', label: 'Ahorros' },
+    { id: 'checking', label: 'Corriente' },
+    { id: 'other', label: 'Otro' },
+  ];
+  readonly currencyOptions: readonly SelectOption[] = [{ id: 'COP', label: 'COP' }];
 
   readonly canManage = computed(
     () =>
       this.session.activeMembership()?.role === 'account_owner' ||
       this.session.user()?.globalRole === 'account_su',
+  );
+
+  readonly bankOptions = computed<SelectOption[]>(() =>
+    this.banks().map((bank) => ({
+      id: bank.code,
+      label: bank.name,
+    })),
   );
 
   readonly form = this.fb.group({
@@ -147,10 +158,24 @@ export class BusinessAccountsSection implements OnInit {
     this.modalOpen.set(true);
   }
 
-  closeModal(): void {
+  async closeModal(): Promise<void> {
     if (this.creating()) {
       return;
     }
+
+    if (this.form.dirty) {
+      const confirmed = await this.notifications.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en la cuenta bancaria.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.modalOpen.set(false);
   }
 
@@ -208,8 +233,14 @@ export class BusinessAccountsSection implements OnInit {
     this.updateStatus(bankAccount, true);
   }
 
-  deactivate(bankAccount: BankAccount): void {
-    if (!confirm('¿Desactivar esta cuenta bancaria?')) {
+  async deactivate(bankAccount: BankAccount): Promise<void> {
+    const confirmed = await this.notifications.confirm({
+      title: 'Desactivar cuenta bancaria',
+      message: 'Esta cuenta dejara de estar disponible para nuevas operaciones.',
+      type: 'warning',
+      confirmText: 'Desactivar',
+    });
+    if (!confirmed) {
       return;
     }
     this.updateStatus(bankAccount, false);

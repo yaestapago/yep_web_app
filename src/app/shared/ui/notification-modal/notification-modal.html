@@ -1,0 +1,67 @@
+@if (state(); as modal) {
+  <yep-modal
+    [open]="open()"
+    [title]="modal.title"
+    [showHeader]="false"
+    [dismissOnBackdrop]="modal.closable"
+    [loading]="!modal.closable"
+    size="sm"
+    (closeRequested)="close()"
+  >
+    <div class="notification-modal">
+      <div [class]="iconClass()" aria-hidden="true">
+        @switch (modal.type) {
+          @case ('success') {
+            <svg lucideCircleCheck></svg>
+          }
+          @case ('warning') {
+            <svg lucideCircleAlert></svg>
+          }
+          @case ('error') {
+            <svg lucideCircleX></svg>
+          }
+          @case ('question') {
+            <svg lucideCircleHelp></svg>
+          }
+          @case ('loading') {
+            <svg class="notification-icon__spinner" lucideLoaderCircle></svg>
+          }
+          @default {
+            <svg lucideInfo></svg>
+          }
+        }
+      </div>
+
+      <div class="notification-modal__content">
+        <h2>{{ modal.title }}</h2>
+        @for (line of modal.message; track $index) {
+          <p>{{ line }}</p>
+        }
+        @if (remainingSeconds() !== null) {
+          <p class="notification-modal__countdown">
+            {{ remainingSeconds() === 1 ? '1 segundo' : remainingSeconds() + ' segundos' }}
+          </p>
+        }
+      </div>
+
+      @if (modal.progress) {
+        <div class="notification-progress" aria-hidden="true">
+          <span></span>
+        </div>
+      }
+    </div>
+
+    @if (!isLoading() && modal.confirmText) {
+      <ng-container modalFooter>
+        @if (modal.showCancel) {
+          <yep-button variant="ghost" (clicked)="secondary()">
+            {{ modal.cancelText }}
+          </yep-button>
+        }
+        <yep-button [variant]="modal.type === 'error' ? 'danger' : 'primary'" (clicked)="primary()">
+          {{ modal.confirmText }}
+        </yep-button>
+      </ng-container>
+    }
+  </yep-modal>
+}

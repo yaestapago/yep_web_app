@@ -13,26 +13,19 @@
   </a>
 
   <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
-  <div class="business-switcher">
-    <span class="business-switcher__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
-    <span class="business-switcher__meta">
-      <span class="business-switcher__label">Negocio</span>
-      <span class="business-switcher__name">{{ activeBusinessName() }}</span>
-    </span>
-    <svg class="business-switcher__chevron" lucideChevronsUpDown aria-hidden="true"></svg>
-    <label class="visually-hidden" for="business-switcher-select">Cambiar de negocio</label>
-    <select
-      id="business-switcher-select"
-      class="business-switcher__select"
-      [value]="activeBusinessAccountId() ?? ''"
-      (change)="switchBusiness($event)"
-    >
-      @for (membership of memberships(); track membership.businessAccountId) {
-        <option [value]="membership.businessAccountId">
-          {{ businessName(membership.businessAccountId) }}
-        </option>
-      }
-    </select>
+  <div class="business-select">
+    <span class="business-select__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
+    <yep-select
+      class="business-select__control"
+      label="Negocio"
+      placeholder="Selecciona un negocio"
+      size="sm"
+      [options]="businessOptions()"
+      [ngModel]="activeBusinessAccountId()"
+      [ngModelOptions]="{ standalone: true }"
+      [searchable]="memberships().length > 5"
+      (ngModelChange)="switchBusinessId($event)"
+    />
   </div>
 
   <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">

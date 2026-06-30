@@ -12,6 +12,7 @@ import type { BusinessLookupResult } from '../../../../shared/models/business-ac
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -26,12 +27,14 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   selector: 'app-request-membership-modal',
   imports: [ReactiveFormsModule, Button, Input, Modal, Select],
   templateUrl: './request-membership-modal.html',
+  styleUrl: './request-membership-modal.scss',
 })
 export class RequestMembershipModal {
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly open = defineInput(false);
   readonly closeRequested = output<void>();
@@ -59,13 +62,11 @@ export class RequestMembershipModal {
   constructor() {
     // Si el usuario cambia el código tras resolver un negocio, invalida la
     // selección previa para que no envíe una solicitud al negocio equivocado.
-    this.form.controls.code.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.selected.set(null);
-        this.matches.set([]);
-        this.error.set('');
-      });
+    this.form.controls.code.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.selected.set(null);
+      this.matches.set([]);
+      this.error.set('');
+    });
   }
 
   reset(): void {
@@ -76,10 +77,24 @@ export class RequestMembershipModal {
     this.form.reset({ code: '', role: 'account_staff' });
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.saving() || this.searching()) {
       return;
     }
+
+    if (this.form.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en la solicitud.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.closeRequested.emit();
   }
 

@@ -37,6 +37,7 @@ import {
   VerificationLevel,
 } from '../../../../shared/models/transaction.models';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionEventsService } from '../../../transactions/services/transaction-events.service';
@@ -72,6 +73,7 @@ export class ReceiptCaptureModal {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly open = input(false);
   readonly closeRequested = output<void>();
@@ -126,10 +128,24 @@ export class ReceiptCaptureModal {
     });
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.loading()) {
       return;
     }
+
+    if (this.isDirty()) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar captura',
+        message: 'Tienes cambios sin guardar en el comprobante.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.reset();
     this.closeRequested.emit();
   }
@@ -404,9 +420,7 @@ export class ReceiptCaptureModal {
       action === 'CREATED'
         ? 'Transacción creada'
         : 'Ya existía una transacción con los mismos datos';
-    const verdict = transaction
-      ? this.verificationSummary(transaction.verification.level)
-      : '';
+    const verdict = transaction ? this.verificationSummary(transaction.verification.level) : '';
     this.success.set(verdict ? `${base}. ${verdict}` : `${base}.`);
     this.resetForm();
     this.step.set('capture');

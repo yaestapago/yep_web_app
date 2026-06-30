@@ -92,7 +92,6 @@
   [open]="editOpen()"
   title="Editar negocio"
   [loading]="savingBusiness()"
-  [dirty]="businessForm.dirty"
   (closeRequested)="closeEdit()"
 >
   <form [formGroup]="businessForm" (ngSubmit)="saveBusiness()" class="form-grid">

@@ -55,7 +55,6 @@
   [open]="locationOpen()"
   title="Nueva sede"
   [loading]="savingLocation()"
-  [dirty]="locationForm.dirty"
   (closeRequested)="closeLocation()"
 >
   <form [formGroup]="locationForm" (ngSubmit)="saveLocation()" class="form-grid">

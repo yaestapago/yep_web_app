@@ -123,21 +123,16 @@
   box-shadow: var(--shadow-panel);
   display: grid;
   gap: var(--space-2);
-  left: 0;
-  margin-top: var(--space-1);
+  margin-top: 0;
   overflow: hidden;
   padding: var(--space-2);
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 30;
+  position: fixed;
+  z-index: 1100;
 }
 
 .yep-select--up .yep-select__panel {
-  bottom: 100%;
-  margin-bottom: var(--space-1);
+  margin-bottom: 0;
   margin-top: 0;
-  top: auto;
 }
 
 .yep-select__search {
@@ -169,7 +164,7 @@
 .yep-select__options {
   display: grid;
   gap: var(--space-1);
-  max-height: 16rem;
+  max-height: var(--yep-select-panel-max-height, 16rem);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -289,9 +284,7 @@
 }
 
 .yep-select--embedded .yep-select__panel {
-  left: 0;
   min-width: 16rem;
-  right: auto;
   width: max-content;
 }
 

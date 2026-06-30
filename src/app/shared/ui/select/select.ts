@@ -77,6 +77,11 @@ export class Select implements ControlValueAccessor {
 
   readonly open = signal(false);
   readonly opensUpward = signal(false);
+  readonly panelLeft = signal(0);
+  readonly panelTop = signal(0);
+  readonly panelBottom = signal<number | null>(null);
+  readonly panelWidth = signal(0);
+  readonly panelMaxHeight = signal(256);
   readonly query = signal('');
   readonly selectedIds = signal<SelectOptionId[]>([]);
   isControlDisabled = false;
@@ -149,6 +154,13 @@ export class Select implements ControlValueAccessor {
 
   @HostListener('window:resize')
   repositionOnResize(): void {
+    if (this.open()) {
+      this.updatePanelDirection();
+    }
+  }
+
+  @HostListener('window:scroll')
+  repositionOnScroll(): void {
     if (this.open()) {
       this.updatePanelDirection();
     }
@@ -288,8 +300,23 @@ export class Select implements ControlValueAccessor {
     const estimatedPanelHeight = Math.min(320, searchHeight + optionCount * 42 + 24);
     const spaceBelow = viewportHeight - rect.bottom - spacing;
     const spaceAbove = rect.top - spacing;
+    const opensUpward = spaceBelow < estimatedPanelHeight && spaceAbove > spaceBelow;
+    const availableSpace = opensUpward ? spaceAbove : spaceBelow;
 
-    this.opensUpward.set(spaceBelow < estimatedPanelHeight && spaceAbove > spaceBelow);
+    this.opensUpward.set(opensUpward);
+    this.panelLeft.set(rect.left);
+    this.panelWidth.set(rect.width);
+    this.panelMaxHeight.set(
+      Math.max(120, Math.min(320, availableSpace - searchHeight - spacing * 3)),
+    );
+
+    if (opensUpward) {
+      this.panelTop.set(0);
+      this.panelBottom.set(viewportHeight - rect.top + spacing / 2);
+    } else {
+      this.panelTop.set(rect.bottom + spacing / 2);
+      this.panelBottom.set(null);
+    }
   }
 
   private isGroup(option: SelectSource): option is SelectOptionGroup {
