@@ -28,7 +28,7 @@ describe('RegisterPage', () => {
     vi.useRealTimers();
   });
 
-  it('submits the user-only registration payload and routes new users to onboarding', () => {
+  it('requests an email code before registering and routes new users to onboarding', () => {
     vi.useFakeTimers();
     const fixture = TestBed.createComponent(RegisterPage);
     const component = fixture.componentInstance;
@@ -49,18 +49,33 @@ describe('RegisterPage', () => {
 
     component.submit();
 
-    const request = httpMock.expectOne(`${environment.apiUrl}/auth/register`);
-    expect(request.request.body).toEqual({
+    const codeRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`);
+    expect(codeRequest.request.body).toEqual({
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+    });
+    codeRequest.flush({
+      message: 'Te enviamos un codigo de verificacion al correo registrado.',
+      resendInSeconds: 60,
+    });
+
+    expect(component.step()).toBe('code');
+
+    component.completeRegistration('123456');
+
+    const registerRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register`);
+    expect(registerRequest.request.body).toEqual({
       firstName: 'Pedro',
       lastName: 'Ramirez',
       email: 'pedro@example.com',
       identificationNumber: '123456789',
       cellphoneNumber: '+573001234567',
       password: 'secret123',
+      verificationCode: '123456',
     });
-    expect(request.request.body).not.toHaveProperty('accountName');
+    expect(registerRequest.request.body).not.toHaveProperty('accountName');
 
-    request.flush({
+    registerRequest.flush({
       accessToken: 'token',
       user: {
         id: 'user-1',
@@ -72,8 +87,9 @@ describe('RegisterPage', () => {
       },
       memberships: [],
     });
-    vi.runAllTimers();
+    vi.advanceTimersByTime(450);
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/onboarding');
+    fixture.destroy();
   });
 });

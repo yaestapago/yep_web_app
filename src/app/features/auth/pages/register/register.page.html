@@ -15,93 +15,125 @@
     </div>
 
     <div class="auth-heading">
-      <h3>Crea tu cuenta</h3>
-      @if (inviteBusinessName()) {
-        <span>Te registrarás como staff de {{ inviteBusinessName() }}.</span>
-      } @else if (inviteCode()) {
-        <span>Te registrarás como staff de este negocio.</span>
+      @if (step() === 'form') {
+        <h3>Crea tu cuenta</h3>
+        @if (inviteBusinessName()) {
+          <span>Te registrarás como staff de {{ inviteBusinessName() }}.</span>
+        } @else if (inviteCode()) {
+          <span>Te registrarás como staff de este negocio.</span>
+        }
+      } @else {
+        <h3>Verifica tu correo</h3>
+        <span>Enviamos un código de 6 dígitos a {{ maskedEmail() }}.</span>
       }
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="field-grid">
-        <yep-input
-          label="Nombre"
-          type="text"
-          autocomplete="given-name"
-          formControlName="firstName"
-          [error]="isInvalid('firstName') ? 'Ingresa tu nombre.' : ''"
-        />
+    @if (step() === 'form') {
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field-grid">
+          <yep-input
+            label="Nombre"
+            type="text"
+            autocomplete="given-name"
+            formControlName="firstName"
+            [error]="isInvalid('firstName') ? 'Ingresa tu nombre.' : ''"
+          />
 
-        <yep-input
-          label="Apellido"
-          type="text"
-          autocomplete="family-name"
-          formControlName="lastName"
-          [error]="isInvalid('lastName') ? 'Ingresa tu apellido.' : ''"
-        />
+          <yep-input
+            label="Apellido"
+            type="text"
+            autocomplete="family-name"
+            formControlName="lastName"
+            [error]="isInvalid('lastName') ? 'Ingresa tu apellido.' : ''"
+          />
 
-        <yep-input
-          label="Correo"
-          type="email"
-          autocomplete="email"
-          formControlName="email"
-          [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
-        />
+          <yep-input
+            label="Correo"
+            type="email"
+            autocomplete="email"
+            formControlName="email"
+            [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
+          />
 
-        <yep-input
-          label="Identificación"
-          type="text"
-          autocomplete="off"
-          formControlName="identificationNumber"
-          [error]="isInvalid('identificationNumber') ? 'Ingresa tu número de identificación.' : ''"
-        />
+          <yep-input
+            label="Identificación"
+            type="text"
+            autocomplete="off"
+            formControlName="identificationNumber"
+            [error]="
+              isInvalid('identificationNumber') ? 'Ingresa tu número de identificación.' : ''
+            "
+          />
 
-        <yep-phone-input
-          label="Celular"
-          placeholder="300 123 4567"
-          formControlName="cellphoneNumber"
-          [required]="true"
-          [error]="isInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
-        ></yep-phone-input>
+          <yep-phone-input
+            label="Celular"
+            placeholder="300 123 4567"
+            formControlName="cellphoneNumber"
+            [required]="true"
+            [error]="isInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
+          ></yep-phone-input>
 
-        <yep-input
-          label="Contraseña"
-          type="password"
-          autocomplete="new-password"
-          formControlName="password"
-          [error]="isInvalid('password') ? 'Mínimo 8 caracteres.' : ''"
-        />
+          <yep-input
+            label="Contraseña"
+            type="password"
+            autocomplete="new-password"
+            formControlName="password"
+            [error]="isInvalid('password') ? 'Mínimo 8 caracteres.' : ''"
+          />
 
-        <yep-input
-          label="Confirmar contraseña"
-          type="password"
-          autocomplete="new-password"
-          formControlName="confirmPassword"
-          [error]="isInvalid('confirmPassword') ? confirmPasswordError() : ''"
-        />
-      </div>
+          <yep-input
+            label="Confirmar contraseña"
+            type="password"
+            autocomplete="new-password"
+            formControlName="confirmPassword"
+            [error]="isInvalid('confirmPassword') ? confirmPasswordError() : ''"
+          />
+        </div>
 
-      @if (error()) {
-        <yep-alert variant="error">{{ error() }}</yep-alert>
-      }
-
-      @if (success()) {
-        <yep-alert variant="success">{{ success() }}</yep-alert>
-      }
-
-      <yep-button
-        type="submit"
-        [loading]="loading()"
-        [disabled]="form.invalid || loading()"
-        [fullWidth]="true"
-      >
-        @if (!loading()) {
-          <svg lucideUserPlus aria-hidden="true"></svg>
+        @if (error()) {
+          <yep-alert variant="error">{{ error() }}</yep-alert>
         }
-        <span>{{ loading() ? 'Creando' : 'Crear cuenta' }}</span>
-      </yep-button>
-    </form>
+
+        @if (success()) {
+          <yep-alert variant="success">{{ success() }}</yep-alert>
+        }
+
+        <yep-button
+          type="submit"
+          [loading]="loading()"
+          [disabled]="form.invalid || loading()"
+          [fullWidth]="true"
+        >
+          @if (!loading()) {
+            <svg lucideMail aria-hidden="true"></svg>
+          }
+          <span>{{ loading() ? 'Enviando' : 'Enviar código' }}</span>
+        </yep-button>
+      </form>
+    } @else {
+      <form [formGroup]="codeForm" novalidate>
+        @if (success()) {
+          <yep-alert variant="success">{{ success() }}</yep-alert>
+        }
+
+        @if (error()) {
+          <yep-alert variant="error">{{ error() }}</yep-alert>
+        }
+
+        <yep-otp-input
+          formControlName="code"
+          engine="email"
+          [status]="otpStatus()"
+          [errorMessage]="otpError()"
+          [resendSeconds]="resendSeconds()"
+          (codeChanged)="handleCodeChanged($event)"
+          (codeCompleted)="completeRegistration($event)"
+          (resendRequested)="resendCode()"
+        />
+
+        <button class="auth-inline-action" type="button" (click)="editForm()">Cambiar datos</button>
+      </form>
+    }
 
     <p class="auth-switch">
       ¿Ya tienes cuenta?

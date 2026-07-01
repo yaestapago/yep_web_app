@@ -80,6 +80,17 @@ export interface RegisterRequest {
   identificationNumber: string;
   cellphoneNumber: string;
   password: string;
+  verificationCode: string;
+}
+
+export interface RegisterRequestCodeRequest {
+  email: string;
+  identificationNumber: string;
+}
+
+export interface RegisterRequestCodeResponse {
+  message?: string;
+  resendInSeconds?: number;
 }
 
 export interface ForgotPasswordRequestCodeRequest {
