@@ -33,6 +33,20 @@ export interface VerificationSnapshot {
   lastRunAt?: string;
 }
 
+export type ManualReviewDecision = 'confirmed' | 'rejected';
+
+export interface ManualReview {
+  decision: ManualReviewDecision;
+  byUserId: string;
+  at: string;
+  note?: string;
+}
+
+export interface ManualDecisionRequest {
+  decision: ManualReviewDecision;
+  note?: string;
+}
+
 export interface PaymentTransaction {
   id: string;
   accountId: string;
@@ -50,6 +64,7 @@ export interface PaymentTransaction {
   verification: VerificationSnapshot;
   createdByMechanismId: string;
   createdBySourceEventId?: string;
+  manualReview?: ManualReview;
   notes?: string;
   createdAt: string;
   updatedAt: string;

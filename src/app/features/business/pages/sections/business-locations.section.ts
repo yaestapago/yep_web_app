@@ -52,9 +52,15 @@ export class BusinessLocationsSection implements OnInit {
   readonly locations = signal<BusinessLocation[]>([]);
   readonly loadingLocations = signal(false);
   readonly savingLocation = signal(false);
+  readonly actingId = signal<string | null>(null);
+  readonly editingId = signal<string | null>(null);
   readonly error = signal('');
   readonly success = signal('');
   readonly locationOpen = signal(false);
+
+  readonly modalTitle = computed(() =>
+    this.editingId() ? 'Editar sede' : 'Nueva sede',
+  );
 
   readonly locationForm = this.fb.group({
     name: ['', [Validators.required]],
@@ -89,7 +95,21 @@ export class BusinessLocationsSection implements OnInit {
   openLocation(): void {
     this.error.set('');
     this.success.set('');
+    this.editingId.set(null);
     this.locationForm.reset({ name: '', city: '', address: '', phone: '' });
+    this.locationOpen.set(true);
+  }
+
+  openEdit(location: BusinessLocation): void {
+    this.error.set('');
+    this.success.set('');
+    this.editingId.set(location.id);
+    this.locationForm.reset({
+      name: location.name,
+      city: location.city ?? '',
+      address: location.address ?? '',
+      phone: location.phone ?? '',
+    });
     this.locationOpen.set(true);
   }
 
@@ -122,25 +142,89 @@ export class BusinessLocationsSection implements OnInit {
     }
 
     const raw = this.locationForm.getRawValue();
+    const payload = {
+      name: raw.name.trim(),
+      city: this.optional(raw.city),
+      address: this.optional(raw.address),
+      phone: this.optionalPhone(raw.phone),
+    };
     this.savingLocation.set(true);
     this.error.set('');
 
-    this.businessApi
-      .createLocation(businessId, {
-        name: raw.name.trim(),
-        city: this.optional(raw.city),
-        address: this.optional(raw.address),
-        phone: this.optionalPhone(raw.phone),
-      })
+    const editingId = this.editingId();
+    const request = editingId
+      ? this.businessApi.updateLocation(businessId, editingId, payload)
+      : this.businessApi.createLocation(businessId, payload);
+
+    request
       .pipe(
         finalize(() => this.savingLocation.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (response) => {
-          this.locations.update((locations) => [response.location, ...locations]);
-          this.success.set('Sede creada.');
+          if (editingId) {
+            this.locations.update((locations) =>
+              locations.map((current) =>
+                current.id === response.location.id ? response.location : current,
+              ),
+            );
+            this.success.set('Sede actualizada.');
+          } else {
+            this.locations.update((locations) => [response.location, ...locations]);
+            this.success.set('Sede creada.');
+          }
           this.locationOpen.set(false);
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  activate(location: BusinessLocation): void {
+    this.updateStatus(location, true);
+  }
+
+  async deactivate(location: BusinessLocation): Promise<void> {
+    const confirmed = await this.notificationModal.confirm({
+      title: 'Desactivar sede',
+      message:
+        'La sede dejará de estar disponible para asociar cuentas y notificadores.',
+      type: 'warning',
+      confirmText: 'Desactivar',
+    });
+    if (!confirmed) {
+      return;
+    }
+    this.updateStatus(location, false);
+  }
+
+  private updateStatus(location: BusinessLocation, isActive: boolean): void {
+    const businessId = this.businessId();
+    if (!businessId) {
+      return;
+    }
+
+    this.actingId.set(location.id);
+    this.error.set('');
+    this.success.set('');
+
+    const request = isActive
+      ? this.businessApi.updateLocation(businessId, location.id, { isActive: true })
+      : this.businessApi.deleteLocation(businessId, location.id);
+
+    request
+      .pipe(
+        finalize(() => this.actingId.set(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.locations.update((locations) =>
+            locations.map((current) =>
+              current.id === response.location.id ? response.location : current,
+            ),
+          );
+          this.success.set(isActive ? 'Sede activada.' : 'Sede desactivada.');
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });

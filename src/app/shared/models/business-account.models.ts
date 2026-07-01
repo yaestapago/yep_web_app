@@ -64,3 +64,14 @@ export interface MembershipResponse {
 export interface UpdateMembershipStatusRequest {
   status: Extract<BusinessMembershipStatus, 'approved' | 'rejected' | 'revoked'>;
 }
+
+export interface AddBusinessMemberRequest {
+  email?: string;
+  identificationNumber?: string;
+  role: BusinessMembershipRole;
+}
+
+export interface UpdateBusinessMemberRequest {
+  role?: BusinessMembershipRole;
+  locationIds?: string[];
+}

@@ -8,12 +8,25 @@
       </p>
     </div>
     @if (canManage()) {
-      <yep-button variant="secondary" size="sm" (clicked)="openInvite()">
-        <svg lucideUserPlus aria-hidden="true"></svg>
-        Agregar o invitar usuario
-      </yep-button>
+      <div class="list-card__actions">
+        <yep-button variant="ghost" size="sm" (clicked)="openInvite()">
+          <svg lucideClipboardCopy aria-hidden="true"></svg>
+          Invitar con código
+        </yep-button>
+        <yep-button size="sm" (clicked)="openAdd()">
+          <svg lucideUserPlus aria-hidden="true"></svg>
+          Agregar usuario
+        </yep-button>
+      </div>
     }
   </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
 
   @if (loading()) {
     <div class="loading-row">
@@ -39,6 +52,7 @@
             <span class="list-card__meta">
               {{ roleLabel(member) }}@if (contactLabel(member)) { · {{ contactLabel(member) }} }
             </span>
+            <span class="list-card__meta">{{ locationNames(member) }}</span>
           </div>
           <div class="list-card__actions">
             <a
@@ -50,6 +64,19 @@
                 Ver horarios
               </yep-button>
             </a>
+            @if (canManage()) {
+              <yep-button variant="secondary" size="sm" (clicked)="openEdit(member)">
+                Editar
+              </yep-button>
+              <yep-button
+                variant="ghost"
+                size="sm"
+                [loading]="actingId() === member.id"
+                (clicked)="remove(member)"
+              >
+                Quitar
+              </yep-button>
+            }
           </div>
         </article>
       }
@@ -131,5 +158,82 @@
 
   <ng-container modalFooter>
     <yep-button variant="ghost" (clicked)="closeInvite()">Cerrar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="addOpen()"
+  title="Agregar usuario"
+  subtitle="Si el usuario ya existe queda aprobado; si no, se crea una invitación pendiente."
+  [loading]="savingAdd()"
+  (closeRequested)="closeAdd()"
+>
+  <form [formGroup]="addForm" (ngSubmit)="submitAdd()" class="form-grid">
+    <yep-input
+      formControlName="email"
+      label="Correo (opcional si das la cédula)"
+      type="email"
+      placeholder="persona@correo.com"
+      [error]="isAddInvalid('email') ? 'Correo inválido' : ''"
+    />
+    <yep-input
+      formControlName="identificationNumber"
+      label="Número de identificación (opcional si das el correo)"
+      placeholder="Cédula"
+    />
+    <yep-select
+      formControlName="role"
+      label="Rol"
+      placeholder="Selecciona un rol"
+      [options]="roleOptions"
+      [required]="true"
+    />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingAdd()" (clicked)="closeAdd()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingAdd()" (clicked)="submitAdd()">Agregar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="editOpen()"
+  title="Editar empleado"
+  subtitle="Cambia el rol y las sedes asignadas."
+  [loading]="savingEdit()"
+  (closeRequested)="closeEdit()"
+>
+  <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="form-grid">
+    <yep-select
+      formControlName="role"
+      label="Rol"
+      placeholder="Selecciona un rol"
+      [options]="roleOptions"
+      [required]="true"
+    />
+
+    <div class="field full-field">
+      <span class="field-label">Sedes asignadas</span>
+      @if (locations().length === 0) {
+        <p class="section-subtitle">Aún no hay sedes en este negocio.</p>
+      } @else {
+        <p class="section-subtitle">Sin sedes seleccionadas, el empleado accede a todas.</p>
+        @for (location of locations(); track location.id) {
+          <label style="display: flex; gap: var(--space-2); align-items: center">
+            <input
+              type="checkbox"
+              [checked]="selectedLocationIds().includes(location.id)"
+              (change)="toggleLocation(location.id, $any($event.target).checked)"
+            />
+            {{ location.name }}
+          </label>
+        }
+      }
+    </div>
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingEdit()" (clicked)="closeEdit()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingEdit()" (clicked)="submitEdit()">Guardar cambios</yep-button>
   </ng-container>
 </yep-modal>

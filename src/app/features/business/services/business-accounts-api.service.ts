@@ -11,8 +11,10 @@ import {
   CreateBankAccountRequest,
   CreateBusinessLocationRequest,
   UpdateBankAccountRequest,
+  UpdateBusinessLocationRequest,
 } from '../../../shared/models/bank-account.models';
 import {
+  AddBusinessMemberRequest,
   BusinessAccountDetailResponse,
   BusinessAccountRequest,
   BusinessAccountsResponse,
@@ -22,6 +24,7 @@ import {
   MembershipRequest,
   MembershipResponse,
   UpdateBusinessAccountRequest,
+  UpdateBusinessMemberRequest,
   UpdateMembershipStatusRequest,
 } from '../../../shared/models/business-account.models';
 import {
@@ -100,6 +103,27 @@ export class BusinessAccountsApiService {
     );
   }
 
+  addMember(
+    businessAccountId: string,
+    request: AddBusinessMemberRequest,
+  ): Observable<MembershipResponse> {
+    return this.http.post<MembershipResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/members`,
+      request,
+    );
+  }
+
+  updateMember(
+    businessAccountId: string,
+    membershipId: string,
+    request: UpdateBusinessMemberRequest,
+  ): Observable<MembershipResponse> {
+    return this.http.patch<MembershipResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/memberships/${membershipId}`,
+      request,
+    );
+  }
+
   listSchedules(businessAccountId: string): Observable<SchedulesResponse> {
     return this.http.get<SchedulesResponse>(
       `${this.apiUrl}/business-accounts/${businessAccountId}/schedules`,
@@ -149,6 +173,26 @@ export class BusinessAccountsApiService {
     return this.http.post<BusinessLocationResponse>(
       `${this.apiUrl}/business-accounts/${businessAccountId}/locations`,
       request,
+    );
+  }
+
+  updateLocation(
+    businessAccountId: string,
+    locationId: string,
+    request: UpdateBusinessLocationRequest,
+  ): Observable<BusinessLocationResponse> {
+    return this.http.patch<BusinessLocationResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/locations/${locationId}`,
+      request,
+    );
+  }
+
+  deleteLocation(
+    businessAccountId: string,
+    locationId: string,
+  ): Observable<BusinessLocationResponse> {
+    return this.http.delete<BusinessLocationResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/locations/${locationId}`,
     );
   }
 

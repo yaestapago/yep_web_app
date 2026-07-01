@@ -54,6 +54,9 @@
           </div>
           @if (canManage()) {
             <div class="list-card__actions">
+              <yep-button variant="secondary" size="sm" (clicked)="openEdit(account)">
+                Editar
+              </yep-button>
               @if (account.isActive) {
                 <yep-button
                   variant="ghost"
@@ -83,12 +86,12 @@
 
 <yep-modal
   [open]="modalOpen()"
-  title="Nueva cuenta bancaria"
+  [title]="modalTitle()"
   subtitle="Asocia una cuenta a una o más sedes del negocio."
   [loading]="creating()"
   (closeRequested)="closeModal()"
 >
-  <form [formGroup]="form" (ngSubmit)="create()" class="form-grid">
+  <form [formGroup]="form" (ngSubmit)="save()" class="form-grid">
     <div class="form-grid form-grid--2">
       <yep-select
         formControlName="bankId"
@@ -102,7 +105,7 @@
       <yep-input
         formControlName="accountNumber"
         label="Número de cuenta"
-        placeholder="0000000000"
+        [placeholder]="editingId() ? 'Déjalo vacío para conservar el actual' : '0000000000'"
         [error]="isInvalid('accountNumber') ? 'Requerido' : ''"
       />
     </div>
@@ -159,9 +162,9 @@
       type="submit"
       [loading]="creating()"
       [disabled]="locations().length === 0"
-      (clicked)="create()"
+      (clicked)="save()"
     >
-      Crear cuenta
+      {{ editingId() ? 'Guardar cambios' : 'Crear cuenta' }}
     </yep-button>
   </ng-container>
 </yep-modal>

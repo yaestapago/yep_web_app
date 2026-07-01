@@ -44,7 +44,34 @@
                 · {{ location.address }}
               }
             </span>
+            <span class="list-card__meta">{{ location.isActive ? 'Activa' : 'Inactiva' }}</span>
           </div>
+          @if (canManage()) {
+            <div class="list-card__actions">
+              <yep-button variant="secondary" size="sm" (clicked)="openEdit(location)">
+                Editar
+              </yep-button>
+              @if (location.isActive) {
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  [loading]="actingId() === location.id"
+                  (clicked)="deactivate(location)"
+                >
+                  Desactivar
+                </yep-button>
+              } @else {
+                <yep-button
+                  variant="secondary"
+                  size="sm"
+                  [loading]="actingId() === location.id"
+                  (clicked)="activate(location)"
+                >
+                  Activar
+                </yep-button>
+              }
+            </div>
+          }
         </article>
       }
     </div>
@@ -53,7 +80,7 @@
 
 <yep-modal
   [open]="locationOpen()"
-  title="Nueva sede"
+  [title]="modalTitle()"
   [loading]="savingLocation()"
   (closeRequested)="closeLocation()"
 >
@@ -79,7 +106,7 @@
       >Cancelar</yep-button
     >
     <yep-button type="submit" [loading]="savingLocation()" (clicked)="saveLocation()"
-      >Crear sede</yep-button
+      >{{ editingId() ? 'Guardar cambios' : 'Crear sede' }}</yep-button
     >
   </ng-container>
 </yep-modal>

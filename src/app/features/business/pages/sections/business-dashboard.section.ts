@@ -27,6 +27,7 @@ import type {
   SourceEventFilters,
 } from '../../../../shared/models/source-event.models';
 import {
+  type ManualReviewDecision,
   PaymentTransaction,
   type TransactionFilters,
 } from '../../../../shared/models/transaction.models';
@@ -561,12 +562,23 @@ export class BusinessDashboardSection implements OnInit {
   }
 
   confirmVerify(transaction: PaymentTransaction): void {
+    this.submitManualDecision(transaction, 'confirmed');
+  }
+
+  rejectVerify(transaction: PaymentTransaction): void {
+    this.submitManualDecision(transaction, 'rejected');
+  }
+
+  private submitManualDecision(
+    transaction: PaymentTransaction,
+    decision: ManualReviewDecision,
+  ): void {
     this.verifyingId.set(transaction.id);
     this.operationError.set('');
     this.operationSuccess.set('');
 
     this.transactionsApi
-      .runVerification(transaction.id)
+      .manualDecision(transaction.id, { decision })
       .pipe(
         finalize(() => this.verifyingId.set(null)),
         takeUntilDestroyed(this.destroyRef),
@@ -579,7 +591,11 @@ export class BusinessDashboardSection implements OnInit {
             ),
           );
           this.verifyTarget.set(null);
-          this.operationSuccess.set('Verificación registrada.');
+          this.operationSuccess.set(
+            decision === 'confirmed'
+              ? 'Pago confirmado.'
+              : 'Transacción rechazada.',
+          );
         },
         error: (error) => this.operationError.set(httpErrorMessage(error)),
       });
