@@ -54,27 +54,19 @@
           </div>
           @if (canManage()) {
             <div class="list-card__actions">
-              <yep-button variant="secondary" size="sm" (clicked)="openEdit(account)">
-                Editar
-              </yep-button>
+              <yep-icon-button action="edit" (clicked)="openEdit(account)" />
               @if (account.isActive) {
-                <yep-button
-                  variant="ghost"
-                  size="sm"
+                <yep-icon-button
+                  action="deactivate"
                   [loading]="actingId() === account.id"
                   (clicked)="deactivate(account)"
-                >
-                  Desactivar
-                </yep-button>
+                />
               } @else {
-                <yep-button
-                  variant="secondary"
-                  size="sm"
+                <yep-icon-button
+                  action="activate"
                   [loading]="actingId() === account.id"
                   (clicked)="activate(account)"
-                >
-                  Activar
-                </yep-button>
+                />
               }
             </div>
           }

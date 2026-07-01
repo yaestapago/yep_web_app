@@ -6,6 +6,7 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -24,6 +25,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   imports: [
     ReactiveFormsModule,
     Button,
+    IconButton,
     Input,
     Modal,
     PhoneInput,

@@ -48,27 +48,19 @@
           </div>
           @if (canManage()) {
             <div class="list-card__actions">
-              <yep-button variant="secondary" size="sm" (clicked)="openEdit(location)">
-                Editar
-              </yep-button>
+              <yep-icon-button action="edit" (clicked)="openEdit(location)" />
               @if (location.isActive) {
-                <yep-button
-                  variant="ghost"
-                  size="sm"
+                <yep-icon-button
+                  action="deactivate"
                   [loading]="actingId() === location.id"
                   (clicked)="deactivate(location)"
-                >
-                  Desactivar
-                </yep-button>
+                />
               } @else {
-                <yep-button
-                  variant="secondary"
-                  size="sm"
+                <yep-icon-button
+                  action="activate"
                   [loading]="actingId() === location.id"
                   (clicked)="activate(location)"
-                >
-                  Activar
-                </yep-button>
+                />
               }
             </div>
           }

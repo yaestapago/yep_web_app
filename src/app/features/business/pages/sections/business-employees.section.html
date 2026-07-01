@@ -58,24 +58,20 @@
             <a
               [routerLink]="scheduleLink()"
               [queryParams]="{ userId: member.userId ?? member.id }"
+              title="Ver horarios"
             >
-              <yep-button variant="secondary" size="sm">
-                <svg lucideCalendarClock aria-hidden="true"></svg>
-                Ver horarios
+              <yep-button variant="secondary" size="sm" [title]="'Ver horarios'">
+                <svg lucideCalendarClock aria-label="Ver horarios"></svg>
               </yep-button>
             </a>
             @if (canManage()) {
-              <yep-button variant="secondary" size="sm" (clicked)="openEdit(member)">
-                Editar
-              </yep-button>
-              <yep-button
-                variant="ghost"
-                size="sm"
+              <yep-icon-button action="edit" (clicked)="openEdit(member)" />
+              <yep-icon-button
+                action="delete"
+                label="Quitar"
                 [loading]="actingId() === member.id"
                 (clicked)="remove(member)"
-              >
-                Quitar
-              </yep-button>
+              />
             }
           </div>
         </article>
