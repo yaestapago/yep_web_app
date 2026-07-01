@@ -1,5 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -9,8 +19,14 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { LucideLoaderCircle, LucidePlus, LucideX } from '@lucide/angular';
-import { finalize } from 'rxjs';
+import {
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucideLoaderCircle,
+  LucidePlus,
+  LucideX,
+} from '@lucide/angular';
+import { finalize, forkJoin } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
@@ -20,6 +36,14 @@ import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import {
+  addWeeks,
+  dateForDayOfWeek,
+  formatDayShort,
+  formatMonthTitle,
+  isSameWeek,
+  startOfWeek,
+} from '../../../../shared/utils/week-dates';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 interface DayColumn {
@@ -76,8 +100,14 @@ const PALETTE = [
   '#0d9488',
 ];
 
-const HOUR_HEIGHT = 56; // px por hora
+const HOUR_HEIGHT = 40; // px por hora (compacto: 24h × 40 = 960px)
 const PX_PER_MIN = HOUR_HEIGHT / 60;
+
+/** Rango horario fijo del tablero: día completo 00:00–24:00. */
+const DAY_RANGE = { start: 0, end: 24 } as const;
+
+/** Hora a la que se posiciona el scroll inicial si no hay turnos. */
+const DEFAULT_SCROLL_HOUR = 7;
 
 function toMinutes(value: string): number {
   const [h, m] = value.split(':').map(Number);
@@ -100,6 +130,12 @@ function endAfterStart(group: AbstractControl): ValidationErrors | null {
   return null;
 }
 
+/** Requiere al menos un día seleccionado en el turno recurrente. */
+function atLeastOneDay(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as unknown;
+  return Array.isArray(value) && value.length > 0 ? null : { required: true };
+}
+
 /**
  * Horarios del negocio: tablero semanal de turnos por (sede, empleado).
  * Es una plantilla semanal recurrente (no eventos con fecha). El owner ve a
@@ -108,7 +144,17 @@ function endAfterStart(group: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'app-business-schedules-section',
-  imports: [ReactiveFormsModule, Button, Modal, Select, LucideLoaderCircle, LucidePlus, LucideX],
+  imports: [
+    ReactiveFormsModule,
+    Button,
+    Modal,
+    Select,
+    LucideChevronLeft,
+    LucideChevronRight,
+    LucideLoaderCircle,
+    LucidePlus,
+    LucideX,
+  ],
   templateUrl: './business-schedules.section.html',
   styleUrl: './business-sections.scss',
 })
@@ -145,6 +191,29 @@ export class BusinessSchedulesSection implements OnInit {
   readonly editingShiftId = signal<string | null>(null);
   readonly selectedLocationId = signal<string>('all');
   readonly selectedUserId = signal<string | null>(null);
+
+  /** Lunes de la semana visible en el calendario (la plantilla se proyecta sobre ella). */
+  readonly visibleWeekStart = signal<Date>(startOfWeek(new Date()));
+
+  private readonly boardBody = viewChild<ElementRef<HTMLElement>>('boardBody');
+  private hasAutoScrolled = false;
+
+  readonly monthTitle = computed(() => formatMonthTitle(this.visibleWeekStart()));
+  readonly isCurrentWeek = computed(() => isSameWeek(this.visibleWeekStart(), new Date()));
+
+  constructor() {
+    // Scroll inicial del tablero a la primera franja con turnos (o 07:00),
+    // para no aterrizar en la madrugada vacía del rango 00:00–24:00.
+    effect(() => {
+      const body = this.boardBody()?.nativeElement;
+      const hour = this.earliestHour();
+      if (!body || this.hasAutoScrolled) {
+        return;
+      }
+      body.scrollTop = hour * HOUR_HEIGHT;
+      this.hasAutoScrolled = true;
+    });
+  }
 
   readonly activeEmployeeName = computed(() => {
     const userId = this.selectedUserId();
@@ -200,21 +269,20 @@ export class BusinessSchedulesSection implements OnInit {
     }));
   });
 
-  /** Rango horario visible: del turno más temprano al más tarde (con margen). */
-  readonly range = computed<{ start: number; end: number }>(() => {
+  /** Rango horario del tablero: día completo 00:00–24:00 (fijo). */
+  readonly range = computed<{ start: number; end: number }>(() => DAY_RANGE);
+
+  /** Primera hora con turnos visibles (para el scroll inicial); 07:00 si no hay. */
+  private readonly earliestHour = computed<number>(() => {
     const shifts = this.visibleShifts();
     if (shifts.length === 0) {
-      return { start: 6, end: 22 };
+      return DEFAULT_SCROLL_HOUR;
     }
     let min = 24 * 60;
-    let max = 0;
     for (const shift of shifts) {
       min = Math.min(min, toMinutes(shift.startTime));
-      max = Math.max(max, toMinutes(shift.endTime));
     }
-    const start = Math.max(0, Math.floor(min / 60));
-    const end = Math.min(24, Math.ceil(max / 60));
-    return { start, end: Math.max(end, start + 1) };
+    return Math.max(0, Math.floor(min / 60));
   });
 
   readonly hourMarks = computed<number[]>(() => {
@@ -252,7 +320,7 @@ export class BusinessSchedulesSection implements OnInit {
     {
       locationId: ['', [Validators.required]],
       userId: ['', [Validators.required]],
-      dayOfWeek: this.fb.control<DayOfWeek>(1, [Validators.required]),
+      days: this.fb.control<DayOfWeek[]>([1], [atLeastOneDay]),
       startTime: ['', [Validators.required]],
       endTime: ['', [Validators.required]],
     },
@@ -275,6 +343,28 @@ export class BusinessSchedulesSection implements OnInit {
 
   hourLabel(hour: number): string {
     return `${String(hour).padStart(2, '0')}:00`;
+  }
+
+  /** Día del mes proyectado para una columna en la semana visible, p.ej. "29". */
+  dayOfMonth(day: DayOfWeek): string {
+    return formatDayShort(dateForDayOfWeek(this.visibleWeekStart(), day));
+  }
+
+  /** True si la columna corresponde al día de hoy (solo en la semana actual). */
+  isToday(day: DayOfWeek): boolean {
+    return this.isCurrentWeek() && (new Date().getDay() as DayOfWeek) === day;
+  }
+
+  prevWeek(): void {
+    this.visibleWeekStart.update((week) => addWeeks(week, -1));
+  }
+
+  nextWeek(): void {
+    this.visibleWeekStart.update((week) => addWeeks(week, 1));
+  }
+
+  goToday(): void {
+    this.visibleWeekStart.set(startOfWeek(new Date()));
   }
 
   clearEmployeeFilter(): void {
@@ -314,7 +404,7 @@ export class BusinessSchedulesSection implements OnInit {
       this.shiftForm.reset({
         locationId: shift.locationId,
         userId: shift.userId,
-        dayOfWeek: shift.dayOfWeek,
+        days: [shift.dayOfWeek],
         startTime: shift.startTime,
         endTime: shift.endTime,
       });
@@ -323,7 +413,7 @@ export class BusinessSchedulesSection implements OnInit {
       this.shiftForm.reset({
         locationId: this.defaultLocation(),
         userId: this.selectedUserId() ?? '',
-        dayOfWeek: 1,
+        days: [1],
         startTime: '',
         endTime: '',
       });
@@ -360,40 +450,60 @@ export class BusinessSchedulesSection implements OnInit {
     }
 
     const raw = this.shiftForm.getRawValue();
-    const request = {
+    const base = {
       locationId: raw.locationId,
       userId: raw.userId,
-      dayOfWeek: raw.dayOfWeek,
       startTime: raw.startTime,
       endTime: raw.endTime,
     };
+    const days = raw.days;
     const editingId = this.editingShiftId();
     this.savingShift.set(true);
     this.error.set('');
 
-    const request$ = editingId
-      ? this.businessApi.updateShift(businessId, editingId, request)
-      : this.businessApi.createShift(businessId, request);
+    // Al editar se conserva la semántica de "un turno = un día": se hace PATCH
+    // del turno editado al primer día; cualquier día adicional se crea aparte.
+    // Al crear, se emite un turno por cada día seleccionado (plantilla recurrente).
+    const requests$ = editingId
+      ? [
+          this.businessApi.updateShift(businessId, editingId, { ...base, dayOfWeek: days[0] }),
+          ...days
+            .slice(1)
+            .map((day) => this.businessApi.createShift(businessId, { ...base, dayOfWeek: day })),
+        ]
+      : days.map((day) => this.businessApi.createShift(businessId, { ...base, dayOfWeek: day }));
 
-    request$
+    forkJoin(requests$)
       .pipe(
         finalize(() => this.savingShift.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => {
+        next: (responses) => {
           this.shifts.update((shifts) => {
-            const index = shifts.findIndex((s) => s.id === response.shift.id);
-            if (index === -1) {
-              return [response.shift, ...shifts];
+            const merged = [...shifts];
+            for (const { shift } of responses) {
+              const index = merged.findIndex((s) => s.id === shift.id);
+              if (index === -1) {
+                merged.unshift(shift);
+              } else {
+                merged[index] = shift;
+              }
             }
-            return shifts.map((s, i) => (i === index ? response.shift : s));
+            return merged;
           });
-          this.success.set(editingId ? 'Turno actualizado.' : 'Turno creado.');
+          this.success.set(this.saveSuccessMessage(editingId !== null, responses.length));
           this.shiftOpen.set(false);
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
+  }
+
+  private saveSuccessMessage(editing: boolean, count: number): string {
+    if (editing) {
+      return count > 1 ? `Turno actualizado y ${count - 1} turno(s) creados.` : 'Turno actualizado.';
+    }
+    return count > 1 ? `${count} turnos creados.` : 'Turno creado.';
   }
 
   deleteEditing(): void {
@@ -516,7 +626,7 @@ export class BusinessSchedulesSection implements OnInit {
     this.shiftForm.reset({
       locationId: this.defaultLocation(),
       userId: this.selectedUserId() ?? '',
-      dayOfWeek: day,
+      days: [day],
       startTime,
       endTime,
     });

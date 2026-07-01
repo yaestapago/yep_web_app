@@ -337,6 +337,49 @@
   width: 12px;
 }
 
+.week-nav {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.week-nav__arrow {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.week-nav__arrow:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.week-nav__arrow svg {
+  height: 18px;
+  width: 18px;
+}
+
+.week-nav__month {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  min-width: 9rem;
+  text-align: center;
+}
+
+.week-nav__today {
+  margin-left: auto;
+}
+
 .week-board {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -344,26 +387,57 @@
   overflow: hidden;
 }
 
+// Contenedor scrolleable: scroll vertical (rango 00:00–24:00) y horizontal (días en móvil).
+.week-board__scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+
 .week-board__head,
 .week-board__body {
   display: grid;
-  grid-template-columns: 64px repeat(7, 1fr);
+  grid-template-columns: 64px repeat(7, minmax(96px, 1fr));
 }
 
 .week-board__head {
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 .week-board__corner {
+  background: var(--color-surface);
   border-right: 1px solid var(--color-border);
+  left: 0;
+  position: sticky;
+  z-index: 4;
 }
 
 .week-board__dayname {
   color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  padding: var(--space-3) var(--space-2);
+  gap: 2px;
+  padding: var(--space-2) var(--space-1);
   text-align: center;
+}
+
+.week-board__dayname-date {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.week-board__dayname--today {
+  color: var(--color-primary);
+}
+
+.week-board__dayname--today .week-board__dayname-date {
+  color: var(--color-primary);
 }
 
 .week-board__dayname:not(:last-child) {
@@ -375,7 +449,11 @@
 }
 
 .week-board__axis {
+  background: var(--color-surface);
   border-right: 1px solid var(--color-border);
+  left: 0;
+  position: sticky;
+  z-index: 2;
 }
 
 .week-board__hour {
@@ -410,6 +488,10 @@
   cursor: copy;
 }
 
+.week-board__col--today {
+  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
 .week-board--empty .week-board__col {
   cursor: default;
 }
@@ -419,6 +501,24 @@
   font-size: var(--font-size-sm);
   padding: var(--space-4);
   text-align: center;
+}
+
+// Móvil: los días se desplazan horizontalmente y el eje de horas queda fijo.
+// El scroll horizontal lo provoca `minmax(96px, 1fr)` al no caber 7 columnas.
+@media (max-width: 640px) {
+  .week-board__head,
+  .week-board__body {
+    grid-template-columns: 48px repeat(7, minmax(84px, 1fr));
+  }
+
+  .week-board__scroll {
+    max-height: 65vh;
+  }
+
+  .week-nav__month {
+    font-size: var(--font-size-sm);
+    min-width: 7rem;
+  }
 }
 
 .shift-block {

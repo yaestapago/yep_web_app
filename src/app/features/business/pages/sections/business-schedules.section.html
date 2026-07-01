@@ -76,57 +76,88 @@
       </div>
     }
 
-    <div class="week-board" [class.week-board--empty]="visibleShifts().length === 0">
-      <div class="week-board__head">
-        <div class="week-board__corner"></div>
-        @for (col of dayColumns; track col.day) {
-          <div class="week-board__dayname">{{ col.label }}</div>
-        }
-      </div>
+    <div class="week-nav">
+      <button
+        type="button"
+        class="week-nav__arrow"
+        (click)="prevWeek()"
+        aria-label="Semana anterior"
+      >
+        <svg lucideChevronLeft aria-hidden="true"></svg>
+      </button>
+      <h3 class="week-nav__month">{{ monthTitle() }}</h3>
+      <button type="button" class="week-nav__arrow" (click)="nextWeek()" aria-label="Semana siguiente">
+        <svg lucideChevronRight aria-hidden="true"></svg>
+      </button>
+      <yep-button
+        variant="ghost"
+        size="sm"
+        class="week-nav__today"
+        [disabled]="isCurrentWeek()"
+        (clicked)="goToday()"
+      >
+        Hoy
+      </yep-button>
+    </div>
 
-      <div class="week-board__body" [style.height.px]="bodyHeight()">
-        <div class="week-board__axis">
-          @for (hour of hourMarks(); track hour) {
-            <div class="week-board__hour" [style.height.px]="hourHeight">
-              <span>{{ hourLabel(hour) }}</span>
+    <div class="week-board" [class.week-board--empty]="visibleShifts().length === 0">
+      <div class="week-board__scroll" #boardBody>
+        <div class="week-board__head">
+          <div class="week-board__corner"></div>
+          @for (col of dayColumns; track col.day) {
+            <div class="week-board__dayname" [class.week-board__dayname--today]="isToday(col.day)">
+              <span class="week-board__dayname-label">{{ col.label }}</span>
+              <span class="week-board__dayname-date">{{ dayOfMonth(col.day) }}</span>
             </div>
           }
         </div>
 
-        @for (col of dayColumns; track col.day) {
-          <div
-            class="week-board__col"
-            [class.week-board__col--clickable]="canManage()"
-            [style.background-size]="'100% ' + hourHeight + 'px'"
-            (click)="onColumnClick(col.day, $event)"
-          >
-            @for (item of layoutForDay(col.day); track item.shift.id) {
-              <button
-                type="button"
-                class="shift-block"
-                [class.shift-block--readonly]="!canManage()"
-                [style.top.px]="item.top"
-                [style.height.px]="item.height"
-                [style.left.%]="item.leftPct"
-                [style.width.%]="item.widthPct"
-                [style.--shift-color]="item.color"
-                (click)="onBlockClick(item.shift, $event)"
-              >
-                <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
-                <span class="shift-block__time"
-                  >{{ item.shift.startTime }}–{{ item.shift.endTime }}</span
-                >
-                <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
-              </button>
+        <div class="week-board__body" [style.height.px]="bodyHeight()">
+          <div class="week-board__axis">
+            @for (hour of hourMarks(); track hour) {
+              <div class="week-board__hour" [style.height.px]="hourHeight">
+                <span>{{ hourLabel(hour) }}</span>
+              </div>
             }
           </div>
-        }
+
+          @for (col of dayColumns; track col.day) {
+            <div
+              class="week-board__col"
+              [class.week-board__col--clickable]="canManage()"
+              [class.week-board__col--today]="isToday(col.day)"
+              [style.background-size]="'100% ' + hourHeight + 'px'"
+              (click)="onColumnClick(col.day, $event)"
+            >
+              @for (item of layoutForDay(col.day); track item.shift.id) {
+                <button
+                  type="button"
+                  class="shift-block"
+                  [class.shift-block--readonly]="!canManage()"
+                  [style.top.px]="item.top"
+                  [style.height.px]="item.height"
+                  [style.left.%]="item.leftPct"
+                  [style.width.%]="item.widthPct"
+                  [style.--shift-color]="item.color"
+                  (click)="onBlockClick(item.shift, $event)"
+                >
+                  <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
+                  <span class="shift-block__time"
+                    >{{ item.shift.startTime }}–{{ item.shift.endTime }}</span
+                  >
+                  <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
       </div>
 
       @if (visibleShifts().length === 0) {
         <p class="week-board__hint">
           @if (canManage()) {
-            Sin turnos esta semana. Haz clic en una franja del día para crear el primero.
+            Sin turnos en la plantilla. Haz clic en una franja del día para crear el primero. La
+            plantilla se repite cada semana.
           } @else {
             No tienes turnos asignados.
           }
@@ -157,10 +188,11 @@
       [error]="isInvalid('userId') ? 'Selecciona un empleado' : ''"
     />
     <yep-select
-      formControlName="dayOfWeek"
-      label="Día"
+      formControlName="days"
+      [label]="editingShiftId() ? 'Día' : 'Días (se repite cada semana)'"
+      [multiple]="true"
       [options]="dayOptions"
-      [error]="isInvalid('dayOfWeek') ? 'Selecciona un día' : ''"
+      [error]="isInvalid('days') ? 'Selecciona al menos un día' : ''"
     />
     <div class="form-grid form-grid--2">
       <label class="time-field">
