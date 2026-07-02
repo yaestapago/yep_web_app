@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 import {
   IngestSourceEventRequest,
   SourceEvent,
+  SourceEventResponse,
   SourceEventQuery,
   SourceEventsResponse,
 } from '../../../shared/models/source-event.models';
@@ -21,8 +22,8 @@ export class SourceEventsApiService {
     });
   }
 
-  get(id: string): Observable<{ sourceEvent: SourceEvent }> {
-    return this.http.get<{ sourceEvent: SourceEvent }>(`${this.apiUrl}/source-events/${id}`);
+  get(id: string): Observable<SourceEventResponse> {
+    return this.http.get<SourceEventResponse>(`${this.apiUrl}/source-events/${id}`);
   }
 
   ingest(request: IngestSourceEventRequest): Observable<SourceEvent> {
@@ -34,7 +35,7 @@ export class SourceEventsApiService {
 
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, String(value));
+        params = params.set(key, Array.isArray(value) ? value.join(',') : String(value));
       }
     }
 

@@ -18,6 +18,15 @@
   width: 100%;
 }
 
+.filter-select {
+  min-width: 10rem;
+}
+
+.filter-select ::ng-deep .yep-select__button {
+  font-size: var(--font-size-xs);
+  min-height: var(--control-height-sm);
+}
+
 .events-body {
   gap: var(--space-2);
 }
@@ -203,6 +212,11 @@
 }
 
 @media (max-width: 560px) {
+  .filter-select {
+    min-width: 0;
+    width: 100%;
+  }
+
   .event {
     flex-direction: column;
     gap: var(--space-2);

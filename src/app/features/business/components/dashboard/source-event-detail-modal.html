@@ -1,0 +1,149 @@
+<yep-modal
+  [open]="open()"
+  [title]="title()"
+  [subtitle]="detail()?.normalized?.reference || detail()?.externalId || ''"
+  size="lg"
+  [loading]="loading()"
+  (closeRequested)="close.emit()"
+>
+  @if (error()) {
+    <p class="detail-error">{{ error() }}</p>
+  }
+
+  @if (detail(); as event) {
+    <section class="event-summary">
+      <div class="event-summary__amount">
+        <span>Monto reportado</span>
+        @if (amount() !== null) {
+          <strong>
+            {{
+              amount() | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
+            }}
+          </strong>
+        } @else {
+          <strong>Sin monto</strong>
+        }
+      </div>
+      <dl class="detail-grid">
+        <div>
+          <dt>Origen</dt>
+          <dd>{{ sourceLabel(event) }} · {{ deviceLabel(event) }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>{{ statusLabel(event.status) }}</dd>
+        </div>
+        <div>
+          <dt>Banco</dt>
+          <dd>{{ event.normalized?.bankId || 'No detectado' }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de llegada</dt>
+          <dd>{{ event.createdAt | date: 'medium' }}</dd>
+        </div>
+        <div>
+          <dt>Referencia</dt>
+          <dd>{{ event.normalized?.reference || 'Sin referencia' }}</dd>
+        </div>
+        <div>
+          <dt>ID externo</dt>
+          <dd>{{ event.externalId || 'No reportado' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="detail-section">
+      <h3>Notificacion recibida</h3>
+      <pre class="message">{{ notificationText() || 'Sin texto disponible' }}</pre>
+    </section>
+
+    <section class="detail-section">
+      <h3>Datos normalizados</h3>
+      <dl class="detail-grid">
+        <div>
+          <dt>Cuenta destino</dt>
+          <dd>{{ event.normalized?.receiverAccount || 'No detectada' }}</dd>
+        </div>
+        <div>
+          <dt>Cuenta origen</dt>
+          <dd>{{ event.normalized?.senderAccount || 'No detectada' }}</dd>
+        </div>
+        <div>
+          <dt>Fecha del movimiento</dt>
+          <dd>
+            {{
+              event.normalized?.transactionDate
+                ? (event.normalized?.transactionDate | date: 'medium')
+                : 'No detectada'
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Soporte vinculado</dt>
+          <dd>{{ event.linkedSupportId || 'Sin soporte vinculado' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="detail-section">
+      <h3>Transaccion asociada</h3>
+      @if (transaction(); as tx) {
+        <dl class="detail-grid">
+          <div>
+            <dt>Monto</dt>
+            <dd>{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd>{{ tx.status }}</dd>
+          </div>
+          <div>
+            <dt>Referencia</dt>
+            <dd>{{ tx.reference || 'Sin referencia' }}</dd>
+          </div>
+          <div>
+            <dt>ID</dt>
+            <dd>{{ tx.id }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="muted">No hay transaccion asociada a este reporte.</p>
+      }
+    </section>
+
+    <section class="detail-section">
+      <h3>Otros reportes relacionados</h3>
+      @if (relatedEvents().length > 0) {
+        <ul class="related-list">
+          @for (related of relatedEvents(); track related.id) {
+            <li>
+              <span>{{ sourceLabel(related) }} · {{ deviceLabel(related) }}</span>
+              <strong>
+                @if (related.normalized?.amount) {
+                  {{
+                    related.normalized?.amount
+                      | currency: related.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
+                  }}
+                } @else {
+                  Sin monto
+                }
+              </strong>
+              <time>{{ related.createdAt | date: 'short' }}</time>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">No se encontraron otros reportes con la misma referencia.</p>
+      }
+    </section>
+
+    <details class="raw">
+      <summary>Ver payload original</summary>
+      <pre>{{ event.rawPayload | json }}</pre>
+    </details>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="secondary" (clicked)="close.emit()">Cerrar</yep-button>
+  </ng-container>
+</yep-modal>

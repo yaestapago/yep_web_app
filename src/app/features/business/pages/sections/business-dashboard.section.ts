@@ -31,6 +31,9 @@ import type { BankAccount } from '../../../../shared/models/bank-account.models'
 import type {
   SourceEvent,
   SourceEventFilters,
+  SourceEventQuery,
+  SourceEventStatus,
+  SourceEventType,
 } from '../../../../shared/models/source-event.models';
 import {
   type ManualReviewDecision,
@@ -58,12 +61,20 @@ import {
   type Semaphore,
 } from '../../components/dashboard/dashboard-status';
 import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard-transactions';
+import { SourceEventDetailModal } from '../../components/dashboard/source-event-detail-modal';
 import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
 import { VerifyTransactionModal } from '../../components/dashboard/verify-transaction-modal';
 
 /** Tamaño de página (cursor) de cada tabla. */
 const EVENTS_PAGE_LIMIT = 50;
 const TRANSACTIONS_PAGE_LIMIT = 100;
+const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
+const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
+  'received',
+  'processing',
+  'processed',
+  'failed',
+];
 
 /**
  * Panel de control del negocio (`/businesses/:businessId/dashboard`). Pantalla
@@ -94,6 +105,7 @@ const TRANSACTIONS_PAGE_LIMIT = 100;
     DashboardStatusPanel,
     DashboardEventsPanel,
     DashboardTransactionsPanel,
+    SourceEventDetailModal,
     TransactionDetailModal,
     VerifyTransactionModal,
   ],
@@ -166,8 +178,6 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly txHasMore = computed(() => this.txCursor() !== undefined);
 
   /** Eventos llegados en vivo que encajan en el filtro y esperan ser mostrados. */
-  private readonly newEventsBuffer = signal<SourceEvent[]>([]);
-  readonly newEventsCount = computed(() => this.newEventsBuffer().length);
 
   /** IDs de eventos llegados en vivo y aún no vistos (estilo bandeja). */
   readonly unreadEventIds = signal<Set<string>>(new Set());
@@ -205,6 +215,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   // --- Operación (verificación) ---
   readonly verifyTarget = signal<PaymentTransaction | null>(null);
   readonly detailTarget = signal<PaymentTransaction | null>(null);
+  readonly eventDetailTarget = signal<SourceEvent | null>(null);
   readonly verifyingId = signal<string | null>(null);
   readonly operationError = signal('');
   readonly operationSuccess = signal('');
@@ -323,44 +334,30 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
    * "N nuevos" (sin saltar la vista del usuario); si no encaja, se ignora.
    */
   private onLiveEvent(event: SourceEvent): void {
+    if (!this.isMoneyReportEvent(event)) {
+      return;
+    }
+
     this.metricsEvents.update((events) => this.upsert(events, event));
     this.now.set(Date.now());
 
     if (!this.matchesEventFilter(event, this.eventFilters())) {
       return;
     }
-    // Ya visible en la tabla (p. ej. tras recargar): solo refrescarlo.
-    if (this.sourceEvents().some((current) => current.id === event.id)) {
-      this.sourceEvents.update((events) => this.upsert(events, event));
-      return;
-    }
-    this.newEventsBuffer.update((buffer) =>
-      buffer.some((current) => current.id === event.id) ? buffer : [event, ...buffer],
-    );
-  }
-
-  /** Funde los eventos en vivo acumulados al tope de la tabla. */
-  flushNewEvents(): void {
-    const buffer = this.newEventsBuffer();
-    if (buffer.length === 0) {
-      return;
-    }
-    this.sourceEvents.update((events) => {
-      const ids = new Set(events.map((e) => e.id));
-      const fresh = buffer.filter((e) => !ids.has(e.id));
-      return [...fresh, ...events];
-    });
+    this.sourceEvents.update((events) => this.upsert(events, event));
     this.unreadEventIds.update((ids) => {
       const next = new Set(ids);
-      buffer.forEach((e) => next.add(e.id));
+      next.add(event.id);
       return next;
     });
-    this.newEventsBuffer.set([]);
     this.now.set(Date.now());
   }
 
   /** ¿El evento encaja en el filtro activo de la tabla de eventos? */
   private matchesEventFilter(event: SourceEvent, filters: SourceEventFilters): boolean {
+    if (!this.isMoneyReportEvent(event)) {
+      return false;
+    }
     if (filters.sourceType && event.sourceType !== filters.sourceType) {
       return false;
     }
@@ -382,6 +379,32 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       }
     }
     return true;
+  }
+
+  private moneyReportQuery(cursor?: string, includeActiveFilters = true): SourceEventQuery {
+    const filters = includeActiveFilters ? this.eventFilters() : {};
+    const query: SourceEventQuery = {
+      ...filters,
+      limit: EVENTS_PAGE_LIMIT,
+      cursor,
+    };
+
+    if (!filters.sourceType) {
+      query.sourceTypes = MONEY_REPORT_SOURCE_TYPES;
+    }
+
+    if (!filters.status) {
+      query.statuses = MONEY_REPORT_STATUSES;
+    }
+
+    return query;
+  }
+
+  private isMoneyReportEvent(event: SourceEvent): boolean {
+    return (
+      MONEY_REPORT_SOURCE_TYPES.includes(event.sourceType) &&
+      MONEY_REPORT_STATUSES.includes(event.status)
+    );
   }
 
   /** Inserta o reemplaza un evento por id, manteniendo el orden por recientes. */
@@ -559,10 +582,8 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.eventsError.set('');
     // Al recargar (filtro o refresh) descartamos lo acumulado en vivo: la nueva
     // página ya trae el estado más reciente que encaja en el filtro.
-    this.newEventsBuffer.set([]);
-
     this.sourceEventsApi
-      .list({ ...this.eventFilters(), limit: EVENTS_PAGE_LIMIT })
+      .list(this.moneyReportQuery(undefined, false))
       .pipe(
         finalize(() => this.loadingEvents.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -584,7 +605,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.loadingMoreEvents.set(true);
 
     this.sourceEventsApi
-      .list({ ...this.eventFilters(), limit: EVENTS_PAGE_LIMIT, cursor })
+      .list(this.moneyReportQuery(cursor))
       .pipe(
         finalize(() => this.loadingMoreEvents.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -611,7 +632,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       });
 
     this.sourceEventsApi
-      .list({ limit: EVENTS_PAGE_LIMIT })
+      .list(this.moneyReportQuery())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.metricsEvents.set(response.sourceEvents),
@@ -648,6 +669,15 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
 
   closeDetail(): void {
     this.detailTarget.set(null);
+  }
+
+  openEventDetail(event: SourceEvent): void {
+    this.markEventSeen(event.id);
+    this.eventDetailTarget.set(event);
+  }
+
+  closeEventDetail(): void {
+    this.eventDetailTarget.set(null);
   }
 
   askVerify(transaction: PaymentTransaction): void {
@@ -691,9 +721,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
           );
           this.verifyTarget.set(null);
           this.operationSuccess.set(
-            decision === 'confirmed'
-              ? 'Pago confirmado.'
-              : 'Transacción rechazada.',
+            decision === 'confirmed' ? 'Pago confirmado.' : 'Transacción rechazada.',
           );
         },
         error: (error) => this.operationError.set(httpErrorMessage(error)),

@@ -121,11 +121,9 @@
       [bankOptions]="bankOptions()"
       [hasMore]="eventsHasMore()"
       [loadingMore]="loadingMoreEvents()"
-      [newCount]="newEventsCount()"
-      (markSeen)="markEventSeen($event)"
+      (view)="openEventDetail($event)"
       (filtersChange)="onEventFiltersChange($event)"
       (loadMore)="loadMoreEvents()"
-      (showNew)="flushNewEvents()"
     />
     <app-dashboard-transactions
       class="grid__transactions"
@@ -145,6 +143,7 @@
 </div>
 
 <app-transaction-detail-modal [transaction]="detailTarget()" (close)="closeDetail()" />
+<app-source-event-detail-modal [event]="eventDetailTarget()" (close)="closeEventDetail()" />
 <app-verify-transaction-modal
   [transaction]="verifyTarget()"
   [loading]="verifyingId() !== null"

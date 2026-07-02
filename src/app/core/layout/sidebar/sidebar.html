@@ -1,91 +1,99 @@
 <aside class="sidebar">
   <div class="brand" aria-label="Ya Está Pago">
     <img class="brand__logo brand__logo--light" src="/brand/yep-light.svg" alt="Ya Está Pago" />
-    <img class="brand__logo brand__logo--dark" src="/brand/yep-dark.svg" alt="" aria-hidden="true" />
-  </div>
-
-  <a class="user-card" routerLink="/settings" (click)="onNavigate()" aria-label="Perfil y configuración">
-    <span class="avatar" aria-hidden="true">{{ initials() }}</span>
-    <span class="user-meta">
-      <span class="user-name">{{ fullName() }}</span>
-      <span class="user-email">{{ user()?.email }}</span>
-    </span>
-  </a>
-
-  <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
-  <div class="business-select">
-    <span class="business-select__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
-    <yep-select
-      class="business-select__control"
-      label="Negocio"
-      placeholder="Selecciona un negocio"
-      size="sm"
-      [options]="businessOptions()"
-      [ngModel]="activeBusinessAccountId()"
-      [ngModelOptions]="{ standalone: true }"
-      [searchable]="memberships().length > 5"
-      (ngModelChange)="switchBusinessId($event)"
+    <img
+      class="brand__logo brand__logo--dark"
+      src="/brand/yep-dark.svg"
+      alt=""
+      aria-hidden="true"
     />
   </div>
 
-  <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
-    <svg lucideBuilding2 aria-hidden="true"></svg>
-    <span>Gestionar negocios</span>
-  </button>
-
-  <nav class="nav-group" aria-label="Navegación principal">
-    <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
-      <svg lucideHouse aria-hidden="true"></svg>
-      <span>Novedades</span>
-    </a>
-
+  <div class="sidebar-main">
     <a
-      [routerLink]="dashboardLink()"
-      routerLinkActive="active"
+      class="user-card"
+      routerLink="/settings"
       (click)="onNavigate()"
+      aria-label="Perfil y configuración"
     >
-      <svg lucideLayoutDashboard aria-hidden="true"></svg>
-      <span>Panel de control</span>
+      <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+      <span class="user-meta">
+        <span class="user-name">{{ fullName() }}</span>
+        <span class="user-email">{{ user()?.email }}</span>
+      </span>
     </a>
 
-    <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
-    <div class="nav-subgroup" [class.open]="businessGroupOpen()">
-      <button
-        type="button"
-        class="nav-subgroup__header"
-        [attr.aria-expanded]="businessGroupOpen()"
-        aria-controls="business-subnav"
-        (click)="toggleBusinessGroup()"
-      >
-        <svg lucideBuilding2 aria-hidden="true"></svg>
-        <span>Negocio</span>
-        <svg
-          class="nav-subgroup__chevron"
-          [class.open]="businessGroupOpen()"
-          lucideChevronDown
-          aria-hidden="true"
-        ></svg>
-      </button>
-
-      @if (businessGroupOpen()) {
-        <div class="nav-subgroup__items" id="business-subnav">
-          @if (activeBusinessAccountId()) {
-            @for (item of businessSections; track item.path) {
-              <a
-                [routerLink]="businessLink(item.path)"
-                routerLinkActive="active"
-                (click)="onNavigate()"
-              >
-                <span>{{ item.label }}</span>
-              </a>
-            }
-          } @else {
-            <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
-          }
-        </div>
-      }
+    <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
+    <div class="business-select">
+      <span class="business-select__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
+      <yep-select
+        class="business-select__control"
+        label="Negocio"
+        placeholder="Selecciona un negocio"
+        size="sm"
+        [options]="businessOptions()"
+        [ngModel]="activeBusinessAccountId()"
+        [ngModelOptions]="{ standalone: true }"
+        [searchable]="memberships().length > 5"
+        (ngModelChange)="switchBusinessId($event)"
+      />
     </div>
-  </nav>
+
+    <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
+      <svg lucideBuilding2 aria-hidden="true"></svg>
+      <span>Gestionar negocios</span>
+    </button>
+
+    <nav class="nav-group" aria-label="Navegación principal">
+      <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
+        <svg lucideHouse aria-hidden="true"></svg>
+        <span>Novedades</span>
+      </a>
+
+      <a [routerLink]="dashboardLink()" routerLinkActive="active" (click)="onNavigate()">
+        <svg lucideLayoutDashboard aria-hidden="true"></svg>
+        <span>Panel de control</span>
+      </a>
+
+      <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
+      <div class="nav-subgroup" [class.open]="businessGroupOpen()">
+        <button
+          type="button"
+          class="nav-subgroup__header"
+          [attr.aria-expanded]="businessGroupOpen()"
+          aria-controls="business-subnav"
+          (click)="toggleBusinessGroup()"
+        >
+          <svg lucideBuilding2 aria-hidden="true"></svg>
+          <span>Negocio</span>
+          <svg
+            class="nav-subgroup__chevron"
+            [class.open]="businessGroupOpen()"
+            lucideChevronDown
+            aria-hidden="true"
+          ></svg>
+        </button>
+
+        @if (businessGroupOpen()) {
+          <div class="nav-subgroup__items" id="business-subnav">
+            @if (activeBusinessAccountId()) {
+              @for (item of businessSections; track item.path) {
+                <a
+                  [routerLink]="businessLink(item.path)"
+                  routerLinkActive="active"
+                  (click)="onNavigate()"
+                >
+                  <span>{{ item.label }}</span>
+                </a>
+              }
+            } @else {
+              <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
+            }
+          </div>
+        }
+      </div>
+    </nav>
+  </div>
 
   <div class="sidebar-footer">
     <button

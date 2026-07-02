@@ -1,4 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   Component,
   DestroyRef,
@@ -11,7 +12,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
-  LucideArrowUp,
   LucideBell,
   LucideCircleCheck,
   LucideFileText,
@@ -32,7 +32,7 @@ import type {
   SourceEventType,
 } from '../../../../shared/models/source-event.models';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
-import { AutoFitRowsDirective } from './auto-fit-rows.directive';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { DashboardPager } from './dashboard-pager';
 
 const SOURCE_LABELS: Record<SourceEventType, string> = {
@@ -63,9 +63,11 @@ const STATUS_TONES: Record<SourceEventStatus, TransactionTone> = {
 };
 
 /** Opciones de tipo, estáticas y completas (no dependen de lo cargado). */
-const SOURCE_OPTIONS: { value: SourceEventType; label: string }[] = (
-  Object.keys(SOURCE_LABELS) as SourceEventType[]
-).map((value) => ({ value, label: SOURCE_LABELS[value] }));
+const SOURCE_OPTIONS: SelectOption[] = [
+  { id: '', label: 'Todo origen' },
+  { id: 'NOTIFIER_APP', label: 'Notificadores' },
+  { id: 'EMAIL_GMAIL', label: 'Correos' },
+];
 
 const SOURCE_PHRASES: Record<SourceEventType, string> = {
   WHATSAPP_INBOUND: 'Llegó un mensaje de WhatsApp con un posible comprobante',
@@ -87,7 +89,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
   imports: [
     CurrencyPipe,
     DatePipe,
-    LucideArrowUp,
+    FormsModule,
     LucideBell,
     LucideCircleCheck,
     LucideFileText,
@@ -97,7 +99,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     LucideSearch,
     LucideSmartphone,
     LucideTriangleAlert,
-    AutoFitRowsDirective,
+    Select,
     DashboardPager,
   ],
   templateUrl: './dashboard-events.html',
@@ -120,20 +122,17 @@ export class DashboardEventsPanel {
   readonly hasMore = defineInput(false);
   readonly loadingMore = defineInput(false);
   /** Eventos en vivo que encajan en el filtro y esperan ser mostrados. */
-  readonly newCount = defineInput(0);
 
   /** Emite el id del evento que el usuario marcó como leído (al abrirlo). */
-  readonly markSeen = output<string>();
+  readonly view = output<SourceEvent>();
   /** Cambios de filtro (con debounce) para que la sección recargue server-side. */
   readonly filtersChange = output<SourceEventFilters>();
   /** Solicita la siguiente página del servidor (cursor). */
   readonly loadMore = output<void>();
   /** Fundir los eventos en vivo acumulados al tope de la lista. */
-  readonly showNew = output<void>();
 
   readonly search = signal('');
   readonly typeFilter = signal<string>('');
-  readonly statusFilter = signal<string>('');
   readonly bankFilter = signal<string>('');
 
   readonly typeOptions = SOURCE_OPTIONS;
@@ -141,14 +140,12 @@ export class DashboardEventsPanel {
   /** Filtros normalizados que se envían al servidor. */
   private readonly filterValue = computed<SourceEventFilters>(() => ({
     sourceType: (this.typeFilter() || undefined) as SourceEventType | undefined,
-    status: (this.statusFilter() || undefined) as SourceEventStatus | undefined,
     bankId: this.bankFilter() || undefined,
     q: this.search().trim() || undefined,
   }));
 
   // --- Paginado client-side sobre la ventana cargada --------------------------
-  /** Filas que caben en el alto disponible (lo calcula AutoFitRowsDirective). */
-  readonly pageSize = signal(6);
+  readonly pageSize = signal(10);
   readonly page = signal(1);
 
   readonly totalPages = computed(() =>
@@ -157,9 +154,7 @@ export class DashboardEventsPanel {
 
   /** Página efectiva acotada a [1, totalPages] (autocorrige si los datos
    *  encogen sin esperar interacción del usuario). */
-  readonly currentPage = computed(() =>
-    Math.min(Math.max(1, this.page()), this.totalPages()),
-  );
+  readonly currentPage = computed(() => Math.min(Math.max(1, this.page()), this.totalPages()));
 
   /** Página actual recortada. */
   readonly paged = computed(() => {
@@ -177,7 +172,6 @@ export class DashboardEventsPanel {
     effect(() => {
       this.search();
       this.typeFilter();
-      this.statusFilter();
       this.bankFilter();
       this.page.set(1);
     });
@@ -188,9 +182,7 @@ export class DashboardEventsPanel {
       .pipe(
         skip(1),
         debounceTime(300),
-        distinctUntilChanged(
-          (a, b) => JSON.stringify(a) === JSON.stringify(b),
-        ),
+        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((filters) => this.filtersChange.emit(filters));
@@ -198,6 +190,10 @@ export class DashboardEventsPanel {
 
   isUnread(event: SourceEvent): boolean {
     return this.unreadIds().has(event.id);
+  }
+
+  openDetail(event: SourceEvent): void {
+    this.view.emit(event);
   }
 
   /** Plataforma/banco del evento (Nequi, Bancolombia…) desde el normalizado. */
