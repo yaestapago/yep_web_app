@@ -1,5 +1,4 @@
 <div class="panel">
-  <!-- Feedback de operaciones (verificación); solo aparece cuando hay mensaje -->
   @if (operationSuccess() || operationError()) {
     <div class="op-banner">
       @if (operationSuccess()) {
@@ -13,43 +12,85 @@
     </div>
   }
 
-  <!-- KPIs (fila compacta) -->
-  <div class="kpi-row" aria-label="Métricas operativas">
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideBanknote aria-hidden="true"></svg> Total capturado</span>
-      <span class="kpi__value">{{ totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0' }}</span>
+  <div class="kpi-carousel">
+    @if (canScrollKpisLeft()) {
+      <button
+        type="button"
+        class="kpi-scroll-btn kpi-scroll-btn--left"
+        (click)="scrollKpis('left')"
+        aria-label="Ver KPIs anteriores"
+        title="Ver anteriores"
+      >
+        <svg lucideChevronLeft aria-hidden="true"></svg>
+      </button>
+    }
+
+    <div
+      #kpiScroller
+      class="kpi-row"
+      aria-label="Metricas operativas"
+      (scroll)="updateKpiScrollState()"
+    >
+      <div class="kpi">
+        <span class="kpi__label"
+          ><svg lucideBanknote aria-hidden="true"></svg> Total capturado</span
+        >
+        <span class="kpi__value">{{
+          totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+        }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label"
+          ><svg lucideShieldCheck aria-hidden="true"></svg> Pagos validados</span
+        >
+        <span class="kpi__value kpi__value--ok">{{ paidCount() }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label"
+          ><svg lucideActivity aria-hidden="true"></svg> Pagos por revisar</span
+        >
+        <span class="kpi__value kpi__value--warn">{{ reviewCount() }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label"><svg lucideBell aria-hidden="true"></svg> Eventos detectados</span>
+        <span class="kpi__value">{{ eventsCount() }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label"
+          ><svg lucideInbox aria-hidden="true"></svg> Transacciones recibidas</span
+        >
+        <span class="kpi__value">{{ receivedCount() }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label"><svg lucideListChecks aria-hidden="true"></svg> Pendientes</span>
+        <span class="kpi__value kpi__value--warn">{{ pendingCount() }}</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__label"
+          ><svg lucideTriangleAlert aria-hidden="true"></svg> Rechazadas</span
+        >
+        <span class="kpi__value kpi__value--err">{{ rejectedCount() }}</span>
+      </div>
     </div>
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideShieldCheck aria-hidden="true"></svg> Pagos validados</span>
-      <span class="kpi__value kpi__value--ok">{{ paidCount() }}</span>
-    </div>
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideActivity aria-hidden="true"></svg> Pagos por revisar</span>
-      <span class="kpi__value kpi__value--warn">{{ reviewCount() }}</span>
-    </div>
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideBell aria-hidden="true"></svg> Eventos detectados</span>
-      <span class="kpi__value">{{ eventsCount() }}</span>
-    </div>
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideInbox aria-hidden="true"></svg> Transacciones recibidas</span>
-      <span class="kpi__value">{{ receivedCount() }}</span>
-    </div>
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideListChecks aria-hidden="true"></svg> Pendientes</span>
-      <span class="kpi__value kpi__value--warn">{{ pendingCount() }}</span>
-    </div>
-    <div class="kpi">
-      <span class="kpi__label"><svg lucideTriangleAlert aria-hidden="true"></svg> Rechazadas</span>
-      <span class="kpi__value kpi__value--err">{{ rejectedCount() }}</span>
-    </div>
+
+    @if (canScrollKpisRight()) {
+      <button
+        type="button"
+        class="kpi-scroll-btn kpi-scroll-btn--right"
+        (click)="scrollKpis('right')"
+        aria-label="Ver mas KPIs"
+        title="Ver mas"
+      >
+        <svg lucideChevronRight aria-hidden="true"></svg>
+      </button>
+    }
   </div>
 
-  <!-- Cuadrícula de zonas (cambia según las gráficas estén abiertas o colapsadas) -->
-  <div class="grid" [class.grid--with-charts]="chartsVisible()" [class.grid--no-charts]="!chartsVisible()">
-    <!-- Fila superior: gráficas + estado del sistema. En modo colapsado se
-         comporta como una fila flex (misma altura, estado a lo ancho); en modo
-         expandido es `display:contents` y cada módulo cae en su área del grid. -->
+  <div
+    class="grid"
+    [class.grid--with-charts]="chartsVisible()"
+    [class.grid--no-charts]="!chartsVisible()"
+  >
     <div class="grid__top">
       <app-dashboard-charts
         class="grid__charts"
@@ -65,7 +106,9 @@
         [rows]="notifierRows()"
         [loading]="loadingNotifiers()"
         [error]="notifiersError()"
+        [collapsed]="!statusVisible()"
         [layout]="chartsVisible() ? 'vertical' : 'horizontal'"
+        (toggleCollapse)="toggleStatus()"
       />
     </div>
     <app-dashboard-events

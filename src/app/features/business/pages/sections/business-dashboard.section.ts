@@ -1,8 +1,12 @@
 import { CurrencyPipe, DOCUMENT } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
   DestroyRef,
+  ElementRef,
+  OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   effect,
   inject,
@@ -13,6 +17,8 @@ import {
   LucideActivity,
   LucideBanknote,
   LucideBell,
+  LucideChevronLeft,
+  LucideChevronRight,
   LucideInbox,
   LucideListChecks,
   LucideShieldCheck,
@@ -78,6 +84,8 @@ const TRANSACTIONS_PAGE_LIMIT = 100;
     LucideActivity,
     LucideBanknote,
     LucideBell,
+    LucideChevronLeft,
+    LucideChevronRight,
     LucideInbox,
     LucideListChecks,
     LucideShieldCheck,
@@ -92,7 +100,9 @@ const TRANSACTIONS_PAGE_LIMIT = 100;
   templateUrl: './business-dashboard.section.html',
   styleUrl: './business-dashboard.section.scss',
 })
-export class BusinessDashboardSection implements OnInit {
+export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('kpiScroller') private readonly kpiScroller?: ElementRef<HTMLElement>;
+
   private readonly transactionsApi = inject(TransactionsApiService);
   private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly sourceEventsStream = inject(SourceEventsStreamService);
@@ -104,6 +114,8 @@ export class BusinessDashboardSection implements OnInit {
   private readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
   private readonly document = inject(DOCUMENT);
   private transactionEventsReady = false;
+  private kpiResizeObserver?: ResizeObserver;
+  private kpiScrollRaf: number | null = null;
 
   /**
    * Gráficas visibles u ocultas. Al ocultarlas, el módulo de estado pasa a
@@ -111,12 +123,21 @@ export class BusinessDashboardSection implements OnInit {
    * preferencia se guarda en `localStorage` (SSR-safe vía defaultView).
    */
   private static readonly CHARTS_STORAGE_KEY = 'yep_web.dashboard.chartsVisible';
+  private static readonly STATUS_STORAGE_KEY = 'yep_web.dashboard.statusVisible';
   readonly chartsVisible = signal<boolean>(this.readChartsVisible());
+  readonly statusVisible = signal<boolean>(this.readStatusVisible());
 
   private readonly chartsVisiblePersistEffect = effect(() => {
     const visible = this.chartsVisible();
     this.document.defaultView?.localStorage.setItem(
       BusinessDashboardSection.CHARTS_STORAGE_KEY,
+      visible ? '1' : '0',
+    );
+  });
+  private readonly statusVisiblePersistEffect = effect(() => {
+    const visible = this.statusVisible();
+    this.document.defaultView?.localStorage.setItem(
+      BusinessDashboardSection.STATUS_STORAGE_KEY,
       visible ? '1' : '0',
     );
   });
@@ -175,6 +196,8 @@ export class BusinessDashboardSection implements OnInit {
   readonly loadingAny = computed(
     () => this.loadingTransactions() || this.loadingEvents() || this.loadingNotifiers(),
   );
+  readonly canScrollKpisLeft = signal(false);
+  readonly canScrollKpisRight = signal(false);
 
   /** Tick para recalcular el estado relativo de notificadores sin recargar. */
   private readonly now = signal(Date.now());
@@ -272,6 +295,27 @@ export class BusinessDashboardSection implements OnInit {
       .subscribe((event) => this.onLiveEvent(event));
   }
 
+  ngAfterViewInit(): void {
+    this.scheduleKpiScrollStateUpdate();
+
+    const element = this.kpiScroller?.nativeElement;
+    const ResizeObserverCtor = this.document.defaultView?.ResizeObserver;
+    if (!element || !ResizeObserverCtor) {
+      return;
+    }
+
+    this.kpiResizeObserver = new ResizeObserverCtor(() => this.scheduleKpiScrollStateUpdate());
+    this.kpiResizeObserver.observe(element);
+  }
+
+  ngOnDestroy(): void {
+    this.kpiResizeObserver?.disconnect();
+    if (this.kpiScrollRaf !== null) {
+      this.document.defaultView?.cancelAnimationFrame(this.kpiScrollRaf);
+      this.kpiScrollRaf = null;
+    }
+  }
+
   /**
    * Procesa un evento llegado en vivo. Siempre alimenta la instantánea de
    * métricas (para el semáforo). En la tabla solo se ofrece si encaja en el
@@ -355,11 +399,66 @@ export class BusinessDashboardSection implements OnInit {
     this.chartsVisible.update((visible) => !visible);
   }
 
+  toggleStatus(): void {
+    this.statusVisible.update((visible) => !visible);
+  }
+
+  scrollKpis(direction: 'left' | 'right'): void {
+    const element = this.kpiScroller?.nativeElement;
+    if (!element) {
+      return;
+    }
+
+    const distance = Math.max(180, Math.floor(element.clientWidth * 0.72));
+    element.scrollBy({
+      left: direction === 'left' ? -distance : distance,
+      behavior: 'smooth',
+    });
+    this.scheduleKpiScrollStateUpdate();
+  }
+
+  updateKpiScrollState(): void {
+    this.scheduleKpiScrollStateUpdate();
+  }
+
+  private scheduleKpiScrollStateUpdate(): void {
+    const win = this.document.defaultView;
+    if (!win || this.kpiScrollRaf !== null) {
+      return;
+    }
+
+    this.kpiScrollRaf = win.requestAnimationFrame(() => {
+      this.kpiScrollRaf = null;
+      this.setKpiScrollState();
+    });
+  }
+
+  private setKpiScrollState(): void {
+    const element = this.kpiScroller?.nativeElement;
+    if (!element) {
+      this.canScrollKpisLeft.set(false);
+      this.canScrollKpisRight.set(false);
+      return;
+    }
+
+    const maxScrollLeft = element.scrollWidth - element.clientWidth;
+    const tolerance = 2;
+    this.canScrollKpisLeft.set(element.scrollLeft > tolerance);
+    this.canScrollKpisRight.set(maxScrollLeft - element.scrollLeft > tolerance);
+  }
+
   private readChartsVisible(): boolean {
     const raw = this.document.defaultView?.localStorage.getItem(
       BusinessDashboardSection.CHARTS_STORAGE_KEY,
     );
     // Por defecto visibles; solo se ocultan si el usuario lo guardó así.
+    return raw !== '0';
+  }
+
+  private readStatusVisible(): boolean {
+    const raw = this.document.defaultView?.localStorage.getItem(
+      BusinessDashboardSection.STATUS_STORAGE_KEY,
+    );
     return raw !== '0';
   }
 

@@ -14,7 +14,7 @@
 .zone {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   display: flex;
   flex: 1;
@@ -30,7 +30,8 @@
   flex: 0 0 auto;
   gap: var(--space-2) var(--space-3);
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  min-height: 48px;
+  padding: var(--space-3);
 }
 
 .zone__heading {
@@ -91,8 +92,8 @@
 }
 
 .filters .search {
-  flex: 1 1 140px;
-  min-width: 120px;
+  flex: 1 1 180px;
+  min-width: 150px;
 }
 
 .control {
@@ -104,7 +105,7 @@
   font: inherit;
   font-size: var(--font-size-xs);
   height: var(--control-height-sm);
-  min-width: 0;
+  min-width: 9rem;
   padding: 0 var(--space-2);
 }
 
@@ -297,6 +298,49 @@ select.control {
 .new-pill svg {
   height: 14px;
   width: 14px;
+}
+
+@media (max-width: 1024px) {
+  .zone {
+    min-height: 0;
+  }
+
+  .zone__body {
+    min-height: 240px;
+  }
+
+  .filters .search {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .zone__head {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+
+  .zone__heading {
+    min-width: 0;
+  }
+
+  .zone__title {
+    min-width: 0;
+  }
+
+  .filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filters .search,
+  .control {
+    flex-basis: auto;
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .spin {

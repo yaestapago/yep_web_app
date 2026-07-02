@@ -201,3 +201,22 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
 }
+
+@media (max-width: 560px) {
+  .event {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .event__aside {
+    align-items: flex-start;
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: var(--space-2);
+  }
+
+  .event__amount {
+    white-space: normal;
+  }
+}
