@@ -67,6 +67,77 @@ describe('AuthSessionService', () => {
     expect(service.onboardingRequired()).toBe(false);
   });
 
+  it('deduplicates memberships by business and keeps the approved one', () => {
+    const service = TestBed.inject(AuthSessionService);
+    const duplicatePendingMembership: BusinessMembership = {
+      ...pendingMembership,
+      id: 'membership-3',
+      businessAccountId: approvedMembership.businessAccountId,
+      businessAccount: approvedMembership.businessAccount,
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    service.saveSession({
+      accessToken: 'token',
+      user,
+      memberships: [duplicatePendingMembership, approvedMembership],
+    });
+
+    expect(service.memberships()).toEqual([approvedMembership]);
+    expect(service.activeBusinessAccountId()).toBe(approvedMembership.businessAccountId);
+  });
+
+  it('deduplicates memberships by business and keeps the newest status tie', () => {
+    const service = TestBed.inject(AuthSessionService);
+    const olderPending: BusinessMembership = {
+      ...pendingMembership,
+      id: 'membership-older',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const newerPending: BusinessMembership = {
+      ...pendingMembership,
+      id: 'membership-newer',
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    service.saveSession({
+      accessToken: 'token',
+      user,
+      memberships: [olderPending, newerPending],
+    });
+
+    expect(service.memberships()).toEqual([newerPending]);
+  });
+
+  it('deduplicates memberships by business and keeps owner over staff', () => {
+    const service = TestBed.inject(AuthSessionService);
+    const ownerMembership: BusinessMembership = {
+      ...approvedMembership,
+      id: 'membership-owner',
+      role: 'account_owner',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const staffMembership: BusinessMembership = {
+      ...approvedMembership,
+      id: 'membership-staff',
+      role: 'account_staff',
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    service.saveSession({
+      accessToken: 'token',
+      user,
+      memberships: [staffMembership, ownerMembership],
+    });
+
+    expect(service.memberships()).toEqual([ownerMembership]);
+  });
+
   it('marks onboarding as required when no membership is approved', () => {
     const service = TestBed.inject(AuthSessionService);
 

@@ -41,7 +41,7 @@ export class AuthSessionService {
   );
 
   saveSession(response: AuthResponse): void {
-    const memberships = response.memberships ?? [];
+    const memberships = this.normalizeMemberships(response.memberships ?? []);
     const session: StoredSession = {
       accessToken: response.accessToken,
       user: response.user,
@@ -62,11 +62,13 @@ export class AuthSessionService {
       return;
     }
 
+    const normalizedMemberships = this.normalizeMemberships(memberships);
+
     this.persist({
       ...current,
-      memberships,
+      memberships: normalizedMemberships,
       activeBusinessAccountId: this.resolveActiveBusinessAccountId(
-        memberships,
+        normalizedMemberships,
         current.activeBusinessAccountId,
       ),
     });
@@ -180,6 +182,64 @@ export class AuthSessionService {
     return approvedMemberships[0]?.businessAccountId ?? null;
   }
 
+  private normalizeMemberships(memberships: BusinessMembership[]): BusinessMembership[] {
+    const byBusinessId = new Map<string, BusinessMembership>();
+
+    for (const membership of memberships) {
+      const current = byBusinessId.get(membership.businessAccountId);
+
+      if (!current || this.isPreferredMembership(membership, current)) {
+        byBusinessId.set(membership.businessAccountId, membership);
+      }
+    }
+
+    return [...byBusinessId.values()];
+  }
+
+  private isPreferredMembership(
+    candidate: BusinessMembership,
+    current: BusinessMembership,
+  ): boolean {
+    const candidateRank = this.membershipStatusRank(candidate);
+    const currentRank = this.membershipStatusRank(current);
+
+    if (candidateRank !== currentRank) {
+      return candidateRank > currentRank;
+    }
+
+    const candidateRoleRank = this.membershipRoleRank(candidate);
+    const currentRoleRank = this.membershipRoleRank(current);
+
+    if (candidateRoleRank !== currentRoleRank) {
+      return candidateRoleRank > currentRoleRank;
+    }
+
+    return this.membershipTimestamp(candidate) > this.membershipTimestamp(current);
+  }
+
+  private membershipStatusRank(membership: BusinessMembership): number {
+    switch (membership.status) {
+      case 'approved':
+        return 4;
+      case 'pending':
+        return 3;
+      case 'rejected':
+        return 2;
+      case 'revoked':
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  private membershipTimestamp(membership: BusinessMembership): number {
+    return Date.parse(membership.updatedAt ?? membership.createdAt ?? '') || 0;
+  }
+
+  private membershipRoleRank(membership: BusinessMembership): number {
+    return membership.role === 'account_owner' ? 2 : 1;
+  }
+
   private readStoredSession(): StoredSession | null {
     try {
       const rawSession = localStorage.getItem(this.storageKey);
@@ -193,12 +253,14 @@ export class AuthSessionService {
         return null;
       }
 
+      const memberships = this.normalizeMemberships(stored.memberships ?? []);
+
       return {
         accessToken: stored.accessToken,
         user: stored.user,
-        memberships: stored.memberships ?? [],
+        memberships,
         activeBusinessAccountId: this.resolveActiveBusinessAccountId(
-          stored.memberships ?? [],
+          memberships,
           stored.activeBusinessAccountId,
         ),
       };
