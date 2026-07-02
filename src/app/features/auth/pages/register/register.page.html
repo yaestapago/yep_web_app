@@ -48,14 +48,6 @@
           />
 
           <yep-input
-            label="Correo"
-            type="email"
-            autocomplete="email"
-            formControlName="email"
-            [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
-          />
-
-          <yep-input
             label="Identificación"
             type="text"
             autocomplete="off"
@@ -65,13 +57,13 @@
             "
           />
 
-          <yep-phone-input
-            label="Celular"
-            placeholder="300 123 4567"
-            formControlName="cellphoneNumber"
-            [required]="true"
-            [error]="isInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
-          ></yep-phone-input>
+          <yep-input
+            label="Correo"
+            type="email"
+            autocomplete="username"
+            formControlName="email"
+            [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
+          />
 
           <yep-input
             label="Contraseña"
@@ -88,6 +80,15 @@
             formControlName="confirmPassword"
             [error]="isInvalid('confirmPassword') ? confirmPasswordError() : ''"
           />
+
+          <yep-phone-input
+            class="full"
+            label="Celular"
+            placeholder="300 123 4567"
+            formControlName="cellphoneNumber"
+            [required]="true"
+            [error]="isInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
+          ></yep-phone-input>
         </div>
 
         @if (error()) {
