@@ -1,0 +1,26 @@
+<label
+  class="yep-radio"
+  [class.yep-radio--checked]="checked()"
+  [class.yep-radio--disabled]="disabled()"
+>
+  <input
+    class="yep-radio__input"
+    type="radio"
+    [id]="id()"
+    [name]="name()"
+    [value]="value()"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.data-cy]="dataCy() || null"
+    (change)="select()"
+  />
+
+  <span class="yep-radio__dot" aria-hidden="true"></span>
+
+  @if (label()) {
+    <span class="yep-radio__label">{{ label() }}</span>
+  } @else {
+    <span class="yep-radio__label"><ng-content></ng-content></span>
+  }
+</label>

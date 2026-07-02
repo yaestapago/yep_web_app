@@ -151,42 +151,7 @@
   letter-spacing: 0.1em;
 }
 
-/* Interruptor (switch) activar/desactivar */
-.switch {
-  background: var(--color-border);
-  border: none;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  flex: none;
-  height: 22px;
-  padding: 2px;
-  position: relative;
-  transition: background 150ms ease;
-  width: 40px;
-}
-
-.switch--on {
-  background: var(--color-primary);
-}
-
-.switch__thumb {
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: var(--shadow-xs);
-  display: block;
-  height: 18px;
-  transition: transform 150ms ease;
-  width: 18px;
-}
-
-.switch--on .switch__thumb {
-  transform: translateX(18px);
-}
-
-.switch:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
+/* El interruptor activar/desactivar ahora vive en el primitivo `yep-toggle`. */
 
 .list-card__meta {
   color: var(--color-text-secondary);
@@ -284,8 +249,45 @@
   min-width: 0;
 }
 
-.schedule-filter {
-  max-width: 280px;
+/* Zona de filtros de la grilla de horarios: sedes + empleados como toggles. */
+.grid-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-5);
+}
+
+.grid-filters__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.grid-filters__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.grid-filters__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Campo con etiqueta para envolver controles sin label propio (p. ej. yep-day-picker). */
+.shift-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.shift-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
 }
 
 .employee-filter {

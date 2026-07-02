@@ -1,0 +1,12 @@
+<div class="yep-day-picker" role="group">
+  @for (chip of days; track chip.day) {
+    <yep-checkbox
+      appearance="chip"
+      [checked]="isSelected(chip.day)"
+      [disabled]="disabled() || isControlDisabled()"
+      [ariaLabel]="chip.full"
+      (checkedChange)="toggle(chip.day, $event)"
+      >{{ chip.short }}</yep-checkbox
+    >
+  }
+</div>

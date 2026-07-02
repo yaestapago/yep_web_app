@@ -26,6 +26,7 @@ import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
+import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
 
@@ -58,6 +59,7 @@ interface NotificationToggle {
     Input,
     Modal,
     PhoneInput,
+    Toggle,
     LucideBell,
     LucideChevronDown,
     LucideMoon,

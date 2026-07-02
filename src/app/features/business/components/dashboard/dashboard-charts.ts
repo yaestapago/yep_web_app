@@ -19,6 +19,7 @@ import {
 
 import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import type { SourceEvent } from '../../../../shared/models/source-event.models';
 import type { PaymentTransaction } from '../../../../shared/models/transaction.models';
@@ -73,6 +74,7 @@ const SOURCE_LABELS: Record<string, string> = {
   imports: [
     Button,
     ChartCanvas,
+    Checkbox,
     Modal,
     LucideChartPie,
     LucideChevronDown,

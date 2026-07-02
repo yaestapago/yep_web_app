@@ -15,6 +15,7 @@ import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -23,6 +24,7 @@ import {
   type RadioSelectionOption,
 } from '../../../../shared/ui/radio-selection-list/radio-selection-list';
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
+import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type {
@@ -57,10 +59,12 @@ interface NotifierKindOption {
     DatePipe,
     ReactiveFormsModule,
     Button,
+    Checkbox,
     Input,
     Modal,
     RadioSelectionList,
     StatusDot,
+    Toggle,
     LucideLink,
     LucideLoaderCircle,
     LucidePencil,

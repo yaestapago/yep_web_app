@@ -1,0 +1,184 @@
+:host {
+  --yep-tp-item-height: 36px;
+  --yep-tp-visible: 5;
+  display: block;
+  position: relative;
+}
+
+.yep-time-picker {
+  display: grid;
+  gap: var(--space-2);
+  position: relative;
+}
+
+.yep-time-picker__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.yep-time-picker__control {
+  align-items: center;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  min-height: var(--control-height-lg);
+  overflow: hidden;
+  transition:
+    border-color var(--motion-base),
+    box-shadow var(--motion-base);
+}
+
+.yep-time-picker__control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.yep-time-picker__control--invalid {
+  border-color: var(--color-error);
+}
+
+.yep-time-picker__input {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-primary);
+  flex: 1 1 auto;
+  font: inherit;
+  min-height: calc(var(--control-height-lg) - 2px);
+  min-width: 0;
+  outline: none;
+  padding: 0 var(--space-3);
+}
+
+.yep-time-picker__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.yep-time-picker__trigger {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.25rem;
+  justify-content: center;
+  margin-right: var(--space-1);
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
+  width: 2.25rem;
+}
+
+.yep-time-picker__trigger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  color: var(--color-secondary);
+}
+
+.yep-time-picker__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.yep-time-picker__trigger svg {
+  height: 18px;
+  width: 18px;
+}
+
+/* ---------- popover con ruedas ---------- */
+.yep-time-picker__backdrop {
+  inset: 0;
+  position: fixed;
+  z-index: 40;
+}
+
+.yep-time-picker__popover {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  left: 0;
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  position: absolute;
+  top: 100%;
+  z-index: 41;
+}
+
+.yep-time-picker__wheels {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+  position: relative;
+}
+
+.yep-time-picker__column {
+  height: calc(var(--yep-tp-visible) * var(--yep-tp-item-height));
+  overflow-y: auto;
+  padding-block: calc((var(--yep-tp-visible) - 1) / 2 * var(--yep-tp-item-height));
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  width: 3.25rem;
+}
+
+.yep-time-picker__column::-webkit-scrollbar {
+  display: none;
+}
+
+.yep-time-picker__column:focus-visible {
+  border-radius: var(--radius-md);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.yep-time-picker__item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  height: var(--yep-tp-item-height);
+  justify-content: center;
+  scroll-snap-align: center;
+  width: 100%;
+}
+
+.yep-time-picker__item--active {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.yep-time-picker__sep {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Banda que resalta el centro (el número seleccionado). */
+.yep-time-picker__selection {
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  height: var(--yep-tp-item-height);
+  left: var(--space-2);
+  pointer-events: none;
+  position: absolute;
+  right: var(--space-2);
+  top: calc(var(--space-2) + (var(--yep-tp-visible) - 1) / 2 * var(--yep-tp-item-height));
+}
+
+.yep-time-picker__message {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.yep-time-picker__message--error {
+  color: var(--color-error);
+}

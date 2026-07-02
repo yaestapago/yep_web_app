@@ -7,6 +7,7 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -28,6 +29,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     ReactiveFormsModule,
     RouterLink,
     Button,
+    Checkbox,
     IconButton,
     Input,
     Modal,

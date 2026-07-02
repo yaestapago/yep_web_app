@@ -1,0 +1,95 @@
+:host {
+  display: inline-flex;
+}
+
+.yep-toggle {
+  cursor: pointer;
+  font: inherit;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast),
+    opacity var(--motion-fast);
+}
+
+.yep-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ---------- appearance: switch ---------- */
+.yep-toggle--switch {
+  align-items: center;
+  background: var(--color-border);
+  border: 0;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 2px;
+  width: 44px;
+}
+
+.yep-toggle--switch.yep-toggle--on {
+  background: var(--color-primary);
+}
+
+.yep-toggle__thumb {
+  background: #ffffff;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-xs);
+  height: 20px;
+  transition: transform var(--motion-fast);
+  width: 20px;
+}
+
+.yep-toggle--switch.yep-toggle--on .yep-toggle__thumb {
+  transform: translateX(20px);
+}
+
+/* ---------- appearance: button (píldora de filtro) ---------- */
+.yep-toggle--button {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  gap: var(--space-2);
+  line-height: var(--line-height-snug);
+  padding: var(--space-1) var(--space-3);
+}
+
+.yep-toggle--button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+}
+
+.yep-toggle--button.yep-toggle--on {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  color: var(--color-text-primary);
+}
+
+/* Estado desmarcado: atenuado para diferenciarlo del activo. */
+.yep-toggle--button:not(.yep-toggle--on) {
+  opacity: 0.6;
+}
+
+.yep-toggle--button:not(.yep-toggle--on):hover:not(:disabled) {
+  opacity: 1;
+}
+
+.yep-toggle__lead:empty {
+  display: none;
+}
+
+.yep-toggle__lead {
+  align-items: center;
+  display: inline-flex;
+}
+
+.yep-toggle__label {
+  white-space: nowrap;
+}

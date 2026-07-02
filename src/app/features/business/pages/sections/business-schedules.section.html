@@ -39,16 +39,6 @@
     </div>
   }
 
-  @if (locations().length > 1) {
-    <div class="schedule-filter">
-      <yep-select
-        label="Sede"
-        [options]="filterOptions()"
-        (selectionChange)="onLocationFilter($event)"
-      />
-    </div>
-  }
-
   @if (loading()) {
     <div class="loading-row">
       <svg lucideLoaderCircle aria-hidden="true"></svg>
@@ -65,13 +55,39 @@
       <p>Crea una sede antes de programar turnos.</p>
     </div>
   } @else {
-    @if (legend().length > 0) {
-      <div class="legend">
-        @for (entry of legend(); track entry.userId) {
-          <span class="legend__item">
-            <span class="legend__dot" [style.background]="entry.color"></span>
-            {{ entry.label }}
-          </span>
+    @if (locationToggles().length > 1 || legend().length > 0) {
+      <div class="grid-filters">
+        @if (locationToggles().length > 1) {
+          <div class="grid-filters__group">
+            <span class="grid-filters__label">Sedes</span>
+            <div class="grid-filters__toggles">
+              @for (loc of locationToggles(); track loc.id) {
+                <yep-toggle
+                  appearance="button"
+                  [pressed]="loc.active"
+                  [label]="loc.name"
+                  (toggled)="toggleLocation(loc.id)"
+                />
+              }
+            </div>
+          </div>
+        }
+        @if (legend().length > 0) {
+          <div class="grid-filters__group">
+            <span class="grid-filters__label">Empleados</span>
+            <div class="grid-filters__toggles">
+              @for (entry of legend(); track entry.userId) {
+                <yep-toggle
+                  appearance="button"
+                  [pressed]="entry.active"
+                  [label]="entry.label"
+                  (toggled)="toggleEmployee(entry.userId)"
+                >
+                  <span toggleLead class="legend__dot" [style.background]="entry.color"></span>
+                </yep-toggle>
+              }
+            </div>
+          </div>
         }
       </div>
     }
@@ -187,25 +203,24 @@
       [options]="memberOptions()"
       [error]="isInvalid('userId') ? 'Selecciona un empleado' : ''"
     />
-    <yep-select
-      formControlName="days"
-      [label]="editingShiftId() ? 'Día' : 'Días (se repite cada semana)'"
-      [multiple]="true"
-      [options]="dayOptions"
-      [error]="isInvalid('days') ? 'Selecciona al menos un día' : ''"
-    />
+    <div class="shift-field">
+      <span class="shift-field__label">
+        {{ editingShiftId() ? 'Día' : 'Días (se repite cada semana)' }}
+      </span>
+      <yep-day-picker formControlName="days" />
+      @if (isInvalid('days')) {
+        <small class="field-error">Selecciona al menos un día</small>
+      }
+    </div>
     <div class="form-grid form-grid--2">
-      <label class="time-field">
-        <span class="time-field__label">Hora inicio</span>
-        <input class="time-field__input" type="time" formControlName="startTime" />
-      </label>
-      <label class="time-field">
-        <span class="time-field__label">Hora fin</span>
-        <input class="time-field__input" type="time" formControlName="endTime" />
-      </label>
+      <yep-time-picker formControlName="startTime" label="Hora inicio" />
+      <yep-time-picker formControlName="endTime" label="Hora fin" />
     </div>
     @if (shiftForm.errors?.['endBeforeStart']) {
       <div class="field-error">La hora de fin debe ser mayor a la de inicio.</div>
+    }
+    @if (overlapError()) {
+      <div class="field-error" role="alert">{{ overlapError() }}</div>
     }
   </form>
 

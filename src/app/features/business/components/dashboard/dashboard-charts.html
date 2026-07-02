@@ -81,17 +81,16 @@
   <ul class="catalog">
     @for (item of catalog; track item.id) {
       <li class="catalog__item">
-        <label class="catalog__label">
-          <input
-            type="checkbox"
-            [checked]="isDraftSelected(item.id)"
-            (change)="toggleDraft(item.id)"
-          />
+        <yep-checkbox
+          class="catalog__label"
+          [checked]="isDraftSelected(item.id)"
+          (checkedChange)="toggleDraft(item.id)"
+        >
           <span class="catalog__text">
             <span class="catalog__title">{{ item.title }}</span>
             <span class="catalog__desc">{{ item.description }}</span>
           </span>
-        </label>
+        </yep-checkbox>
       </li>
     }
   </ul>

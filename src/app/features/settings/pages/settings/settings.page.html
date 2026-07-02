@@ -74,18 +74,13 @@
                 <span class="toggle-label">{{ toggle.label }}</span>
                 <span class="toggle-desc">{{ toggle.description }}</span>
               </div>
-              <button
-                type="button"
-                class="switch"
-                role="switch"
-                [class.on]="notifications()[toggle.key]"
-                [attr.aria-checked]="notifications()[toggle.key]"
-                [attr.aria-label]="toggle.label"
+              <yep-toggle
+                appearance="switch"
+                [pressed]="notifications()[toggle.key]"
+                [ariaLabel]="toggle.label"
                 [disabled]="savingNotifications()"
-                (click)="toggleNotification(toggle.key)"
-              >
-                <span class="switch-thumb"></span>
-              </button>
+                (toggled)="toggleNotification(toggle.key)"
+              />
             </li>
           }
         </ul>

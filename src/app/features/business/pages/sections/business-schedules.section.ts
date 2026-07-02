@@ -32,9 +32,12 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type { ApprovedMember, DayOfWeek, Shift } from '../../../../shared/models/schedule.models';
 import { Button } from '../../../../shared/ui/button/button';
+import { DayPicker } from '../../../../shared/ui/day-picker/day-picker';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { TimePicker } from '../../../../shared/ui/time-picker/time-picker';
+import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   addWeeks,
@@ -64,6 +67,18 @@ interface LegendEntry {
   userId: string;
   label: string;
   color: string;
+  active: boolean;
+}
+
+interface LocationToggle {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+interface OverlapConflict {
+  day: DayOfWeek;
+  existing: Shift;
 }
 
 const DAY_LABELS: Record<number, string> = {
@@ -136,6 +151,35 @@ function atLeastOneDay(control: AbstractControl): ValidationErrors | null {
   return Array.isArray(value) && value.length > 0 ? null : { required: true };
 }
 
+/** Dos rangos "HH:mm" se cruzan si empiezan antes de que el otro termine. */
+function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
+  return toMinutes(aStart) < toMinutes(bEnd) && toMinutes(bStart) < toMinutes(aEnd);
+}
+
+/**
+ * Detecta solapamientos del MISMO empleado (en cualquier sede) para los días y el rango
+ * horario que se van a guardar, contra los turnos existentes. `excludeId` omite el turno
+ * que se está editando.
+ */
+function findOverlaps(
+  candidate: { userId: string; startTime: string; endTime: string; days: readonly DayOfWeek[] },
+  existing: readonly Shift[],
+  excludeId: string | null,
+): OverlapConflict[] {
+  const conflicts: OverlapConflict[] = [];
+  for (const day of candidate.days) {
+    for (const shift of existing) {
+      if (shift.id === excludeId || shift.userId !== candidate.userId || shift.dayOfWeek !== day) {
+        continue;
+      }
+      if (rangesOverlap(candidate.startTime, candidate.endTime, shift.startTime, shift.endTime)) {
+        conflicts.push({ day, existing: shift });
+      }
+    }
+  }
+  return conflicts;
+}
+
 /**
  * Horarios del negocio: tablero semanal de turnos por (sede, empleado).
  * Es una plantilla semanal recurrente (no eventos con fecha). El owner ve a
@@ -147,8 +191,11 @@ function atLeastOneDay(control: AbstractControl): ValidationErrors | null {
   imports: [
     ReactiveFormsModule,
     Button,
+    DayPicker,
     Modal,
     Select,
+    TimePicker,
+    Toggle,
     LucideChevronLeft,
     LucideChevronRight,
     LucideLoaderCircle,
@@ -189,8 +236,12 @@ export class BusinessSchedulesSection implements OnInit {
   readonly backendPending = signal(false);
   readonly shiftOpen = signal(false);
   readonly editingShiftId = signal<string | null>(null);
-  readonly selectedLocationId = signal<string>('all');
+  readonly overlapError = signal('');
   readonly selectedUserId = signal<string | null>(null);
+
+  /** Filtros de grilla: sedes/empleados ocultados con los toggles (por defecto todo visible). */
+  readonly hiddenLocationIds = signal<Set<string>>(new Set());
+  readonly hiddenUserIds = signal<Set<string>>(new Set());
 
   /** Lunes de la semana visible en el calendario (la plantilla se proyecta sobre ella). */
   readonly visibleWeekStart = signal<Date>(startOfWeek(new Date()));
@@ -220,11 +271,6 @@ export class BusinessSchedulesSection implements OnInit {
     return userId ? this.employeeLabelForUser(userId) : '';
   });
 
-  readonly dayOptions: SelectOption[] = [1, 2, 3, 4, 5, 6, 0].map((day) => ({
-    id: day,
-    label: DAY_LABELS[day],
-  }));
-
   readonly locationOptions = computed<SelectOption[]>(() =>
     this.locations().map((location) => ({
       id: location.id,
@@ -232,10 +278,15 @@ export class BusinessSchedulesSection implements OnInit {
     })),
   );
 
-  readonly filterOptions = computed<SelectOption[]>(() => [
-    { id: 'all', label: 'Todas las sedes' },
-    ...this.locationOptions(),
-  ]);
+  /** Sedes como toggles marcables para filtrar la grilla. */
+  readonly locationToggles = computed<LocationToggle[]>(() => {
+    const hidden = this.hiddenLocationIds();
+    return this.locations().map((location) => ({
+      id: location.id,
+      name: location.name,
+      active: !hidden.has(location.id),
+    }));
+  });
 
   readonly memberOptions = computed<SelectOption[]>(() =>
     this.members().map((member) => ({
@@ -245,12 +296,14 @@ export class BusinessSchedulesSection implements OnInit {
   );
 
   readonly visibleShifts = computed<Shift[]>(() => {
-    const location = this.selectedLocationId();
     const userId = this.selectedUserId();
+    const hiddenUsers = this.hiddenUserIds();
+    const hiddenLocations = this.hiddenLocationIds();
     return this.shifts().filter(
       (shift) =>
-        (location === 'all' || shift.locationId === location) &&
-        (!userId || shift.userId === userId),
+        (!userId || shift.userId === userId) &&
+        !hiddenUsers.has(shift.userId) &&
+        !hiddenLocations.has(shift.locationId),
     );
   });
 
@@ -260,12 +313,21 @@ export class BusinessSchedulesSection implements OnInit {
     return new Map(ids.map((id, i) => [id, PALETTE[i % PALETTE.length]]));
   });
 
+  /**
+   * Empleados con turnos, como toggles de filtro. Deriva de todos los turnos (respetando
+   * sólo el filtro por query-param), NO de `visibleShifts`, para que un empleado ocultado
+   * con su toggle siga apareciendo y se pueda volver a mostrar.
+   */
   readonly legend = computed<LegendEntry[]>(() => {
-    const ids = Array.from(new Set(this.visibleShifts().map((s) => s.userId))).sort();
+    const selected = this.selectedUserId();
+    const hidden = this.hiddenUserIds();
+    const source = this.shifts().filter((s) => !selected || s.userId === selected);
+    const ids = Array.from(new Set(source.map((s) => s.userId))).sort();
     return ids.map((userId) => ({
       userId,
       label: this.employeeLabelForUser(userId),
       color: this.colorByUser().get(userId) ?? PALETTE[0],
+      active: !hidden.has(userId),
     }));
   });
 
@@ -371,9 +433,30 @@ export class BusinessSchedulesSection implements OnInit {
     this.selectedUserId.set(null);
   }
 
-  onLocationFilter(event: SelectOption | SelectOption[] | null): void {
-    const option = Array.isArray(event) ? event[0] : event;
-    this.selectedLocationId.set(option ? String(option.id) : 'all');
+  /** Marca/desmarca una sede en el filtro de la grilla. */
+  toggleLocation(locationId: string): void {
+    this.hiddenLocationIds.update((hidden) => {
+      const next = new Set(hidden);
+      if (next.has(locationId)) {
+        next.delete(locationId);
+      } else {
+        next.add(locationId);
+      }
+      return next;
+    });
+  }
+
+  /** Marca/desmarca un empleado en el filtro de la grilla. */
+  toggleEmployee(userId: string): void {
+    this.hiddenUserIds.update((hidden) => {
+      const next = new Set(hidden);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
   }
 
   /** Click en una franja vacía del día: abre "Nuevo turno" prellenado. */
@@ -399,6 +482,8 @@ export class BusinessSchedulesSection implements OnInit {
   openShift(shift?: Shift): void {
     this.error.set('');
     this.success.set('');
+    this.overlapError.set('');
+    const userCtrl = this.shiftForm.controls.userId;
     if (shift) {
       this.editingShiftId.set(shift.id);
       this.shiftForm.reset({
@@ -408,6 +493,8 @@ export class BusinessSchedulesSection implements OnInit {
         startTime: shift.startTime,
         endTime: shift.endTime,
       });
+      // Al editar, el empleado no puede cambiarse (el turno pertenece a esa persona).
+      userCtrl.disable({ emitEvent: false });
     } else {
       this.editingShiftId.set(null);
       this.shiftForm.reset({
@@ -417,6 +504,7 @@ export class BusinessSchedulesSection implements OnInit {
         startTime: '',
         endTime: '',
       });
+      userCtrl.enable({ emitEvent: false });
     }
     this.shiftOpen.set(true);
   }
@@ -458,6 +546,20 @@ export class BusinessSchedulesSection implements OnInit {
     };
     const days = raw.days;
     const editingId = this.editingShiftId();
+
+    // Validación de solapamiento del mismo empleado (cualquier sede) antes de guardar.
+    const conflicts = findOverlaps(
+      { userId: base.userId, startTime: base.startTime, endTime: base.endTime, days },
+      this.shifts(),
+      editingId,
+    );
+    if (conflicts.length > 0) {
+      this.overlapError.set(this.overlapMessage(conflicts));
+      this.shiftForm.markAllAsTouched();
+      return;
+    }
+
+    this.overlapError.set('');
     this.savingShift.set(true);
     this.error.set('');
 
@@ -504,6 +606,14 @@ export class BusinessSchedulesSection implements OnInit {
       return count > 1 ? `Turno actualizado y ${count - 1} turno(s) creados.` : 'Turno actualizado.';
     }
     return count > 1 ? `${count} turnos creados.` : 'Turno creado.';
+  }
+
+  private overlapMessage(conflicts: OverlapConflict[]): string {
+    const employee = this.employeeLabelForUser(conflicts[0].existing.userId);
+    const details = conflicts
+      .map((c) => `${DAY_LABELS[c.day]} (choca con ${c.existing.startTime}–${c.existing.endTime})`)
+      .join('; ');
+    return `${employee} ya tiene turnos que se solapan: ${details}.`;
   }
 
   deleteEditing(): void {
@@ -622,6 +732,7 @@ export class BusinessSchedulesSection implements OnInit {
   private openShiftPrefilled(day: DayOfWeek, startTime: string, endTime: string): void {
     this.error.set('');
     this.success.set('');
+    this.overlapError.set('');
     this.editingShiftId.set(null);
     this.shiftForm.reset({
       locationId: this.defaultLocation(),
@@ -630,16 +741,18 @@ export class BusinessSchedulesSection implements OnInit {
       startTime,
       endTime,
     });
+    this.shiftForm.controls.userId.enable({ emitEvent: false });
     this.shiftOpen.set(true);
   }
 
   private defaultLocation(): string {
-    const selected = this.selectedLocationId();
-    if (selected !== 'all') {
-      return selected;
-    }
     const locations = this.locations();
-    return locations.length === 1 ? locations[0].id : '';
+    if (locations.length === 1) {
+      return locations[0].id;
+    }
+    // Si el usuario dejó una sola sede visible con los toggles, prellénala.
+    const visible = locations.filter((location) => !this.hiddenLocationIds().has(location.id));
+    return visible.length === 1 ? visible[0].id : '';
   }
 
   private packDay(

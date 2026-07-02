@@ -215,14 +215,11 @@
       } @else {
         <p class="section-subtitle">Sin sedes seleccionadas, el empleado accede a todas.</p>
         @for (location of locations(); track location.id) {
-          <label style="display: flex; gap: var(--space-2); align-items: center">
-            <input
-              type="checkbox"
-              [checked]="selectedLocationIds().includes(location.id)"
-              (change)="toggleLocation(location.id, $any($event.target).checked)"
-            />
-            {{ location.name }}
-          </label>
+          <yep-checkbox
+            [checked]="selectedLocationIds().includes(location.id)"
+            [label]="location.name"
+            (checkedChange)="toggleLocation(location.id, $event)"
+          />
         }
       }
     </div>

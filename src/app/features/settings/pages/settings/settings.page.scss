@@ -230,42 +230,7 @@
   font-size: var(--font-size-xs);
 }
 
-.switch {
-  background: var(--color-border);
-  border: none;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  flex-shrink: 0;
-  height: 24px;
-  padding: 2px;
-  position: relative;
-  transition: background var(--motion-fast);
-  width: 44px;
-}
-
-.switch:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.switch.on {
-  background: var(--color-primary);
-}
-
-.switch-thumb {
-  background: var(--color-surface);
-  border-radius: 50%;
-  box-shadow: var(--shadow-xs);
-  display: block;
-  height: 20px;
-  transform: translateX(0);
-  transition: transform var(--motion-fast);
-  width: 20px;
-}
-
-.switch.on .switch-thumb {
-  transform: translateX(20px);
-}
+/* El interruptor on/off ahora vive en el primitivo reutilizable `yep-toggle`. */
 
 /* Formulario de preferencias generales */
 .general-form {

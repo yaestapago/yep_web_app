@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+.yep-day-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
