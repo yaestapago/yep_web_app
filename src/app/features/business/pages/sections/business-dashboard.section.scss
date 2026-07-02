@@ -116,17 +116,17 @@
 }
 
 .kpi-carousel {
-  flex: 0 0 auto;
+  min-height: 0;
   min-width: 0;
+  overflow: hidden;
   position: relative;
 }
 
 .kpi-row {
   display: grid;
-  flex: 0 0 auto;
   gap: var(--space-2);
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  padding-bottom: var(--space-1);
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  min-width: 0;
 }
 
 .kpi-scroll-btn {
@@ -168,39 +168,41 @@
 }
 
 .kpi {
+  align-content: space-between;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   display: grid;
-  gap: 0.1rem;
+  gap: var(--space-1);
+  min-height: 74px;
   min-width: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2);
 }
 
 .kpi__label {
-  align-items: center;
+  align-items: flex-start;
   color: var(--color-text-secondary);
   display: flex;
+  flex-direction: column;
   font-size: var(--font-size-xxs);
   font-weight: var(--font-weight-semibold);
-  gap: var(--space-1);
+  gap: 0.2rem;
   letter-spacing: 0.02em;
   overflow: hidden;
-  text-overflow: ellipsis;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .kpi__label svg {
   color: var(--color-secondary);
   flex: 0 0 auto;
-  height: 13px;
-  width: 13px;
+  height: 14px;
+  width: 14px;
 }
 
 .kpi__value {
-  font-size: clamp(var(--font-size-lg), 1.35vw, var(--font-size-xl));
+  font-size: clamp(var(--font-size-md), 1.1vw, var(--font-size-lg));
   font-weight: var(--font-weight-extrabold);
   line-height: 1.1;
   overflow: hidden;
@@ -237,18 +239,18 @@
 
 .grid--with-charts {
   grid-template-areas:
-    'charts charts charts charts charts charts charts charts status status status status'
+    'insights insights insights insights insights insights insights insights status status status status'
     'events events events events transactions transactions transactions transactions transactions transactions transactions transactions';
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: clamp(180px, 24vh, 238px) minmax(0, 1fr);
+  grid-template-rows: clamp(320px, 36vh, 430px) minmax(0, 1fr);
 }
 
 .grid--no-charts {
   grid-template-areas:
-    'charts status'
+    'insights status'
     'events transactions';
-  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.6fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+  grid-template-rows: clamp(260px, 30vh, 360px) minmax(0, 1fr);
 }
 
 .grid--no-charts .grid__charts,
@@ -256,8 +258,17 @@
   align-self: start;
 }
 
+.grid__insights {
+  display: grid;
+  gap: var(--space-3);
+  grid-area: insights;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
 .grid__charts {
-  grid-area: charts;
+  min-height: 0;
 }
 
 .grid__status {
@@ -278,28 +289,19 @@
    proportions so status does not squeeze the data lists. */
 @media (max-width: 1280px) {
   .kpi-row {
-    grid-auto-columns: minmax(156px, 22vw);
-    grid-auto-flow: column;
-    grid-template-columns: none;
-    overflow-x: auto;
-    padding-bottom: var(--space-2);
-    scroll-snap-type: x proximity;
-  }
-
-  .kpi {
-    scroll-snap-align: start;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
   }
 
   .grid--with-charts {
     grid-template-areas:
-      'charts status'
+      'insights status'
       'events transactions';
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.78fr);
-    grid-template-rows: clamp(180px, 22vh, 220px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.78fr);
+    grid-template-rows: clamp(320px, 35vh, 400px) minmax(0, 1fr);
   }
 
   .grid--no-charts {
-    grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.4fr);
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.8fr);
   }
 }
 
@@ -314,12 +316,12 @@
   .grid--with-charts,
   .grid--no-charts {
     grid-template-areas:
-      'charts status'
+      'insights status'
       'events events'
       'transactions transactions';
-    grid-template-columns: minmax(0, 1.65fr) minmax(220px, 0.9fr);
+    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.82fr);
     grid-template-rows:
-      minmax(220px, auto)
+      minmax(300px, auto)
       minmax(420px, auto)
       minmax(460px, auto);
   }
@@ -330,7 +332,7 @@
 
   .grid--no-charts {
     grid-template-rows:
-      auto
+      minmax(300px, auto)
       minmax(420px, auto)
       minmax(460px, auto);
   }
@@ -355,13 +357,13 @@
   }
 
   .kpi-row {
-    grid-auto-columns: minmax(148px, 72vw);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .grid--with-charts,
   .grid--no-charts {
     grid-template-areas:
-      'charts'
+      'insights'
       'status'
       'events'
       'transactions';
@@ -378,7 +380,7 @@
 
 @media (max-width: 560px) {
   .kpi-row {
-    grid-auto-columns: minmax(150px, 82vw);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .grid {
