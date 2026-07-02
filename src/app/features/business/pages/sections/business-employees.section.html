@@ -1,0 +1,232 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Empleados</h2>
+      <p class="section-subtitle">
+        Miembros aprobados de este negocio. Abre los horarios de cada empleado para programar
+        sus turnos.
+      </p>
+    </div>
+    @if (canManage()) {
+      <div class="list-card__actions">
+        <yep-button variant="ghost" size="sm" (clicked)="openInvite()">
+          <svg lucideClipboardCopy aria-hidden="true"></svg>
+          Invitar con código
+        </yep-button>
+        <yep-button size="sm" (clicked)="openAdd()">
+          <svg lucideUserPlus aria-hidden="true"></svg>
+          Agregar usuario
+        </yep-button>
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando empleados…
+    </div>
+  } @else if (message()) {
+    <div class="empty-state">
+      <h3>No disponible</h3>
+      <p>{{ message() }}</p>
+    </div>
+  } @else if (members().length === 0) {
+    <div class="empty-state">
+      <h3>Sin empleados</h3>
+      <p>Aprueba solicitudes de acceso para ver empleados aquí.</p>
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (member of members(); track member.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">{{ employeeLabel(member) }}</h3>
+            <span class="list-card__meta">
+              {{ roleLabel(member) }}@if (contactLabel(member)) { · {{ contactLabel(member) }} }
+            </span>
+            <span class="list-card__meta">{{ locationNames(member) }}</span>
+          </div>
+          <div class="list-card__actions">
+            <a
+              [routerLink]="scheduleLink()"
+              [queryParams]="{ userId: member.userId ?? member.id }"
+              title="Ver horarios"
+            >
+              <yep-button variant="secondary" size="sm" [title]="'Ver horarios'">
+                <svg lucideCalendarClock aria-label="Ver horarios"></svg>
+              </yep-button>
+            </a>
+            @if (canManage()) {
+              <yep-icon-button action="edit" (clicked)="openEdit(member)" />
+              <yep-icon-button
+                action="delete"
+                label="Quitar"
+                [loading]="actingId() === member.id"
+                (clicked)="remove(member)"
+              />
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>
+
+<yep-modal
+  [open]="inviteOpen()"
+  title="Agregar o invitar usuario"
+  subtitle="Comparte el código, el link o el QR para que el usuario se registre como staff."
+  size="lg"
+  (closeRequested)="closeInvite()"
+>
+  <div class="invite-grid">
+    <div class="info-cell">
+      <span class="info-label">Código para compartir</span>
+      <span class="info-value code-value">
+        <code class="code-chip">{{ shareCode() }}</code>
+        <button
+          type="button"
+          class="code-copy"
+          (click)="copyCode()"
+          [attr.aria-label]="copied() ? 'Código copiado' : 'Copiar código'"
+          [title]="copied() ? 'Copiado' : 'Copiar'"
+        >
+          @if (copied()) {
+            <svg lucideClipboardCheck aria-hidden="true"></svg>
+          } @else {
+            <svg lucideClipboardCopy aria-hidden="true"></svg>
+          }
+        </button>
+      </span>
+      <span class="info-hint">Compártelo con quien quiera unirse a este negocio.</span>
+    </div>
+
+    <div class="info-cell">
+      <span class="info-label">Link de registro staff</span>
+      <span class="info-value code-value code-value--link">
+        <code class="code-chip code-chip--link">{{ registrationPath() }}</code>
+        <button
+          type="button"
+          class="code-copy code-copy--wide"
+          (click)="copyRegistrationLink()"
+          [attr.aria-label]="linkCopied() ? 'Link copiado' : 'Copiar link de registro'"
+          [title]="linkCopied() ? 'Link copiado' : 'Copiar link de registro'"
+        >
+          @if (linkCopied()) {
+            <svg lucideClipboardCheck aria-hidden="true"></svg>
+            <span>Copiado</span>
+          } @else {
+            <svg lucideClipboardCopy aria-hidden="true"></svg>
+            <span>Copiar link</span>
+          }
+        </button>
+      </span>
+      <span class="info-hint">Envíalo a quien deba registrarse como staff.</span>
+    </div>
+  </div>
+
+  <div class="qr-panel">
+    <div class="qr-panel__body">
+      <span class="info-label">QR dinámico</span>
+      <span class="info-hint">Escanearlo abre el link de registro actual para {{ businessName() }}.</span>
+    </div>
+    <div class="qr-panel__code" aria-live="polite">
+      @if (qrDataUrl()) {
+        <img [src]="qrDataUrl()" alt="QR para registrar staff" width="220" height="220" />
+      } @else if (qrError()) {
+        <span class="field-error">{{ qrError() }}</span>
+      } @else {
+        <div class="loading-row loading-row--compact">
+          <svg lucideLoaderCircle aria-hidden="true"></svg>
+          Generando QR...
+        </div>
+      }
+    </div>
+  </div>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeInvite()">Cerrar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="addOpen()"
+  title="Agregar usuario"
+  subtitle="Si el usuario ya existe queda aprobado; si no, se crea una invitación pendiente."
+  [loading]="savingAdd()"
+  (closeRequested)="closeAdd()"
+>
+  <form [formGroup]="addForm" (ngSubmit)="submitAdd()" class="form-grid">
+    <yep-input
+      formControlName="email"
+      label="Correo (opcional si das la cédula)"
+      type="email"
+      placeholder="persona@correo.com"
+      [error]="isAddInvalid('email') ? 'Correo inválido' : ''"
+    />
+    <yep-input
+      formControlName="identificationNumber"
+      label="Número de identificación (opcional si das el correo)"
+      placeholder="Cédula"
+    />
+    <yep-select
+      formControlName="role"
+      label="Rol"
+      placeholder="Selecciona un rol"
+      [options]="roleOptions"
+      [required]="true"
+    />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingAdd()" (clicked)="closeAdd()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingAdd()" (clicked)="submitAdd()">Agregar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="editOpen()"
+  title="Editar empleado"
+  subtitle="Cambia el rol y las sedes asignadas."
+  [loading]="savingEdit()"
+  (closeRequested)="closeEdit()"
+>
+  <form [formGroup]="editForm" (ngSubmit)="submitEdit()" class="form-grid">
+    <yep-select
+      formControlName="role"
+      label="Rol"
+      placeholder="Selecciona un rol"
+      [options]="roleOptions"
+      [required]="true"
+    />
+
+    <div class="field full-field">
+      <span class="field-label">Sedes asignadas</span>
+      @if (locations().length === 0) {
+        <p class="section-subtitle">Aún no hay sedes en este negocio.</p>
+      } @else {
+        <p class="section-subtitle">Sin sedes seleccionadas, el empleado accede a todas.</p>
+        @for (location of locations(); track location.id) {
+          <yep-checkbox
+            [checked]="selectedLocationIds().includes(location.id)"
+            [label]="location.name"
+            (checkedChange)="toggleLocation(location.id, $event)"
+          />
+        }
+      }
+    </div>
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingEdit()" (clicked)="closeEdit()">Cancelar</yep-button>
+    <yep-button type="submit" [loading]="savingEdit()" (clicked)="submitEdit()">Guardar cambios</yep-button>
+  </ng-container>
+</yep-modal>

@@ -44,7 +44,26 @@
                 · {{ location.address }}
               }
             </span>
+            <span class="list-card__meta">{{ location.isActive ? 'Activa' : 'Inactiva' }}</span>
           </div>
+          @if (canManage()) {
+            <div class="list-card__actions">
+              <yep-icon-button action="edit" (clicked)="openEdit(location)" />
+              @if (location.isActive) {
+                <yep-icon-button
+                  action="deactivate"
+                  [loading]="actingId() === location.id"
+                  (clicked)="deactivate(location)"
+                />
+              } @else {
+                <yep-icon-button
+                  action="activate"
+                  [loading]="actingId() === location.id"
+                  (clicked)="activate(location)"
+                />
+              }
+            </div>
+          }
         </article>
       }
     </div>
@@ -53,9 +72,8 @@
 
 <yep-modal
   [open]="locationOpen()"
-  title="Nueva sede"
+  [title]="modalTitle()"
   [loading]="savingLocation()"
-  [dirty]="locationForm.dirty"
   (closeRequested)="closeLocation()"
 >
   <form [formGroup]="locationForm" (ngSubmit)="saveLocation()" class="form-grid">
@@ -80,7 +98,7 @@
       >Cancelar</yep-button
     >
     <yep-button type="submit" [loading]="savingLocation()" (clicked)="saveLocation()"
-      >Crear sede</yep-button
+      >{{ editingId() ? 'Guardar cambios' : 'Crear sede' }}</yep-button
     >
   </ng-container>
 </yep-modal>

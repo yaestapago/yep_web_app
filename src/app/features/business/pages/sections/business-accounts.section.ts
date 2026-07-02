@@ -1,11 +1,4 @@
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,8 +7,12 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import type {
   BankAccount,
   BankAccountType,
@@ -32,8 +29,11 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     ReactiveFormsModule,
     RouterLink,
     Button,
+    Checkbox,
+    IconButton,
     Input,
     Modal,
+    Select,
     LucideLoaderCircle,
     LucidePlus,
     LucideRefreshCw,
@@ -47,6 +47,7 @@ export class BusinessAccountsSection implements OnInit {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notifications = inject(NotificationModalService);
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly bankAccounts = signal<BankAccount[]>([]);
@@ -56,14 +57,33 @@ export class BusinessAccountsSection implements OnInit {
   readonly loading = signal(false);
   readonly creating = signal(false);
   readonly actingId = signal<string | null>(null);
+  readonly editingId = signal<string | null>(null);
   readonly error = signal('');
   readonly success = signal('');
   readonly modalOpen = signal(false);
+
+  readonly modalTitle = computed(() =>
+    this.editingId() ? 'Editar cuenta bancaria' : 'Nueva cuenta bancaria',
+  );
+  readonly accountTypeOptions: readonly SelectOption[] = [
+    { id: 'wallet', label: 'Billetera' },
+    { id: 'savings', label: 'Ahorros' },
+    { id: 'checking', label: 'Corriente' },
+    { id: 'other', label: 'Otro' },
+  ];
+  readonly currencyOptions: readonly SelectOption[] = [{ id: 'COP', label: 'COP' }];
 
   readonly canManage = computed(
     () =>
       this.session.activeMembership()?.role === 'account_owner' ||
       this.session.user()?.globalRole === 'account_su',
+  );
+
+  readonly bankOptions = computed<SelectOption[]>(() =>
+    this.banks().map((bank) => ({
+      id: bank.code,
+      label: bank.name,
+    })),
   );
 
   readonly form = this.fb.group({
@@ -135,6 +155,7 @@ export class BusinessAccountsSection implements OnInit {
   openCreate(): void {
     this.error.set('');
     this.success.set('');
+    this.editingId.set(null);
     this.selectedLocationIds.set([]);
     this.form.reset({
       bankId: '',
@@ -144,13 +165,53 @@ export class BusinessAccountsSection implements OnInit {
       accountType: 'wallet',
       currency: 'COP',
     });
+    // Al crear, el número de cuenta es obligatorio.
+    this.form.controls.accountNumber.setValidators([
+      Validators.required,
+      Validators.maxLength(80),
+    ]);
+    this.form.controls.accountNumber.updateValueAndValidity();
     this.modalOpen.set(true);
   }
 
-  closeModal(): void {
+  openEdit(bankAccount: BankAccount): void {
+    this.error.set('');
+    this.success.set('');
+    this.editingId.set(bankAccount.id);
+    this.selectedLocationIds.set([...bankAccount.locationIds]);
+    this.form.reset({
+      bankId: bankAccount.bankId,
+      accountNumber: '',
+      displayName: bankAccount.displayName ?? '',
+      holderName: bankAccount.holderName ?? '',
+      accountType: bankAccount.accountType ?? 'wallet',
+      currency: bankAccount.currency,
+    });
+    // Al editar no reingresamos el número (sólo conocemos los últimos 4);
+    // se envía sólo si el usuario escribe uno nuevo.
+    this.form.controls.accountNumber.setValidators([Validators.maxLength(80)]);
+    this.form.controls.accountNumber.updateValueAndValidity();
+    this.modalOpen.set(true);
+  }
+
+  async closeModal(): Promise<void> {
     if (this.creating()) {
       return;
     }
+
+    if (this.form.dirty) {
+      const confirmed = await this.notifications.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en la cuenta bancaria.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.modalOpen.set(false);
   }
 
@@ -160,7 +221,7 @@ export class BusinessAccountsSection implements OnInit {
     );
   }
 
-  create(): void {
+  save(): void {
     const businessId = this.businessId();
     const locationIds = this.selectedLocationIds();
 
@@ -173,6 +234,12 @@ export class BusinessAccountsSection implements OnInit {
       if (locationIds.length === 0) {
         this.error.set('Selecciona al menos una sede para la cuenta.');
       }
+      return;
+    }
+
+    const editingId = this.editingId();
+    if (editingId) {
+      this.updateAccount(businessId, editingId, locationIds);
       return;
     }
 
@@ -204,12 +271,57 @@ export class BusinessAccountsSection implements OnInit {
       });
   }
 
+  private updateAccount(
+    businessId: string,
+    bankAccountId: string,
+    locationIds: string[],
+  ): void {
+    const raw = this.form.getRawValue();
+    const accountNumber = raw.accountNumber.trim();
+    this.creating.set(true);
+    this.error.set('');
+
+    this.businessApi
+      .updateBankAccount(businessId, bankAccountId, {
+        bankId: raw.bankId.trim(),
+        // Sólo se reenvía el número si el usuario ingresó uno nuevo.
+        ...(accountNumber ? { accountNumber } : {}),
+        displayName: this.optional(raw.displayName),
+        holderName: this.optional(raw.holderName),
+        accountType: raw.accountType,
+        currency: raw.currency.trim().toUpperCase(),
+        locationIds,
+      })
+      .pipe(
+        finalize(() => this.creating.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.bankAccounts.update((accounts) =>
+            accounts.map((current) =>
+              current.id === response.bankAccount.id ? response.bankAccount : current,
+            ),
+          );
+          this.success.set('Cuenta bancaria actualizada.');
+          this.modalOpen.set(false);
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
   activate(bankAccount: BankAccount): void {
     this.updateStatus(bankAccount, true);
   }
 
-  deactivate(bankAccount: BankAccount): void {
-    if (!confirm('¿Desactivar esta cuenta bancaria?')) {
+  async deactivate(bankAccount: BankAccount): Promise<void> {
+    const confirmed = await this.notifications.confirm({
+      title: 'Desactivar cuenta bancaria',
+      message: 'Esta cuenta dejara de estar disponible para nuevas operaciones.',
+      type: 'warning',
+      confirmText: 'Desactivar',
+    });
+    if (!confirmed) {
       return;
     }
     this.updateStatus(bankAccount, false);

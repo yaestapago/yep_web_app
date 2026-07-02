@@ -40,6 +40,8 @@ export interface CreateBusinessLocationRequest {
   isActive?: boolean;
 }
 
+export type UpdateBusinessLocationRequest = Partial<CreateBusinessLocationRequest>;
+
 export interface BankAccountsResponse {
   bankAccounts: BankAccount[];
 }

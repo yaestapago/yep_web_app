@@ -1,8 +1,12 @@
 import { CurrencyPipe, DOCUMENT } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
   DestroyRef,
+  ElementRef,
+  OnDestroy,
   OnInit,
+  ViewChild,
   computed,
   effect,
   inject,
@@ -13,6 +17,8 @@ import {
   LucideActivity,
   LucideBanknote,
   LucideBell,
+  LucideChevronLeft,
+  LucideChevronRight,
   LucideInbox,
   LucideListChecks,
   LucideShieldCheck,
@@ -25,8 +31,12 @@ import type { BankAccount } from '../../../../shared/models/bank-account.models'
 import type {
   SourceEvent,
   SourceEventFilters,
+  SourceEventQuery,
+  SourceEventStatus,
+  SourceEventType,
 } from '../../../../shared/models/source-event.models';
 import {
+  type ManualReviewDecision,
   PaymentTransaction,
   type TransactionFilters,
 } from '../../../../shared/models/transaction.models';
@@ -51,12 +61,20 @@ import {
   type Semaphore,
 } from '../../components/dashboard/dashboard-status';
 import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard-transactions';
+import { SourceEventDetailModal } from '../../components/dashboard/source-event-detail-modal';
 import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
 import { VerifyTransactionModal } from '../../components/dashboard/verify-transaction-modal';
 
 /** Tamaño de página (cursor) de cada tabla. */
 const EVENTS_PAGE_LIMIT = 50;
 const TRANSACTIONS_PAGE_LIMIT = 100;
+const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
+const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
+  'received',
+  'processing',
+  'processed',
+  'failed',
+];
 
 /**
  * Panel de control del negocio (`/businesses/:businessId/dashboard`). Pantalla
@@ -77,6 +95,8 @@ const TRANSACTIONS_PAGE_LIMIT = 100;
     LucideActivity,
     LucideBanknote,
     LucideBell,
+    LucideChevronLeft,
+    LucideChevronRight,
     LucideInbox,
     LucideListChecks,
     LucideShieldCheck,
@@ -85,13 +105,16 @@ const TRANSACTIONS_PAGE_LIMIT = 100;
     DashboardStatusPanel,
     DashboardEventsPanel,
     DashboardTransactionsPanel,
+    SourceEventDetailModal,
     TransactionDetailModal,
     VerifyTransactionModal,
   ],
   templateUrl: './business-dashboard.section.html',
   styleUrl: './business-dashboard.section.scss',
 })
-export class BusinessDashboardSection implements OnInit {
+export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('kpiScroller') private readonly kpiScroller?: ElementRef<HTMLElement>;
+
   private readonly transactionsApi = inject(TransactionsApiService);
   private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly sourceEventsStream = inject(SourceEventsStreamService);
@@ -103,6 +126,8 @@ export class BusinessDashboardSection implements OnInit {
   private readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
   private readonly document = inject(DOCUMENT);
   private transactionEventsReady = false;
+  private kpiResizeObserver?: ResizeObserver;
+  private kpiScrollRaf: number | null = null;
 
   /**
    * Gráficas visibles u ocultas. Al ocultarlas, el módulo de estado pasa a
@@ -110,12 +135,21 @@ export class BusinessDashboardSection implements OnInit {
    * preferencia se guarda en `localStorage` (SSR-safe vía defaultView).
    */
   private static readonly CHARTS_STORAGE_KEY = 'yep_web.dashboard.chartsVisible';
+  private static readonly STATUS_STORAGE_KEY = 'yep_web.dashboard.statusVisible';
   readonly chartsVisible = signal<boolean>(this.readChartsVisible());
+  readonly statusVisible = signal<boolean>(this.readStatusVisible());
 
   private readonly chartsVisiblePersistEffect = effect(() => {
     const visible = this.chartsVisible();
     this.document.defaultView?.localStorage.setItem(
       BusinessDashboardSection.CHARTS_STORAGE_KEY,
+      visible ? '1' : '0',
+    );
+  });
+  private readonly statusVisiblePersistEffect = effect(() => {
+    const visible = this.statusVisible();
+    this.document.defaultView?.localStorage.setItem(
+      BusinessDashboardSection.STATUS_STORAGE_KEY,
       visible ? '1' : '0',
     );
   });
@@ -144,8 +178,6 @@ export class BusinessDashboardSection implements OnInit {
   readonly txHasMore = computed(() => this.txCursor() !== undefined);
 
   /** Eventos llegados en vivo que encajan en el filtro y esperan ser mostrados. */
-  private readonly newEventsBuffer = signal<SourceEvent[]>([]);
-  readonly newEventsCount = computed(() => this.newEventsBuffer().length);
 
   /** IDs de eventos llegados en vivo y aún no vistos (estilo bandeja). */
   readonly unreadEventIds = signal<Set<string>>(new Set());
@@ -174,6 +206,8 @@ export class BusinessDashboardSection implements OnInit {
   readonly loadingAny = computed(
     () => this.loadingTransactions() || this.loadingEvents() || this.loadingNotifiers(),
   );
+  readonly canScrollKpisLeft = signal(false);
+  readonly canScrollKpisRight = signal(false);
 
   /** Tick para recalcular el estado relativo de notificadores sin recargar. */
   private readonly now = signal(Date.now());
@@ -181,6 +215,7 @@ export class BusinessDashboardSection implements OnInit {
   // --- Operación (verificación) ---
   readonly verifyTarget = signal<PaymentTransaction | null>(null);
   readonly detailTarget = signal<PaymentTransaction | null>(null);
+  readonly eventDetailTarget = signal<SourceEvent | null>(null);
   readonly verifyingId = signal<string | null>(null);
   readonly operationError = signal('');
   readonly operationSuccess = signal('');
@@ -271,6 +306,27 @@ export class BusinessDashboardSection implements OnInit {
       .subscribe((event) => this.onLiveEvent(event));
   }
 
+  ngAfterViewInit(): void {
+    this.scheduleKpiScrollStateUpdate();
+
+    const element = this.kpiScroller?.nativeElement;
+    const ResizeObserverCtor = this.document.defaultView?.ResizeObserver;
+    if (!element || !ResizeObserverCtor) {
+      return;
+    }
+
+    this.kpiResizeObserver = new ResizeObserverCtor(() => this.scheduleKpiScrollStateUpdate());
+    this.kpiResizeObserver.observe(element);
+  }
+
+  ngOnDestroy(): void {
+    this.kpiResizeObserver?.disconnect();
+    if (this.kpiScrollRaf !== null) {
+      this.document.defaultView?.cancelAnimationFrame(this.kpiScrollRaf);
+      this.kpiScrollRaf = null;
+    }
+  }
+
   /**
    * Procesa un evento llegado en vivo. Siempre alimenta la instantánea de
    * métricas (para el semáforo). En la tabla solo se ofrece si encaja en el
@@ -278,44 +334,30 @@ export class BusinessDashboardSection implements OnInit {
    * "N nuevos" (sin saltar la vista del usuario); si no encaja, se ignora.
    */
   private onLiveEvent(event: SourceEvent): void {
+    if (!this.isMoneyReportEvent(event)) {
+      return;
+    }
+
     this.metricsEvents.update((events) => this.upsert(events, event));
     this.now.set(Date.now());
 
     if (!this.matchesEventFilter(event, this.eventFilters())) {
       return;
     }
-    // Ya visible en la tabla (p. ej. tras recargar): solo refrescarlo.
-    if (this.sourceEvents().some((current) => current.id === event.id)) {
-      this.sourceEvents.update((events) => this.upsert(events, event));
-      return;
-    }
-    this.newEventsBuffer.update((buffer) =>
-      buffer.some((current) => current.id === event.id) ? buffer : [event, ...buffer],
-    );
-  }
-
-  /** Funde los eventos en vivo acumulados al tope de la tabla. */
-  flushNewEvents(): void {
-    const buffer = this.newEventsBuffer();
-    if (buffer.length === 0) {
-      return;
-    }
-    this.sourceEvents.update((events) => {
-      const ids = new Set(events.map((e) => e.id));
-      const fresh = buffer.filter((e) => !ids.has(e.id));
-      return [...fresh, ...events];
-    });
+    this.sourceEvents.update((events) => this.upsert(events, event));
     this.unreadEventIds.update((ids) => {
       const next = new Set(ids);
-      buffer.forEach((e) => next.add(e.id));
+      next.add(event.id);
       return next;
     });
-    this.newEventsBuffer.set([]);
     this.now.set(Date.now());
   }
 
   /** ¿El evento encaja en el filtro activo de la tabla de eventos? */
   private matchesEventFilter(event: SourceEvent, filters: SourceEventFilters): boolean {
+    if (!this.isMoneyReportEvent(event)) {
+      return false;
+    }
     if (filters.sourceType && event.sourceType !== filters.sourceType) {
       return false;
     }
@@ -339,6 +381,32 @@ export class BusinessDashboardSection implements OnInit {
     return true;
   }
 
+  private moneyReportQuery(cursor?: string, includeActiveFilters = true): SourceEventQuery {
+    const filters = includeActiveFilters ? this.eventFilters() : {};
+    const query: SourceEventQuery = {
+      ...filters,
+      limit: EVENTS_PAGE_LIMIT,
+      cursor,
+    };
+
+    if (!filters.sourceType) {
+      query.sourceTypes = MONEY_REPORT_SOURCE_TYPES;
+    }
+
+    if (!filters.status) {
+      query.statuses = MONEY_REPORT_STATUSES;
+    }
+
+    return query;
+  }
+
+  private isMoneyReportEvent(event: SourceEvent): boolean {
+    return (
+      MONEY_REPORT_SOURCE_TYPES.includes(event.sourceType) &&
+      MONEY_REPORT_STATUSES.includes(event.status)
+    );
+  }
+
   /** Inserta o reemplaza un evento por id, manteniendo el orden por recientes. */
   private upsert(events: SourceEvent[], event: SourceEvent): SourceEvent[] {
     const index = events.findIndex((current) => current.id === event.id);
@@ -354,11 +422,66 @@ export class BusinessDashboardSection implements OnInit {
     this.chartsVisible.update((visible) => !visible);
   }
 
+  toggleStatus(): void {
+    this.statusVisible.update((visible) => !visible);
+  }
+
+  scrollKpis(direction: 'left' | 'right'): void {
+    const element = this.kpiScroller?.nativeElement;
+    if (!element) {
+      return;
+    }
+
+    const distance = Math.max(180, Math.floor(element.clientWidth * 0.72));
+    element.scrollBy({
+      left: direction === 'left' ? -distance : distance,
+      behavior: 'smooth',
+    });
+    this.scheduleKpiScrollStateUpdate();
+  }
+
+  updateKpiScrollState(): void {
+    this.scheduleKpiScrollStateUpdate();
+  }
+
+  private scheduleKpiScrollStateUpdate(): void {
+    const win = this.document.defaultView;
+    if (!win || this.kpiScrollRaf !== null) {
+      return;
+    }
+
+    this.kpiScrollRaf = win.requestAnimationFrame(() => {
+      this.kpiScrollRaf = null;
+      this.setKpiScrollState();
+    });
+  }
+
+  private setKpiScrollState(): void {
+    const element = this.kpiScroller?.nativeElement;
+    if (!element) {
+      this.canScrollKpisLeft.set(false);
+      this.canScrollKpisRight.set(false);
+      return;
+    }
+
+    const maxScrollLeft = element.scrollWidth - element.clientWidth;
+    const tolerance = 2;
+    this.canScrollKpisLeft.set(element.scrollLeft > tolerance);
+    this.canScrollKpisRight.set(maxScrollLeft - element.scrollLeft > tolerance);
+  }
+
   private readChartsVisible(): boolean {
     const raw = this.document.defaultView?.localStorage.getItem(
       BusinessDashboardSection.CHARTS_STORAGE_KEY,
     );
     // Por defecto visibles; solo se ocultan si el usuario lo guardó así.
+    return raw !== '0';
+  }
+
+  private readStatusVisible(): boolean {
+    const raw = this.document.defaultView?.localStorage.getItem(
+      BusinessDashboardSection.STATUS_STORAGE_KEY,
+    );
     return raw !== '0';
   }
 
@@ -459,10 +582,8 @@ export class BusinessDashboardSection implements OnInit {
     this.eventsError.set('');
     // Al recargar (filtro o refresh) descartamos lo acumulado en vivo: la nueva
     // página ya trae el estado más reciente que encaja en el filtro.
-    this.newEventsBuffer.set([]);
-
     this.sourceEventsApi
-      .list({ ...this.eventFilters(), limit: EVENTS_PAGE_LIMIT })
+      .list(this.moneyReportQuery(undefined, false))
       .pipe(
         finalize(() => this.loadingEvents.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -484,7 +605,7 @@ export class BusinessDashboardSection implements OnInit {
     this.loadingMoreEvents.set(true);
 
     this.sourceEventsApi
-      .list({ ...this.eventFilters(), limit: EVENTS_PAGE_LIMIT, cursor })
+      .list(this.moneyReportQuery(cursor))
       .pipe(
         finalize(() => this.loadingMoreEvents.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -511,7 +632,7 @@ export class BusinessDashboardSection implements OnInit {
       });
 
     this.sourceEventsApi
-      .list({ limit: EVENTS_PAGE_LIMIT })
+      .list(this.moneyReportQuery())
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.metricsEvents.set(response.sourceEvents),
@@ -550,6 +671,15 @@ export class BusinessDashboardSection implements OnInit {
     this.detailTarget.set(null);
   }
 
+  openEventDetail(event: SourceEvent): void {
+    this.markEventSeen(event.id);
+    this.eventDetailTarget.set(event);
+  }
+
+  closeEventDetail(): void {
+    this.eventDetailTarget.set(null);
+  }
+
   askVerify(transaction: PaymentTransaction): void {
     this.operationError.set('');
     this.operationSuccess.set('');
@@ -561,12 +691,23 @@ export class BusinessDashboardSection implements OnInit {
   }
 
   confirmVerify(transaction: PaymentTransaction): void {
+    this.submitManualDecision(transaction, 'confirmed');
+  }
+
+  rejectVerify(transaction: PaymentTransaction): void {
+    this.submitManualDecision(transaction, 'rejected');
+  }
+
+  private submitManualDecision(
+    transaction: PaymentTransaction,
+    decision: ManualReviewDecision,
+  ): void {
     this.verifyingId.set(transaction.id);
     this.operationError.set('');
     this.operationSuccess.set('');
 
     this.transactionsApi
-      .runVerification(transaction.id)
+      .manualDecision(transaction.id, { decision })
       .pipe(
         finalize(() => this.verifyingId.set(null)),
         takeUntilDestroyed(this.destroyRef),
@@ -579,7 +720,9 @@ export class BusinessDashboardSection implements OnInit {
             ),
           );
           this.verifyTarget.set(null);
-          this.operationSuccess.set('Verificación registrada.');
+          this.operationSuccess.set(
+            decision === 'confirmed' ? 'Pago confirmado.' : 'Transacción rechazada.',
+          );
         },
         error: (error) => this.operationError.set(httpErrorMessage(error)),
       });

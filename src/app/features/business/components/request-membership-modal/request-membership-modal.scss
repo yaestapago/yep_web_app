@@ -1,0 +1,29 @@
+.request-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.lookup-row {
+  align-items: start;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.lookup-row__field {
+  min-width: 0;
+}
+
+.lookup-row__button {
+  margin-top: calc(var(--font-size-sm) * var(--line-height-snug) + var(--space-2));
+}
+
+@media (max-width: 520px) {
+  .lookup-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lookup-row__button {
+    margin-top: 0;
+  }
+}

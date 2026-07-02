@@ -1,14 +1,25 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LucideChevronRight, LucideMapPin, LucidePlus } from '@lucide/angular';
+import { LucideChevronRight, LucideMapPin, LucidePlus, LucideUserPlus } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
+import { Button } from '../../../../shared/ui/button/button';
 import { CreateBusinessModal } from '../../components/create-business-modal/create-business-modal';
+import { RequestMembershipModal } from '../../components/request-membership-modal/request-membership-modal';
 
 @Component({
   selector: 'app-business-list-page',
-  imports: [RouterLink, CreateBusinessModal, LucideChevronRight, LucideMapPin, LucidePlus],
+  imports: [
+    RouterLink,
+    Button,
+    CreateBusinessModal,
+    RequestMembershipModal,
+    LucideChevronRight,
+    LucideMapPin,
+    LucidePlus,
+    LucideUserPlus,
+  ],
   templateUrl: './business-list.page.html',
   styleUrl: './business-list.page.scss',
 })
@@ -20,6 +31,7 @@ export class BusinessListPage {
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
   readonly hasBusinesses = computed(() => this.memberships().length > 0);
   readonly createOpen = signal(false);
+  readonly requestOpen = signal(false);
 
   openCreate(): void {
     this.createOpen.set(true);
@@ -34,6 +46,14 @@ export class BusinessListPage {
     void this.router.navigate(['/businesses', businessId, 'business-data']);
   }
 
+  openRequest(): void {
+    this.requestOpen.set(true);
+  }
+
+  closeRequest(): void {
+    this.requestOpen.set(false);
+  }
+
   businessName(membership: BusinessMembership): string {
     return membership.businessAccount?.name?.trim() || 'Negocio sin nombre';
   }
@@ -43,7 +63,7 @@ export class BusinessListPage {
     if (!account) {
       return '';
     }
-    return [account.city, account.address].filter(Boolean).join(' · ');
+    return [account.cityName, account.departmentName, account.address].filter(Boolean).join(' · ');
   }
 
   roleLabel(membership: BusinessMembership): string {

@@ -1,0 +1,88 @@
+<yep-modal
+  [open]="open()"
+  title="Unirme a un negocio"
+  subtitle="Ingresa el código que te compartió el dueño del negocio y elige el rol. Un owner debe aprobar la solicitud."
+  [loading]="saving() || searching()"
+  (closeRequested)="close()"
+>
+  @if (error()) {
+    <div class="field-error" role="alert" style="color: var(--color-error)">{{ error() }}</div>
+  }
+
+  @if (success()) {
+    <div role="status" style="color: var(--color-success); display: grid; gap: var(--space-2)">
+      <p>{{ success() }}</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()" class="request-form">
+      <div class="lookup-row">
+        <div class="lookup-row__field">
+          <yep-input
+            formControlName="code"
+            label="Código del negocio"
+            hint="Los últimos caracteres del ID (mínimo 6). Lo comparte el propietario."
+            [error]="isInvalid('code') ? 'Ingresa al menos 6 caracteres' : ''"
+          />
+        </div>
+        <yep-button
+          variant="secondary"
+          class="lookup-row__button"
+          [loading]="searching()"
+          [disabled]="saving()"
+          (clicked)="search()"
+          >Buscar</yep-button
+        >
+      </div>
+
+      @if (matches().length > 1) {
+        <yep-select
+          label="Selecciona el negocio"
+          placeholder="Varios negocios coinciden"
+          [options]="matchOptions()"
+          (selectionChange)="pickMatch($any($event)?.id)"
+        />
+      }
+
+      @if (selected()) {
+        <div
+          class="field-hint"
+          role="status"
+          style="
+            color: var(--color-success);
+            display: flex;
+            gap: var(--space-2);
+            align-items: center;
+          "
+        >
+          <span
+            >Negocio: <strong>{{ selectedLabel() }}</strong></span
+          >
+        </div>
+      }
+
+      <yep-select
+        formControlName="role"
+        label="Rol solicitado"
+        [options]="roleOptions"
+        [error]="isInvalid('role') ? 'Selecciona un rol' : ''"
+      />
+    </form>
+  }
+
+  <ng-container modalFooter>
+    @if (success()) {
+      <yep-button (clicked)="close()">Cerrar</yep-button>
+    } @else {
+      <yep-button variant="ghost" [disabled]="saving() || searching()" (clicked)="close()"
+        >Cancelar</yep-button
+      >
+      <yep-button
+        type="submit"
+        [loading]="saving()"
+        [disabled]="!selected() || searching()"
+        (clicked)="submit()"
+        >Enviar solicitud</yep-button
+      >
+    }
+  </ng-container>
+</yep-modal>

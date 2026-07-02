@@ -5,17 +5,18 @@
   min-height: 0;
 }
 
-/* El panel llena el alto que le da el shell inmersivo (viewport completo). El
-   scroll vive dentro de cada zona: la página no scrollea. */
+/* The immersive shell gives this panel a fixed viewport height. On wide
+   desktops each zone owns its scroll; on narrower screens the panel can scroll
+   so every zone keeps a usable height. */
 .panel {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--space-3);
   min-height: 0;
+  overflow: hidden;
 }
 
-/* Barra compacta -----------------------------------------------------------*/
 .panel-bar {
   align-items: center;
   display: flex;
@@ -114,15 +115,56 @@
   }
 }
 
-/* KPIs ---------------------------------------------------------------------*/
+.kpi-carousel {
+  flex: 0 0 auto;
+  min-width: 0;
+  position: relative;
+}
+
 .kpi-row {
   display: grid;
   flex: 0 0 auto;
   gap: var(--space-2);
-  grid-auto-columns: minmax(140px, 1fr);
-  grid-auto-flow: column;
-  overflow-x: auto;
-  padding-bottom: 2px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding-bottom: var(--space-1);
+}
+
+.kpi-scroll-btn {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  top: calc(50% - var(--space-1));
+  transform: translateY(-50%);
+  width: 32px;
+  z-index: 2;
+}
+
+.kpi-scroll-btn:hover {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-secondary) 40%, var(--color-border));
+  color: var(--color-secondary);
+}
+
+.kpi-scroll-btn svg {
+  height: 16px;
+  width: 16px;
+}
+
+.kpi-scroll-btn--left {
+  left: var(--space-1);
+}
+
+.kpi-scroll-btn--right {
+  right: var(--space-1);
 }
 
 .kpi {
@@ -158,22 +200,25 @@
 }
 
 .kpi__value {
-  font-size: var(--font-size-xl);
+  font-size: clamp(var(--font-size-lg), 1.35vw, var(--font-size-xl));
   font-weight: var(--font-weight-extrabold);
   line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi__value--ok {
   color: var(--color-success-strong);
 }
+
 .kpi__value--warn {
   color: color-mix(in srgb, var(--color-warning) 72%, var(--color-text-primary));
 }
+
 .kpi__value--err {
   color: var(--color-error);
 }
 
-/* Cuadrícula de zonas ------------------------------------------------------*/
 .grid {
   display: grid;
   flex: 1;
@@ -186,71 +231,133 @@
   min-width: 0;
 }
 
-/* Por defecto el contenedor de la fila superior es transparente al layout:
-   gráficas y estado caen directamente en sus áreas del grid (modo expandido). */
 .grid__top {
   display: contents;
 }
 
-/* Con gráficas: 3 columnas, gráficas + estado arriba, tablas abajo. La fila de
-   gráficas tiene una altura compacta y ACOTADA (no escala con el alto de la
-   pantalla); las tablas se llevan TODO el alto restante con `1fr`, así ocupan
-   el máximo vertical disponible. Para ver las gráficas grandes está el modal. */
 .grid--with-charts {
   grid-template-areas:
-    'charts charts status'
-    'events transactions transactions';
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) clamp(260px, 22vw, 340px);
-  grid-template-rows: clamp(170px, 24vh, 230px) minmax(0, 1fr);
+    'charts charts charts charts charts charts charts charts status status status status'
+    'events events events events transactions transactions transactions transactions transactions transactions transactions transactions';
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: clamp(180px, 24vh, 238px) minmax(0, 1fr);
 }
 
-/* Gráficas colapsadas: la fila superior pasa a ser una fila flex con gráficas
-   (angosta) y estado (ocupa todo el ancho restante), ambas a la MISMA altura.
-   Las tablas de eventos/transacciones se llevan el alto restante. */
 .grid--no-charts {
   grid-template-areas:
-    'top top'
+    'charts status'
     'events transactions';
-  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 2fr);
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.6fr);
   grid-template-rows: auto minmax(0, 1fr);
 }
 
-.grid--no-charts .grid__top {
-  align-items: stretch;
-  display: flex;
-  gap: var(--space-3);
-  grid-area: top;
-  min-width: 0;
-}
-
-/* Gráficas: angostas (ancho de su contenido), misma altura que el estado. */
-.grid--no-charts .grid__charts {
-  flex: 0 0 auto;
-  min-width: 0;
-}
-
-/* Estado: ocupa todo el ancho restante de la fila. */
+.grid--no-charts .grid__charts,
 .grid--no-charts .grid__status {
-  flex: 1 1 auto;
-  min-width: 0;
+  align-self: start;
 }
 
 .grid__charts {
   grid-area: charts;
 }
+
 .grid__status {
   grid-area: status;
 }
+
 .grid__events {
   grid-area: events;
 }
+
 .grid__transactions {
   grid-area: transactions;
 }
 
-/* Pantallas estrechas / bajas: se apila y se permite scroll de página (el
-   requisito de "sin scroll general" aplica a escritorio 1366×768 y 1440×900). */
-@media (max-width: 1024px), (max-height: 680px) {
+/* Size 1: wide desktop. This is the default above. */
+
+/* Size 2: medium desktop / horizontal tablet. Keep two columns, but soften the
+   proportions so status does not squeeze the data lists. */
+@media (max-width: 1280px) {
+  .kpi-row {
+    grid-auto-columns: minmax(156px, 22vw);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scroll-snap-type: x proximity;
+  }
+
+  .kpi {
+    scroll-snap-align: start;
+  }
+
+  .grid--with-charts {
+    grid-template-areas:
+      'charts status'
+      'events transactions';
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.78fr);
+    grid-template-rows: clamp(180px, 22vh, 220px) minmax(0, 1fr);
+  }
+
+  .grid--no-charts {
+    grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.4fr);
+  }
+}
+
+/* Size 3a: compact desktop / vertical tablet. Use a single column inside the
+   dashboard panel and let the panel scroll. */
+@media (max-width: 1024px), (max-height: 700px) {
+  .panel {
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .grid--with-charts,
+  .grid--no-charts {
+    grid-template-areas:
+      'charts status'
+      'events events'
+      'transactions transactions';
+    grid-template-columns: minmax(0, 1.65fr) minmax(220px, 0.9fr);
+    grid-template-rows:
+      minmax(220px, auto)
+      minmax(420px, auto)
+      minmax(460px, auto);
+  }
+
+  .grid__top {
+    display: contents;
+  }
+
+  .grid--no-charts {
+    grid-template-rows:
+      auto
+      minmax(420px, auto)
+      minmax(460px, auto);
+  }
+
+  .grid--no-charts .grid__events,
+  .grid--no-charts .grid__transactions {
+    min-height: 420px;
+  }
+}
+
+/* Size 3b: mobile. The shell already becomes scrollable, so the dashboard stops
+   forcing a viewport-height workbench. KPIs become a horizontal strip. */
+@media (max-width: 860px) {
+  :host {
+    min-height: auto;
+  }
+
+  .panel {
+    flex: initial;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .kpi-row {
+    grid-auto-columns: minmax(148px, 72vw);
+  }
+
   .grid--with-charts,
   .grid--no-charts {
     grid-template-areas:
@@ -260,29 +367,21 @@
       'transactions';
     grid-template-columns: 1fr;
     grid-template-rows: none;
-    grid-auto-rows: minmax(320px, auto);
-  }
-
-  /* En móvil deshacemos la fila flex: cada módulo vuelve a apilarse. */
-  .grid__top {
-    display: contents;
-  }
-
-  .grid--no-charts {
-    grid-template-areas:
-      'charts'
-      'status'
-      'events'
-      'transactions';
     grid-auto-rows: auto;
   }
 
-  .grid--no-charts .grid__charts {
-    flex: initial;
+  .grid__events,
+  .grid__transactions {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 560px) {
+  .kpi-row {
+    grid-auto-columns: minmax(150px, 82vw);
   }
 
-  .grid--no-charts .grid__events,
-  .grid--no-charts .grid__transactions {
-    min-height: 320px;
+  .grid {
+    gap: var(--space-2);
   }
 }

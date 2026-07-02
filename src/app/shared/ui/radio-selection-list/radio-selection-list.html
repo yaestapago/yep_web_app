@@ -1,0 +1,101 @@
+<div class="yep-radio-list">
+  @if (showFilter()) {
+    <label class="yep-radio-list__search">
+      <svg lucideSearch aria-hidden="true"></svg>
+      <input
+        type="search"
+        [placeholder]="filterPlaceholder()"
+        [value]="searchValue()"
+        [disabled]="disabled() || isControlDisabled"
+        (input)="updateSearch($event)"
+      />
+    </label>
+  }
+
+  <div class="yep-radio-list__options" role="radiogroup">
+    @for (option of filteredOptions(); track option.id) {
+      <label
+        class="yep-radio-card"
+        [class.yep-radio-card--selected]="isSelected(option)"
+        [class.yep-radio-card--disabled]="isDisabled(option)"
+        [class.yep-radio-card--half]="option.halfWidth"
+        [class.yep-radio-card--description]="typeLayout() === 'description'"
+      >
+        <input
+          class="yep-radio-card__input"
+          type="radio"
+          [name]="name()"
+          [value]="option.id"
+          [checked]="isSelected(option)"
+          [disabled]="isDisabled(option)"
+          (change)="selectOption(option)"
+        />
+
+        @if (option.tag) {
+          <span class="yep-radio-card__tag">{{ option.tag }}</span>
+        }
+
+        <span class="yep-radio-card__content">
+          <span class="yep-radio-card__radio" aria-hidden="true">
+            <span class="yep-radio-card__dot"></span>
+          </span>
+
+          @if (typeLayout() === 'description') {
+            @if (option.iconImages?.[0]; as image) {
+              <img class="yep-radio-card__avatar" [src]="image.url" [alt]="image.alt" />
+            }
+            <span class="yep-radio-card__body">
+              <span class="yep-radio-card__name">{{ option.name }}</span>
+              @if (option.description && shouldShowDetails(option)) {
+                <span
+                  class="yep-radio-card__description"
+                  [innerHTML]="option.description"
+                ></span>
+              }
+              @if (option.descriptionIcons?.length && shouldShowDetails(option)) {
+                <span class="yep-radio-card__description-icons">
+                  @for (image of option.descriptionIcons; track image.url) {
+                    <img [src]="image.url" [alt]="image.alt" />
+                  }
+                </span>
+              }
+            </span>
+          } @else {
+            <span class="yep-radio-card__body">
+              <span class="yep-radio-card__name">{{ option.name }}</span>
+              @if (option.description && shouldShowDetails(option)) {
+                <span
+                  class="yep-radio-card__description"
+                  [innerHTML]="option.description"
+                ></span>
+              }
+            </span>
+
+            @if (option.iconImages?.length) {
+              <span class="yep-radio-card__icons">
+                @for (image of option.iconImages; track image.url) {
+                  <span class="yep-radio-card__icon">
+                    <img [src]="image.url" [alt]="image.alt" />
+                  </span>
+                }
+              </span>
+            }
+          }
+        </span>
+
+        @if (option.table?.length && shouldShowDetails(option)) {
+          <span class="yep-radio-card__table">
+            @for (item of option.table; track item.name) {
+              <span class="yep-radio-card__table-row">
+                <span>{{ item.name }}</span>
+                <strong>{{ item.value }}</strong>
+              </span>
+            }
+          </span>
+        }
+      </label>
+    } @empty {
+      <span class="yep-radio-list__empty">No hay opciones disponibles.</span>
+    }
+  </div>
+</div>

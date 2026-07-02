@@ -79,7 +79,9 @@ describe('Sidebar', () => {
       'accounts',
       'notifiers',
       'requests',
+      'employees',
       'locations',
+      'schedules',
     ]);
   });
 

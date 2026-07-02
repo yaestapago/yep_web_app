@@ -35,7 +35,10 @@ export type BusinessMembershipStatus = 'pending' | 'approved' | 'rejected' | 're
 export interface BusinessAccount {
   id: string;
   name: string;
-  city: string;
+  departmentCode: string;
+  departmentName: string;
+  cityCode: string;
+  cityName: string;
   address: string;
   phone: string;
   slug?: string;
@@ -77,6 +80,17 @@ export interface RegisterRequest {
   identificationNumber: string;
   cellphoneNumber: string;
   password: string;
+  verificationCode: string;
+}
+
+export interface RegisterRequestCodeRequest {
+  email: string;
+  identificationNumber: string;
+}
+
+export interface RegisterRequestCodeResponse {
+  message?: string;
+  resendInSeconds?: number;
 }
 
 export interface ForgotPasswordRequestCodeRequest {
@@ -124,8 +138,7 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-export type UpdateNotificationPreferencesRequest =
-  Partial<NotificationPreferences>;
+export type UpdateNotificationPreferencesRequest = Partial<NotificationPreferences>;
 
 export type UpdateGeneralPreferencesRequest = Partial<GeneralPreferences>;
 

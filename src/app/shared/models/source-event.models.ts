@@ -30,6 +30,11 @@ export interface SourceEvent {
   rawPayload: Record<string, unknown>;
   normalized?: SourceEventNormalized;
   status: SourceEventStatus;
+  linkedTransactionId?: string;
+  linkedSupportId?: string;
+  processedAt?: string;
+  error?: string;
+  expiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,11 +44,17 @@ export interface SourceEventsResponse {
   nextCursor?: string;
 }
 
+export interface SourceEventResponse {
+  sourceEvent: SourceEvent;
+}
+
 export interface SourceEventQuery {
   cursor?: string;
   limit?: number;
   sourceType?: SourceEventType;
+  sourceTypes?: SourceEventType[];
   status?: SourceEventStatus;
+  statuses?: SourceEventStatus[];
   /** Banco/plataforma normalizado (ej. "bancolombia"). */
   bankId?: string;
   /** Rango sobre createdAt (ISO 8601). */
@@ -56,7 +67,7 @@ export interface SourceEventQuery {
 /** Filtros aplicables a la lista de eventos (sin paginación). */
 export type SourceEventFilters = Pick<
   SourceEventQuery,
-  'sourceType' | 'status' | 'bankId' | 'from' | 'to' | 'q'
+  'sourceType' | 'sourceTypes' | 'status' | 'statuses' | 'bankId' | 'from' | 'to' | 'q'
 >;
 
 export interface IngestSourceEventRequest {

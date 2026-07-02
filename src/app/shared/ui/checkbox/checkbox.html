@@ -1,0 +1,34 @@
+<label
+  class="yep-checkbox"
+  [class.yep-checkbox--chip]="appearance() === 'chip'"
+  [class.yep-checkbox--checked]="isChecked()"
+  [class.yep-checkbox--disabled]="disabled() || isControlDisabled"
+  [class.yep-checkbox--invalid]="error()"
+>
+  <input
+    class="yep-checkbox__input"
+    type="checkbox"
+    [id]="id()"
+    [checked]="isChecked()"
+    [disabled]="disabled() || isControlDisabled"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.aria-invalid]="error() ? 'true' : null"
+    [attr.data-cy]="dataCy() || null"
+    (change)="toggle()"
+    (blur)="markTouched()"
+  />
+
+  @if (appearance() === 'box') {
+    <span class="yep-checkbox__box" aria-hidden="true">
+      @if (isChecked()) {
+        <svg lucideCheck></svg>
+      }
+    </span>
+  }
+
+  @if (label()) {
+    <span class="yep-checkbox__label">{{ label() }}</span>
+  } @else {
+    <span class="yep-checkbox__label"><ng-content></ng-content></span>
+  }
+</label>

@@ -19,17 +19,19 @@
 }
 
 .amount {
-  flex: 0 0 92px;
-  width: 92px;
+  flex: 0 0 104px;
+  min-width: 104px;
 }
 
 .table-body {
+  overflow: auto;
   padding: 0;
 }
 
 .txtable {
   border-collapse: collapse;
   font-size: var(--font-size-sm);
+  min-width: 720px;
   width: 100%;
 }
 
@@ -106,4 +108,16 @@
 
 .icon-btn--verify:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+@media (max-width: 560px) {
+  .amount {
+    flex-basis: auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .txtable {
+    min-width: 680px;
+  }
 }

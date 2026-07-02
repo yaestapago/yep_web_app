@@ -1,0 +1,23 @@
+<yep-button
+  [variant]="variant()"
+  [size]="size()"
+  [loading]="loading()"
+  [disabled]="disabled()"
+  [title]="title()"
+  (clicked)="clicked.emit($event)"
+>
+  @switch (action()) {
+    @case ('edit') {
+      <svg lucidePencil [attr.aria-label]="title()"></svg>
+    }
+    @case ('delete') {
+      <svg lucideTrash2 [attr.aria-label]="title()"></svg>
+    }
+    @case ('activate') {
+      <svg lucidePower [attr.aria-label]="title()"></svg>
+    }
+    @case ('deactivate') {
+      <svg lucidePowerOff [attr.aria-label]="title()"></svg>
+    }
+  }
+</yep-button>

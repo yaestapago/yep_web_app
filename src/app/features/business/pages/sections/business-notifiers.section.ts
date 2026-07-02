@@ -1,12 +1,5 @@
 import { DatePipe } from '@angular/common';
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -22,9 +15,16 @@ import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import {
+  RadioSelectionList,
+  type RadioSelectionOption,
+} from '../../../../shared/ui/radio-selection-list/radio-selection-list';
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
+import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type {
@@ -59,9 +59,12 @@ interface NotifierKindOption {
     DatePipe,
     ReactiveFormsModule,
     Button,
+    Checkbox,
     Input,
     Modal,
+    RadioSelectionList,
     StatusDot,
+    Toggle,
     LucideLink,
     LucideLoaderCircle,
     LucidePencil,
@@ -80,6 +83,7 @@ export class BusinessNotifiersSection implements OnInit {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notifications = inject(NotificationModalService);
   readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
 
   readonly businessId = this.session.activeBusinessAccountId;
@@ -129,6 +133,17 @@ export class BusinessNotifiersSection implements OnInit {
     ];
   });
 
+  readonly kindSelectionOptions = computed<RadioSelectionOption[]>(() =>
+    this.kindOptions().map((option) => ({
+      id: option.value,
+      name: option.label,
+      description: option.description,
+      disabled: option.disabled,
+      tag: option.badge,
+      halfWidth: option.value !== 'email',
+    })),
+  );
+
   /** Tick para recalcular el estado relativo sin recargar la página. */
   private readonly now = signal(Date.now());
 
@@ -168,9 +183,7 @@ export class BusinessNotifiersSection implements OnInit {
   readonly hasEmailEligibleAccount = computed(() => {
     const banks = this.banksByCode();
     if (banks.size === 0) return true;
-    return this.selectableAccounts().some(
-      (account) => banks.get(account.bankId)?.email?.enabled,
-    );
+    return this.selectableAccounts().some((account) => banks.get(account.bankId)?.email?.enabled);
   });
 
   readonly statuses = computed<Array<{ notifier: Notifier; status: NotifierStatus }>>(() => {
@@ -298,9 +311,7 @@ export class BusinessNotifiersSection implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) =>
-          this.banksByCode.set(
-            new Map(response.banks.map((bank) => [bank.code, bank])),
-          ),
+          this.banksByCode.set(new Map(response.banks.map((bank) => [bank.code, bank]))),
         error: () => this.banksByCode.set(new Map()),
       });
   }
@@ -367,10 +378,24 @@ export class BusinessNotifiersSection implements OnInit {
     return notifier.type !== 'email_gmail';
   }
 
-  closeModal(): void {
+  async closeModal(): Promise<void> {
     if (this.creating()) {
       return;
     }
+
+    if (this.form.dirty) {
+      const confirmed = await this.notifications.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en el notificador.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.modalOpen.set(false);
   }
 
@@ -394,9 +419,7 @@ export class BusinessNotifiersSection implements OnInit {
 
   toggleAccount(accountId: string, checked: boolean): void {
     this.selectedBankAccountIds.update((ids) =>
-      checked
-        ? Array.from(new Set([...ids, accountId]))
-        : ids.filter((id) => id !== accountId),
+      checked ? Array.from(new Set([...ids, accountId])) : ids.filter((id) => id !== accountId),
     );
   }
 
@@ -517,15 +540,27 @@ export class BusinessNotifiersSection implements OnInit {
     this.runAction(notifier, notifier.active ? 'deactivate' : 'activate');
   }
 
-  unpair(notifier: Notifier): void {
-    if (!confirm('¿Desemparejar el dispositivo actual de este notificador?')) {
+  async unpair(notifier: Notifier): Promise<void> {
+    const confirmed = await this.notifications.confirm({
+      title: 'Desemparejar dispositivo',
+      message: 'El dispositivo actual dejara de enviar notificaciones a este negocio.',
+      type: 'warning',
+      confirmText: 'Desemparejar',
+    });
+    if (!confirmed) {
       return;
     }
     this.runAction(notifier, 'unpair');
   }
 
-  remove(notifier: Notifier): void {
-    if (!confirm('¿Eliminar definitivamente este notificador? No se puede deshacer.')) {
+  async remove(notifier: Notifier): Promise<void> {
+    const confirmed = await this.notifications.confirm({
+      title: 'Eliminar notificador',
+      message: 'Esta accion no se puede deshacer.',
+      type: 'error',
+      confirmText: 'Eliminar',
+    });
+    if (!confirmed) {
       return;
     }
     this.actingId.set(notifier.id);
@@ -610,10 +645,7 @@ export class BusinessNotifiersSection implements OnInit {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  private runAction(
-    notifier: Notifier,
-    action: 'activate' | 'deactivate' | 'unpair',
-  ): void {
+  private runAction(notifier: Notifier, action: 'activate' | 'deactivate' | 'unpair'): void {
     this.actingId.set(notifier.id);
     this.error.set('');
     this.success.set('');

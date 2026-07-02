@@ -1,0 +1,25 @@
+<button
+  type="button"
+  class="yep-toggle"
+  [class.yep-toggle--switch]="appearance() === 'switch'"
+  [class.yep-toggle--button]="appearance() === 'button'"
+  [class.yep-toggle--on]="pressed()"
+  [attr.role]="appearance() === 'switch' ? 'switch' : null"
+  [attr.aria-checked]="appearance() === 'switch' ? pressed() : null"
+  [attr.aria-pressed]="appearance() === 'button' ? pressed() : null"
+  [attr.aria-label]="ariaLabel() || label() || null"
+  [attr.data-cy]="dataCy() || null"
+  [disabled]="disabled()"
+  (click)="toggle()"
+>
+  @if (appearance() === 'switch') {
+    <span class="yep-toggle__thumb"></span>
+  } @else {
+    <span class="yep-toggle__lead"><ng-content select="[toggleLead]"></ng-content></span>
+    @if (label()) {
+      <span class="yep-toggle__label">{{ label() }}</span>
+    } @else {
+      <span class="yep-toggle__label"><ng-content></ng-content></span>
+    }
+  }
+</button>

@@ -1,13 +1,16 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LucidePencil } from '@lucide/angular';
+import { LucideClipboardCheck, LucideClipboardCopy, LucidePencil } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -19,7 +22,17 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-business-data-section',
-  imports: [ReactiveFormsModule, Button, Input, Modal, PhoneInput, LucidePencil],
+  imports: [
+    ReactiveFormsModule,
+    AddressLocationSelect,
+    Button,
+    Input,
+    Modal,
+    PhoneInput,
+    LucidePencil,
+    LucideClipboardCopy,
+    LucideClipboardCheck,
+  ],
   templateUrl: './business-data.section.html',
   styleUrl: './business-sections.scss',
 })
@@ -28,6 +41,7 @@ export class BusinessDataSection {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly membership = this.session.activeMembership;
@@ -43,10 +57,57 @@ export class BusinessDataSection {
   readonly error = signal('');
   readonly success = signal('');
   readonly editOpen = signal(false);
+  readonly copied = signal(false);
+  readonly linkCopied = signal(false);
+
+  /**
+   * Código corto para compartir: los últimos 6 caracteres del ID del negocio.
+   * El staff lo usa en "Unirme a un negocio" para solicitar acceso sin pegar
+   * el ID completo.
+   */
+  readonly shareCode = computed(() => {
+    const id = this.businessId();
+    return id ? id.slice(-6).toUpperCase() : '';
+  });
+
+  readonly registrationLink = computed(() => {
+    const code = this.shareCode();
+    if (!code) {
+      return '';
+    }
+    const origin = globalThis.location?.origin ?? '';
+    const params = new URLSearchParams({
+      code,
+      businessName: this.businessName(),
+    });
+    return `${origin}/register?${params.toString()}`;
+  });
+
+  copyCode(): void {
+    const code = this.shareCode();
+    if (!code) {
+      return;
+    }
+    void navigator.clipboard?.writeText(code).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 1500);
+    });
+  }
+
+  copyRegistrationLink(): void {
+    const link = this.registrationLink();
+    if (!link) {
+      return;
+    }
+    void navigator.clipboard?.writeText(link).then(() => {
+      this.linkCopied.set(true);
+      setTimeout(() => this.linkCopied.set(false), 1500);
+    });
+  }
 
   readonly businessForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
+    location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
@@ -57,17 +118,31 @@ export class BusinessDataSection {
     this.success.set('');
     this.businessForm.reset({
       name: account?.name ?? '',
-      city: account?.city ?? '',
+      location: this.accountLocationValue(),
       address: account?.address ?? '',
       phone: account?.phone ?? '',
     });
     this.editOpen.set(true);
   }
 
-  closeEdit(): void {
+  async closeEdit(): Promise<void> {
     if (this.savingBusiness()) {
       return;
     }
+
+    if (this.businessForm.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en los datos del negocio.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.editOpen.set(false);
   }
 
@@ -85,7 +160,10 @@ export class BusinessDataSection {
     this.businessApi
       .updateBusinessAccount(businessId, {
         name: raw.name,
-        city: raw.city,
+        departmentCode: raw.location?.departmentCode,
+        departmentName: raw.location?.departmentName,
+        cityCode: raw.location?.cityCode,
+        cityName: raw.location?.cityName,
         address: raw.address,
         phone: this.phoneValue(raw.phone),
       })
@@ -113,5 +191,19 @@ export class BusinessDataSection {
       return '';
     }
     return typeof value === 'string' ? value : value.e164;
+  }
+
+  private accountLocationValue(): AddressLocationValue | null {
+    const account = this.account();
+    if (!account) {
+      return null;
+    }
+
+    return {
+      departmentCode: account.departmentCode,
+      departmentName: account.departmentName,
+      cityCode: account.cityCode,
+      cityName: account.cityName,
+    };
   }
 }

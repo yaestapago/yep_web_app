@@ -1,3 +1,69 @@
+.zone__head {
+  gap: var(--space-2);
+}
+
+.zone--collapsed {
+  flex: 0 0 auto;
+}
+
+.zone--collapsed .zone__head {
+  align-items: center;
+  flex-direction: row;
+}
+
+.status-summary {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.status-summary__lights {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.3rem;
+  padding: 0.3rem 0.35rem;
+}
+
+.status-summary__text {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.status-summary__label {
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-summary__detail {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-summary.semaphore--red .status-summary__label {
+  color: var(--color-error);
+}
+
+.status-summary.semaphore--yellow .status-summary__label {
+  color: color-mix(in srgb, var(--color-warning) 72%, var(--color-text-primary));
+}
+
+.status-summary.semaphore--green .status-summary__label {
+  color: var(--color-success-strong);
+}
+
 .status-body {
   gap: var(--space-3);
 }
@@ -221,4 +287,64 @@
 }
 .nlight--unknown {
   background: var(--color-text-muted);
+}
+
+@media (max-width: 1024px) {
+  .zone--horizontal .status-body {
+    flex-direction: column;
+  }
+
+  .zone--horizontal .semaphore {
+    max-width: none;
+  }
+
+  .zone--horizontal .nlist {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .zone--horizontal .nlist__row {
+    border-left: 0;
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+  }
+
+  .zone--horizontal .nlist__row:hover {
+    background: color-mix(in srgb, var(--color-secondary) 7%, transparent);
+  }
+}
+
+@media (max-width: 560px) {
+  .zone--collapsed .zone__head {
+    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .zone--collapsed .icon-btn {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .zone--collapsed .status-summary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+
+  .status-summary__text {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .semaphore {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .semaphore__lights {
+    flex-direction: row;
+  }
 }

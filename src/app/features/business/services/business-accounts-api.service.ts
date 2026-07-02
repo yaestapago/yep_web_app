@@ -11,18 +11,29 @@ import {
   CreateBankAccountRequest,
   CreateBusinessLocationRequest,
   UpdateBankAccountRequest,
+  UpdateBusinessLocationRequest,
 } from '../../../shared/models/bank-account.models';
 import {
+  AddBusinessMemberRequest,
   BusinessAccountDetailResponse,
   BusinessAccountRequest,
   BusinessAccountsResponse,
+  BusinessLookupResponse,
   BusinessMembershipsResponse,
   CreateBusinessAccountResponse,
   MembershipRequest,
   MembershipResponse,
   UpdateBusinessAccountRequest,
+  UpdateBusinessMemberRequest,
   UpdateMembershipStatusRequest,
 } from '../../../shared/models/business-account.models';
+import {
+  ApprovedMembersResponse,
+  SchedulesResponse,
+  ShiftRequest,
+  ShiftResponse,
+  UpdateShiftRequest,
+} from '../../../shared/models/schedule.models';
 
 @Injectable({ providedIn: 'root' })
 export class BusinessAccountsApiService {
@@ -45,6 +56,14 @@ export class BusinessAccountsApiService {
     return this.http.post<MembershipResponse>(`${this.apiUrl}/business-accounts/membership-requests`, request);
   }
 
+  // Resuelve un código corto (los últimos caracteres del ID del negocio) a los
+  // negocios que coinciden, para unirse sin pegar el ID completo.
+  lookupBusinessByCode(code: string): Observable<BusinessLookupResponse> {
+    return this.http.get<BusinessLookupResponse>(`${this.apiUrl}/business-accounts/lookup`, {
+      params: { code },
+    });
+  }
+
   updateBusinessAccount(
     businessAccountId: string,
     request: UpdateBusinessAccountRequest,
@@ -55,8 +74,7 @@ export class BusinessAccountsApiService {
     );
   }
 
-  // Backend pending: owner inbox endpoint does not exist yet.
-  // Expected contract:
+  // Owner inbox: lists membership requests/memberships for a business account.
   // GET /business-accounts/:businessAccountId/membership-requests?status=pending
   // Response: { memberships: BusinessMembership[] }
   listPendingStaffRequests(businessAccountId: string): Observable<BusinessMembershipsResponse> {
@@ -79,6 +97,69 @@ export class BusinessAccountsApiService {
     );
   }
 
+  listApprovedMembers(businessAccountId: string): Observable<ApprovedMembersResponse> {
+    return this.http.get<ApprovedMembersResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/members`,
+    );
+  }
+
+  addMember(
+    businessAccountId: string,
+    request: AddBusinessMemberRequest,
+  ): Observable<MembershipResponse> {
+    return this.http.post<MembershipResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/members`,
+      request,
+    );
+  }
+
+  updateMember(
+    businessAccountId: string,
+    membershipId: string,
+    request: UpdateBusinessMemberRequest,
+  ): Observable<MembershipResponse> {
+    return this.http.patch<MembershipResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/memberships/${membershipId}`,
+      request,
+    );
+  }
+
+  listSchedules(businessAccountId: string): Observable<SchedulesResponse> {
+    return this.http.get<SchedulesResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules`,
+    );
+  }
+
+  createShift(
+    businessAccountId: string,
+    request: ShiftRequest,
+  ): Observable<ShiftResponse> {
+    return this.http.post<ShiftResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules`,
+      request,
+    );
+  }
+
+  updateShift(
+    businessAccountId: string,
+    shiftId: string,
+    request: UpdateShiftRequest,
+  ): Observable<ShiftResponse> {
+    return this.http.patch<ShiftResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules/${shiftId}`,
+      request,
+    );
+  }
+
+  deleteShift(
+    businessAccountId: string,
+    shiftId: string,
+  ): Observable<ShiftResponse> {
+    return this.http.delete<ShiftResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/schedules/${shiftId}`,
+    );
+  }
+
   listLocations(businessAccountId: string): Observable<BusinessLocationsResponse> {
     return this.http.get<BusinessLocationsResponse>(
       `${this.apiUrl}/business-accounts/${businessAccountId}/locations`,
@@ -92,6 +173,26 @@ export class BusinessAccountsApiService {
     return this.http.post<BusinessLocationResponse>(
       `${this.apiUrl}/business-accounts/${businessAccountId}/locations`,
       request,
+    );
+  }
+
+  updateLocation(
+    businessAccountId: string,
+    locationId: string,
+    request: UpdateBusinessLocationRequest,
+  ): Observable<BusinessLocationResponse> {
+    return this.http.patch<BusinessLocationResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/locations/${locationId}`,
+      request,
+    );
+  }
+
+  deleteLocation(
+    businessAccountId: string,
+    locationId: string,
+  ): Observable<BusinessLocationResponse> {
+    return this.http.delete<BusinessLocationResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/locations/${locationId}`,
     );
   }
 

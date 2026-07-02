@@ -54,24 +54,19 @@
           </div>
           @if (canManage()) {
             <div class="list-card__actions">
+              <yep-icon-button action="edit" (clicked)="openEdit(account)" />
               @if (account.isActive) {
-                <yep-button
-                  variant="ghost"
-                  size="sm"
+                <yep-icon-button
+                  action="deactivate"
                   [loading]="actingId() === account.id"
                   (clicked)="deactivate(account)"
-                >
-                  Desactivar
-                </yep-button>
+                />
               } @else {
-                <yep-button
-                  variant="secondary"
-                  size="sm"
+                <yep-icon-button
+                  action="activate"
                   [loading]="actingId() === account.id"
                   (clicked)="activate(account)"
-                >
-                  Activar
-                </yep-button>
+                />
               }
             </div>
           }
@@ -83,30 +78,26 @@
 
 <yep-modal
   [open]="modalOpen()"
-  title="Nueva cuenta bancaria"
+  [title]="modalTitle()"
   subtitle="Asocia una cuenta a una o más sedes del negocio."
   [loading]="creating()"
-  [dirty]="form.dirty"
   (closeRequested)="closeModal()"
 >
-  <form [formGroup]="form" (ngSubmit)="create()" class="form-grid">
+  <form [formGroup]="form" (ngSubmit)="save()" class="form-grid">
     <div class="form-grid form-grid--2">
-      <div class="field">
-        <label class="field-label" for="account-bank">Banco</label>
-        <select id="account-bank" formControlName="bankId">
-          <option value="" disabled>Selecciona un banco</option>
-          @for (bank of banks(); track bank.code) {
-            <option [value]="bank.code">{{ bank.name }}</option>
-          }
-        </select>
-        @if (isInvalid('bankId')) {
-          <span class="field-error">Selecciona un banco</span>
-        }
-      </div>
+      <yep-select
+        formControlName="bankId"
+        label="Banco"
+        placeholder="Selecciona un banco"
+        [options]="bankOptions()"
+        [searchable]="true"
+        [required]="true"
+        [error]="isInvalid('bankId') ? 'Selecciona un banco' : ''"
+      />
       <yep-input
         formControlName="accountNumber"
         label="Número de cuenta"
-        placeholder="0000000000"
+        [placeholder]="editingId() ? 'Déjalo vacío para conservar el actual' : '0000000000'"
         [error]="isInvalid('accountNumber') ? 'Requerido' : ''"
       />
     </div>
@@ -117,19 +108,18 @@
     </div>
 
     <div class="form-grid form-grid--2">
-      <div class="field">
-        <label class="field-label" for="account-type">Tipo</label>
-        <select id="account-type" formControlName="accountType">
-          <option value="wallet">Billetera</option>
-          <option value="savings">Ahorros</option>
-          <option value="checking">Corriente</option>
-          <option value="other">Otro</option>
-        </select>
-      </div>
-      <yep-input
+      <yep-select
+        formControlName="accountType"
+        label="Tipo"
+        placeholder="Selecciona un tipo"
+        [options]="accountTypeOptions"
+      />
+      <yep-select
         formControlName="currency"
         label="Moneda"
         placeholder="COP"
+        [options]="currencyOptions"
+        [required]="true"
         [error]="isInvalid('currency') ? 'Requerido' : ''"
       />
     </div>
@@ -143,28 +133,27 @@
         </p>
       } @else {
         @for (location of locations(); track location.id) {
-          <label style="display: flex; gap: var(--space-2); align-items: center">
-            <input
-              type="checkbox"
-              [checked]="selectedLocationIds().includes(location.id)"
-              (change)="toggleLocation(location.id, $any($event.target).checked)"
-            />
-            {{ location.name }}
-          </label>
+          <yep-checkbox
+            [checked]="selectedLocationIds().includes(location.id)"
+            [label]="location.name"
+            (checkedChange)="toggleLocation(location.id, $event)"
+          />
         }
       }
     </div>
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()">Cancelar</yep-button>
+    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()"
+      >Cancelar</yep-button
+    >
     <yep-button
       type="submit"
       [loading]="creating()"
       [disabled]="locations().length === 0"
-      (clicked)="create()"
+      (clicked)="save()"
     >
-      Crear cuenta
+      {{ editingId() ? 'Guardar cambios' : 'Crear cuenta' }}
     </yep-button>
   </ng-container>
 </yep-modal>

@@ -1,9 +1,9 @@
 import { Component, computed, inject, output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideBuilding2,
   LucideChevronDown,
-  LucideChevronsUpDown,
   LucideHouse,
   LucideLayoutDashboard,
   LucideLogOut,
@@ -14,6 +14,7 @@ import {
 
 import { AuthSessionService } from '../../services/auth-session.service';
 import { ThemeService } from '../../services/theme.service';
+import { Select, type SelectOption } from '../../../shared/ui/select/select';
 
 interface BusinessNavItem {
   path: string;
@@ -23,11 +24,12 @@ interface BusinessNavItem {
 @Component({
   selector: 'app-sidebar',
   imports: [
+    FormsModule,
     RouterLink,
     RouterLinkActive,
+    Select,
     LucideBuilding2,
     LucideChevronDown,
-    LucideChevronsUpDown,
     LucideHouse,
     LucideLayoutDashboard,
     LucideLogOut,
@@ -54,6 +56,12 @@ export class Sidebar {
   readonly memberships = this.session.approvedMemberships;
   readonly activeMembership = this.session.activeMembership;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
+  readonly businessOptions = computed<SelectOption[]>(() =>
+    this.memberships().map((membership) => ({
+      id: membership.businessAccountId,
+      label: this.businessName(membership.businessAccountId),
+    })),
+  );
 
   /** Grupo "Negocio" expandible; inicia abierto para dar contexto. */
   readonly businessGroupOpen = signal(true);
@@ -64,7 +72,9 @@ export class Sidebar {
     { path: 'accounts', label: 'Cuentas bancarias' },
     { path: 'notifiers', label: 'Notificadores' },
     { path: 'requests', label: 'Solicitudes' },
+    { path: 'employees', label: 'Empleados' },
     { path: 'locations', label: 'Sedes' },
+    { path: 'schedules', label: 'Horarios' },
   ];
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */
@@ -125,6 +135,11 @@ export class Sidebar {
    */
   switchBusiness(event: Event): void {
     const businessAccountId = (event.target as HTMLSelectElement).value;
+    this.switchBusinessId(businessAccountId);
+  }
+
+  switchBusinessId(value: string | number | null): void {
+    const businessAccountId = typeof value === 'string' ? value : String(value ?? '');
     if (!businessAccountId) {
       return;
     }

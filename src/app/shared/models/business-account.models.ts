@@ -15,7 +15,10 @@ export interface BusinessMembershipsResponse {
 
 export interface BusinessAccountRequest {
   name: string;
-  city: string;
+  departmentCode: string;
+  departmentName: string;
+  cityCode: string;
+  cityName: string;
   address: string;
   phone: string;
 }
@@ -31,9 +34,22 @@ export interface BusinessAccountDetailResponse {
 
 export interface UpdateBusinessAccountRequest {
   name?: string;
-  city?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  cityCode?: string;
+  cityName?: string;
   address?: string;
   phone?: string;
+}
+
+export interface BusinessLookupResult {
+  id: string;
+  name: string;
+  city: string;
+}
+
+export interface BusinessLookupResponse {
+  businessAccounts: BusinessLookupResult[];
 }
 
 export interface MembershipRequest {
@@ -47,4 +63,15 @@ export interface MembershipResponse {
 
 export interface UpdateMembershipStatusRequest {
   status: Extract<BusinessMembershipStatus, 'approved' | 'rejected' | 'revoked'>;
+}
+
+export interface AddBusinessMemberRequest {
+  email?: string;
+  identificationNumber?: string;
+  role: BusinessMembershipRole;
+}
+
+export interface UpdateBusinessMemberRequest {
+  role?: BusinessMembershipRole;
+  locationIds?: string[];
 }

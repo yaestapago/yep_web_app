@@ -8,6 +8,7 @@ import {
   AttachSupportResponse,
   CreateTransactionRequest,
   CreateTransactionResponse,
+  ManualDecisionRequest,
   PaymentSupportsResponse,
   TransactionQuery,
   TransactionResponse,
@@ -54,6 +55,17 @@ export class TransactionsApiService {
       `${this.apiUrl}/transactions/${transactionId}/verifications/run`,
       {},
       { params },
+    );
+  }
+
+  /** Decisión humana autoritativa: confirma o rechaza el pago. */
+  manualDecision(
+    transactionId: string,
+    request: ManualDecisionRequest,
+  ): Observable<TransactionResponse> {
+    return this.http.post<TransactionResponse>(
+      `${this.apiUrl}/transactions/${transactionId}/manual-decision`,
+      request,
     );
   }
 

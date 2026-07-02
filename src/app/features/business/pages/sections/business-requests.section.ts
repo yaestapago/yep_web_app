@@ -1,18 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  Component,
-  DestroyRef,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideLoaderCircle, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -27,6 +21,7 @@ export class BusinessRequestsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notifications = inject(NotificationModalService);
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly requests = signal<BusinessMembership[]>([]);
@@ -69,10 +64,7 @@ export class BusinessRequestsSection implements OnInit {
         next: (response) => {
           this.backendPending.set(false);
           this.requests.set(
-            response.memberships.filter(
-              (membership) =>
-                membership.role === 'account_staff' && membership.status === 'pending',
-            ),
+            response.memberships.filter((membership) => membership.status === 'pending'),
           );
         },
         error: (error) => this.handleError(error),
@@ -83,8 +75,14 @@ export class BusinessRequestsSection implements OnInit {
     this.updateStatus(membership, 'approved');
   }
 
-  reject(membership: BusinessMembership): void {
-    if (!confirm('¿Rechazar esta solicitud de acceso?')) {
+  async reject(membership: BusinessMembership): Promise<void> {
+    const confirmed = await this.notifications.confirm({
+      title: 'Rechazar solicitud',
+      message: 'La persona no tendra acceso a este negocio.',
+      type: 'warning',
+      confirmText: 'Rechazar',
+    });
+    if (!confirmed) {
       return;
     }
     this.updateStatus(membership, 'rejected');
@@ -93,6 +91,10 @@ export class BusinessRequestsSection implements OnInit {
   requesterLabel(membership: BusinessMembership): string {
     // No exponemos identificadores internos (userId): usamos correo o documento.
     return membership.email ?? membership.identificationNumber ?? 'Solicitante sin datos';
+  }
+
+  roleLabel(membership: BusinessMembership): string {
+    return membership.role === 'account_owner' ? 'Propietario' : 'Staff';
   }
 
   private updateStatus(membership: BusinessMembership, status: 'approved' | 'rejected'): void {

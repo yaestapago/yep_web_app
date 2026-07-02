@@ -4,7 +4,6 @@
   [subtitle]="'Registra el comprobante para ' + businessName()"
   size="lg"
   [loading]="loading()"
-  [dirty]="isDirty()"
   (closeRequested)="close()"
 >
   @if (error()) {
@@ -122,7 +121,12 @@
         </button>
       </div>
 
-      <form [formGroup]="manualForm" (ngSubmit)="createTransaction()" class="capture-form" novalidate>
+      <form
+        [formGroup]="manualForm"
+        (ngSubmit)="createTransaction()"
+        class="capture-form"
+        novalidate
+      >
         <div class="form-grid">
           <label class="field">
             <span>Banco</span>

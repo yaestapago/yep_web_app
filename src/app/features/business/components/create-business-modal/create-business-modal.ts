@@ -4,9 +4,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -19,7 +22,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-create-business-modal',
-  imports: [ReactiveFormsModule, Button, Input, Modal, PhoneInput],
+  imports: [ReactiveFormsModule, AddressLocationSelect, Button, Input, Modal, PhoneInput],
   templateUrl: './create-business-modal.html',
 })
 export class CreateBusinessModal {
@@ -27,6 +30,7 @@ export class CreateBusinessModal {
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly open = defineInput(false);
   readonly closeRequested = output<void>();
@@ -37,20 +41,34 @@ export class CreateBusinessModal {
 
   readonly form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
+    location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
   reset(): void {
     this.error.set('');
-    this.form.reset({ name: '', city: '', address: '', phone: '' });
+    this.form.reset({ name: '', location: null, address: '', phone: '' });
   }
 
-  close(): void {
+  async close(): Promise<void> {
     if (this.saving()) {
       return;
     }
+
+    if (this.form.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en el nuevo negocio.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.closeRequested.emit();
   }
 
@@ -67,7 +85,10 @@ export class CreateBusinessModal {
     this.businessApi
       .createBusinessAccount({
         name: raw.name,
-        city: raw.city,
+        departmentCode: raw.location?.departmentCode ?? '',
+        departmentName: raw.location?.departmentName ?? '',
+        cityCode: raw.location?.cityCode ?? '',
+        cityName: raw.location?.cityName ?? '',
         address: raw.address,
         phone: this.phoneValue(raw.phone),
       })

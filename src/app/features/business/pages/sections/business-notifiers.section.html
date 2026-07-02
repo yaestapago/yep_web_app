@@ -82,7 +82,7 @@
               [level]="row.status.level"
               [detail]="
                 row.status.lastSeenAt
-                  ? (relative(row.status) + ' · ' + (row.status.lastSeenAt | date: 'short'))
+                  ? relative(row.status) + ' · ' + (row.status.lastSeenAt | date: 'short')
                   : 'sin heartbeat'
               "
             />
@@ -97,9 +97,7 @@
                 {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
               </span>
               @if (row.notifier.inboundAlias) {
-                <span class="list-card__meta">
-                  Reenviar a: {{ row.notifier.inboundAlias }}
-                </span>
+                <span class="list-card__meta"> Reenviar a: {{ row.notifier.inboundAlias }} </span>
               }
             }
           </div>
@@ -107,21 +105,27 @@
           @if (canManage()) {
             <div class="list-card__actions">
               <!-- Activar / desactivar (interruptor) -->
-              <button
-                type="button"
-                class="switch"
-                role="switch"
-                [class.switch--on]="row.notifier.active"
-                [attr.aria-checked]="row.notifier.active"
-                [attr.aria-label]="row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'"
-                [title]="row.notifier.active ? 'Activo — toca para desactivar' : 'Inactivo — toca para activar'"
+              <yep-toggle
+                appearance="switch"
+                [pressed]="row.notifier.active"
+                [ariaLabel]="
+                  row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'
+                "
                 [disabled]="actingId() === row.notifier.id"
-                (click)="toggleActive(row.notifier)"
-              >
-                <span class="switch__thumb"></span>
-              </button>
+                [title]="
+                  row.notifier.active
+                    ? 'Activo — toca para desactivar'
+                    : 'Inactivo — toca para activar'
+                "
+                (toggled)="toggleActive(row.notifier)"
+              />
 
-              @if (usesPairing(row.notifier) && row.notifier.active && !row.notifier.pairedDevice && !isCodeVisible(row.notifier)) {
+              @if (
+                usesPairing(row.notifier) &&
+                row.notifier.active &&
+                !row.notifier.pairedDevice &&
+                !isCodeVisible(row.notifier)
+              ) {
                 <yep-button
                   variant="secondary"
                   size="sm"
@@ -177,7 +181,6 @@
   [title]="editingId() ? 'Editar notificador' : 'Nuevo notificador'"
   [subtitle]="modalSubtitle()"
   [loading]="creating()"
-  [dirty]="form.dirty"
   (closeRequested)="closeModal()"
 >
   <form [formGroup]="form" (ngSubmit)="save()" id="notifier-form" class="form-grid">
@@ -185,30 +188,7 @@
     @if (!editingId()) {
       <div class="field">
         <span class="field-label">Tipo de notificador</span>
-        <div class="kind-options">
-          @for (option of kindOptions(); track option.value) {
-            <label
-              class="kind-option"
-              [class.kind-option--disabled]="option.disabled"
-            >
-              <input
-                type="radio"
-                formControlName="kind"
-                [value]="option.value"
-                [disabled]="option.disabled"
-              />
-              <span class="kind-option__body">
-                <span class="kind-option__label">
-                  {{ option.label }}
-                  @if (option.badge) {
-                    <span class="badge-soon">{{ option.badge }}</span>
-                  }
-                </span>
-                <span class="kind-option__desc">{{ option.description }}</span>
-              </span>
-            </label>
-          }
-        </div>
+        <yep-radio-selection-list formControlName="kind" [options]="kindSelectionOptions()" />
       </div>
     }
 
@@ -229,8 +209,8 @@
         [error]="isInvalid('senderEmail') ? 'Ingresa un correo válido' : ''"
       />
       <p class="section-subtitle full-field">
-        Registra el correo desde el que reenviarás las notificaciones de tu
-        banco. Tras crearlo te daremos un alias al que debes reenviarlas.
+        Registra el correo desde el que reenviarás las notificaciones de tu banco. Tras crearlo te
+        daremos un alias al que debes reenviarlas.
       </p>
     }
 
@@ -241,36 +221,32 @@
       </span>
       <span class="section-subtitle">
         @if (isEmailKind()) {
-          Selecciona la cuenta a la que llegan estos correos. Solo se permiten
-          cuentas de bancos compatibles ({{ emailEligibleBankNames().join(', ') || 'Bancolombia' }}).
+          Selecciona la cuenta a la que llegan estos correos. Solo se permiten cuentas de bancos
+          compatibles ({{ emailEligibleBankNames().join(', ') || 'Bancolombia' }}).
         } @else {
-          Este notificador puede monitorear varias cuentas. Los cambios se
-          sincronizarán con tu app móvil.
+          Este notificador puede monitorear varias cuentas. Los cambios se sincronizarán con tu app
+          móvil.
         }
       </span>
 
       @if (selectableAccounts().length === 0) {
         <p class="section-subtitle">
-          No hay cuentas bancarias activas. Crea una cuenta primero para poder
-          monitorearla.
+          No hay cuentas bancarias activas. Crea una cuenta primero para poder monitorearla.
         </p>
       } @else {
         <div class="account-picker">
           @for (account of selectableAccounts(); track account.id) {
-            <label
+            <yep-checkbox
               class="account-option"
               [class.account-option--disabled]="!isBankEligible(account)"
+              [checked]="isSelected(account.id)"
+              [disabled]="!isBankEligible(account)"
+              (checkedChange)="toggleAccount(account.id, $event)"
             >
-              <input
-                type="checkbox"
-                [checked]="isSelected(account.id)"
-                [disabled]="!isBankEligible(account)"
-                (change)="toggleAccount(account.id, $any($event.target).checked)"
-              />
               <span class="account-option__body">
                 <span class="account-option__title">
                   {{ bankName(account) }} ·
-                  {{ account.displayName || ('****' + account.accountNumberLast4) }}
+                  {{ account.displayName || '****' + account.accountNumberLast4 }}
                 </span>
                 <span class="account-option__meta">
                   ****{{ account.accountNumberLast4 }}
@@ -285,7 +261,7 @@
                   </span>
                 }
               </span>
-            </label>
+            </yep-checkbox>
           }
         </div>
       }
@@ -293,7 +269,9 @@
   </form>
 
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()">Cancelar</yep-button>
+    <yep-button variant="ghost" [disabled]="creating()" (clicked)="closeModal()"
+      >Cancelar</yep-button
+    >
     <yep-button type="submit" [loading]="creating()" (clicked)="save()">
       {{ editingId() ? 'Guardar cambios' : 'Crear notificador' }}
     </yep-button>

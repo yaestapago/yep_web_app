@@ -45,6 +45,20 @@
         <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
         <span>Cargando membresias</span>
       </div>
+    } @else if (waitingForApproval()) {
+      <div class="state-message">
+        <svg lucideCircleDot aria-hidden="true"></svg>
+        <span>Tu solicitud fue enviada. Espera la aprobaciÃ³n del propietario del negocio.</span>
+      </div>
+      <div class="pending-list">
+        <h3>Solicitudes pendientes</h3>
+        @for (membership of pendingMemberships(); track membership.id) {
+          <p>
+            {{ businessName(membership) }} Â· {{ membership.businessAccountId }} Â·
+            {{ membership.role }}
+          </p>
+        }
+      </div>
     } @else if (approvedMemberships().length === 0) {
       <div class="state-message">
         <svg lucideBuilding2 aria-hidden="true"></svg>
@@ -75,112 +89,113 @@
     }
   </section>
 
-  <section class="onboarding-grid">
-    <article class="action-panel">
-      <div class="panel-heading">
-        <div>
-          <p>Nuevo negocio</p>
-          <h2>Crear negocio</h2>
+  @if (!waitingForApproval()) {
+    <section class="onboarding-grid">
+      <article class="action-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Nuevo negocio</p>
+            <h2>Crear negocio</h2>
+          </div>
         </div>
-      </div>
 
-      <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
-        <label>
-          <span>Nombre</span>
-          <input type="text" formControlName="name" autocomplete="organization" />
-          @if (isBusinessInvalid('name')) {
-            <small>Ingresa el nombre del negocio.</small>
-          }
-        </label>
-
-        <label>
-          <span>Ciudad</span>
-          <input type="text" formControlName="city" autocomplete="address-level2" />
-          @if (isBusinessInvalid('city')) {
-            <small>Ingresa la ciudad.</small>
-          }
-        </label>
-
-        <label>
-          <span>Direccion</span>
-          <input type="text" formControlName="address" autocomplete="street-address" />
-          @if (isBusinessInvalid('address')) {
-            <small>Ingresa la direccion.</small>
-          }
-        </label>
-
-        <yep-phone-input
-          label="Teléfono"
-          placeholder="300 123 4567"
-          formControlName="phone"
-          [required]="true"
-          [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
-        ></yep-phone-input>
-
-        <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
-          @if (creatingBusiness()) {
-            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-          } @else {
-            <svg lucideBuilding2 aria-hidden="true"></svg>
-          }
-          <span>Crear y usar</span>
-        </button>
-      </form>
-    </article>
-
-    <article class="action-panel">
-      <div class="panel-heading">
-        <div>
-          <p>Negocio existente</p>
-          <h2>Solicitar acceso</h2>
-        </div>
-      </div>
-
-      <form [formGroup]="requestForm" (ngSubmit)="requestAccess()" novalidate>
-        @if (knownBusinessAccounts().length > 0) {
+        <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
           <label>
-            <span>Seleccionar negocio conocido</span>
-            <select
-              (change)="selectKnownBusiness($event)"
-              [value]="requestForm.controls.businessAccountId.value"
-            >
-              <option value="">Ingresar ID manualmente</option>
-              @for (business of knownBusinessAccounts(); track business.id) {
-                <option [value]="business.id">{{ business.name }} · {{ business.id }}</option>
-              }
-            </select>
+            <span>Nombre</span>
+            <input type="text" formControlName="name" autocomplete="organization" />
+            @if (isBusinessInvalid('name')) {
+              <small>Ingresa el nombre del negocio.</small>
+            }
           </label>
-        }
 
-        <label>
-          <span>ID del negocio</span>
-          <input type="text" formControlName="businessAccountId" autocomplete="off" />
-          @if (isRequestInvalid()) {
-            <small>Ingresa el ID del negocio.</small>
-          }
-        </label>
+          <yep-address-location-select
+            formControlName="location"
+            [required]="true"
+            [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad.' : ''"
+            dataCy="onboarding-business-location"
+          />
 
-        <button class="primary-action" type="submit" [disabled]="requestingAccess()">
-          @if (requestingAccess()) {
-            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-          } @else {
-            <svg lucideSend aria-hidden="true"></svg>
-          }
-          <span>Solicitar como staff</span>
-        </button>
-      </form>
+          <label>
+            <span>Direccion</span>
+            <input type="text" formControlName="address" autocomplete="street-address" />
+            @if (isBusinessInvalid('address')) {
+              <small>Ingresa la direccion.</small>
+            }
+          </label>
 
-      @if (pendingMemberships().length > 0) {
-        <div class="pending-list">
-          <h3>Solicitudes pendientes</h3>
-          @for (membership of pendingMemberships(); track membership.id) {
-            <p>
-              {{ businessName(membership) }} · {{ membership.businessAccountId }} ·
-              {{ membership.role }}
-            </p>
-          }
+          <yep-phone-input
+            label="Teléfono"
+            placeholder="300 123 4567"
+            formControlName="phone"
+            [required]="true"
+            [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
+          ></yep-phone-input>
+
+          <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
+            @if (creatingBusiness()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            } @else {
+              <svg lucideBuilding2 aria-hidden="true"></svg>
+            }
+            <span>Crear y usar</span>
+          </button>
+        </form>
+      </article>
+
+      <article class="action-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Negocio existente</p>
+            <h2>Solicitar acceso</h2>
+          </div>
         </div>
-      }
-    </article>
-  </section>
+
+        <form [formGroup]="requestForm" (ngSubmit)="requestAccess()" novalidate>
+          @if (knownBusinessAccounts().length > 0) {
+            <label>
+              <span>Seleccionar negocio conocido</span>
+              <select
+                (change)="selectKnownBusiness($event)"
+                [value]="requestForm.controls.businessAccountId.value"
+              >
+                <option value="">Ingresar ID manualmente</option>
+                @for (business of knownBusinessAccounts(); track business.id) {
+                  <option [value]="business.id">{{ business.name }} · {{ business.id }}</option>
+                }
+              </select>
+            </label>
+          }
+
+          <label>
+            <span>ID del negocio</span>
+            <input type="text" formControlName="businessAccountId" autocomplete="off" />
+            @if (isRequestInvalid()) {
+              <small>Ingresa el ID del negocio.</small>
+            }
+          </label>
+
+          <button class="primary-action" type="submit" [disabled]="requestingAccess()">
+            @if (requestingAccess()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            } @else {
+              <svg lucideSend aria-hidden="true"></svg>
+            }
+            <span>Solicitar como staff</span>
+          </button>
+        </form>
+
+        @if (pendingMemberships().length > 0) {
+          <div class="pending-list">
+            <h3>Solicitudes pendientes</h3>
+            @for (membership of pendingMemberships(); track membership.id) {
+              <p>
+                {{ businessName(membership) }} · {{ membership.businessAccountId }} ·
+                {{ membership.role }}
+              </p>
+            }
+          </div>
+        }
+      </article>
+    </section>
+  }
 </main>

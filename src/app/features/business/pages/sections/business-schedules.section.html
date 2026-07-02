@@ -1,0 +1,244 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Horarios</h2>
+      <p class="section-subtitle">
+        @if (canManage()) {
+          Plantilla semanal de turnos por sede. Haz clic en una franja para crear un turno o en un
+          bloque para editarlo. Define en qué negocio se registran los comprobantes de WhatsApp de
+          cada empleado.
+        } @else {
+          Tu horario semanal de turnos. Lo gestiona el propietario del negocio.
+        }
+      </p>
+    </div>
+    @if (canManage()) {
+      <yep-button variant="primary" size="sm" (clicked)="openShift()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nuevo turno
+      </yep-button>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+  }
+
+  @if (selectedUserId()) {
+    <div class="employee-filter">
+      <span
+        >Mostrando turnos de <strong>{{ activeEmployeeName() }}</strong></span
+      >
+      <button type="button" class="employee-filter__clear" (click)="clearEmployeeFilter()">
+        <svg lucideX aria-hidden="true"></svg>
+        Quitar filtro
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando horarios…
+    </div>
+  } @else if (message()) {
+    <div class="empty-state">
+      <h3>Horarios no disponibles</h3>
+      <p>{{ message() }}</p>
+    </div>
+  } @else if (locations().length === 0) {
+    <div class="empty-state">
+      <h3>Sin sedes</h3>
+      <p>Crea una sede antes de programar turnos.</p>
+    </div>
+  } @else {
+    @if (locationToggles().length > 1 || legend().length > 0) {
+      <div class="grid-filters">
+        @if (locationToggles().length > 1) {
+          <div class="grid-filters__group">
+            <span class="grid-filters__label">Sedes</span>
+            <div class="grid-filters__toggles">
+              @for (loc of locationToggles(); track loc.id) {
+                <yep-toggle
+                  appearance="button"
+                  [pressed]="loc.active"
+                  [label]="loc.name"
+                  (toggled)="toggleLocation(loc.id)"
+                />
+              }
+            </div>
+          </div>
+        }
+        @if (legend().length > 0) {
+          <div class="grid-filters__group">
+            <span class="grid-filters__label">Empleados</span>
+            <div class="grid-filters__toggles">
+              @for (entry of legend(); track entry.userId) {
+                <yep-toggle
+                  appearance="button"
+                  [pressed]="entry.active"
+                  [label]="entry.label"
+                  (toggled)="toggleEmployee(entry.userId)"
+                >
+                  <span toggleLead class="legend__dot" [style.background]="entry.color"></span>
+                </yep-toggle>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="week-nav">
+      <button
+        type="button"
+        class="week-nav__arrow"
+        (click)="prevWeek()"
+        aria-label="Semana anterior"
+      >
+        <svg lucideChevronLeft aria-hidden="true"></svg>
+      </button>
+      <h3 class="week-nav__month">{{ monthTitle() }}</h3>
+      <button type="button" class="week-nav__arrow" (click)="nextWeek()" aria-label="Semana siguiente">
+        <svg lucideChevronRight aria-hidden="true"></svg>
+      </button>
+      <yep-button
+        variant="ghost"
+        size="sm"
+        class="week-nav__today"
+        [disabled]="isCurrentWeek()"
+        (clicked)="goToday()"
+      >
+        Hoy
+      </yep-button>
+    </div>
+
+    <div class="week-board" [class.week-board--empty]="visibleShifts().length === 0">
+      <div class="week-board__scroll" #boardBody>
+        <div class="week-board__head">
+          <div class="week-board__corner"></div>
+          @for (col of dayColumns; track col.day) {
+            <div class="week-board__dayname" [class.week-board__dayname--today]="isToday(col.day)">
+              <span class="week-board__dayname-label">{{ col.label }}</span>
+              <span class="week-board__dayname-date">{{ dayOfMonth(col.day) }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="week-board__body" [style.height.px]="bodyHeight()">
+          <div class="week-board__axis">
+            @for (hour of hourMarks(); track hour) {
+              <div class="week-board__hour" [style.height.px]="hourHeight">
+                <span>{{ hourLabel(hour) }}</span>
+              </div>
+            }
+          </div>
+
+          @for (col of dayColumns; track col.day) {
+            <div
+              class="week-board__col"
+              [class.week-board__col--clickable]="canManage()"
+              [class.week-board__col--today]="isToday(col.day)"
+              [style.background-size]="'100% ' + hourHeight + 'px'"
+              (click)="onColumnClick(col.day, $event)"
+            >
+              @for (item of layoutForDay(col.day); track item.shift.id) {
+                <button
+                  type="button"
+                  class="shift-block"
+                  [class.shift-block--readonly]="!canManage()"
+                  [style.top.px]="item.top"
+                  [style.height.px]="item.height"
+                  [style.left.%]="item.leftPct"
+                  [style.width.%]="item.widthPct"
+                  [style.--shift-color]="item.color"
+                  (click)="onBlockClick(item.shift, $event)"
+                >
+                  <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
+                  <span class="shift-block__time"
+                    >{{ item.shift.startTime }}–{{ item.shift.endTime }}</span
+                  >
+                  <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (visibleShifts().length === 0) {
+        <p class="week-board__hint">
+          @if (canManage()) {
+            Sin turnos en la plantilla. Haz clic en una franja del día para crear el primero. La
+            plantilla se repite cada semana.
+          } @else {
+            No tienes turnos asignados.
+          }
+        </p>
+      }
+    </div>
+  }
+</div>
+
+<yep-modal
+  [open]="shiftOpen()"
+  [title]="editingShiftId() ? 'Editar turno' : 'Nuevo turno'"
+  [loading]="savingShift()"
+  (closeRequested)="closeShift()"
+>
+  <form [formGroup]="shiftForm" (ngSubmit)="saveShift()" class="form-grid">
+    <yep-select
+      formControlName="locationId"
+      label="Sede"
+      [options]="locationOptions()"
+      [error]="isInvalid('locationId') ? 'Selecciona una sede' : ''"
+    />
+    <yep-select
+      formControlName="userId"
+      label="Empleado"
+      [searchable]="true"
+      [options]="memberOptions()"
+      [error]="isInvalid('userId') ? 'Selecciona un empleado' : ''"
+    />
+    <div class="shift-field">
+      <span class="shift-field__label">
+        {{ editingShiftId() ? 'Día' : 'Días (se repite cada semana)' }}
+      </span>
+      <yep-day-picker formControlName="days" />
+      @if (isInvalid('days')) {
+        <small class="field-error">Selecciona al menos un día</small>
+      }
+    </div>
+    <div class="form-grid form-grid--2">
+      <yep-time-picker formControlName="startTime" label="Hora inicio" />
+      <yep-time-picker formControlName="endTime" label="Hora fin" />
+    </div>
+    @if (shiftForm.errors?.['endBeforeStart']) {
+      <div class="field-error">La hora de fin debe ser mayor a la de inicio.</div>
+    }
+    @if (overlapError()) {
+      <div class="field-error" role="alert">{{ overlapError() }}</div>
+    }
+  </form>
+
+  <ng-container modalFooter>
+    @if (editingShiftId()) {
+      <yep-button
+        variant="danger"
+        [loading]="deletingId() === editingShiftId()"
+        (clicked)="deleteEditing()"
+      >
+        Eliminar
+      </yep-button>
+    }
+    <yep-button variant="ghost" [disabled]="savingShift()" (clicked)="closeShift()">
+      Cancelar
+    </yep-button>
+    <yep-button type="submit" [loading]="savingShift()" (clicked)="saveShift()">
+      {{ editingShiftId() ? 'Guardar' : 'Crear turno' }}
+    </yep-button>
+  </ng-container>
+</yep-modal>

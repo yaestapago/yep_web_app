@@ -59,7 +59,17 @@
     </button>
 
     @if (open()) {
-      <div class="yep-select__panel" role="listbox" [attr.aria-multiselectable]="multiple()">
+      <div
+        class="yep-select__panel"
+        role="listbox"
+        [attr.aria-multiselectable]="multiple()"
+        [style.left.px]="panelLeft()"
+        [style.top.px]="opensUpward() ? null : panelTop()"
+        [style.bottom.px]="opensUpward() ? panelBottom() : null"
+        [style.width.px]="embedded() ? null : panelWidth()"
+        [style.min-width.px]="embedded() ? panelWidth() : null"
+        [style.--yep-select-panel-max-height]="panelMaxHeight() + 'px'"
+      >
         @if (searchable()) {
           <label class="yep-select__search">
             <svg lucideSearch aria-hidden="true"></svg>

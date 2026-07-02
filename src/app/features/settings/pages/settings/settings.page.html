@@ -74,18 +74,13 @@
                 <span class="toggle-label">{{ toggle.label }}</span>
                 <span class="toggle-desc">{{ toggle.description }}</span>
               </div>
-              <button
-                type="button"
-                class="switch"
-                role="switch"
-                [class.on]="notifications()[toggle.key]"
-                [attr.aria-checked]="notifications()[toggle.key]"
-                [attr.aria-label]="toggle.label"
+              <yep-toggle
+                appearance="switch"
+                [pressed]="notifications()[toggle.key]"
+                [ariaLabel]="toggle.label"
                 [disabled]="savingNotifications()"
-                (click)="toggleNotification(toggle.key)"
-              >
-                <span class="switch-thumb"></span>
-              </button>
+                (toggled)="toggleNotification(toggle.key)"
+              />
             </li>
           }
         </ul>
@@ -158,7 +153,6 @@
   title="Editar perfil"
   subtitle="Actualiza tus datos personales y de contacto."
   [loading]="savingProfile()"
-  [dirty]="profileForm.dirty"
   (closeRequested)="closeProfile()"
 >
   <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="form-grid">
@@ -207,7 +201,6 @@
   title="Cambiar contraseña"
   subtitle="Ingresa tu contraseña actual y la nueva."
   [loading]="savingPassword()"
-  [dirty]="passwordForm.dirty"
   (closeRequested)="closePassword()"
 >
   <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="form-grid">

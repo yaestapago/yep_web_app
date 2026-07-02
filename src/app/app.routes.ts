@@ -119,6 +119,20 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'employees',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-employees.section').then(
+                (m) => m.BusinessEmployeesSection,
+              ),
+          },
+          {
+            path: 'schedules',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-schedules.section').then(
+                (m) => m.BusinessSchedulesSection,
+              ),
+          },
+          {
             path: 'business-data',
             loadComponent: () =>
               import('./features/business/pages/sections/business-data.section').then(

@@ -13,6 +13,8 @@ import {
   ForgotPasswordVerifyCodeResponse,
   LoginRequest,
   MeResponse,
+  RegisterRequestCodeRequest,
+  RegisterRequestCodeResponse,
   RegisterRequest,
   ResetPasswordRequest,
   ResetPasswordResponse,
@@ -31,6 +33,15 @@ export class AuthApiService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, request);
   }
 
+  requestRegistrationVerificationCode(
+    request: RegisterRequestCodeRequest,
+  ): Observable<RegisterRequestCodeResponse> {
+    return this.http.post<RegisterRequestCodeResponse>(
+      `${this.apiUrl}/auth/register/request-code`,
+      request,
+    );
+  }
+
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request);
   }
@@ -43,13 +54,8 @@ export class AuthApiService {
     return this.http.patch<UserResponse>(`${this.apiUrl}/auth/me`, request);
   }
 
-  changePassword(
-    request: ChangePasswordRequest,
-  ): Observable<ChangePasswordResponse> {
-    return this.http.post<ChangePasswordResponse>(
-      `${this.apiUrl}/auth/me/password`,
-      request,
-    );
+  changePassword(request: ChangePasswordRequest): Observable<ChangePasswordResponse> {
+    return this.http.post<ChangePasswordResponse>(`${this.apiUrl}/auth/me/password`, request);
   }
 
   updateNotificationPreferences(
@@ -61,13 +67,8 @@ export class AuthApiService {
     );
   }
 
-  updateGeneralPreferences(
-    request: UpdateGeneralPreferencesRequest,
-  ): Observable<UserResponse> {
-    return this.http.patch<UserResponse>(
-      `${this.apiUrl}/auth/me/general-preferences`,
-      request,
-    );
+  updateGeneralPreferences(request: UpdateGeneralPreferencesRequest): Observable<UserResponse> {
+    return this.http.patch<UserResponse>(`${this.apiUrl}/auth/me/general-preferences`, request);
   }
 
   requestPasswordResetCode(
@@ -89,6 +90,9 @@ export class AuthApiService {
   }
 
   resetPassword(request: ResetPasswordRequest): Observable<ResetPasswordResponse> {
-    return this.http.post<ResetPasswordResponse>(`${this.apiUrl}/auth/forgot-password/reset`, request);
+    return this.http.post<ResetPasswordResponse>(
+      `${this.apiUrl}/auth/forgot-password/reset`,
+      request,
+    );
   }
 }

@@ -1,0 +1,92 @@
+<div class="yep-time-picker">
+  @if (label()) {
+    <span class="yep-time-picker__label">{{ label() }}</span>
+  }
+
+  <div
+    class="yep-time-picker__control"
+    [class.yep-time-picker__control--invalid]="error()"
+  >
+    <input
+      class="yep-time-picker__input"
+      type="time"
+      [id]="id()"
+      [value]="displayValue()"
+      [disabled]="disabled() || isControlDisabled()"
+      [attr.aria-invalid]="error() ? 'true' : null"
+      [attr.data-cy]="dataCy() || null"
+      (input)="updateFromInput($event)"
+      (blur)="markTouched()"
+    />
+    <button
+      class="yep-time-picker__trigger"
+      type="button"
+      aria-label="Elegir hora con la rueda"
+      [attr.aria-expanded]="open()"
+      [disabled]="disabled() || isControlDisabled()"
+      (click)="toggleOpen()"
+    >
+      <svg lucideClock aria-hidden="true"></svg>
+    </button>
+  </div>
+
+  @if (open()) {
+    <div class="yep-time-picker__backdrop" (click)="close()"></div>
+    <div class="yep-time-picker__popover" (keydown.escape)="close()">
+      <div class="yep-time-picker__wheels">
+        <div
+          #hourList
+          class="yep-time-picker__column"
+          role="listbox"
+          tabindex="0"
+          aria-label="Horas"
+          (scroll)="onScroll('hour')"
+          (keydown)="onWheelKeydown('hour', $event)"
+        >
+          @for (h of hours; track h) {
+            <button
+              class="yep-time-picker__item"
+              type="button"
+              role="option"
+              [class.yep-time-picker__item--active]="h === hour()"
+              [attr.aria-selected]="h === hour()"
+              (click)="pick('hour', h)"
+            >
+              {{ pad(h) }}
+            </button>
+          }
+        </div>
+
+        <span class="yep-time-picker__sep" aria-hidden="true">:</span>
+
+        <div
+          #minuteList
+          class="yep-time-picker__column"
+          role="listbox"
+          tabindex="0"
+          aria-label="Minutos"
+          (scroll)="onScroll('minute')"
+          (keydown)="onWheelKeydown('minute', $event)"
+        >
+          @for (m of minutes; track m) {
+            <button
+              class="yep-time-picker__item"
+              type="button"
+              role="option"
+              [class.yep-time-picker__item--active]="m === minute()"
+              [attr.aria-selected]="m === minute()"
+              (click)="pick('minute', m)"
+            >
+              {{ pad(m) }}
+            </button>
+          }
+        </div>
+      </div>
+      <div class="yep-time-picker__selection" aria-hidden="true"></div>
+    </div>
+  }
+
+  @if (error()) {
+    <small class="yep-time-picker__message yep-time-picker__message--error">{{ error() }}</small>
+  }
+</div>

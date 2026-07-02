@@ -1,11 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import {
-  Component,
-  effect,
-  inject,
-  input as defineInput,
-  output,
-} from '@angular/core';
+import { Component, effect, inject, input as defineInput, output } from '@angular/core';
 import { LucideX } from '@lucide/angular';
 
 type ModalSize = 'sm' | 'md' | 'lg';
@@ -24,8 +18,8 @@ type ModalSize = 'sm' | 'md' | 'lg';
  * </yep-modal>
  * ```
  *
- * El cierre se delega siempre al padre vía `closeRequested` para permitir
- * un cierre seguro (confirmar si hay cambios sin guardar) usando `dirty`.
+ * El cierre se delega siempre al padre via `closeRequested` para permitir
+ * flujos seguros cuando una vista necesita confirmar cambios sin guardar.
  */
 @Component({
   selector: 'yep-modal',
@@ -40,16 +34,11 @@ export class Modal {
   readonly title = defineInput('');
   readonly subtitle = defineInput('');
   readonly size = defineInput<ModalSize>('md');
+  readonly showHeader = defineInput(true);
   /** Estado de carga: deshabilita el botón de cerrar de la cabecera. */
   readonly loading = defineInput(false);
-  /** Indica que hay cambios sin guardar para confirmar antes de cerrar. */
-  readonly dirty = defineInput(false);
   /** Permite cerrar al hacer clic en el fondo. */
   readonly dismissOnBackdrop = defineInput(true);
-  /** Mensaje de confirmación al intentar cerrar con cambios. */
-  readonly confirmMessage = defineInput(
-    '¿Descartar los cambios sin guardar?',
-  );
 
   /** Solicitud de cierre (cancelar, ESC, fondo o botón X). El padre decide. */
   readonly closeRequested = output<void>();
@@ -70,10 +59,6 @@ export class Modal {
       return;
     }
 
-    if (this.dirty() && !this.confirmDiscard()) {
-      return;
-    }
-
     this.closeRequested.emit();
   }
 
@@ -89,9 +74,5 @@ export class Modal {
     }
     event.stopPropagation();
     this.requestClose();
-  }
-
-  private confirmDiscard(): boolean {
-    return this.document.defaultView?.confirm(this.confirmMessage()) ?? true;
   }
 }

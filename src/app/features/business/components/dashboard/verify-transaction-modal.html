@@ -27,16 +27,21 @@
     </dl>
 
     <p class="verify-note">
-      Al confirmar, la transacción quedará marcada como verificada y se registrará
-      quién y cuándo realizó la verificación.
+      Confirma para marcar el pago como verificado, o recházalo si no procede. Se
+      registrará quién y cuándo tomó la decisión, y prevalecerá sobre la
+      verificación automática.
     </p>
   }
 
   <ng-container modalFooter>
     <yep-button variant="ghost" [disabled]="loading()" (clicked)="cancel.emit()">Cancelar</yep-button>
+    <yep-button variant="danger" [loading]="loading()" (clicked)="onReject()">
+      <svg lucideShieldX aria-hidden="true"></svg>
+      Rechazar
+    </yep-button>
     <yep-button [loading]="loading()" (clicked)="onConfirm()">
       <svg lucideShieldCheck aria-hidden="true"></svg>
-      Confirmar verificación
+      Confirmar pago
     </yep-button>
   </ng-container>
 </yep-modal>

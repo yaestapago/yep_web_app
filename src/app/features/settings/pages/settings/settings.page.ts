@@ -24,7 +24,9 @@ import type {
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
+import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
 
@@ -57,6 +59,7 @@ interface NotificationToggle {
     Input,
     Modal,
     PhoneInput,
+    Toggle,
     LucideBell,
     LucideChevronDown,
     LucideMoon,
@@ -75,6 +78,7 @@ export class SettingsPage implements OnInit {
   private readonly authApi = inject(AuthApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notificationModal = inject(NotificationModalService);
 
   readonly user = this.session.user;
   readonly isDark = this.theme.isDark;
@@ -207,10 +211,24 @@ export class SettingsPage implements OnInit {
     this.profileOpen.set(true);
   }
 
-  closeProfile(): void {
+  async closeProfile(): Promise<void> {
     if (this.savingProfile()) {
       return;
     }
+
+    if (this.profileForm.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en tu perfil.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.profileOpen.set(false);
   }
 
@@ -263,10 +281,24 @@ export class SettingsPage implements OnInit {
     this.passwordOpen.set(true);
   }
 
-  closePassword(): void {
+  async closePassword(): Promise<void> {
     if (this.savingPassword()) {
       return;
     }
+
+    if (this.passwordForm.dirty) {
+      const confirmed = await this.notificationModal.confirm({
+        title: 'Descartar cambios',
+        message: 'Tienes cambios sin guardar en el cambio de contrasena.',
+        type: 'warning',
+        confirmText: 'Descartar',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     this.passwordOpen.set(false);
   }
 
