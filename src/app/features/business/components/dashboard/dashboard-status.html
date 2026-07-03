@@ -1,88 +1,54 @@
-<div
-  class="zone"
-  [class.zone--horizontal]="layout() === 'horizontal'"
-  [class.zone--collapsed]="collapsed()"
->
+<div class="zone">
   <div class="zone__head">
     <h3 class="zone__title"><svg lucideBellRing aria-hidden="true"></svg> Estado del sistema</h3>
-
-    @if (collapsed()) {
-      <div class="status-summary semaphore--{{ semaphore().level }}" role="status">
-        <span class="status-summary__lights" aria-hidden="true">
-          <span class="slight slight--red"></span>
-          <span class="slight slight--yellow"></span>
-          <span class="slight slight--green"></span>
-        </span>
-        <span class="status-summary__text">
-          <strong class="status-summary__label">{{ semaphore().label }}</strong>
-        </span>
-      </div>
-    }
-
-    <button
-      type="button"
-      class="icon-btn"
-      (click)="toggleCollapse.emit()"
-      [attr.aria-expanded]="!collapsed()"
-      [attr.aria-label]="collapsed() ? 'Mostrar estado del sistema' : 'Ocultar estado del sistema'"
-      [title]="collapsed() ? 'Mostrar estado del sistema' : 'Ocultar estado del sistema'"
-    >
-      @if (collapsed()) {
-        <svg lucideChevronDown aria-hidden="true"></svg>
-      } @else {
-        <svg lucideChevronUp aria-hidden="true"></svg>
-      }
-    </button>
   </div>
 
-  @if (!collapsed()) {
-    <div class="zone__body status-body">
-      <div class="semaphore semaphore--{{ semaphore().level }}" role="status">
-        <span class="semaphore__lights" aria-hidden="true">
-          <span class="slight slight--red"></span>
-          <span class="slight slight--yellow"></span>
-          <span class="slight slight--green"></span>
-        </span>
-        <span class="semaphore__text">
-          <strong class="semaphore__label">{{ semaphore().label }}</strong>
-          <span class="semaphore__detail">{{ semaphore().detail }}</span>
-        </span>
-      </div>
-
-      <div class="notifiers">
-        <span class="notifiers__caption">Notificadores</span>
-
-        @if (loading()) {
-          <div class="state">
-            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-          </div>
-        } @else if (error()) {
-          <div class="state state--error">
-            <svg lucideTriangleAlert aria-hidden="true"></svg>
-            <p>{{ error() }}</p>
-          </div>
-        } @else if (rows().length === 0) {
-          <div class="state">
-            <svg lucideCircleCheck aria-hidden="true"></svg>
-            <p>Sin notificadores configurados.</p>
-          </div>
-        } @else {
-          <ul class="nlist">
-            @for (row of rows(); track row.notifier.id) {
-              <li class="nlist__row">
-                <span
-                  [class]="lightClass(row.status.level)"
-                  [attr.aria-label]="notifierName(row.notifier) + ': ' + row.status.label"
-                ></span>
-                <span class="nlist__main">
-                  <span class="nlist__name">{{ notifierName(row.notifier) }}</span>
-                  <span class="nlist__rel">{{ relative(row.status) }}</span>
-                </span>
-              </li>
-            }
-          </ul>
-        }
-      </div>
+  <div class="zone__body status-body">
+    <div class="semaphore semaphore--{{ semaphore().level }}" role="status">
+      <span class="semaphore__lights" aria-hidden="true">
+        <span class="slight slight--red"></span>
+        <span class="slight slight--yellow"></span>
+        <span class="slight slight--green"></span>
+      </span>
+      <span class="semaphore__text">
+        <strong class="semaphore__label">{{ semaphore().label }}</strong>
+        <span class="semaphore__detail">{{ semaphore().detail }}</span>
+      </span>
     </div>
-  }
+
+    <div class="notifiers">
+      <span class="notifiers__caption">Notificadores</span>
+
+      @if (loading()) {
+        <div class="state">
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+        </div>
+      } @else if (error()) {
+        <div class="state state--error">
+          <svg lucideTriangleAlert aria-hidden="true"></svg>
+          <p>{{ error() }}</p>
+        </div>
+      } @else if (rows().length === 0) {
+        <div class="state">
+          <svg lucideCircleCheck aria-hidden="true"></svg>
+          <p>Sin notificadores configurados.</p>
+        </div>
+      } @else {
+        <ul class="nlist">
+          @for (row of rows(); track row.notifier.id) {
+            <li class="nlist__row">
+              <span
+                [class]="lightClass(row.status.level)"
+                [attr.aria-label]="notifierName(row.notifier) + ': ' + row.status.label"
+              ></span>
+              <span class="nlist__main">
+                <span class="nlist__name">{{ notifierName(row.notifier) }}</span>
+                <span class="nlist__rel">{{ relative(row.status) }}</span>
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
 </div>

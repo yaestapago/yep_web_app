@@ -1,21 +1,7 @@
 import { DOCUMENT } from '@angular/common';
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  input as defineInput,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, computed, effect, inject, input as defineInput, signal } from '@angular/core';
 import type { ChartData, ChartOptions, ChartType } from 'chart.js';
-import {
-  LucideChartPie,
-  LucideChevronDown,
-  LucideChevronUp,
-  LucideMaximize2,
-  LucideSettings2,
-} from '@lucide/angular';
+import { LucideChartPie, LucideMaximize2, LucideSettings2 } from '@lucide/angular';
 
 import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
@@ -45,10 +31,26 @@ interface CatalogItem {
 
 const CATALOG: CatalogItem[] = [
   { id: 'bankAmounts', title: 'Montos por banco', description: 'Dona de lo recibido por banco.' },
-  { id: 'dailyCaptured', title: 'Capturado por día', description: 'Barras del monto de los últimos 7 días.' },
-  { id: 'statusDistribution', title: 'Distribución por estado', description: 'Recibida, verificada, pendiente y rechazada.' },
-  { id: 'paidVsPending', title: 'Validados vs pendientes', description: 'Comparativo de conteo de pagos.' },
-  { id: 'eventsBySource', title: 'Eventos por fuente', description: 'Dona de eventos por tipo de origen.' },
+  {
+    id: 'dailyCaptured',
+    title: 'Capturado por día',
+    description: 'Barras del monto de los últimos 7 días.',
+  },
+  {
+    id: 'statusDistribution',
+    title: 'Distribución por estado',
+    description: 'Recibida, verificada, pendiente y rechazada.',
+  },
+  {
+    id: 'paidVsPending',
+    title: 'Validados vs pendientes',
+    description: 'Comparativo de conteo de pagos.',
+  },
+  {
+    id: 'eventsBySource',
+    title: 'Eventos por fuente',
+    description: 'Dona de eventos por tipo de origen.',
+  },
 ];
 
 const DEFAULT_SELECTION = ['bankAmounts', 'dailyCaptured', 'statusDistribution'];
@@ -71,17 +73,7 @@ const SOURCE_LABELS: Record<string, string> = {
  */
 @Component({
   selector: 'app-dashboard-charts',
-  imports: [
-    Button,
-    ChartCanvas,
-    Checkbox,
-    Modal,
-    LucideChartPie,
-    LucideChevronDown,
-    LucideChevronUp,
-    LucideMaximize2,
-    LucideSettings2,
-  ],
+  imports: [Button, ChartCanvas, Checkbox, Modal, LucideChartPie, LucideMaximize2, LucideSettings2],
   templateUrl: './dashboard-charts.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-charts.scss'],
 })
@@ -91,11 +83,6 @@ export class DashboardChartsPanel {
   readonly transactions = defineInput.required<PaymentTransaction[]>();
   readonly sourceEvents = defineInput.required<SourceEvent[]>();
   readonly businessId = defineInput<string | null>(null);
-  /** Colapsado: solo se muestra la cabecera (las gráficas se ocultan). */
-  readonly collapsed = defineInput<boolean>(false);
-  /** Pide alternar el colapso (el dueño del estado decide y lo persiste). */
-  readonly toggleCollapse = output<void>();
-
   readonly catalog = CATALOG;
   readonly configOpen = signal(false);
   readonly selected = signal<string[]>(DEFAULT_SELECTION);
@@ -215,7 +202,13 @@ export class DashboardChartsPanel {
       type: 'doughnut',
       data: {
         labels,
-        datasets: [{ data: [...buckets.values()], backgroundColor: this.cycle(palette, labels.length), borderWidth: 0 }],
+        datasets: [
+          {
+            data: [...buckets.values()],
+            backgroundColor: this.cycle(palette, labels.length),
+            borderWidth: 0,
+          },
+        ],
       },
       options: this.doughnutOptions(),
       ariaLabel: 'Montos recibidos por banco',
@@ -246,7 +239,9 @@ export class DashboardChartsPanel {
       type: 'bar',
       data: {
         labels: days.map((d) => d.label),
-        datasets: [{ data: days.map((d) => d.total), backgroundColor: palette[0], borderRadius: 6 }],
+        datasets: [
+          { data: days.map((d) => d.total), backgroundColor: palette[0], borderRadius: 6 },
+        ],
       },
       options: this.barOptions(),
       ariaLabel: 'Monto capturado por día en los últimos 7 días',
@@ -318,7 +313,13 @@ export class DashboardChartsPanel {
       type: 'doughnut',
       data: {
         labels,
-        datasets: [{ data: [...buckets.values()], backgroundColor: this.cycle(palette, labels.length), borderWidth: 0 }],
+        datasets: [
+          {
+            data: [...buckets.values()],
+            backgroundColor: this.cycle(palette, labels.length),
+            borderWidth: 0,
+          },
+        ],
       },
       options: this.doughnutOptions(),
       ariaLabel: 'Eventos por tipo de fuente',

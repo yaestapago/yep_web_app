@@ -17,8 +17,10 @@ import {
   LucideActivity,
   LucideBanknote,
   LucideBell,
+  LucideChevronDown,
   LucideChevronLeft,
   LucideChevronRight,
+  LucideChevronUp,
   LucideInbox,
   LucideListChecks,
   LucideShieldCheck,
@@ -95,8 +97,10 @@ const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
     LucideActivity,
     LucideBanknote,
     LucideBell,
+    LucideChevronDown,
     LucideChevronLeft,
     LucideChevronRight,
+    LucideChevronUp,
     LucideInbox,
     LucideListChecks,
     LucideShieldCheck,
@@ -129,27 +133,14 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   private kpiResizeObserver?: ResizeObserver;
   private kpiScrollRaf: number | null = null;
 
-  /**
-   * Gráficas visibles u ocultas. Al ocultarlas, el módulo de estado pasa a
-   * barra horizontal y las tablas de eventos/transacciones ganan alto. La
-   * preferencia se guarda en `localStorage` (SSR-safe vía defaultView).
-   */
-  private static readonly CHARTS_STORAGE_KEY = 'yep_web.dashboard.chartsVisible';
-  private static readonly STATUS_STORAGE_KEY = 'yep_web.dashboard.statusVisible';
-  readonly chartsVisible = signal<boolean>(this.readChartsVisible());
-  readonly statusVisible = signal<boolean>(this.readStatusVisible());
+  /** Resumen superior visible u oculto, persistido en localStorage. */
+  private static readonly SUMMARY_STORAGE_KEY = 'yep_web.dashboard.summaryVisible';
+  readonly summaryVisible = signal<boolean>(this.readSummaryVisible());
 
-  private readonly chartsVisiblePersistEffect = effect(() => {
-    const visible = this.chartsVisible();
+  private readonly summaryVisiblePersistEffect = effect(() => {
+    const visible = this.summaryVisible();
     this.document.defaultView?.localStorage.setItem(
-      BusinessDashboardSection.CHARTS_STORAGE_KEY,
-      visible ? '1' : '0',
-    );
-  });
-  private readonly statusVisiblePersistEffect = effect(() => {
-    const visible = this.statusVisible();
-    this.document.defaultView?.localStorage.setItem(
-      BusinessDashboardSection.STATUS_STORAGE_KEY,
+      BusinessDashboardSection.SUMMARY_STORAGE_KEY,
       visible ? '1' : '0',
     );
   });
@@ -254,6 +245,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
         .length,
   );
   readonly eventsCount = computed(() => this.metricsEvents().length);
+  readonly attentionCount = computed(
+    () => this.pendingCount() + this.reviewCount() + this.rejectedCount(),
+  );
 
   // --- Estado de notificadores ---
   readonly notifierRows = computed<NotifierStatusRow[]>(() => {
@@ -418,12 +412,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     return [event, ...events];
   }
 
-  toggleCharts(): void {
-    this.chartsVisible.update((visible) => !visible);
-  }
-
-  toggleStatus(): void {
-    this.statusVisible.update((visible) => !visible);
+  toggleSummary(): void {
+    this.summaryVisible.update((visible) => !visible);
+    this.scheduleKpiScrollStateUpdate();
   }
 
   scrollKpis(direction: 'left' | 'right'): void {
@@ -470,17 +461,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.canScrollKpisRight.set(maxScrollLeft - element.scrollLeft > tolerance);
   }
 
-  private readChartsVisible(): boolean {
+  private readSummaryVisible(): boolean {
     const raw = this.document.defaultView?.localStorage.getItem(
-      BusinessDashboardSection.CHARTS_STORAGE_KEY,
-    );
-    // Por defecto visibles; solo se ocultan si el usuario lo guardó así.
-    return raw !== '0';
-  }
-
-  private readStatusVisible(): boolean {
-    const raw = this.document.defaultView?.localStorage.getItem(
-      BusinessDashboardSection.STATUS_STORAGE_KEY,
+      BusinessDashboardSection.SUMMARY_STORAGE_KEY,
     );
     return raw !== '0';
   }

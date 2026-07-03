@@ -5,30 +5,6 @@
   gap: var(--space-1);
 }
 
-/* Colapsado: solo se muestra la cabecera, pero la tarjeta llena el alto de su
-   contenedor (a la par del estado). La cabecera se vuelve una columna que
-   rellena ese alto: título arriba (mismo tamaño que el del estado) y los
-   botones repartidos abajo, ocupando todo el ancho de la cajita. */
-.zone--collapsed .zone__head {
-  align-items: center;
-  border-bottom: 0;
-  flex-direction: row;
-  gap: var(--space-2);
-  height: auto;
-  justify-content: space-between;
-  padding: var(--space-3);
-}
-
-.zone--collapsed .zone__actions {
-  flex-direction: row;
-  gap: var(--space-1);
-  width: auto;
-}
-
-.zone--collapsed .icon-btn {
-  width: var(--control-height-sm);
-}
-
 .charts-body {
   padding: var(--space-3);
 }
@@ -103,14 +79,12 @@
   position: relative;
 }
 
-/* Gráfica ampliada dentro del modal */
 .chart-expanded {
   height: min(58vh, 460px);
   position: relative;
   width: 100%;
 }
 
-/* Catálogo del modal de configuración */
 .catalog {
   display: flex;
   flex-direction: column;
