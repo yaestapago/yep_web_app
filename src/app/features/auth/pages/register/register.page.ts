@@ -26,6 +26,12 @@ import {
   PhoneInput,
   type PhoneInputValue,
 } from '../../../../shared/ui';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import {
+  PRIVACY_URL,
+  TERMS_URL,
+  TERMS_VERSION,
+} from '../../../../shared/constants/legal.constants';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { AuthApiService } from '../../services/auth-api.service';
@@ -51,6 +57,7 @@ type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
     Input,
     OtpInput,
     PhoneInput,
+    Checkbox,
   ],
   templateUrl: './register.page.html',
   styleUrl: './register.page.scss',
@@ -63,6 +70,9 @@ export class RegisterPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+
+  readonly termsUrl = TERMS_URL;
+  readonly privacyUrl = PRIVACY_URL;
 
   readonly loading = signal(false);
   readonly step = signal<RegisterStep>('form');
@@ -92,6 +102,7 @@ export class RegisterPage implements OnDestroy {
       cellphoneNumber: this.fb.control<PhoneInputValue | null>(null, [Validators.required]),
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
+      acceptTerms: [false, [Validators.requiredTrue]],
     },
     { validators: [this.passwordsMatchValidator] },
   );
@@ -258,6 +269,7 @@ export class RegisterPage implements OnDestroy {
   private buildRegisterRequest(verificationCode: string): RegisterRequest {
     const {
       confirmPassword: _confirmPassword,
+      acceptTerms: _acceptTerms,
       cellphoneNumber,
       ...rawRequest
     } = this.form.getRawValue();
@@ -266,6 +278,8 @@ export class RegisterPage implements OnDestroy {
       ...rawRequest,
       cellphoneNumber: cellphoneNumber?.e164 ?? '',
       verificationCode,
+      acceptedTerms: true,
+      termsVersion: TERMS_VERSION,
     };
   }
 

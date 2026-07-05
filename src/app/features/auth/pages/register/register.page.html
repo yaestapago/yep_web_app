@@ -99,6 +99,18 @@
           <yep-alert variant="success">{{ success() }}</yep-alert>
         }
 
+        <yep-checkbox
+          class="terms-check"
+          formControlName="acceptTerms"
+          appearance="box"
+          [error]="isInvalid('acceptTerms') ? 'invalid' : ''"
+        >
+          Acepto los
+          <a [href]="termsUrl" target="_blank" rel="noopener">Términos y Condiciones</a>
+          y la
+          <a [href]="privacyUrl" target="_blank" rel="noopener">Política de Privacidad</a>.
+        </yep-checkbox>
+
         <yep-button
           type="submit"
           [loading]="loading()"

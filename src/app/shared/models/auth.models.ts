@@ -81,6 +81,8 @@ export interface RegisterRequest {
   cellphoneNumber: string;
   password: string;
   verificationCode: string;
+  acceptedTerms: boolean;
+  termsVersion: string;
 }
 
 export interface RegisterRequestCodeRequest {

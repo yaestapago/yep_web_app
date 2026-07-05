@@ -45,6 +45,7 @@ describe('RegisterPage', () => {
       },
       password: 'secret123',
       confirmPassword: 'secret123',
+      acceptTerms: true,
     });
 
     component.submit();
@@ -72,6 +73,8 @@ describe('RegisterPage', () => {
       cellphoneNumber: '+573001234567',
       password: 'secret123',
       verificationCode: '123456',
+      acceptedTerms: true,
+      termsVersion: '2026-07',
     });
     expect(registerRequest.request.body).not.toHaveProperty('accountName');
 
