@@ -24,6 +24,7 @@ const STATUS_TO_CATEGORY: Record<TransactionStatus, CategoryMeta> = {
   CREATED: { category: 'recibida', label: 'Recibida', tone: 'neutral' },
   PENDING_VERIFICATION: { category: 'pendiente', label: 'Pendiente', tone: 'warning' },
   NEEDS_REVIEW: { category: 'pendiente', label: 'Por revisar', tone: 'warning' },
+  NEEDS_INPUT: { category: 'pendiente', label: 'Requiere dato', tone: 'warning' },
   EVIDENCE_MATCHED: { category: 'verificada', label: 'Verificada', tone: 'success' },
   BANK_VERIFIED: { category: 'verificada', label: 'Verificada por banco', tone: 'success' },
   MANUALLY_VERIFIED: { category: 'verificada', label: 'Verificada manualmente', tone: 'success' },

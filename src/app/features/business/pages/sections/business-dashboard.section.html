@@ -179,7 +179,12 @@
   </div>
 </div>
 
-<app-transaction-detail-modal [transaction]="detailTarget()" (close)="closeDetail()" />
+<app-transaction-detail-modal
+  [transaction]="detailTarget()"
+  (close)="closeDetail()"
+  (viewSourceEvent)="openEventById($event)"
+  (updated)="onTransactionUpdated($event)"
+/>
 <app-source-event-detail-modal [event]="eventDetailTarget()" (close)="closeEventDetail()" />
 <app-verify-transaction-modal
   [transaction]="verifyTarget()"

@@ -6,10 +6,13 @@ import { environment } from '../../../../environments/environment';
 import {
   AttachSupportRequest,
   AttachSupportResponse,
+  CompleteDataRequest,
+  CompleteDataResponse,
   CreateTransactionRequest,
   CreateTransactionResponse,
   ManualDecisionRequest,
   PaymentSupportsResponse,
+  SupportFileUrlResponse,
   TransactionQuery,
   TransactionResponse,
   TransactionsResponse,
@@ -66,6 +69,27 @@ export class TransactionsApiService {
     return this.http.post<TransactionResponse>(
       `${this.apiUrl}/transactions/${transactionId}/manual-decision`,
       request,
+    );
+  }
+
+  /**
+   * Completa los datos que el OCR no extrajo (transacción en NEEDS_INPUT).
+   * Devuelve qué campos se aplicaron/rechazaron y si ya quedó resuelta.
+   */
+  completeData(
+    transactionId: string,
+    request: CompleteDataRequest,
+  ): Observable<CompleteDataResponse> {
+    return this.http.post<CompleteDataResponse>(
+      `${this.apiUrl}/transactions/${transactionId}/complete-data`,
+      request,
+    );
+  }
+
+  /** URL de lectura temporal (prefirmada) de la imagen de un soporte. */
+  getSupportFileUrl(supportId: string): Observable<SupportFileUrlResponse> {
+    return this.http.get<SupportFileUrlResponse>(
+      `${this.apiUrl}/payment-supports/${supportId}/file-url`,
     );
   }
 

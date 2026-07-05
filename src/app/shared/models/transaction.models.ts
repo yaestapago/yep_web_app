@@ -16,7 +16,15 @@ export type TransactionStatus =
   | 'REJECTED'
   | 'DUPLICATE'
   | 'NEEDS_REVIEW'
+  | 'NEEDS_INPUT'
   | 'CANCELLED';
+
+/** Campos requeridos que el OCR puede no haber extraído del comprobante. */
+export type MissingField =
+  | 'amount'
+  | 'receiverAccount'
+  | 'reference'
+  | 'transactionDate';
 
 export type VerificationLevel = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH' | 'MANUAL';
 
@@ -38,6 +46,8 @@ export type ManualReviewDecision = 'confirmed' | 'rejected';
 export interface ManualReview {
   decision: ManualReviewDecision;
   byUserId: string;
+  /** Nombre del revisor, resuelto por el backend. */
+  byUserName?: string;
   at: string;
   note?: string;
 }
@@ -45,6 +55,44 @@ export interface ManualReview {
 export interface ManualDecisionRequest {
   decision: ManualReviewDecision;
   note?: string;
+}
+
+/** Un evento (source event) enlazado a la transacción, etiquetado por origen. */
+export interface LinkedEventView {
+  /** Etiqueta amigable del origen: "correo", "notificador móvil", "sms"… */
+  source: string;
+  sourceType: string;
+  eventId: string;
+  linkedAt: string;
+}
+
+/** Una corrección auditada de un dato que el OCR no extrajo. */
+export interface DataRequestEntry {
+  field: MissingField;
+  value: string;
+  at: string;
+  via: 'whatsapp' | 'module';
+  by?: string;
+  byName?: string;
+}
+
+/** Estado del flujo "pídele al staff el dato que faltó". */
+export interface DataRequest {
+  missingFields: MissingField[];
+  currentField?: MissingField;
+  status: 'pending' | 'asked' | 'resolved';
+  askedAt?: string;
+  askedVia?: 'whatsapp' | 'module';
+  resolvedAt?: string;
+  history: DataRequestEntry[];
+}
+
+/** Datos que el staff aporta desde el módulo para completar una transacción. */
+export interface CompleteDataRequest {
+  amount?: string;
+  receiverAccount?: string;
+  reference?: string;
+  transactionDate?: string;
 }
 
 export interface PaymentTransaction {
@@ -62,9 +110,16 @@ export interface PaymentTransaction {
   dayBucket: string;
   status: TransactionStatus;
   verification: VerificationSnapshot;
+  /** Empleado/usuario que originó la transacción (resuelto por el backend). */
+  employeeId?: string;
+  employeeName?: string;
+  /** Eventos bancarios enlazados (correo, notificador, sms, webhook). */
+  events?: LinkedEventView[];
   createdByMechanismId: string;
   createdBySourceEventId?: string;
   manualReview?: ManualReview;
+  /** Presente cuando la transacción está/estuvo en NEEDS_INPUT. */
+  dataRequest?: DataRequest;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -167,6 +222,18 @@ export interface PaymentSupport {
 
 export interface PaymentSupportsResponse {
   paymentSupports: PaymentSupport[];
+}
+
+/** URL de lectura temporal (prefirmada) de la imagen de un soporte. */
+export interface SupportFileUrlResponse {
+  url: string | null;
+  expiresIn: number;
+}
+
+export interface CompleteDataResponse extends TransactionResponse {
+  applied: MissingField[];
+  rejected: MissingField[];
+  resolved: boolean;
 }
 
 export interface AttachSupportRequest {

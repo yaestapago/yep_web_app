@@ -14,7 +14,6 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   LucideBell,
   LucideCircleCheck,
-  LucideFileText,
   LucideLoaderCircle,
   LucideMail,
   LucideMonitor,
@@ -92,7 +91,6 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     FormsModule,
     LucideBell,
     LucideCircleCheck,
-    LucideFileText,
     LucideLoaderCircle,
     LucideMail,
     LucideMonitor,

@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
-  LucideEye,
   LucideLoaderCircle,
   LucideListChecks,
   LucideSearch,
@@ -47,7 +46,6 @@ type PeriodFilter = 'all' | 'today' | '7d' | '30d';
   imports: [
     CurrencyPipe,
     DatePipe,
-    LucideEye,
     LucideListChecks,
     LucideLoaderCircle,
     LucideSearch,

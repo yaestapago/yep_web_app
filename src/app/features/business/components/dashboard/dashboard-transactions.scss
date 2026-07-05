@@ -60,6 +60,11 @@
   background: color-mix(in srgb, var(--color-secondary) 6%, transparent);
 }
 
+/* Toda la fila abre el detalle (como la lista de eventos de ingreso). */
+.tx-row {
+  cursor: pointer;
+}
+
 .num {
   text-align: right;
 }

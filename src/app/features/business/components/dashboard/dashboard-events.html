@@ -1,6 +1,6 @@
 <div class="zone">
   <div class="zone__head">
-    <h3 class="zone__title"><svg lucideFileText aria-hidden="true"></svg> Reportes de ingreso</h3>
+    <h3 class="zone__title"><svg lucideBell aria-hidden="true"></svg> Eventos de ingreso</h3>
     <span class="zone__count">{{ events().length }}{{ hasMore() ? '+' : '' }}</span>
   </div>
 
@@ -13,7 +13,7 @@
         [value]="search()"
         (input)="search.set($any($event.target).value)"
         placeholder="Buscar referencia o ID..."
-        aria-label="Buscar reportes por referencia o ID"
+        aria-label="Buscar eventos por referencia o ID"
       />
     </span>
     <yep-select

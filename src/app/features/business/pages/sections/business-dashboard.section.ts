@@ -659,8 +659,37 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.eventDetailTarget.set(event);
   }
 
+  /**
+   * Abre el detalle de un evento a partir de su id (lo pide el modal de
+   * transacción al hacer click en un soporte de tipo evento bancario). Trae el
+   * evento y reutiliza el mismo modal de detalle de evento.
+   */
+  openEventById(eventId: string): void {
+    this.sourceEventsApi
+      .get(eventId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.openEventDetail(response.sourceEvent),
+        error: (error) => this.operationError.set(httpErrorMessage(error)),
+      });
+  }
+
   closeEventDetail(): void {
     this.eventDetailTarget.set(null);
+  }
+
+  /**
+   * Tras completar datos faltantes desde el modal: refresca el detalle con la
+   * transacción actualizada y recarga la lista/métricas.
+   */
+  onTransactionUpdated(transaction: PaymentTransaction): void {
+    this.detailTarget.set(transaction);
+    this.transactions.update((transactions) =>
+      transactions.map((current) =>
+        current.id === transaction.id ? transaction : current,
+      ),
+    );
+    this.transactionEvents.notifyChanged();
   }
 
   askVerify(transaction: PaymentTransaction): void {
