@@ -70,6 +70,8 @@ import { VerifyTransactionModal } from '../../components/dashboard/verify-transa
 /** Tamaño de página (cursor) de cada tabla. */
 const EVENTS_PAGE_LIMIT = 50;
 const TRANSACTIONS_PAGE_LIMIT = 100;
+/** Respaldo (ms) de re-consulta de notificadores; el push SSE es la vía principal. */
+const NOTIFIERS_BACKUP_POLL_MS = 120_000;
 const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
 const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
   'received',
@@ -130,6 +132,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   private readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
   private readonly document = inject(DOCUMENT);
   private transactionEventsReady = false;
+  private businessReady = false;
   private kpiResizeObserver?: ResizeObserver;
   private kpiScrollRaf: number | null = null;
 
@@ -222,6 +225,25 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.loadMetrics();
   });
 
+  /**
+   * Al cambiar de negocio la ruta reutiliza este componente (mismo route config,
+   * otro `:businessId`), así que `ngOnInit` no vuelve a correr. Este effect
+   * reacciona al cambio de cuenta activa y recarga todo el dashboard. La primera
+   * ejecución la absorbe `ngOnInit` (bandera `businessReady`).
+   */
+  private readonly businessSwitchEffect = effect(() => {
+    const businessId = this.businessId();
+    if (!this.businessReady) {
+      this.businessReady = true;
+      return;
+    }
+    if (!businessId) {
+      return;
+    }
+    this.refresh();
+    this.loadBankAccounts();
+  });
+
   // --- Métricas (7 KPIs) — sobre la instantánea SIN filtrar ---
   readonly totalAmount = computed(() =>
     this.metricsTransactions().reduce((total, transaction) => total + transaction.amount, 0),
@@ -290,14 +312,86 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.refresh();
     this.loadBankAccounts();
 
+    // Reloj: recalcula los estados relativos de los notificadores para que el
+    // paso a "fuera de línea" (silencio, sin heartbeat) aparezca sin recargar.
+    // El paso a "en línea" llega instantáneo por SSE (notifier-status).
     interval(this.thresholds.refreshIntervalMs)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.now.set(Date.now()));
+
+    // Respaldo con intervalo largo: re-consulta la lista por si se perdió algún
+    // push SSE o hubo cambios que no vienen por heartbeat (desemparejar,
+    // desactivar desde otra sesión).
+    interval(NOTIFIERS_BACKUP_POLL_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshNotifiers());
 
     // Eventos en vivo (SSE): aparecen al instante en la lista, sin recargar.
     this.sourceEventsStream.events$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => this.onLiveEvent(event));
+
+    // Transacciones en vivo (SSE): actualizan KPIs/semáforo y las filas visibles.
+    this.sourceEventsStream.transactions$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((transaction) => this.onLiveTransaction(transaction));
+
+    // Estado de notificadores en vivo (SSE): al latir el dispositivo pasa a verde.
+    this.sourceEventsStream.notifierStatus$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((notifier) => this.onLiveNotifierStatus(notifier));
+  }
+
+  /**
+   * Transacción llegada en vivo. Siempre alimenta la instantánea de métricas
+   * (KPIs "por atender" y semáforo). En la tabla solo reemplaza una fila que ya
+   * esté visible: no inyecta filas nuevas para no romper el filtro server-side
+   * ni la paginación por cursor.
+   */
+  private onLiveTransaction(transaction: PaymentTransaction): void {
+    this.metricsTransactions.update((list) => this.upsertTransaction(list, transaction));
+    this.transactions.update((list) => {
+      const index = list.findIndex((current) => current.id === transaction.id);
+      if (index < 0) {
+        return list;
+      }
+      const next = [...list];
+      next[index] = transaction;
+      return next;
+    });
+    this.now.set(Date.now());
+  }
+
+  /** Inserta o reemplaza una transacción por id, manteniendo el orden. */
+  private upsertTransaction(
+    list: PaymentTransaction[],
+    transaction: PaymentTransaction,
+  ): PaymentTransaction[] {
+    const index = list.findIndex((current) => current.id === transaction.id);
+    if (index >= 0) {
+      const next = [...list];
+      next[index] = transaction;
+      return next;
+    }
+    return [transaction, ...list];
+  }
+
+  /**
+   * Estado de notificador llegado en vivo (heartbeat). Actualiza el notificador
+   * en el listado para que el semáforo/estado del sistema reflejen "en línea" al
+   * instante; el paso a "fuera de línea" (silencio) lo sigue calculando el reloj.
+   */
+  private onLiveNotifierStatus(notifier: Notifier): void {
+    this.notifiers.update((list) => {
+      const index = list.findIndex((current) => current.id === notifier.id);
+      if (index < 0) {
+        return [notifier, ...list];
+      }
+      const next = [...list];
+      next[index] = notifier;
+      return next;
+    });
+    this.now.set(Date.now());
   }
 
   ngAfterViewInit(): void {
@@ -644,6 +738,26 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       });
   }
 
+  /**
+   * Recarga silenciosa de notificadores (sin spinner global) para el
+   * auto-refresco periódico: refleja transiciones online/offline sin parpadeo.
+   */
+  private refreshNotifiers(): void {
+    if (!this.session.activeBusinessAccountId()) {
+      return;
+    }
+    this.notifiersApi
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          this.notifiers.set(response.notifiers);
+          this.now.set(Date.now());
+        },
+        error: () => undefined,
+      });
+  }
+
   // --- Detalle / verificación -------------------------------------------------
 
   openDetail(transaction: PaymentTransaction): void {
@@ -735,6 +849,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
           this.operationSuccess.set(
             decision === 'confirmed' ? 'Pago confirmado.' : 'Transacción rechazada.',
           );
+          // Recalcula KPIs/semáforo (métricas sin filtrar) y refresca las tablas:
+          // "transacciones por atender" cambia al instante, sin recargar.
+          this.transactionEvents.notifyChanged();
         },
         error: (error) => this.operationError.set(httpErrorMessage(error)),
       });
