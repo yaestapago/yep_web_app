@@ -7,8 +7,8 @@ import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Modal } from '../../../../shared/ui/modal/modal';
-import type { SourceEvent } from '../../../../shared/models/source-event.models';
-import type { PaymentTransaction } from '../../../../shared/models/transaction.models';
+import type { DashboardChartsSummary } from '../../../../shared/models/dashboard-summary.models';
+import type { TransactionStatus } from '../../../../shared/models/transaction.models';
 import {
   TRANSACTION_CATEGORIES,
   transactionCategory,
@@ -64,6 +64,7 @@ const SOURCE_LABELS: Record<string, string> = {
   BANK_API_POLL: 'API bancaria',
   MANUAL_ENTRY: 'Manual',
   NOTIFIER_APP: 'App notificadora',
+  EMAIL_GMAIL: 'Correo',
 };
 
 /**
@@ -80,8 +81,7 @@ const SOURCE_LABELS: Record<string, string> = {
 export class DashboardChartsPanel {
   private readonly document = inject(DOCUMENT);
 
-  readonly transactions = defineInput.required<PaymentTransaction[]>();
-  readonly sourceEvents = defineInput.required<SourceEvent[]>();
+  readonly charts = defineInput.required<DashboardChartsSummary>();
   readonly businessId = defineInput<string | null>(null);
   readonly catalog = CATALOG;
   readonly configOpen = signal(false);
@@ -101,17 +101,22 @@ export class DashboardChartsPanel {
 
   readonly views = computed<ChartView[]>(() => {
     const palette = this.palette();
-    const txs = this.transactions();
-    const events = this.sourceEvents();
+    const charts = this.charts();
 
     return this.selected()
-      .map((id) => this.build(id, txs, events, palette))
+      .map((id) => this.build(id, charts, palette))
       .filter((view): view is ChartView => view !== null);
   });
 
-  readonly hasData = computed(
-    () => this.transactions().length > 0 || this.sourceEvents().length > 0,
-  );
+  readonly hasData = computed(() => {
+    const charts = this.charts();
+    return (
+      charts.bankAmounts.length > 0 ||
+      charts.dailyCaptured.length > 0 ||
+      charts.statusDistribution.length > 0 ||
+      charts.eventsBySource.length > 0
+    );
+  });
 
   /** Vista de la gráfica expandida; se recalcula con los datos (sigue viva). */
   readonly expandedView = computed<ChartView | null>(() => {
@@ -170,33 +175,27 @@ export class DashboardChartsPanel {
 
   private build(
     id: string,
-    txs: PaymentTransaction[],
-    events: SourceEvent[],
+    charts: DashboardChartsSummary,
     palette: string[],
   ): ChartView | null {
     switch (id) {
       case 'bankAmounts':
-        return this.bankAmounts(txs, palette);
+        return this.bankAmounts(charts, palette);
       case 'dailyCaptured':
-        return this.dailyCaptured(txs, palette);
+        return this.dailyCaptured(charts, palette);
       case 'statusDistribution':
-        return this.statusDistribution(txs);
+        return this.statusDistribution(charts);
       case 'paidVsPending':
-        return this.paidVsPending(txs, palette);
+        return this.paidVsPending(charts);
       case 'eventsBySource':
-        return this.eventsBySource(events, palette);
+        return this.eventsBySource(charts, palette);
       default:
         return null;
     }
   }
 
-  private bankAmounts(txs: PaymentTransaction[], palette: string[]): ChartView {
-    const buckets = new Map<string, number>();
-    for (const tx of txs) {
-      const key = tx.bankId || 'Sin banco';
-      buckets.set(key, (buckets.get(key) ?? 0) + tx.amount);
-    }
-    const labels = [...buckets.keys()];
+  private bankAmounts(charts: DashboardChartsSummary, palette: string[]): ChartView {
+    const labels = charts.bankAmounts.map((point) => point.key || 'Sin banco');
     return {
       id: 'bankAmounts',
       type: 'doughnut',
@@ -204,7 +203,7 @@ export class DashboardChartsPanel {
         labels,
         datasets: [
           {
-            data: [...buckets.values()],
+            data: charts.bankAmounts.map((point) => point.amount),
             backgroundColor: this.cycle(palette, labels.length),
             borderWidth: 0,
           },
@@ -215,32 +214,18 @@ export class DashboardChartsPanel {
     };
   }
 
-  private dailyCaptured(txs: PaymentTransaction[], palette: string[]): ChartView {
-    const days: { label: string; total: number }[] = [];
-    const buckets = new Map<string, number>();
-    for (const tx of txs) {
-      const date = new Date(tx.transactionDate);
-      if (Number.isNaN(date.getTime())) {
-        continue;
-      }
-      const key = this.dayKey(date);
-      buckets.set(key, (buckets.get(key) ?? 0) + tx.amount);
-    }
-    const now = new Date();
-    for (let offset = 6; offset >= 0; offset -= 1) {
-      const date = new Date(now.getTime() - offset * 86_400_000);
-      days.push({
-        label: date.toLocaleDateString('es', { weekday: 'short' }),
-        total: buckets.get(this.dayKey(date)) ?? 0,
-      });
-    }
+  private dailyCaptured(charts: DashboardChartsSummary, palette: string[]): ChartView {
     return {
       id: 'dailyCaptured',
       type: 'bar',
       data: {
-        labels: days.map((d) => d.label),
+        labels: charts.dailyCaptured.map((point) => this.shortDateLabel(point.key)),
         datasets: [
-          { data: days.map((d) => d.total), backgroundColor: palette[0], borderRadius: 6 },
+          {
+            data: charts.dailyCaptured.map((point) => point.amount),
+            backgroundColor: palette[0],
+            borderRadius: 6,
+          },
         ],
       },
       options: this.barOptions(),
@@ -248,11 +233,11 @@ export class DashboardChartsPanel {
     };
   }
 
-  private statusDistribution(txs: PaymentTransaction[]): ChartView {
+  private statusDistribution(charts: DashboardChartsSummary): ChartView {
     const counts = new Map<string, number>(TRANSACTION_CATEGORIES.map((c) => [c, 0]));
-    for (const tx of txs) {
-      const cat = transactionCategory(tx.status);
-      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    for (const point of charts.statusDistribution) {
+      const cat = transactionCategory(point.key);
+      counts.set(cat, (counts.get(cat) ?? 0) + point.count);
     }
     const toneColors: Record<string, string> = {
       recibida: this.cssVar('--color-text-muted'),
@@ -278,11 +263,9 @@ export class DashboardChartsPanel {
     };
   }
 
-  private paidVsPending(txs: PaymentTransaction[], palette: string[]): ChartView {
-    const paid = txs.filter((t) => t.verification.canBeConsideredPaid).length;
-    const pending = txs.filter((t) =>
-      ['CREATED', 'PENDING_VERIFICATION', 'NEEDS_REVIEW'].includes(t.status),
-    ).length;
+  private paidVsPending(charts: DashboardChartsSummary): ChartView {
+    const paid = charts.paidVsPending.find((point) => point.key === 'paid')?.count ?? 0;
+    const pending = charts.paidVsPending.find((point) => point.key === 'pending')?.count ?? 0;
     return {
       id: 'paidVsPending',
       type: 'bar',
@@ -301,13 +284,8 @@ export class DashboardChartsPanel {
     };
   }
 
-  private eventsBySource(events: SourceEvent[], palette: string[]): ChartView {
-    const buckets = new Map<string, number>();
-    for (const event of events) {
-      const key = SOURCE_LABELS[event.sourceType] ?? event.sourceType;
-      buckets.set(key, (buckets.get(key) ?? 0) + 1);
-    }
-    const labels = [...buckets.keys()];
+  private eventsBySource(charts: DashboardChartsSummary, palette: string[]): ChartView {
+    const labels = charts.eventsBySource.map((point) => SOURCE_LABELS[point.key] ?? point.key);
     return {
       id: 'eventsBySource',
       type: 'doughnut',
@@ -315,7 +293,7 @@ export class DashboardChartsPanel {
         labels,
         datasets: [
           {
-            data: [...buckets.values()],
+            data: charts.eventsBySource.map((point) => point.count),
             backgroundColor: this.cycle(palette, labels.length),
             borderWidth: 0,
           },
@@ -388,8 +366,12 @@ export class DashboardChartsPanel {
     return value || '#00c27d';
   }
 
-  private dayKey(date: Date): string {
-    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  private shortDateLabel(value: string): string {
+    const date = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleDateString('es', { month: 'short', day: 'numeric' });
   }
 
   private loadSelection(businessId: string | null): string[] {

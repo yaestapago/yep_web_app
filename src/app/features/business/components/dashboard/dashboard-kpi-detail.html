@@ -1,0 +1,85 @@
+<yep-modal
+  [open]="open()"
+  [title]="title()"
+  subtitle="Datos del rango activo"
+  size="lg"
+  [loading]="loading()"
+  (closeRequested)="close.emit()"
+>
+  <section class="kpi-detail">
+    @if (loading()) {
+      <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
+    } @else if (kind() === 'transactions') {
+      @if (transactions().length === 0) {
+        <div class="state"><p>Sin transacciones para este KPI.</p></div>
+      } @else {
+        <div class="kpi-detail__table">
+          <table>
+            <thead>
+              <tr>
+                <th>Referencia</th>
+                <th>Banco</th>
+                <th class="num">Monto</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (transaction of transactions(); track transaction.id) {
+                <tr (click)="viewTransaction.emit(transaction)">
+                  <td>{{ transaction.reference || 'Sin referencia' }}</td>
+                  <td>{{ transaction.bankId }}</td>
+                  <td class="num">
+                    {{ transaction.amount | currency: transaction.currency : 'symbol-narrow' : '1.0-0' }}
+                  </td>
+                  <td>{{ transaction.transactionDate | date: 'short' }}</td>
+                  <td>
+                    <span class="badge badge--{{ tone(transaction) }}">{{
+                      statusLabel(transaction)
+                    }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    } @else {
+      @if (events().length === 0) {
+        <div class="state"><p>Sin eventos para este KPI.</p></div>
+      } @else {
+        <div class="kpi-detail__table">
+          <table>
+            <thead>
+              <tr>
+                <th>Origen</th>
+                <th>Texto</th>
+                <th class="num">Monto</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (event of events(); track event.id) {
+                <tr (click)="viewEvent.emit(event)">
+                  <td>{{ event.sourceType }}</td>
+                  <td>{{ eventBody(event) }}</td>
+                  <td class="num">
+                    @if (event.normalized?.amount) {
+                      {{
+                        event.normalized?.amount
+                          | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
+                      }}
+                    }
+                  </td>
+                  <td>{{ event.createdAt | date: 'short' }}</td>
+                  <td>{{ event.status }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </section>
+</yep-modal>

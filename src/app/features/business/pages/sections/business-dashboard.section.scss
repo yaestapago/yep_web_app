@@ -282,11 +282,24 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
+  color: inherit;
+  cursor: pointer;
   display: grid;
+  font: inherit;
   gap: var(--space-1);
   min-height: 74px;
   min-width: 0;
   padding: var(--space-2);
+  text-align: left;
+}
+
+.kpi:hover {
+  border-color: color-mix(in srgb, var(--color-secondary) 34%, var(--color-border));
+}
+
+.kpi:focus-visible {
+  box-shadow: var(--shadow-focus);
+  outline: none;
 }
 
 .kpi__label {
@@ -355,7 +368,7 @@
   display: grid;
   gap: var(--space-3);
   grid-area: insights;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
 }

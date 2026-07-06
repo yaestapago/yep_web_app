@@ -24,13 +24,19 @@
           <span class="summary-chip">{{
             totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
           }}</span>
-          <span class="summary-chip summary-chip--{{ semaphore().level }}">{{
-            semaphore().label
+          <span class="summary-chip summary-chip--{{ summary().semaphore.level }}">{{
+            summary().semaphore.label
           }}</span>
           <span class="summary-chip">{{ attentionCount() }} por atender</span>
         </div>
       }
     </div>
+
+    <yep-date-range-picker
+      [range]="summaryRange()"
+      [preset]="summaryPreset()"
+      (rangeChange)="onSummaryRangeChange($event)"
+    />
 
     <button
       type="button"
@@ -73,50 +79,50 @@
               aria-label="Metricas operativas"
               (scroll)="updateKpiScrollState()"
             >
-              <div class="kpi">
+              <button type="button" class="kpi" (click)="openKpiDetail('totalAmount')">
                 <span class="kpi__label"
                   ><svg lucideBanknote aria-hidden="true"></svg> Total capturado</span
                 >
                 <span class="kpi__value">{{
                   totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
                 }}</span>
-              </div>
-              <div class="kpi">
+              </button>
+              <button type="button" class="kpi" (click)="openKpiDetail('paid')">
                 <span class="kpi__label"
                   ><svg lucideShieldCheck aria-hidden="true"></svg> Pagos validados</span
                 >
                 <span class="kpi__value kpi__value--ok">{{ paidCount() }}</span>
-              </div>
-              <div class="kpi">
+              </button>
+              <button type="button" class="kpi" (click)="openKpiDetail('review')">
                 <span class="kpi__label"
                   ><svg lucideActivity aria-hidden="true"></svg> Pagos por revisar</span
                 >
                 <span class="kpi__value kpi__value--warn">{{ reviewCount() }}</span>
-              </div>
-              <div class="kpi">
+              </button>
+              <button type="button" class="kpi" (click)="openKpiDetail('events')">
                 <span class="kpi__label"
                   ><svg lucideBell aria-hidden="true"></svg> Eventos detectados</span
                 >
                 <span class="kpi__value">{{ eventsCount() }}</span>
-              </div>
-              <div class="kpi">
+              </button>
+              <button type="button" class="kpi" (click)="openKpiDetail('received')">
                 <span class="kpi__label"
                   ><svg lucideInbox aria-hidden="true"></svg> Transacciones recibidas</span
                 >
                 <span class="kpi__value">{{ receivedCount() }}</span>
-              </div>
-              <div class="kpi">
+              </button>
+              <button type="button" class="kpi" (click)="openKpiDetail('pending')">
                 <span class="kpi__label"
                   ><svg lucideListChecks aria-hidden="true"></svg> Pendientes</span
                 >
                 <span class="kpi__value kpi__value--warn">{{ pendingCount() }}</span>
-              </div>
-              <div class="kpi">
+              </button>
+              <button type="button" class="kpi" (click)="openKpiDetail('rejected')">
                 <span class="kpi__label"
                   ><svg lucideTriangleAlert aria-hidden="true"></svg> Rechazadas</span
                 >
                 <span class="kpi__value kpi__value--err">{{ rejectedCount() }}</span>
-              </div>
+              </button>
             </div>
 
             @if (canScrollKpisRight()) {
@@ -134,15 +140,15 @@
 
           <app-dashboard-charts
             class="grid__charts"
-            [transactions]="metricsTransactions()"
-            [sourceEvents]="metricsEvents()"
+            [charts]="summary().charts"
             [businessId]="businessId()"
           />
         </div>
         <app-dashboard-status
           class="grid__status"
-          [semaphore]="semaphore()"
+          [semaphore]="summary().semaphore"
           [rows]="notifierRows()"
+          [alerts]="summary().alerts"
           [loading]="loadingNotifiers()"
           [error]="notifiersError()"
         />
@@ -179,6 +185,17 @@
   </div>
 </div>
 
+<app-dashboard-kpi-detail
+  [open]="activeKpi() !== null"
+  [title]="kpiDetailTitle()"
+  [kind]="kpiDetailKind()"
+  [transactions]="kpiDetailTransactions()"
+  [events]="kpiDetailEvents()"
+  [loading]="loadingKpiDetail()"
+  (close)="closeKpiDetail()"
+  (viewTransaction)="openKpiTransactionDetail($event)"
+  (viewEvent)="openKpiEventDetail($event)"
+/>
 <app-transaction-detail-modal
   [transaction]="detailTarget()"
   (close)="closeDetail()"

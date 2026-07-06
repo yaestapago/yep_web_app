@@ -32,6 +32,7 @@ import type {
 } from '../../../../shared/models/source-event.models';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { AutoFitRowsDirective } from './auto-fit-rows.directive';
 import { DashboardPager } from './dashboard-pager';
 
 const SOURCE_LABELS: Record<SourceEventType, string> = {
@@ -49,6 +50,7 @@ const STATUS_LABELS: Record<SourceEventStatus, string> = {
   received: 'Recibido',
   processing: 'Procesando',
   processed: 'Procesado',
+  needs_review: 'Por revisar',
   failed: 'Falló',
   ignored: 'Ignorado',
 };
@@ -57,6 +59,7 @@ const STATUS_TONES: Record<SourceEventStatus, TransactionTone> = {
   received: 'neutral',
   processing: 'neutral',
   processed: 'success',
+  needs_review: 'warning',
   failed: 'error',
   ignored: 'neutral',
 };
@@ -98,6 +101,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     LucideSmartphone,
     LucideTriangleAlert,
     Select,
+    AutoFitRowsDirective,
     DashboardPager,
   ],
   templateUrl: './dashboard-events.html',

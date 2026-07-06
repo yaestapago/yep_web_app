@@ -9,12 +9,27 @@
 /* Semaforo global ----------------------------------------------------------*/
 .semaphore {
   align-items: center;
+  background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  color: inherit;
+  cursor: pointer;
   display: flex;
   flex-direction: row-reverse;
+  font: inherit;
   gap: var(--space-3);
   padding: var(--space-3);
+  text-align: left;
+  width: 100%;
+}
+
+.semaphore:hover {
+  border-color: color-mix(in srgb, var(--color-secondary) 34%, var(--color-border));
+}
+
+.semaphore:focus-visible {
+  box-shadow: var(--shadow-focus);
+  outline: none;
 }
 
 .semaphore__lights {
@@ -177,6 +192,58 @@
 
 .nlight--unknown {
   background: var(--color-text-muted);
+}
+
+.alert-list {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alert-item {
+  align-items: flex-start;
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.alert-item--red {
+  border-left-color: var(--color-error);
+}
+
+.alert-item--yellow {
+  border-left-color: var(--color-warning);
+}
+
+.alert-item__main {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.alert-item__main strong {
+  font-size: var(--font-size-sm);
+}
+
+.alert-item__main span,
+.alert-empty p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.alert-empty {
+  align-items: center;
+  color: var(--color-success-strong);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  padding: var(--space-4);
+  text-align: center;
 }
 
 @media (max-width: 560px) {
