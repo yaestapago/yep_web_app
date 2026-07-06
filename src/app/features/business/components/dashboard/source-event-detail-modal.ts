@@ -110,6 +110,7 @@ export class SourceEventDetailModal {
       received: 'Recibido',
       processing: 'Procesando',
       processed: 'Procesado',
+      needs_review: 'Por revisar',
       failed: 'Fallo',
       ignored: 'Ignorado',
     };

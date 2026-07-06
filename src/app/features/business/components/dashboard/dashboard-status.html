@@ -4,7 +4,12 @@
   </div>
 
   <div class="zone__body status-body">
-    <div class="semaphore semaphore--{{ semaphore().level }}" role="status">
+    <button
+      type="button"
+      class="semaphore semaphore--{{ semaphore().level }}"
+      (click)="openDetails()"
+      [attr.aria-label]="'Ver detalle del estado del sistema: ' + semaphore().label"
+    >
       <span class="semaphore__lights" aria-hidden="true">
         <span class="slight slight--red"></span>
         <span class="slight slight--yellow"></span>
@@ -14,7 +19,7 @@
         <strong class="semaphore__label">{{ semaphore().label }}</strong>
         <span class="semaphore__detail">{{ semaphore().detail }}</span>
       </span>
-    </div>
+    </button>
 
     <div class="notifiers">
       <span class="notifiers__caption">Notificadores</span>
@@ -52,3 +57,32 @@
     </div>
   </div>
 </div>
+
+<yep-modal
+  [open]="detailsOpen()"
+  title="Estado del sistema"
+  [subtitle]="semaphore().detail"
+  size="md"
+  (closeRequested)="closeDetails()"
+>
+  @if (alerts().length === 0) {
+    <div class="alert-empty">
+      <svg lucideCircleCheck aria-hidden="true"></svg>
+      <p>Sin novedades activas.</p>
+    </div>
+  } @else {
+    <ul class="alert-list">
+      @for (alert of alerts(); track alert.id) {
+        <li class="alert-item alert-item--{{ alert.severity }}">
+          <span class="badge badge--{{ alert.severity === 'red' ? 'error' : 'warning' }}">
+            {{ severityLabel(alert.severity) }}
+          </span>
+          <span class="alert-item__main">
+            <strong>{{ alert.title }}</strong>
+            <span>{{ alert.detail }}</span>
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</yep-modal>

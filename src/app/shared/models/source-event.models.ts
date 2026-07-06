@@ -8,7 +8,13 @@ export type SourceEventType =
   | 'NOTIFIER_APP'
   | 'EMAIL_GMAIL';
 
-export type SourceEventStatus = 'received' | 'processing' | 'processed' | 'failed' | 'ignored';
+export type SourceEventStatus =
+  | 'received'
+  | 'processing'
+  | 'processed'
+  | 'needs_review'
+  | 'failed'
+  | 'ignored';
 
 export interface SourceEventNormalized {
   bankId?: string;

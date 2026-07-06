@@ -31,6 +31,11 @@ import { finalize, interval } from 'rxjs';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type {
+  DashboardChartsSummary,
+  DashboardDateRange,
+  DashboardSummary,
+} from '../../../../shared/models/dashboard-summary.models';
+import type {
   SourceEvent,
   SourceEventFilters,
   SourceEventQuery,
@@ -41,6 +46,7 @@ import {
   type ManualReviewDecision,
   PaymentTransaction,
   type TransactionFilters,
+  type TransactionStatus,
 } from '../../../../shared/models/transaction.models';
 import type { Notifier } from '../../../../shared/models/notifier.models';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -58,6 +64,10 @@ import { TransactionsApiService } from '../../../transactions/services/transacti
 import { DashboardChartsPanel } from '../../components/dashboard/dashboard-charts';
 import { DashboardEventsPanel } from '../../components/dashboard/dashboard-events';
 import {
+  DashboardKpiDetailPanel,
+  type KpiDetailKind,
+} from '../../components/dashboard/dashboard-kpi-detail';
+import {
   DashboardStatusPanel,
   type NotifierStatusRow,
   type Semaphore,
@@ -66,6 +76,12 @@ import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard
 import { SourceEventDetailModal } from '../../components/dashboard/source-event-detail-modal';
 import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
 import { VerifyTransactionModal } from '../../components/dashboard/verify-transaction-modal';
+import { DashboardApiService } from '../../services/dashboard-api.service';
+import {
+  DateRangePicker,
+  type DateRangePreset,
+  defaultDashboardRange,
+} from '../../../../shared/ui/date-range-picker/date-range-picker';
 
 /** Tamaño de página (cursor) de cada tabla. */
 const EVENTS_PAGE_LIMIT = 50;
@@ -77,8 +93,48 @@ const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
   'received',
   'processing',
   'processed',
+  'needs_review',
   'failed',
 ];
+
+const EMPTY_CHARTS: DashboardChartsSummary = {
+  bankAmounts: [],
+  dailyCaptured: [],
+  statusDistribution: [],
+  paidVsPending: [],
+  eventsBySource: [],
+  eventsByStatus: [],
+};
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  range: defaultDashboardRange(),
+  kpis: {
+    totalAmount: 0,
+    paidCount: 0,
+    reviewCount: 0,
+    receivedCount: 0,
+    pendingCount: 0,
+    rejectedCount: 0,
+    eventsCount: 0,
+    attentionCount: 0,
+  },
+  charts: EMPTY_CHARTS,
+  semaphore: {
+    level: 'green',
+    label: 'Operación normal',
+    detail: 'Sin pendientes ni errores.',
+  },
+  alerts: [],
+};
+
+type KpiKey =
+  | 'totalAmount'
+  | 'paid'
+  | 'review'
+  | 'events'
+  | 'received'
+  | 'pending'
+  | 'rejected';
 
 /**
  * Panel de control del negocio (`/businesses/:businessId/dashboard`). Pantalla
@@ -108,9 +164,11 @@ const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
     LucideShieldCheck,
     LucideTriangleAlert,
     DashboardChartsPanel,
+    DashboardKpiDetailPanel,
     DashboardStatusPanel,
     DashboardEventsPanel,
     DashboardTransactionsPanel,
+    DateRangePicker,
     SourceEventDetailModal,
     TransactionDetailModal,
     VerifyTransactionModal,
@@ -122,6 +180,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   @ViewChild('kpiScroller') private readonly kpiScroller?: ElementRef<HTMLElement>;
 
   private readonly transactionsApi = inject(TransactionsApiService);
+  private readonly dashboardApi = inject(DashboardApiService);
   private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly sourceEventsStream = inject(SourceEventsStreamService);
   private readonly notifiersApi = inject(NotifiersApiService);
@@ -160,6 +219,11 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   // --- Instantáneas SIN filtrar para KPIs/semáforo/gráficas ---
   readonly metricsTransactions = signal<PaymentTransaction[]>([]);
   readonly metricsEvents = signal<SourceEvent[]>([]);
+  readonly summary = signal<DashboardSummary>(EMPTY_SUMMARY);
+  readonly summaryRange = signal<DashboardDateRange>(defaultDashboardRange());
+  readonly summaryPreset = signal<DateRangePreset>('today');
+  readonly loadingSummary = signal(false);
+  readonly summaryError = signal('');
 
   // --- Filtros + cursor de cada tabla ---
   private readonly eventFilters = signal<SourceEventFilters>({});
@@ -198,7 +262,11 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly notifiersError = signal('');
 
   readonly loadingAny = computed(
-    () => this.loadingTransactions() || this.loadingEvents() || this.loadingNotifiers(),
+    () =>
+      this.loadingTransactions() ||
+      this.loadingEvents() ||
+      this.loadingNotifiers() ||
+      this.loadingSummary(),
   );
   readonly canScrollKpisLeft = signal(false);
   readonly canScrollKpisRight = signal(false);
@@ -213,6 +281,12 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly verifyingId = signal<string | null>(null);
   readonly operationError = signal('');
   readonly operationSuccess = signal('');
+  readonly activeKpi = signal<KpiKey | null>(null);
+  readonly kpiDetailKind = signal<KpiDetailKind>('transactions');
+  readonly kpiDetailTitle = signal('');
+  readonly kpiDetailTransactions = signal<PaymentTransaction[]>([]);
+  readonly kpiDetailEvents = signal<SourceEvent[]>([]);
+  readonly loadingKpiDetail = signal(false);
 
   private readonly transactionRefreshEffect = effect(() => {
     this.transactionEvents.revision();
@@ -222,7 +296,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     }
     this.loadTransactions();
     this.loadSourceEvents();
-    this.loadMetrics();
+    this.loadSummary();
   });
 
   /**
@@ -245,31 +319,14 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   });
 
   // --- Métricas (7 KPIs) — sobre la instantánea SIN filtrar ---
-  readonly totalAmount = computed(() =>
-    this.metricsTransactions().reduce((total, transaction) => total + transaction.amount, 0),
-  );
-  readonly paidCount = computed(
-    () => this.metricsTransactions().filter((t) => t.verification.canBeConsideredPaid).length,
-  );
-  readonly reviewCount = computed(
-    () => this.metricsTransactions().filter((t) => t.status === 'NEEDS_REVIEW').length,
-  );
-  readonly receivedCount = computed(() => this.metricsTransactions().length);
-  readonly pendingCount = computed(
-    () =>
-      this.metricsTransactions().filter((t) =>
-        ['CREATED', 'PENDING_VERIFICATION'].includes(t.status),
-      ).length,
-  );
-  readonly rejectedCount = computed(
-    () =>
-      this.metricsTransactions().filter((t) => transactionCategory(t.status) === 'rechazada')
-        .length,
-  );
-  readonly eventsCount = computed(() => this.metricsEvents().length);
-  readonly attentionCount = computed(
-    () => this.pendingCount() + this.reviewCount() + this.rejectedCount(),
-  );
+  readonly totalAmount = computed(() => this.summary().kpis.totalAmount);
+  readonly paidCount = computed(() => this.summary().kpis.paidCount);
+  readonly reviewCount = computed(() => this.summary().kpis.reviewCount);
+  readonly receivedCount = computed(() => this.summary().kpis.receivedCount);
+  readonly pendingCount = computed(() => this.summary().kpis.pendingCount);
+  readonly rejectedCount = computed(() => this.summary().kpis.rejectedCount);
+  readonly eventsCount = computed(() => this.summary().kpis.eventsCount);
+  readonly attentionCount = computed(() => this.summary().kpis.attentionCount);
 
   // --- Estado de notificadores ---
   readonly notifierRows = computed<NotifierStatusRow[]>(() => {
@@ -350,6 +407,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
    */
   private onLiveTransaction(transaction: PaymentTransaction): void {
     this.metricsTransactions.update((list) => this.upsertTransaction(list, transaction));
+    this.loadSummary();
     this.transactions.update((list) => {
       const index = list.findIndex((current) => current.id === transaction.id);
       if (index < 0) {
@@ -427,6 +485,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     }
 
     this.metricsEvents.update((events) => this.upsert(events, event));
+    this.loadSummary();
     this.now.set(Date.now());
 
     if (!this.matchesEventFilter(event, this.eventFilters())) {
@@ -459,14 +518,30 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       return false;
     }
     if (filters.q) {
-      const term = filters.q.trim().toLowerCase();
-      const externalId = (event.externalId ?? '').toLowerCase();
-      const reference = (event.normalized?.reference ?? '').toLowerCase();
-      if (!externalId.startsWith(term) && !reference.startsWith(term)) {
-        return false;
+      const term = filters.q.trim();
+      const digits = term.replace(/\D/g, '');
+      const isNumericSearch = digits.length > 0 && !/\p{L}/u.test(term);
+      if (isNumericSearch) {
+        return event.normalized?.amount === Number(digits);
       }
+      const body = this.eventSearchBody(event).toLowerCase();
+      return body.includes(term.toLowerCase());
     }
     return true;
+  }
+
+  private eventSearchBody(event: SourceEvent): string {
+    const notification = event.rawPayload?.['notification'] as
+      | { text?: unknown; bigText?: unknown }
+      | undefined;
+    return [
+      notification?.text,
+      notification?.bigText,
+      event.rawPayload?.['snippet'],
+      event.rawPayload?.['bodyText'],
+    ]
+      .filter((value): value is string => typeof value === 'string')
+      .join(' ');
   }
 
   private moneyReportQuery(cursor?: string, includeActiveFilters = true): SourceEventQuery {
@@ -594,7 +669,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     }
     this.loadTransactions();
     this.loadSourceEvents();
-    this.loadMetrics();
+    this.loadSummary();
     this.loadNotifiers();
   }
 
@@ -608,6 +683,96 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   onTransactionFiltersChange(filters: TransactionFilters): void {
     this.txFilters.set(filters);
     this.loadTransactions();
+  }
+
+  onSummaryRangeChange(value: { range: DashboardDateRange; preset: DateRangePreset }): void {
+    this.summaryRange.set(value.range);
+    this.summaryPreset.set(value.preset);
+    this.loadSummary();
+    const active = this.activeKpi();
+    if (active) {
+      this.openKpiDetail(active);
+    }
+  }
+
+  openKpiDetail(key: KpiKey): void {
+    this.activeKpi.set(key);
+    this.kpiDetailTitle.set(this.kpiTitle(key));
+    this.loadingKpiDetail.set(true);
+    this.kpiDetailTransactions.set([]);
+    this.kpiDetailEvents.set([]);
+
+    if (key === 'events') {
+      this.kpiDetailKind.set('events');
+      this.sourceEventsApi
+        .list({
+          sourceTypes: MONEY_REPORT_SOURCE_TYPES,
+          statuses: MONEY_REPORT_STATUSES,
+          from: this.summaryRange().from,
+          to: this.summaryRange().to,
+          limit: EVENTS_PAGE_LIMIT,
+        })
+        .pipe(
+          finalize(() => this.loadingKpiDetail.set(false)),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe({
+          next: (response) => this.kpiDetailEvents.set(response.sourceEvents),
+          error: (error) => this.operationError.set(httpErrorMessage(error)),
+        });
+      return;
+    }
+
+    this.kpiDetailKind.set('transactions');
+    this.transactionsApi
+      .list({
+        from: this.summaryRange().from,
+        to: this.summaryRange().to,
+        statuses: this.kpiStatuses(key)?.join(','),
+        limit: TRANSACTIONS_PAGE_LIMIT,
+      })
+      .pipe(
+        finalize(() => this.loadingKpiDetail.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => this.kpiDetailTransactions.set(response.transactions),
+        error: (error) => this.operationError.set(httpErrorMessage(error)),
+      });
+  }
+
+  closeKpiDetail(): void {
+    this.activeKpi.set(null);
+    this.kpiDetailTransactions.set([]);
+    this.kpiDetailEvents.set([]);
+  }
+
+  private kpiTitle(key: KpiKey): string {
+    const titles: Record<KpiKey, string> = {
+      totalAmount: 'Detalle de total capturado',
+      paid: 'Detalle de pagos validados',
+      review: 'Detalle de pagos por revisar',
+      events: 'Detalle de eventos detectados',
+      received: 'Detalle de transacciones recibidas',
+      pending: 'Detalle de pendientes',
+      rejected: 'Detalle de rechazadas',
+    };
+    return titles[key];
+  }
+
+  private kpiStatuses(key: KpiKey): TransactionStatus[] | undefined {
+    switch (key) {
+      case 'paid':
+        return ['EVIDENCE_MATCHED', 'BANK_VERIFIED', 'MANUALLY_VERIFIED'];
+      case 'review':
+        return ['NEEDS_REVIEW', 'EVIDENCE_MATCHED'];
+      case 'pending':
+        return ['CREATED', 'PENDING_VERIFICATION', 'NEEDS_INPUT'];
+      case 'rejected':
+        return ['REJECTED', 'DUPLICATE', 'CANCELLED'];
+      default:
+        return undefined;
+    }
   }
 
   // --- Carga de datos ---------------------------------------------------------
@@ -660,7 +825,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     // Al recargar (filtro o refresh) descartamos lo acumulado en vivo: la nueva
     // página ya trae el estado más reciente que encaja en el filtro.
     this.sourceEventsApi
-      .list(this.moneyReportQuery(undefined, false))
+      .list(this.moneyReportQuery())
       .pipe(
         finalize(() => this.loadingEvents.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -719,6 +884,21 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       });
   }
 
+  private loadSummary(): void {
+    this.loadingSummary.set(true);
+    this.summaryError.set('');
+    this.dashboardApi
+      .summary(this.summaryRange())
+      .pipe(
+        finalize(() => this.loadingSummary.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (summary) => this.summary.set(summary),
+        error: (error) => this.summaryError.set(httpErrorMessage(error)),
+      });
+  }
+
   loadNotifiers(): void {
     this.loadingNotifiers.set(true);
     this.notifiersError.set('');
@@ -759,6 +939,16 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   }
 
   // --- Detalle / verificación -------------------------------------------------
+
+  openKpiTransactionDetail(transaction: PaymentTransaction): void {
+    this.closeKpiDetail();
+    this.openDetail(transaction);
+  }
+
+  openKpiEventDetail(event: SourceEvent): void {
+    this.closeKpiDetail();
+    this.openEventDetail(event);
+  }
 
   openDetail(transaction: PaymentTransaction): void {
     this.detailTarget.set(transaction);
