@@ -147,6 +147,16 @@
                 <svg lucidePencil aria-label="Editar"></svg>
               </yep-button>
 
+              <yep-button
+                variant="ghost"
+                size="sm"
+                [title]="'Cadencias (consumo de datos)'"
+                [disabled]="actingId() === row.notifier.id"
+                (clicked)="openConfig(row.notifier)"
+              >
+                <svg lucideSettings aria-label="Cadencias"></svg>
+              </yep-button>
+
               @if (row.notifier.pairedDevice) {
                 <yep-button
                   variant="ghost"
@@ -277,3 +287,11 @@
     </yep-button>
   </ng-container>
 </yep-modal>
+
+<!-- Modal de cadencias (heartbeat/flush/WorkManager) por notificador -->
+<app-notifier-runtime-config-modal
+  [open]="configModalOpen()"
+  [notifier]="configNotifier()"
+  (closeRequested)="closeConfig()"
+  (saved)="onConfigSaved($event)"
+/>

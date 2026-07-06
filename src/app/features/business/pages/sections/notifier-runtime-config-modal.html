@@ -1,0 +1,78 @@
+<yep-modal
+  [open]="open()"
+  title="Cadencias del notificador"
+  [subtitle]="
+    (notifier()?.displayName || notifier()?.identifier || 'Notificador') +
+    ' · Ajusta el consumo de datos y batería de este dispositivo.'
+  "
+  [loading]="saving() || resetting()"
+  (closeRequested)="close()"
+>
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+
+  <p class="section-subtitle">
+    Estos valores solo aplican a este notificador. Los campos no personalizados
+    heredan la configuración global de flota. El cambio se aplicará en el próximo
+    latido, sin re-emparejar.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="save()" id="runtime-config-form" class="form-grid">
+    <yep-input
+      formControlName="heartbeatIntervalSeconds"
+      type="number"
+      label="Heartbeat (segundos)"
+      [hint]="'Cada cuánto reporta el dispositivo. Más alto = menos datos. Entre ' + limits.heartbeat.min + ' y ' + limits.heartbeat.max + '.'"
+      [error]="fieldError('heartbeatIntervalSeconds', 'segundos')"
+    />
+
+    <yep-input
+      formControlName="flushIntervalSeconds"
+      type="number"
+      label="Flush (segundos)"
+      [hint]="'Cada cuánto vacía la cola de eventos. Entre ' + limits.flush.min + ' y ' + limits.flush.max + '.'"
+      [error]="fieldError('flushIntervalSeconds', 'segundos')"
+    />
+
+    <yep-input
+      formControlName="workManagerFallbackMinutes"
+      type="number"
+      label="Respaldo WorkManager (minutos)"
+      [hint]="'Frecuencia del respaldo en Android. Entre ' + limits.workManager.min + ' y ' + limits.workManager.max + '.'"
+      [error]="fieldError('workManagerFallbackMinutes', 'minutos')"
+    />
+
+    <div class="field full-field">
+      <span class="section-subtitle">
+        Ventana "en línea" (derivada del heartbeat):
+        <strong>{{ onlineWindowSeconds() ?? '—' }} s</strong>
+        · configVersion: <code>{{ configVersion() }}</code>
+        @if (isCustomized()) {
+          · <strong>Personalizado</strong>
+        } @else {
+          · Hereda flota
+        }
+      </span>
+    </div>
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="saving() || resetting()" (clicked)="close()">
+      Cancelar
+    </yep-button>
+    @if (isCustomized()) {
+      <yep-button
+        variant="secondary"
+        [loading]="resetting()"
+        [disabled]="saving()"
+        (clicked)="resetToFleet()"
+      >
+        Restablecer a flota
+      </yep-button>
+    }
+    <yep-button type="submit" [loading]="saving()" [disabled]="resetting()" (clicked)="save()">
+      Guardar
+    </yep-button>
+  </ng-container>
+</yep-modal>

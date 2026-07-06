@@ -8,6 +8,7 @@ import {
   LucidePencil,
   LucidePlus,
   LucideRefreshCw,
+  LucideSettings,
   LucideTrash2,
   LucideUnlink,
 } from '@lucide/angular';
@@ -25,6 +26,7 @@ import {
 } from '../../../../shared/ui/radio-selection-list/radio-selection-list';
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
+import { NotifierRuntimeConfigModal } from './notifier-runtime-config-modal';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type {
@@ -65,11 +67,13 @@ interface NotifierKindOption {
     RadioSelectionList,
     StatusDot,
     Toggle,
+    NotifierRuntimeConfigModal,
     LucideLink,
     LucideLoaderCircle,
     LucidePencil,
     LucidePlus,
     LucideRefreshCw,
+    LucideSettings,
     LucideTrash2,
     LucideUnlink,
   ],
@@ -99,6 +103,10 @@ export class BusinessNotifiersSection implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
   readonly modalOpen = signal(false);
+
+  /** Notificador cuyo modal de cadencias está abierto (null = cerrado). */
+  readonly configNotifier = signal<Notifier | null>(null);
+  readonly configModalOpen = signal(false);
 
   /**
    * Opciones de tipo mostradas como radio buttons al crear un notificador.
@@ -349,6 +357,29 @@ export class BusinessNotifiersSection implements OnInit {
     });
     this.loadBankAccounts();
     this.modalOpen.set(true);
+  }
+
+  /** Abre el modal de cadencias (heartbeat/flush/WorkManager) del notificador. */
+  openConfig(notifier: Notifier): void {
+    this.error.set('');
+    this.success.set('');
+    this.configNotifier.set(notifier);
+    this.configModalOpen.set(true);
+  }
+
+  closeConfig(): void {
+    this.configModalOpen.set(false);
+    this.configNotifier.set(null);
+  }
+
+  /** El modal guardó/restableció: actualiza la tarjeta y muestra el éxito. */
+  onConfigSaved(updated: Notifier): void {
+    this.notifiers.update((notifiers) =>
+      notifiers.map((current) => (current.id === updated.id ? updated : current)),
+    );
+    this.success.set('Guardado. Los dispositivos lo aplicarán en el próximo latido.');
+    this.now.set(Date.now());
+    this.closeConfig();
   }
 
   private kindToType(kind: NotifierKind): NotifierType {
