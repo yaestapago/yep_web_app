@@ -1,3 +1,22 @@
+/* El host (`<app-business-shell-page>`) no tenía ninguna regla `:host`, así
+   que quedaba con el `display` por defecto de un elemento desconocido y sin
+   `flex: 1`: no participaba del reparto de alto del flex column de arriba
+   (`.content--immersive`) y terminaba con el alto natural de su contenido,
+   que `.content--immersive` recortaba en silencio (invisible, no scrolleable)
+   en vez de acotarlo de verdad. Sin esto, ninguna regla de más abajo
+   (`.business-shell--immersive`, el propio dashboard) importa: el techo de
+   altura definida se pierde acá, un nivel antes de donde parece romperse. */
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host:has(.business-shell--immersive) {
+  overflow: hidden;
+}
+
 .business-shell {
   gap: var(--space-5);
 }
@@ -8,6 +27,22 @@
   flex: 1;
   gap: 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+/* En móvil el shell deja de fijar la altura del viewport (ver shell.scss);
+   esta rama tiene que soltar el mismo `overflow: hidden` o quedaría
+   recortando contenido que en móvil se recorre con scroll de página. */
+@media (max-width: 860px) {
+  :host {
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .business-shell--immersive {
+    min-height: auto;
+    overflow: visible;
+  }
 }
 
 .back-link {

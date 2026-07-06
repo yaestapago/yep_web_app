@@ -1,4 +1,4 @@
-<div class="shell" [class.drawer-open]="drawerOpen()">
+<div class="shell" [class.drawer-open]="drawerOpen()" [class.shell--immersive]="immersive()">
   <div class="sidebar-slot">
     <app-sidebar (navigated)="closeDrawer()" (logoutRequested)="openLogout()" />
   </div>

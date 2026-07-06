@@ -3,6 +3,7 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* The immersive shell gives this panel a fixed viewport height. On wide
@@ -231,11 +232,25 @@
   position: relative;
 }
 
+/* Una sola fila que desborda horizontalmente, no un grid que envuelve: los
+   botones/chevrones y el estado canScrollKpisLeft/Right ya asumen esto (miden
+   scrollWidth vs clientWidth de este mismo elemento). Con `auto-fit` el grid
+   envolvía a filas extra en vez de desbordar, así que scrollWidth nunca
+   superaba a clientWidth: los chevrones no aparecían nunca y los KPIs que no
+   entraban en la primera fila quedaban recortados en silencio por
+   `.kpi-carousel { overflow: hidden }`, sin ninguna forma de alcanzarlos. */
 .kpi-row {
   display: grid;
   gap: var(--space-2);
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-auto-columns: minmax(112px, 1fr);
+  grid-auto-flow: column;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.kpi-row::-webkit-scrollbar {
+  display: none;
 }
 
 .kpi-scroll-btn {
@@ -368,7 +383,12 @@
   display: grid;
   gap: var(--space-3);
   grid-area: insights;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  /* Solo hay 2 hijos (kpi-carousel, dashboard-charts): un 3er token de fila
+     acá era un residuo — dashboard-charts caía en el 2do "auto" en vez del
+     "minmax(0, 1fr)", así que nunca recibía el espacio sobrante de verdad y
+     competía por alto con el carrusel de KPIs (el canvas del chart podía
+     terminar con unos pocos px de alto). */
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
 }
@@ -400,10 +420,6 @@
 /* Size 2: medium desktop / horizontal tablet. Keep two columns, but soften the
    proportions so status does not squeeze the data lists. */
 @media (max-width: 1280px) {
-  .kpi-row {
-    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-  }
-
   .grid {
     grid-template-areas:
       'insights status'
@@ -420,7 +436,17 @@
 }
 
 /* Size 3a: compact desktop / vertical tablet. Use a single column inside the
-   dashboard panel and let the panel scroll. */
+   dashboard panel. Rows use `fr` (not `auto`) so the three zones share out
+   whatever height the panel actually has beyond these floors: on typical
+   short windows nothing needs to scroll. The floors themselves are a
+   legibility budget, not just "something greater than zero" — insights needs
+   room for the KPI row *and* an actual rendered chart (a squeezed chart card
+   just clips its canvas and scrolls invisibly inside an 80px box, which is
+   worse than no chart at all), and events/transactions need at least one
+   full row under their filters. Only when a window is too short even for
+   these floors does `.panel`'s scroll fallback kick in — and because the
+   floors are real per-zone minimums, scrolling then actually reveals
+   legible content instead of more of the same clipped mess. */
 @media (max-width: 1024px), (max-height: 700px) {
   .panel {
     overflow-y: auto;
@@ -434,9 +460,9 @@
       'transactions transactions';
     grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.82fr);
     grid-template-rows:
-      minmax(300px, auto)
-      minmax(420px, auto)
-      minmax(460px, auto);
+      minmax(300px, 0.85fr)
+      minmax(210px, 1fr)
+      minmax(230px, 1.15fr);
   }
 
   .grid__top {
@@ -446,7 +472,7 @@
   .grid--summary-collapsed {
     grid-template-areas: 'events transactions';
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(460px, auto);
+    grid-template-rows: minmax(0, 1fr);
   }
 }
 
@@ -455,16 +481,13 @@
 @media (max-width: 860px) {
   :host {
     min-height: auto;
+    overflow: visible;
   }
 
   .panel {
     flex: initial;
     min-height: auto;
     overflow: visible;
-  }
-
-  .kpi-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .grid {
@@ -493,10 +516,6 @@
 }
 
 @media (max-width: 560px) {
-  .kpi-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .grid {
     gap: var(--space-2);
   }
