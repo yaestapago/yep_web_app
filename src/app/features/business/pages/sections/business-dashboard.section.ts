@@ -400,18 +400,23 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   }
 
   /**
-   * Transacción llegada en vivo. Siempre alimenta la instantánea de métricas
-   * (KPIs "por atender" y semáforo). En la tabla solo reemplaza una fila que ya
-   * esté visible: no inyecta filas nuevas para no romper el filtro server-side
-   * ni la paginación por cursor.
+   * Transaccion llegada en vivo. Siempre alimenta las metricas. En la tabla se
+   * inserta o actualiza si encaja en el filtro activo, como los eventos.
    */
   private onLiveTransaction(transaction: PaymentTransaction): void {
     this.metricsTransactions.update((list) => this.upsertTransaction(list, transaction));
     this.loadSummary();
     this.transactions.update((list) => {
       const index = list.findIndex((current) => current.id === transaction.id);
-      if (index < 0) {
+      const matches = this.matchesTransactionFilter(transaction, this.txFilters());
+      if (index < 0 && !matches) {
         return list;
+      }
+      if (!matches) {
+        return list.filter((current) => current.id !== transaction.id);
+      }
+      if (index < 0) {
+        return [transaction, ...list];
       }
       const next = [...list];
       next[index] = transaction;
@@ -432,6 +437,49 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       return next;
     }
     return [transaction, ...list];
+  }
+
+  /** La transaccion encaja en el filtro activo de la tabla. */
+  private matchesTransactionFilter(
+    transaction: PaymentTransaction,
+    filters: TransactionFilters,
+  ): boolean {
+    if (
+      filters.bankId &&
+      transaction.bankId.toLowerCase() !== filters.bankId.toLowerCase()
+    ) {
+      return false;
+    }
+    if (filters.statuses) {
+      const statuses = filters.statuses
+        .split(',')
+        .map((status) => status.trim())
+        .filter(Boolean);
+      if (statuses.length > 0 && !statuses.includes(transaction.status)) {
+        return false;
+      }
+    }
+    if (filters.amountMin !== undefined && transaction.amount < filters.amountMin) {
+      return false;
+    }
+    if (filters.amountMax !== undefined && transaction.amount > filters.amountMax) {
+      return false;
+    }
+    const transactionTime = Date.parse(transaction.transactionDate);
+    if (filters.from && transactionTime < Date.parse(filters.from)) {
+      return false;
+    }
+    if (filters.to && transactionTime > Date.parse(filters.to)) {
+      return false;
+    }
+    if (filters.q) {
+      const term = filters.q.trim().toLowerCase();
+      const reference = (transaction.reference ?? '').toLowerCase();
+      if (!reference.startsWith(term)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
