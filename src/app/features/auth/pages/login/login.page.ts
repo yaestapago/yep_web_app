@@ -3,10 +3,11 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideLogIn } from '@lucide/angular';
+import { LucideLogIn, LucideMoon, LucideSun } from '@lucide/angular';
 import { Observable, catchError, finalize, map, of, switchMap } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { ThemeService } from '../../../../core/services/theme.service';
 import type { AuthResponse, BusinessMembership } from '../../../../shared/models/auth.models';
 import { Alert, Button, Input } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -21,7 +22,17 @@ interface LoginFlowResult {
 
 @Component({
   selector: 'app-login-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideLogIn, Alert, Button, Input],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    LucideLogIn,
+    LucideMoon,
+    LucideSun,
+    Alert,
+    Button,
+    Input,
+  ],
   templateUrl: './login.page.html',
   styleUrl: './login.page.scss',
 })
@@ -29,10 +40,13 @@ export class LoginPage {
   private readonly authApi = inject(AuthApiService);
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly theme = inject(ThemeService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+
+  readonly isDark = this.theme.isDark;
 
   readonly loading = signal(false);
   readonly error = signal('');
@@ -97,6 +111,14 @@ export class LoginPage {
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
+  }
+
+  toggleTheme(): void {
+    this.theme.toggleTheme();
+  }
+
+  themeLabel(): string {
+    return this.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
   }
 
   isInvalid(controlName: 'email' | 'password'): boolean {

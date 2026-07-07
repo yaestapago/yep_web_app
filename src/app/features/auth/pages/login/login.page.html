@@ -1,4 +1,18 @@
 <main class="auth-page">
+  <button
+    class="theme-toggle-corner"
+    type="button"
+    (click)="toggleTheme()"
+    [attr.aria-label]="themeLabel()"
+    [title]="themeLabel()"
+  >
+    @if (isDark()) {
+      <svg lucideSun aria-hidden="true"></svg>
+    } @else {
+      <svg lucideMoon aria-hidden="true"></svg>
+    }
+  </button>
+
   <section class="auth-panel">
     <div class="auth-logo" aria-label="Ya Está Pago">
       <img
