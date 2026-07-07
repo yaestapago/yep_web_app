@@ -57,6 +57,17 @@
   opacity: 0.72;
 }
 
+/* Oculta el ícono nativo del input[type=time] para no duplicar el reloj del trigger custom. */
+.yep-time-picker__input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.yep-time-picker__input::-webkit-clear-button,
+.yep-time-picker__input::-webkit-inner-spin-button {
+  display: none;
+}
+
 .yep-time-picker__trigger {
   align-items: center;
   background: transparent;
@@ -96,16 +107,18 @@
   z-index: 40;
 }
 
+/*
+ * `position: fixed` con top/left calculados en TS (ver `updatePosition()`): así el popover
+ * escapa al `overflow-y: auto` del body del modal en vez de quedar recortado, y puede abrirse
+ * hacia arriba cuando no hay espacio debajo del input.
+ */
 .yep-time-picker__popover {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  left: 0;
-  margin-top: var(--space-1);
   padding: var(--space-2);
-  position: absolute;
-  top: 100%;
+  position: fixed;
   z-index: 41;
 }
 

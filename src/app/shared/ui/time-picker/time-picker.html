@@ -4,6 +4,7 @@
   }
 
   <div
+    #control
     class="yep-time-picker__control"
     [class.yep-time-picker__control--invalid]="error()"
   >
@@ -32,7 +33,12 @@
 
   @if (open()) {
     <div class="yep-time-picker__backdrop" (click)="close()"></div>
-    <div class="yep-time-picker__popover" (keydown.escape)="close()">
+    <div
+      #popover
+      class="yep-time-picker__popover"
+      [style]="popoverStyle()"
+      (keydown.escape)="close()"
+    >
       <div class="yep-time-picker__wheels">
         <div
           #hourList

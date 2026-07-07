@@ -10,7 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormBuilder,
@@ -99,6 +99,22 @@ const DAY_COLUMNS: DayColumn[] = [
   { day: 5, label: 'Vie' },
   { day: 6, label: 'Sáb' },
   { day: 0, label: 'Dom' },
+];
+
+const WEEKDAYS: DayOfWeek[] = [1, 2, 3, 4, 5];
+const ALL_DAYS: DayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
+
+interface TimeTemplate {
+  label: string;
+  startTime: string;
+  endTime: string;
+}
+
+/** Rangos típicos para prellenar el formulario de turno en un clic. */
+const TIME_TEMPLATES: TimeTemplate[] = [
+  { label: 'Mañana', startTime: '06:00', endTime: '14:00' },
+  { label: 'Tarde', startTime: '12:00', endTime: '20:00' },
+  { label: 'Jornada completa', startTime: '06:00', endTime: '18:00' },
 ];
 
 /** Paleta estable para colorear por empleado. */
@@ -389,6 +405,35 @@ export class BusinessSchedulesSection implements OnInit {
     { validators: [endAfterStart] },
   );
 
+  readonly weekdays = WEEKDAYS;
+  readonly allDays = ALL_DAYS;
+  readonly timeTemplates = TIME_TEMPLATES;
+
+  private readonly shiftFormValue = toSignal(this.shiftForm.valueChanges, {
+    initialValue: this.shiftForm.getRawValue(),
+  });
+
+  /** Duración legible del turno ("2 h 30 min"), vacía si el rango aún no es válido. */
+  readonly shiftDurationLabel = computed(() => {
+    const { startTime, endTime } = this.shiftFormValue();
+    if (!startTime || !endTime) {
+      return '';
+    }
+    const minutes = toMinutes(endTime) - toMinutes(startTime);
+    if (minutes <= 0) {
+      return '';
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) {
+      return `Duración: ${mins} min`;
+    }
+    if (mins === 0) {
+      return `Duración: ${hours} h`;
+    }
+    return `Duración: ${hours} h ${mins} min`;
+  });
+
   ngOnInit(): void {
     this.loadLocations();
     this.loadMembers();
@@ -528,6 +573,21 @@ export class BusinessSchedulesSection implements OnInit {
     }
 
     this.shiftOpen.set(false);
+  }
+
+  /** Atajo para marcar de una vez los días laborales, todos o ninguno. */
+  setDays(days: readonly DayOfWeek[]): void {
+    const control = this.shiftForm.controls.days;
+    control.setValue([...days]);
+    control.markAsDirty();
+    control.markAsTouched();
+  }
+
+  /** Prellena hora inicio/fin con un rango típico ("Mañana", "Tarde", etc.). */
+  applyTimeTemplate(template: TimeTemplate): void {
+    this.shiftForm.patchValue({ startTime: template.startTime, endTime: template.endTime });
+    this.shiftForm.controls.startTime.markAsDirty();
+    this.shiftForm.controls.endTime.markAsDirty();
   }
 
   saveShift(): void {

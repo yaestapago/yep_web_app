@@ -204,18 +204,40 @@
       [error]="isInvalid('userId') ? 'Selecciona un empleado' : ''"
     />
     <div class="shift-field">
-      <span class="shift-field__label">
-        {{ editingShiftId() ? 'Día' : 'Días (se repite cada semana)' }}
-      </span>
+      <div class="shift-field__label-row">
+        <span class="shift-field__label">
+          {{ editingShiftId() ? 'Día' : 'Días (se repite cada semana)' }}
+        </span>
+        @if (!editingShiftId()) {
+          <div class="quick-chip-row">
+            <button type="button" class="quick-chip" (click)="setDays(weekdays)">Lun–Vie</button>
+            <button type="button" class="quick-chip" (click)="setDays(allDays)">Todos</button>
+            <button type="button" class="quick-chip" (click)="setDays([])">Ninguno</button>
+          </div>
+        }
+      </div>
       <yep-day-picker formControlName="days" />
       @if (isInvalid('days')) {
         <small class="field-error">Selecciona al menos un día</small>
       }
     </div>
+    <div class="shift-field">
+      <span class="shift-field__label">Plantillas rápidas</span>
+      <div class="quick-chip-row">
+        @for (tpl of timeTemplates; track tpl.label) {
+          <button type="button" class="quick-chip" (click)="applyTimeTemplate(tpl)">
+            {{ tpl.label }}
+          </button>
+        }
+      </div>
+    </div>
     <div class="form-grid form-grid--2">
       <yep-time-picker formControlName="startTime" label="Hora inicio" />
       <yep-time-picker formControlName="endTime" label="Hora fin" />
     </div>
+    @if (shiftDurationLabel()) {
+      <p class="shift-duration">{{ shiftDurationLabel() }}</p>
+    }
     @if (shiftForm.errors?.['endBeforeStart']) {
       <div class="field-error">La hora de fin debe ser mayor a la de inicio.</div>
     }
