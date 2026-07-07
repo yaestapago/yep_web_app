@@ -13,6 +13,7 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   LucideLoaderCircle,
   LucideListChecks,
+  LucideReceipt,
   LucideSearch,
   LucideShieldCheck,
   LucideTriangleAlert,
@@ -48,6 +49,7 @@ type PeriodFilter = 'all' | 'today' | '7d' | '30d';
     DatePipe,
     LucideListChecks,
     LucideLoaderCircle,
+    LucideReceipt,
     LucideSearch,
     LucideShieldCheck,
     LucideTriangleAlert,
@@ -73,6 +75,7 @@ export class DashboardTransactionsPanel {
 
   readonly view = output<PaymentTransaction>();
   readonly verify = output<PaymentTransaction>();
+  readonly applyInvoice = output<PaymentTransaction>();
   /** Cambios de filtro (con debounce) para que la sección recargue server-side. */
   readonly filtersChange = output<TransactionFilters>();
   /** Solicita la siguiente página del servidor (cursor). */
@@ -173,6 +176,10 @@ export class DashboardTransactionsPanel {
       !tx.verification.canBeConsideredPaid &&
       ['CREATED', 'PENDING_VERIFICATION', 'NEEDS_REVIEW', 'EVIDENCE_MATCHED'].includes(tx.status)
     );
+  }
+
+  isInvoiceActionable(tx: PaymentTransaction): boolean {
+    return this.category(tx) === 'verificada';
   }
 
   resetFilters(): void {

@@ -73,6 +73,7 @@ import {
   type Semaphore,
 } from '../../components/dashboard/dashboard-status';
 import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard-transactions';
+import { ApplyInvoiceModal } from '../../components/dashboard/apply-invoice-modal';
 import { SourceEventDetailModal } from '../../components/dashboard/source-event-detail-modal';
 import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
 import { VerifyTransactionModal } from '../../components/dashboard/verify-transaction-modal';
@@ -172,6 +173,7 @@ type KpiKey =
     SourceEventDetailModal,
     TransactionDetailModal,
     VerifyTransactionModal,
+    ApplyInvoiceModal,
   ],
   templateUrl: './business-dashboard.section.html',
   styleUrl: './business-dashboard.section.scss',
@@ -210,6 +212,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly account = computed(() => this.session.activeMembership()?.businessAccount ?? null);
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
+  readonly invoiceReferenceLabel = computed(
+    () => this.account()?.preferences?.invoiceReference?.label || 'Factura Numero',
+  );
 
   // --- Datos de las tablas (filtrados server-side) ---
   readonly transactions = signal<PaymentTransaction[]>([]);
@@ -276,6 +281,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
 
   // --- Operación (verificación) ---
   readonly verifyTarget = signal<PaymentTransaction | null>(null);
+  readonly invoiceTarget = signal<PaymentTransaction | null>(null);
+  /** True cuando el modal de factura además debe confirmar el pago (campo obligatorio). */
+  readonly invoiceRequired = signal(false);
   readonly detailTarget = signal<PaymentTransaction | null>(null);
   readonly eventDetailTarget = signal<SourceEvent | null>(null);
   readonly verifyingId = signal<string | null>(null);
@@ -1055,11 +1063,43 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   }
 
   confirmVerify(transaction: PaymentTransaction): void {
+    const invoiceConfig = this.account()?.preferences?.invoiceReference;
+    if (invoiceConfig?.required && !transaction.invoiceReference) {
+      // El campo es obligatorio para confirmar: en vez de mandar una
+      // confirmación que el backend rechazaría con 400, se cierra Verificar
+      // y se abre directo el modal de factura, que es quien confirma.
+      this.verifyTarget.set(null);
+      this.invoiceRequired.set(true);
+      this.invoiceTarget.set(transaction);
+      return;
+    }
     this.submitManualDecision(transaction, 'confirmed');
   }
 
   rejectVerify(transaction: PaymentTransaction): void {
     this.submitManualDecision(transaction, 'rejected');
+  }
+
+  askApplyInvoice(transaction: PaymentTransaction): void {
+    this.operationError.set('');
+    this.operationSuccess.set('');
+    this.invoiceRequired.set(false);
+    this.invoiceTarget.set(transaction);
+  }
+
+  cancelInvoice(): void {
+    this.invoiceTarget.set(null);
+  }
+
+  onInvoiceSaved(transaction: PaymentTransaction): void {
+    this.transactions.update((transactions) =>
+      transactions.map((current) => (current.id === transaction.id ? transaction : current)),
+    );
+    this.operationSuccess.set(
+      this.invoiceRequired() ? 'Pago confirmado y factura asociada.' : 'Factura asociada.',
+    );
+    this.invoiceTarget.set(null);
+    this.transactionEvents.notifyChanged();
   }
 
   private submitManualDecision(
@@ -1087,6 +1127,12 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
           this.operationSuccess.set(
             decision === 'confirmed' ? 'Pago confirmado.' : 'Transacción rechazada.',
           );
+          if (decision === 'confirmed') {
+            // Encadena la captura opcional de la factura justo tras confirmar,
+            // mientras el usuario sigue con el pago en mente.
+            this.invoiceRequired.set(false);
+            this.invoiceTarget.set(response.transaction);
+          }
           // Recalcula KPIs/semáforo (métricas sin filtrar) y refresca las tablas:
           // "transacciones por atender" cambia al instante, sin recargar.
           this.transactionEvents.notifyChanged();

@@ -32,6 +32,15 @@ export interface User {
 export type BusinessMembershipRole = 'account_owner' | 'account_staff';
 export type BusinessMembershipStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
 
+export interface InvoiceReferencePreferences {
+  label: string;
+  required: boolean;
+}
+
+export interface BusinessAccountPreferences {
+  invoiceReference?: InvoiceReferencePreferences;
+}
+
 export interface BusinessAccount {
   id: string;
   name: string;
@@ -42,6 +51,7 @@ export interface BusinessAccount {
   address: string;
   phone: string;
   slug?: string;
+  preferences?: BusinessAccountPreferences;
   createdAt?: string;
   updatedAt?: string;
 }

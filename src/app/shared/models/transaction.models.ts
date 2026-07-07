@@ -55,6 +55,7 @@ export interface ManualReview {
 export interface ManualDecisionRequest {
   decision: ManualReviewDecision;
   note?: string;
+  invoiceReference?: string;
 }
 
 /** Un evento (source event) enlazado a la transacción, etiquetado por origen. */
@@ -109,6 +110,7 @@ export interface PaymentTransaction {
   customerId?: string;
   dayBucket: string;
   status: TransactionStatus;
+  invoiceReference?: string;
   verification: VerificationSnapshot;
   /** Empleado/usuario que originó la transacción (resuelto por el backend). */
   employeeId?: string;
@@ -166,6 +168,7 @@ export interface TransactionQuery {
   amountMin?: number;
   amountMax?: number;
   reference?: string;
+  invoiceReference?: string;
   /** Búsqueda por referencia (prefijo). */
   q?: string;
   cursor?: string;

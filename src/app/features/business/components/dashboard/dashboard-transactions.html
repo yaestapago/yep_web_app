@@ -119,6 +119,17 @@
                       }
                     </button>
                   }
+                  @if (isInvoiceActionable(tx)) {
+                    <button
+                      type="button"
+                      class="icon-btn icon-btn--invoice"
+                      (click)="$event.stopPropagation(); applyInvoice.emit(tx)"
+                      aria-label="Aplicar pago a factura"
+                      title="Aplicar pago a factura"
+                    >
+                      <svg lucideReceipt aria-hidden="true"></svg>
+                    </button>
+                  }
                 </div>
               </td>
             </tr>

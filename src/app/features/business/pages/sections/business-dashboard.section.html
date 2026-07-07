@@ -179,6 +179,7 @@
       [loadingMore]="loadingMoreTransactions()"
       (view)="openDetail($event)"
       (verify)="askVerify($event)"
+      (applyInvoice)="askApplyInvoice($event)"
       (filtersChange)="onTransactionFiltersChange($event)"
       (loadMore)="loadMoreTransactions()"
     />
@@ -209,4 +210,11 @@
   (cancel)="cancelVerify()"
   (confirm)="confirmVerify($event)"
   (reject)="rejectVerify($event)"
+/>
+<app-apply-invoice-modal
+  [transaction]="invoiceTarget()"
+  [label]="invoiceReferenceLabel()"
+  [required]="invoiceRequired()"
+  (closeRequested)="cancelInvoice()"
+  (saved)="onInvoiceSaved($event)"
 />
