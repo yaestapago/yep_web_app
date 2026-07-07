@@ -140,9 +140,42 @@
         <textarea formControlName="phoneContentPatterns" rows="2" placeholder="te enviaron"></textarea>
       </label>
       <label class="bank-form__field">
+        <span>Remitente/ID en el título del SMS (uno por línea)</span>
+        <textarea formControlName="phoneTitlePatterns" rows="2" placeholder="bancolombia&#10;891900"></textarea>
+        <small class="bank-form__hint">El número o nombre corto que aparece como remitente del SMS (llega en el título de la notificación).</small>
+      </label>
+      <label class="bank-form__field">
         <span>Nombres visibles para escritorio (uno por línea)</span>
         <textarea formControlName="phoneDisplayNames" rows="2" placeholder="nequi colombia"></textarea>
       </label>
+
+      <details class="bank-form__advanced">
+        <summary>Extracción (parser) — avanzado</summary>
+        <p class="bank-form__hint">
+          Reglas de extracción en JSON (monto, remitente, dirección, tipo…). Vacío
+          = usa el parser por defecto del banco. Usa el <strong>probador</strong>
+          de abajo para verificar qué extrae.
+        </p>
+        <yep-button
+          variant="secondary"
+          size="sm"
+          type="button"
+          [loading]="loadingDefaults()"
+          (clicked)="loadDefaults('phone')"
+        >
+          Cargar reglas por defecto
+        </yep-button>
+        <textarea
+          class="bank-form__code"
+          formControlName="phoneParseRules"
+          rows="8"
+          spellcheck="false"
+          placeholder='{ "currency": "COP", "amount": [{ "pattern": "\$\\s*([\\d.,]+)" }] }'
+        ></textarea>
+        @if (parseRulesInvalid('phone')) {
+          <small class="bank-form__error">JSON inválido.</small>
+        }
+      </details>
     </fieldset>
 
     <!-- Canal Correo -->
@@ -165,9 +198,39 @@
         <textarea formControlName="emailContentPatterns" rows="2"></textarea>
       </label>
       <label class="bank-form__field">
+        <span>Remitentes del banco a atribuir (uno por línea)</span>
+        <textarea formControlName="emailSenderPatterns" rows="2" placeholder="notificacionesbancolombia.com"></textarea>
+        <small class="bank-form__hint">Tokens/direcciones del remitente oficial del banco que aparecen en el correo reenviado.</small>
+      </label>
+      <label class="bank-form__field">
         <span>Nombres visibles (uno por línea)</span>
         <textarea formControlName="emailDisplayNames" rows="2"></textarea>
       </label>
+
+      <details class="bank-form__advanced">
+        <summary>Extracción (parser) — avanzado</summary>
+        <p class="bank-form__hint">
+          Reglas de extracción en JSON. Vacío = usa el parser por defecto del banco.
+        </p>
+        <yep-button
+          variant="secondary"
+          size="sm"
+          type="button"
+          [loading]="loadingDefaults()"
+          (clicked)="loadDefaults('email')"
+        >
+          Cargar reglas por defecto
+        </yep-button>
+        <textarea
+          class="bank-form__code"
+          formControlName="emailParseRules"
+          rows="8"
+          spellcheck="false"
+        ></textarea>
+        @if (parseRulesInvalid('email')) {
+          <small class="bank-form__error">JSON inválido.</small>
+        }
+      </details>
     </fieldset>
 
     <!-- Panel de claridad: traduce las reglas a lenguaje natural, en vivo -->
@@ -178,6 +241,71 @@
         }
       </ul>
     </yep-alert>
+
+    <!-- Probador: pega un mensaje real y ve qué extraería la config actual -->
+    <details class="bank-form__advanced">
+      <summary>Probar con un mensaje real</summary>
+      <div class="bank-tester">
+        <div class="bank-tester__channel">
+          <button
+            type="button"
+            [class.is-active]="testChannel() === 'phone'"
+            (click)="setTestChannel('phone')"
+          >
+            Teléfono
+          </button>
+          <button
+            type="button"
+            [class.is-active]="testChannel() === 'email'"
+            (click)="setTestChannel('email')"
+          >
+            Correo
+          </button>
+        </div>
+        <label class="bank-form__field">
+          <span>{{ testChannel() === 'email' ? 'Asunto' : 'Título' }}</span>
+          <input
+            type="text"
+            [value]="testTitle()"
+            (input)="onTestTitle($any($event.target).value)"
+            placeholder="Bancolombia"
+          />
+        </label>
+        <label class="bank-form__field">
+          <span>{{ testChannel() === 'email' ? 'Cuerpo del correo' : 'Texto del SMS/notificación' }}</span>
+          <textarea
+            rows="3"
+            [value]="testBody()"
+            (input)="onTestBody($any($event.target).value)"
+            placeholder="Recibiste $50.000 de JUAN PEREZ"
+          ></textarea>
+        </label>
+
+        @if (testError()) {
+          <small class="bank-form__error">{{ testError() }}</small>
+        }
+        @if (testing()) {
+          <p class="bank-form__hint">Probando…</p>
+        } @else if (testResult(); as r) {
+          <div class="bank-tester__result">
+            <yep-status-dot
+              [level]="r.attributed ? 'online' : 'offline'"
+              [label]="r.attributed ? 'Se atribuiría a este banco' : 'NO se atribuiría'"
+            />
+            <dl class="bank-tester__grid">
+              <dt>Monto</dt><dd>{{ r.parsed.amount ?? '—' }}</dd>
+              <dt>Remitente</dt><dd>{{ r.parsed.senderName ?? '—' }}</dd>
+              <dt>Dirección</dt><dd>{{ r.parsed.direction ?? '—' }}</dd>
+              <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
+              <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
+              <dt>Cuenta origen</dt><dd>{{ r.parsed.senderAccount ?? '—' }}</dd>
+              <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
+              <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
+            </dl>
+          </div>
+        }
+      </div>
+    </details>
   </form>
 
   <ng-container modalFooter>

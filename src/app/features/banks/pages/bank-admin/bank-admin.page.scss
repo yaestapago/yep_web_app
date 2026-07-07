@@ -204,6 +204,45 @@
     }
   }
 
+  &__hint {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs, 0.75rem);
+  }
+
+  &__error {
+    color: var(--color-error, #d33);
+    font-size: var(--font-size-xs, 0.75rem);
+  }
+
+  &__advanced {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+
+    summary {
+      cursor: pointer;
+      font-weight: var(--font-weight-semibold, 600);
+      font-size: var(--font-size-sm);
+    }
+
+    > * + * {
+      margin-top: var(--space-2, 0.5rem);
+    }
+  }
+
+  &__code {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--font-size-xs, 0.75rem);
+    color: var(--color-text-primary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 0.5rem);
+    padding: var(--space-2, 0.5rem);
+    resize: vertical;
+    white-space: pre;
+  }
+
   &__clarity {
     margin: 0;
     padding-left: var(--space-4, 1rem);
@@ -211,6 +250,68 @@
     flex-direction: column;
     gap: var(--space-1, 0.25rem);
     font-size: var(--font-size-sm);
+  }
+}
+
+.bank-tester {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+
+  input,
+  textarea {
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 0.5rem);
+    padding: var(--space-2, 0.5rem);
+    width: 100%;
+  }
+
+  &__channel {
+    display: flex;
+    gap: var(--space-1, 0.25rem);
+
+    button {
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      border-radius: var(--radius-full, 999px);
+      padding: 2px var(--space-3, 0.75rem);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+
+      &.is-active {
+        background: var(--color-accent);
+        color: #fff;
+        border-color: var(--color-accent);
+      }
+    }
+  }
+
+  &__result {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 2px var(--space-3, 0.75rem);
+    margin: 0;
+    font-size: var(--font-size-sm);
+
+    dt {
+      color: var(--color-text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--color-text-primary);
+    }
   }
 }
 

@@ -21,6 +21,55 @@ export interface BankChannelConfig {
   packageNames: string[];
   contentPatterns: string[];
   displayNames: string[];
+  /** SMS: subcadenas que deben aparecer en el TÍTULO (remitente/número del SMS). */
+  titlePatterns: string[];
+  /** Correo: tokens/remitentes del banco para atribuir el correo. */
+  senderPatterns: string[];
+  /** Reglas de extracción (regex/keywords). Objeto libre; se valida en backend. */
+  parseRules?: Record<string, unknown> | null;
+}
+
+export type ParseConfidence = 'high' | 'medium' | 'low' | 'none';
+export type TransactionDirection = 'incoming' | 'outgoing';
+
+/** Resultado de parseo (espejo de ParsedBankNotification del backend). */
+export interface ParsedBankNotification {
+  bankId?: string;
+  amount?: number;
+  currency?: string;
+  reference?: string;
+  transactionDate?: string;
+  senderAccount?: string;
+  senderName?: string;
+  receiverAccount?: string;
+  direction?: TransactionDirection;
+  kind?: string;
+  confidence: ParseConfidence;
+}
+
+export interface ParseTestRequest {
+  channel: 'phone' | 'email';
+  sample: {
+    title?: string;
+    text?: string;
+    bigText?: string;
+    subject?: string;
+    bodyText?: string;
+    date?: string;
+    postTime?: number;
+  };
+  config: Partial<BankChannelConfig>;
+}
+
+export interface ParseTestResponse {
+  attributed: boolean;
+  parsed: ParsedBankNotification;
+}
+
+/** Reglas por defecto de un banco conocido, para prellenar el editor. */
+export interface DefaultRulesResponse {
+  phone: Record<string, unknown> | null;
+  email: Record<string, unknown> | null;
 }
 
 /** Banco del catálogo global con su config completa (vista de superadmin). */

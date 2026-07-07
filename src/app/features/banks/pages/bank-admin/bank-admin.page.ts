@@ -9,7 +9,7 @@ import {
   LucidePlus,
   LucideTrash2,
 } from '@lucide/angular';
-import { finalize } from 'rxjs';
+import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
 
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
@@ -21,6 +21,8 @@ import { NotificationModalService } from '../../../../shared/ui/notification-mod
 import type {
   AdminBank,
   CreateBankRequest,
+  ParseTestRequest,
+  ParseTestResponse,
   UpdateBankRequest,
 } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -80,12 +82,26 @@ export class BankAdminPage {
     phoneEnabled: [false],
     phonePackageNames: [''],
     phoneContentPatterns: [''],
+    phoneTitlePatterns: [''],
     phoneDisplayNames: [''],
+    phoneParseRules: [''],
     emailEnabled: [false],
     emailPackageNames: [''],
     emailContentPatterns: [''],
+    emailSenderPatterns: [''],
     emailDisplayNames: [''],
+    emailParseRules: [''],
   });
+
+  // --- Probador (Fase 2) ---
+  readonly testChannel = signal<'phone' | 'email'>('phone');
+  readonly testTitle = signal('');
+  readonly testBody = signal('');
+  readonly testResult = signal<ParseTestResponse | null>(null);
+  readonly testing = signal(false);
+  readonly testError = signal('');
+  readonly loadingDefaults = signal(false);
+  private readonly testTrigger = new Subject<void>();
 
   /** Valor del form como signal, para conducir el panel de claridad zoneless. */
   private readonly formValue = toSignal(this.form.valueChanges, {
@@ -104,6 +120,8 @@ export class BankAdminPage {
           v.phonePackageNames ?? '',
           v.phoneContentPatterns ?? '',
           v.phoneDisplayNames ?? '',
+          v.phoneTitlePatterns ?? '',
+          'título',
         ),
       },
       {
@@ -114,6 +132,8 @@ export class BankAdminPage {
           v.emailPackageNames ?? '',
           v.emailContentPatterns ?? '',
           v.emailDisplayNames ?? '',
+          v.emailSenderPatterns ?? '',
+          'remitente',
         ),
       },
     ];
@@ -121,6 +141,142 @@ export class BankAdminPage {
 
   constructor() {
     this.load();
+
+    // Probador con debounce: cada cambio en el mensaje/canal/config re-consulta
+    // al backend qué extraería la config actual (RE2 real), sin guardar.
+    this.testTrigger
+      .pipe(
+        debounceTime(400),
+        switchMap(() => {
+          const request = this.buildTestRequest();
+          if (!request) {
+            this.testing.set(false);
+            return of(null);
+          }
+          this.testing.set(true);
+          return this.api.testParse(request).pipe(
+            catchError((error) => {
+              this.testError.set(httpErrorMessage(error));
+              return of(null);
+            }),
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        this.testing.set(false);
+        if (result) {
+          this.testResult.set(result);
+          this.testError.set('');
+        }
+      });
+  }
+
+  private resetTester(): void {
+    this.testTitle.set('');
+    this.testBody.set('');
+    this.testResult.set(null);
+    this.testError.set('');
+    this.testing.set(false);
+  }
+
+  setTestChannel(channel: 'phone' | 'email'): void {
+    this.testChannel.set(channel);
+    this.testTrigger.next();
+  }
+
+  onTestTitle(value: string): void {
+    this.testTitle.set(value);
+    this.testTrigger.next();
+  }
+
+  onTestBody(value: string): void {
+    this.testBody.set(value);
+    this.testTrigger.next();
+  }
+
+  /** Carga las reglas por defecto del banco (si existen) en el canal indicado. */
+  loadDefaults(channel: 'phone' | 'email'): void {
+    const code = (this.editingCode() ?? this.form.controls.code.value)
+      ?.trim()
+      .toLowerCase();
+    if (!code) return;
+    this.loadingDefaults.set(true);
+    this.api
+      .defaultRules(code)
+      .pipe(
+        finalize(() => this.loadingDefaults.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          const rules = channel === 'phone' ? response.phone : response.email;
+          const control =
+            channel === 'phone'
+              ? this.form.controls.phoneParseRules
+              : this.form.controls.emailParseRules;
+          if (rules) {
+            control.setValue(JSON.stringify(rules, null, 2));
+            control.markAsDirty();
+          } else {
+            this.error.set('Este banco no tiene reglas por defecto.');
+          }
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  /** Parsea el JSON de reglas; '' → undefined; inválido → null (marca error). */
+  private parseRulesJson(raw: string): Record<string, unknown> | undefined | null {
+    const trimmed = (raw ?? '').trim();
+    if (!trimmed) return undefined;
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** ¿El JSON de reglas de un canal es inválido? (para el hint del editor). */
+  parseRulesInvalid(channel: 'phone' | 'email'): boolean {
+    const raw =
+      channel === 'phone'
+        ? this.form.controls.phoneParseRules.value
+        : this.form.controls.emailParseRules.value;
+    return this.parseRulesJson(raw) === null;
+  }
+
+  private buildTestRequest(): ParseTestRequest | null {
+    const v = this.form.getRawValue();
+    const channel = this.testChannel();
+    const rawRules =
+      channel === 'phone' ? v.phoneParseRules : v.emailParseRules;
+    const parseRules = this.parseRulesJson(rawRules);
+    if (parseRules === null) {
+      this.testError.set('El JSON de reglas de extracción es inválido.');
+      return null;
+    }
+    const config =
+      channel === 'phone'
+        ? {
+            enabled: v.phoneEnabled,
+            packageNames: this.toList(v.phonePackageNames),
+            contentPatterns: this.toList(v.phoneContentPatterns),
+            titlePatterns: this.toList(v.phoneTitlePatterns),
+            parseRules,
+          }
+        : {
+            enabled: v.emailEnabled,
+            contentPatterns: this.toList(v.emailContentPatterns),
+            senderPatterns: this.toList(v.emailSenderPatterns),
+            parseRules,
+          };
+    const sample =
+      channel === 'phone'
+        ? { title: this.testTitle(), text: this.testBody() }
+        : { subject: this.testTitle(), bodyText: this.testBody() };
+    return { channel, sample, config };
   }
 
   load(): void {
@@ -149,13 +305,18 @@ export class BankAdminPage {
       phoneEnabled: false,
       phonePackageNames: '',
       phoneContentPatterns: '',
+      phoneTitlePatterns: '',
       phoneDisplayNames: '',
+      phoneParseRules: '',
       emailEnabled: false,
       emailPackageNames: '',
       emailContentPatterns: '',
+      emailSenderPatterns: '',
       emailDisplayNames: '',
+      emailParseRules: '',
     });
     this.form.controls.code.enable();
+    this.resetTester();
     this.modalOpen.set(true);
   }
 
@@ -170,14 +331,23 @@ export class BankAdminPage {
       phoneEnabled: bank.phone.enabled,
       phonePackageNames: bank.phone.packageNames.join('\n'),
       phoneContentPatterns: bank.phone.contentPatterns.join('\n'),
+      phoneTitlePatterns: (bank.phone.titlePatterns ?? []).join('\n'),
       phoneDisplayNames: bank.phone.displayNames.join('\n'),
+      phoneParseRules: bank.phone.parseRules
+        ? JSON.stringify(bank.phone.parseRules, null, 2)
+        : '',
       emailEnabled: bank.email.enabled,
       emailPackageNames: bank.email.packageNames.join('\n'),
       emailContentPatterns: bank.email.contentPatterns.join('\n'),
+      emailSenderPatterns: (bank.email.senderPatterns ?? []).join('\n'),
       emailDisplayNames: bank.email.displayNames.join('\n'),
+      emailParseRules: bank.email.parseRules
+        ? JSON.stringify(bank.email.parseRules, null, 2)
+        : '',
     });
     // `code` es inmutable: la clave de referencia de las cuentas bancarias.
     this.form.controls.code.disable();
+    this.resetTester();
     this.modalOpen.set(true);
   }
 
@@ -200,6 +370,16 @@ export class BankAdminPage {
     }
     const v = this.form.getRawValue();
     const editingCode = this.editingCode();
+
+    const phoneRules = this.parseRulesJson(v.phoneParseRules);
+    const emailRules = this.parseRulesJson(v.emailParseRules);
+    if (phoneRules === null || emailRules === null) {
+      this.error.set(
+        'El JSON de reglas de extracción es inválido. Revisa el editor del parser.',
+      );
+      return;
+    }
+
     this.saving.set(true);
     this.error.set('');
 
@@ -207,13 +387,18 @@ export class BankAdminPage {
       enabled: v.phoneEnabled,
       packageNames: this.toList(v.phonePackageNames),
       contentPatterns: this.toList(v.phoneContentPatterns),
+      titlePatterns: this.toList(v.phoneTitlePatterns),
       displayNames: this.toList(v.phoneDisplayNames),
+      // null limpia las reglas (vuelve al fallback por defecto del banco).
+      parseRules: phoneRules ?? null,
     };
     const email = {
       enabled: v.emailEnabled,
       packageNames: this.toList(v.emailPackageNames),
       contentPatterns: this.toList(v.emailContentPatterns),
+      senderPatterns: this.toList(v.emailSenderPatterns),
       displayNames: this.toList(v.emailDisplayNames),
+      parseRules: emailRules ?? null,
     };
 
     const request$ = editingCode
@@ -328,16 +513,22 @@ export class BankAdminPage {
     pkgRaw: string,
     patRaw: string,
     dispRaw: string,
+    senderRaw: string,
+    senderLabel: 'título' | 'remitente',
   ): string {
     if (!enabled) return `${name}: desactivado — no se escucha nada por este canal.`;
     const pkgs = this.toList(pkgRaw);
-    if (pkgs.length === 0) {
-      return `${name}: habilitado pero sin apps configuradas — no se escuchará nada hasta agregar paquetes.`;
+    const senders = this.toList(senderRaw);
+    if (pkgs.length === 0 && senders.length === 0) {
+      return `${name}: habilitado pero sin apps ni ${senderLabel}s configurados — no se escuchará nada.`;
     }
     const pats = this.toList(patRaw);
     let text = pats.length
-      ? `${name}: escuchará ${pkgs.join(', ')} y enviará solo los mensajes que contengan alguno de: ${pats.join(', ')}; el resto se ignora.`
-      : `${name}: enviará todas las notificaciones de ${pkgs.join(', ')}; sin filtro por contenido.`;
+      ? `${name}: escuchará ${pkgs.join(', ') || 'los mensajes'} y enviará solo los que contengan alguno de: ${pats.join(', ')}; el resto se ignora.`
+      : `${name}: enviará todas las notificaciones de ${pkgs.join(', ') || 'las apps configuradas'}; sin filtro por contenido.`;
+    if (senders.length) {
+      text += ` Atribuirá por ${senderLabel} cuando contenga: ${senders.join(', ')}.`;
+    }
     const disps = this.toList(dispRaw);
     if (disps.length) {
       text += ` En escritorio (Vínculo con Windows) también se identifica por: ${disps.join(', ')}.`;

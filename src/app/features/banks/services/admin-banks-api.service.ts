@@ -7,6 +7,9 @@ import {
   AdminBankResponse,
   AdminBanksResponse,
   CreateBankRequest,
+  DefaultRulesResponse,
+  ParseTestRequest,
+  ParseTestResponse,
   UpdateBankRequest,
 } from '../../../shared/models/bank.models';
 
@@ -41,5 +44,20 @@ export class AdminBanksApiService {
 
   remove(code: string): Observable<AdminBankResponse> {
     return this.http.delete<AdminBankResponse>(`${this.apiUrl}/admin/banks/${code}`);
+  }
+
+  /** Prueba una config contra un mensaje de ejemplo (sin guardar). */
+  testParse(request: ParseTestRequest): Observable<ParseTestResponse> {
+    return this.http.post<ParseTestResponse>(
+      `${this.apiUrl}/admin/banks/parse-test`,
+      request,
+    );
+  }
+
+  /** Reglas de extracción por defecto de un banco conocido (para prellenar). */
+  defaultRules(code: string): Observable<DefaultRulesResponse> {
+    return this.http.get<DefaultRulesResponse>(
+      `${this.apiUrl}/admin/banks/${code}/default-rules`,
+    );
   }
 }
