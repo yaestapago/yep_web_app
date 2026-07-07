@@ -4,6 +4,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { businessGuard } from './core/guards/business.guard';
 import { businessContextGuard } from './core/guards/business-context.guard';
+import { superAdminGuard } from './core/guards/super-admin.guard';
 import { Shell } from './core/layout/shell/shell';
 import { AuthSessionService } from './core/services/auth-session.service';
 
@@ -48,6 +49,18 @@ export const routes: Routes = [
     path: 'onboarding',
     canActivate: [authGuard],
     loadComponent: () => import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
+  },
+  {
+    // Vista de superadmin (path obscuro, NO enlazado en el sidebar): CRUD del
+    // catálogo global de reglas de notificadores. Fuera del Shell porque un
+    // superadmin puede no tener negocio activo. La seguridad real la impone el
+    // AccountSuGuard del backend; el path solo evita descubrimiento casual.
+    path: '__ops/notifier-rules',
+    canActivate: [authGuard, superAdminGuard],
+    loadComponent: () =>
+      import('./features/banks/pages/bank-admin/bank-admin.page').then(
+        (m) => m.BankAdminPage,
+      ),
   },
   {
     path: '',
