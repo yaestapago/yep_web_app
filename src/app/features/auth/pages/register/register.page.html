@@ -26,6 +26,15 @@
         <h3>Verifica tu correo</h3>
         <span>Enviamos un código de 6 dígitos a {{ maskedEmail() }}.</span>
       }
+      @if (inviteCode()) {
+        <button
+          class="auth-inline-action"
+          type="button"
+          (click)="exitInvite()"
+        >
+          Salir de la invitación
+        </button>
+      }
     </div>
 
     @if (step() === 'form') {

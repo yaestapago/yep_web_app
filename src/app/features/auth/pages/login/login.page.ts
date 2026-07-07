@@ -113,6 +113,17 @@ export class LoginPage {
       });
   }
 
+  /**
+   * Sale del contexto de invitación (código/link/QR) sin cancelarla en el
+   * servidor: el código sigue siendo válido si el usuario vuelve a usarlo.
+   * Solo limpia el estado local y vuelve al login sin query params.
+   */
+  exitInvite(): void {
+    this.inviteCode.set('');
+    this.inviteBusinessName.set('');
+    void this.router.navigate(['/login']);
+  }
+
   toggleTheme(): void {
     this.theme.toggleTheme();
   }

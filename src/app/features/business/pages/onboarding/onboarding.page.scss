@@ -32,6 +32,18 @@
   }
 }
 
+.hero-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.panel-hint {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 14px;
+}
+
 .membership-panel,
 .action-panel {
   background: var(--color-surface);

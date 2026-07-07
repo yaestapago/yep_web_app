@@ -6,19 +6,26 @@
       <span>{{ user()?.firstName }} {{ user()?.lastName }}</span>
     </div>
 
-    <button
-      class="secondary-action"
-      type="button"
-      (click)="loadMemberships()"
-      [disabled]="loadingMemberships()"
-    >
-      @if (loadingMemberships()) {
-        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      } @else {
-        <svg lucideRefreshCw aria-hidden="true"></svg>
-      }
-      <span>Actualizar</span>
-    </button>
+    <div class="hero-actions">
+      <button
+        class="secondary-action"
+        type="button"
+        (click)="loadMemberships()"
+        [disabled]="loadingMemberships()"
+      >
+        @if (loadingMemberships()) {
+          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+        } @else {
+          <svg lucideRefreshCw aria-hidden="true"></svg>
+        }
+        <span>Actualizar</span>
+      </button>
+
+      <button class="secondary-action" type="button" (click)="openLogout()">
+        <svg lucideLogOut aria-hidden="true"></svg>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
   </section>
 
   @if (error()) {
@@ -150,39 +157,14 @@
           </div>
         </div>
 
-        <form [formGroup]="requestForm" (ngSubmit)="requestAccess()" novalidate>
-          @if (knownBusinessAccounts().length > 0) {
-            <label>
-              <span>Seleccionar negocio conocido</span>
-              <select
-                (change)="selectKnownBusiness($event)"
-                [value]="requestForm.controls.businessAccountId.value"
-              >
-                <option value="">Ingresar ID manualmente</option>
-                @for (business of knownBusinessAccounts(); track business.id) {
-                  <option [value]="business.id">{{ business.name }} · {{ business.id }}</option>
-                }
-              </select>
-            </label>
-          }
+        <p class="panel-hint">
+          Únete con el código corto, el link o el QR que te compartió el propietario del negocio.
+        </p>
 
-          <label>
-            <span>ID del negocio</span>
-            <input type="text" formControlName="businessAccountId" autocomplete="off" />
-            @if (isRequestInvalid()) {
-              <small>Ingresa el ID del negocio.</small>
-            }
-          </label>
-
-          <button class="primary-action" type="submit" [disabled]="requestingAccess()">
-            @if (requestingAccess()) {
-              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-            } @else {
-              <svg lucideSend aria-hidden="true"></svg>
-            }
-            <span>Solicitar como staff</span>
-          </button>
-        </form>
+        <button class="primary-action" type="button" (click)="openRequest()">
+          <svg lucideUserPlus aria-hidden="true"></svg>
+          <span>Unirme a un negocio</span>
+        </button>
 
         @if (pendingMemberships().length > 0) {
           <div class="pending-list">
@@ -198,4 +180,23 @@
       </article>
     </section>
   }
+
+  <app-request-membership-modal
+    [open]="requestOpen()"
+    (closeRequested)="closeRequest()"
+    (requested)="onRequested()"
+  />
+
+  <yep-modal
+    [open]="logoutModalOpen()"
+    size="sm"
+    title="Cerrar sesión"
+    subtitle="¿Seguro que quieres cerrar sesión?"
+    (closeRequested)="cancelLogout()"
+  >
+    <ng-container modalFooter>
+      <yep-button variant="ghost" (clicked)="cancelLogout()">Cancelar</yep-button>
+      <yep-button variant="danger" (clicked)="confirmLogout()">Cerrar sesión</yep-button>
+    </ng-container>
+  </yep-modal>
 </main>

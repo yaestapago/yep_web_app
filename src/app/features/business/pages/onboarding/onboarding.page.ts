@@ -8,18 +8,22 @@ import {
   LucideCheckCircle2,
   LucideCircleDot,
   LucideLoaderCircle,
+  LucideLogOut,
   LucideRefreshCw,
-  LucideSend,
   LucideTriangleAlert,
+  LucideUserPlus,
 } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { BusinessAccount, BusinessMembership } from '../../../../shared/models/auth.models';
+import { BusinessMembership } from '../../../../shared/models/auth.models';
 import type { AddressLocationValue } from '../../../../shared/models/geo.models';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
+import { Button } from '../../../../shared/ui/button/button';
+import { Modal } from '../../../../shared/ui/modal/modal';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { RequestMembershipModal } from '../../components/request-membership-modal/request-membership-modal';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 @Component({
@@ -31,11 +35,15 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     LucideCheckCircle2,
     LucideCircleDot,
     LucideLoaderCircle,
+    LucideLogOut,
     LucideRefreshCw,
-    LucideSend,
     LucideTriangleAlert,
+    LucideUserPlus,
     AddressLocationSelect,
+    Button,
+    Modal,
     PhoneInput,
+    RequestMembershipModal,
   ],
   templateUrl: './onboarding.page.html',
   styleUrl: './onboarding.page.scss',
@@ -51,16 +59,20 @@ export class OnboardingPage implements OnInit {
   readonly approvedMemberships = this.session.approvedMemberships;
   readonly pendingMemberships = this.session.pendingMemberships;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
-  readonly knownBusinessAccounts = signal<BusinessAccount[]>([]);
   readonly waitingForApproval = computed(
     () => this.approvedMemberships().length === 0 && this.pendingMemberships().length > 0,
   );
 
   readonly loadingMemberships = signal(false);
   readonly creatingBusiness = signal(false);
-  readonly requestingAccess = signal(false);
   readonly error = signal('');
   readonly success = signal('');
+
+  /** Modal para unirse a un negocio existente por código/link/QR. */
+  readonly requestOpen = signal(false);
+
+  /** Confirmación de cierre de sesión: esta página vive fuera del Shell. */
+  readonly logoutModalOpen = signal(false);
 
   readonly businessForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -69,13 +81,8 @@ export class OnboardingPage implements OnInit {
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
   });
 
-  readonly requestForm = this.fb.group({
-    businessAccountId: ['', [Validators.required, Validators.minLength(24)]],
-  });
-
   ngOnInit(): void {
     this.loadMemberships();
-    this.loadKnownBusinessAccounts();
   }
 
   loadMemberships(): void {
@@ -91,16 +98,6 @@ export class OnboardingPage implements OnInit {
       .subscribe({
         next: (response) => this.session.updateMemberships(response.memberships),
         error: (error) => this.error.set(httpErrorMessage(error)),
-      });
-  }
-
-  loadKnownBusinessAccounts(): void {
-    this.businessApi
-      .listBusinessAccounts()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => this.knownBusinessAccounts.set(response.businessAccounts),
-        error: () => this.knownBusinessAccounts.set([]),
       });
   }
 
@@ -146,65 +143,40 @@ export class OnboardingPage implements OnInit {
       });
   }
 
-  requestAccess(): void {
-    this.error.set('');
-    this.success.set('');
+  // --- Unirse a un negocio existente por código/link/QR ---------------------
+  // Delegado al mismo modal que usa el listado de negocios, para no duplicar
+  // la lógica de resolución de código corto (RequestMembershipModal ya la
+  // tiene y ya incluye su propio botón de cancelar).
 
-    if (this.requestForm.invalid) {
-      this.requestForm.markAllAsTouched();
-      return;
-    }
+  openRequest(): void {
+    this.requestOpen.set(true);
+  }
 
-    const businessAccountId = this.requestForm.controls.businessAccountId.value.trim();
-    const existingStatus = this.membershipStatusForBusiness(businessAccountId);
+  closeRequest(): void {
+    this.requestOpen.set(false);
+  }
 
-    if (existingStatus === 'pending') {
-      this.success.set('Ya existe una solicitud pendiente para este negocio.');
-      return;
-    }
+  /** Tras enviar la solicitud desde el modal, refresca el estado de la página. */
+  onRequested(): void {
+    this.loadMemberships();
+  }
 
-    if (existingStatus === 'approved') {
-      this.session.setActiveBusinessAccountId(businessAccountId);
-      this.success.set('Ya tienes acceso aprobado. Negocio activo seleccionado.');
-      void this.router.navigate(['/businesses', businessAccountId, 'business-data']);
-      return;
-    }
+  // --- Cerrar sesión ---------------------------------------------------------
+  // Esta página vive fuera del Shell (un usuario sin negocio aprobado no tiene
+  // sidebar), así que necesita su propia salida para no quedar atrapado aquí.
 
-    this.requestingAccess.set(true);
-    this.businessApi
-      .requestMembership({
-        businessAccountId,
-        role: 'account_staff',
-      })
-      .pipe(
-        finalize(() => this.requestingAccess.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => {
-          this.session.updateMemberships(this.mergeMembership(response.membership));
-          this.requestForm.reset();
+  openLogout(): void {
+    this.logoutModalOpen.set(true);
+  }
 
-          if (response.membership.status === 'approved') {
-            this.session.setActiveBusinessAccountId(response.membership.businessAccountId);
-            this.success.set('Ya existe acceso aprobado. Negocio activo seleccionado.');
-            void this.router.navigate([
-              '/businesses',
-              response.membership.businessAccountId,
-              'business-data',
-            ]);
-            return;
-          }
+  cancelLogout(): void {
+    this.logoutModalOpen.set(false);
+  }
 
-          if (existingStatus === 'rejected') {
-            this.success.set('Solicitud enviada nuevamente. Un owner debe aprobar el acceso.');
-            return;
-          }
-
-          this.success.set('Solicitud enviada. Un owner debe aprobar el acceso.');
-        },
-        error: (error) => this.error.set(httpErrorMessage(error)),
-      });
+  confirmLogout(): void {
+    this.logoutModalOpen.set(false);
+    this.session.clearSession();
+    void this.router.navigateByUrl('/login');
   }
 
   selectBusiness(membership: BusinessMembership): void {
@@ -219,26 +191,6 @@ export class OnboardingPage implements OnInit {
   isBusinessInvalid(controlName: keyof typeof this.businessForm.controls): boolean {
     const control = this.businessForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
-  }
-
-  isRequestInvalid(): boolean {
-    const control = this.requestForm.controls.businessAccountId;
-    return control.invalid && (control.dirty || control.touched);
-  }
-
-  selectKnownBusiness(event: Event): void {
-    const businessAccountId = (event.target as HTMLSelectElement).value;
-    this.requestForm.patchValue({ businessAccountId });
-  }
-
-  private membershipStatusForBusiness(
-    businessAccountId: string,
-  ): BusinessMembership['status'] | null {
-    return (
-      this.session
-        .memberships()
-        .find((membership) => membership.businessAccountId === businessAccountId)?.status ?? null
-    );
   }
 
   private mergeMembership(membership: BusinessMembership): BusinessMembership[] {
