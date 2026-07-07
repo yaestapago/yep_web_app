@@ -81,6 +81,12 @@ interface OverlapConflict {
   existing: Shift;
 }
 
+interface ShiftSlice {
+  dayOfWeek: DayOfWeek;
+  startTime: string;
+  endTime: string;
+}
+
 const DAY_LABELS: Record<number, string> = {
   1: 'Lunes',
   2: 'Martes',
@@ -152,13 +158,53 @@ function toTime(minutes: number): string {
   return `${h}:${m}`;
 }
 
-function endAfterStart(group: AbstractControl): ValidationErrors | null {
+/**
+ * Solo bloquea inicio == fin (turno de duración cero). Un fin menor al inicio es válido:
+ * es un turno nocturno que cruza la medianoche (ver `splitOvernight`).
+ */
+function sameStartAndEnd(group: AbstractControl): ValidationErrors | null {
   const start = group.get('startTime')?.value as string;
   const end = group.get('endTime')?.value as string;
-  if (start && end && end <= start) {
-    return { endBeforeStart: true };
+  if (start && end && end === start) {
+    return { sameStartAndEnd: true };
   }
   return null;
+}
+
+function crossesMidnight(start: string, end: string): boolean {
+  return Boolean(start) && Boolean(end) && toMinutes(end) < toMinutes(start);
+}
+
+/** Duración en minutos del turno, sumando el tramo después de medianoche si la cruza. */
+function shiftMinutes(start: string, end: string): number {
+  const startMin = toMinutes(start);
+  const endMin = toMinutes(end);
+  return endMin > startMin ? endMin - startMin : 24 * 60 - startMin + endMin;
+}
+
+/**
+ * Heurística para detectar si un turno ya guardado es "mitad" de un turno nocturno partido
+ * por `splitOvernight`: termina justo a medianoche o empieza justo en medianoche. No es
+ * infalible (un turno real podría coincidir con ese límite), pero cubre el caso común.
+ */
+function isOvernightHalf(shift: { startTime: string; endTime: string }): boolean {
+  return shift.startTime === '00:00' || shift.endTime === '23:59';
+}
+
+/**
+ * Si el turno cruza la medianoche, lo parte en dos franjas del mismo día lógico: una hasta
+ * las 23:59 y otra desde las 00:00 del día siguiente, porque el modelo de datos guarda un
+ * turno por día (sin fecha, es plantilla semanal) y no soporta un rango que cruce de día.
+ */
+function splitOvernight(day: DayOfWeek, startTime: string, endTime: string): ShiftSlice[] {
+  if (!crossesMidnight(startTime, endTime)) {
+    return [{ dayOfWeek: day, startTime, endTime }];
+  }
+  const nextDay = ((day + 1) % 7) as DayOfWeek;
+  return [
+    { dayOfWeek: day, startTime, endTime: '23:59' },
+    { dayOfWeek: nextDay, startTime: '00:00', endTime },
+  ];
 }
 
 /** Requiere al menos un día seleccionado en el turno recurrente. */
@@ -173,23 +219,24 @@ function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: strin
 }
 
 /**
- * Detecta solapamientos del MISMO empleado (en cualquier sede) para los días y el rango
- * horario que se van a guardar, contra los turnos existentes. `excludeId` omite el turno
- * que se está editando.
+ * Detecta solapamientos del MISMO empleado (en cualquier sede) para las franjas (ya partidas
+ * si cruzan medianoche) que se van a guardar, contra los turnos existentes. `excludeId` omite
+ * el turno que se está editando.
  */
 function findOverlaps(
-  candidate: { userId: string; startTime: string; endTime: string; days: readonly DayOfWeek[] },
+  userId: string,
+  slices: readonly ShiftSlice[],
   existing: readonly Shift[],
   excludeId: string | null,
 ): OverlapConflict[] {
   const conflicts: OverlapConflict[] = [];
-  for (const day of candidate.days) {
+  for (const slice of slices) {
     for (const shift of existing) {
-      if (shift.id === excludeId || shift.userId !== candidate.userId || shift.dayOfWeek !== day) {
+      if (shift.id === excludeId || shift.userId !== userId || shift.dayOfWeek !== slice.dayOfWeek) {
         continue;
       }
-      if (rangesOverlap(candidate.startTime, candidate.endTime, shift.startTime, shift.endTime)) {
-        conflicts.push({ day, existing: shift });
+      if (rangesOverlap(slice.startTime, slice.endTime, shift.startTime, shift.endTime)) {
+        conflicts.push({ day: slice.dayOfWeek, existing: shift });
       }
     }
   }
@@ -402,7 +449,7 @@ export class BusinessSchedulesSection implements OnInit {
       startTime: ['', [Validators.required]],
       endTime: ['', [Validators.required]],
     },
-    { validators: [endAfterStart] },
+    { validators: [sameStartAndEnd] },
   );
 
   readonly weekdays = WEEKDAYS;
@@ -416,13 +463,10 @@ export class BusinessSchedulesSection implements OnInit {
   /** Duración legible del turno ("2 h 30 min"), vacía si el rango aún no es válido. */
   readonly shiftDurationLabel = computed(() => {
     const { startTime, endTime } = this.shiftFormValue();
-    if (!startTime || !endTime) {
+    if (!startTime || !endTime || startTime === endTime) {
       return '';
     }
-    const minutes = toMinutes(endTime) - toMinutes(startTime);
-    if (minutes <= 0) {
-      return '';
-    }
+    const minutes = shiftMinutes(startTime, endTime);
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     if (hours === 0) {
@@ -432,6 +476,21 @@ export class BusinessSchedulesSection implements OnInit {
       return `Duración: ${hours} h`;
     }
     return `Duración: ${hours} h ${mins} min`;
+  });
+
+  /** True mientras se está armando un turno que cruza la medianoche (fin < inicio). */
+  readonly isOvernightShift = computed(() => {
+    const { startTime, endTime } = this.shiftFormValue();
+    return crossesMidnight(startTime ?? '', endTime ?? '');
+  });
+
+  /** True si el turno en edición es la mitad de un turno nocturno ya partido al guardar. */
+  readonly isEditingOvernightHalf = computed(() => {
+    if (!this.editingShiftId()) {
+      return false;
+    }
+    const { startTime, endTime } = this.shiftFormValue();
+    return isOvernightHalf({ startTime: startTime ?? '', endTime: endTime ?? '' });
   });
 
   ngOnInit(): void {
@@ -598,21 +657,15 @@ export class BusinessSchedulesSection implements OnInit {
     }
 
     const raw = this.shiftForm.getRawValue();
-    const base = {
-      locationId: raw.locationId,
-      userId: raw.userId,
-      startTime: raw.startTime,
-      endTime: raw.endTime,
-    };
+    const base = { locationId: raw.locationId, userId: raw.userId };
     const days = raw.days;
     const editingId = this.editingShiftId();
 
+    // Turnos que cruzan medianoche se parten en dos franjas (hasta 23:59 / desde 00:00).
+    const slices = days.flatMap((day) => splitOvernight(day, raw.startTime, raw.endTime));
+
     // Validación de solapamiento del mismo empleado (cualquier sede) antes de guardar.
-    const conflicts = findOverlaps(
-      { userId: base.userId, startTime: base.startTime, endTime: base.endTime, days },
-      this.shifts(),
-      editingId,
-    );
+    const conflicts = findOverlaps(base.userId, slices, this.shifts(), editingId);
     if (conflicts.length > 0) {
       this.overlapError.set(this.overlapMessage(conflicts));
       this.shiftForm.markAllAsTouched();
@@ -623,17 +676,20 @@ export class BusinessSchedulesSection implements OnInit {
     this.savingShift.set(true);
     this.error.set('');
 
-    // Al editar se conserva la semántica de "un turno = un día": se hace PATCH
-    // del turno editado al primer día; cualquier día adicional se crea aparte.
-    // Al crear, se emite un turno por cada día seleccionado (plantilla recurrente).
+    const buildRequest = (slice: ShiftSlice) => ({ ...base, ...slice });
+
+    // Al editar se conserva la semántica de "un turno = un día": se hace PATCH de la
+    // primera franja sobre el turno editado; cualquier franja adicional (días extra o el
+    // segundo tramo de un turno nocturno) se crea aparte. Al crear, se emite un turno por
+    // cada franja resultante (plantilla recurrente, con el split ya aplicado).
     const requests$ = editingId
       ? [
-          this.businessApi.updateShift(businessId, editingId, { ...base, dayOfWeek: days[0] }),
-          ...days
+          this.businessApi.updateShift(businessId, editingId, buildRequest(slices[0])),
+          ...slices
             .slice(1)
-            .map((day) => this.businessApi.createShift(businessId, { ...base, dayOfWeek: day })),
+            .map((slice) => this.businessApi.createShift(businessId, buildRequest(slice))),
         ]
-      : days.map((day) => this.businessApi.createShift(businessId, { ...base, dayOfWeek: day }));
+      : slices.map((slice) => this.businessApi.createShift(businessId, buildRequest(slice)));
 
     forkJoin(requests$)
       .pipe(
@@ -731,6 +787,11 @@ export class BusinessSchedulesSection implements OnInit {
 
   locationName(locationId: string): string {
     return this.locations().find((location) => location.id === locationId)?.name || 'Sede';
+  }
+
+  /** Marca en la grilla la mitad de un turno que cruza medianoche (ver `isOvernightHalf`). */
+  isNightHalf(shift: Shift): boolean {
+    return isOvernightHalf(shift);
   }
 
   isInvalid(controlName: keyof typeof this.shiftForm.controls): boolean {
