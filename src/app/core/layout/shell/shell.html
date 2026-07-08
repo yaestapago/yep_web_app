@@ -1,6 +1,16 @@
-<div class="shell" [class.drawer-open]="drawerOpen()" [class.shell--immersive]="immersive()">
+<div
+  class="shell"
+  [class.drawer-open]="drawerOpen()"
+  [class.shell--immersive]="immersive()"
+  [class.shell--collapsed]="sidebarCollapsed()"
+>
   <div class="sidebar-slot">
-    <app-sidebar (navigated)="closeDrawer()" (logoutRequested)="openLogout()" />
+    <app-sidebar
+      [collapsed]="sidebarCollapsed()"
+      (collapseToggled)="toggleSidebarCollapse()"
+      (navigated)="closeDrawer()"
+      (logoutRequested)="openLogout()"
+    />
   </div>
 
   @if (drawerOpen()) {

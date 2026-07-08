@@ -1,11 +1,19 @@
 :host {
   --sidebar-width: 264px;
+  --sidebar-width-collapsed: 76px;
 }
 
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
   min-height: 100vh;
+  transition: grid-template-columns var(--motion-base);
+}
+
+/* Rail colapsable: el sidebar se reduce a solo íconos y el contenido gana
+   el espacio liberado (ver toggle en la parte superior del sidebar). */
+.shell--collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
 
 /* Rutas inmersivas (panel de control): `min-height` por sí solo es un piso, no

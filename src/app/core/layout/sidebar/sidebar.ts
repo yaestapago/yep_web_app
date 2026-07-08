@@ -1,4 +1,4 @@
-import { Component, computed, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
@@ -8,6 +8,8 @@ import {
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMoon,
+  LucidePanelLeftClose,
+  LucidePanelLeftOpen,
   LucideSettings,
   LucideSun,
 } from '@lucide/angular';
@@ -34,6 +36,8 @@ interface BusinessNavItem {
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMoon,
+    LucidePanelLeftClose,
+    LucidePanelLeftOpen,
     LucideSettings,
     LucideSun,
   ],
@@ -45,11 +49,17 @@ export class Sidebar {
   private readonly session = inject(AuthSessionService);
   private readonly theme = inject(ThemeService);
 
+  /** Rail colapsado (solo íconos) vs. sidebar completo; controlado por el shell. */
+  readonly collapsed = input(false);
+
   /** Emitido al navegar o cerrar sesión para que el shell cierre el drawer en móvil. */
   readonly navigated = output<void>();
 
   /** Solicita cerrar sesión; el shell muestra la confirmación y ejecuta el cierre. */
   readonly logoutRequested = output<void>();
+
+  /** Pide al shell alternar el ancho del sidebar (rail colapsable). */
+  readonly collapseToggled = output<void>();
 
   readonly user = this.session.user;
   readonly isDark = this.theme.isDark;
@@ -163,6 +173,14 @@ export class Sidebar {
 
   onNavigate(): void {
     this.navigated.emit();
+  }
+
+  toggleCollapse(): void {
+    this.collapseToggled.emit();
+  }
+
+  collapseLabel(): string {
+    return this.collapsed() ? 'Expandir menú' : 'Colapsar menú';
   }
 
   toggleTheme(): void {
