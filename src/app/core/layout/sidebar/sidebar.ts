@@ -1,4 +1,4 @@
-import { Component, computed, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
@@ -8,6 +8,8 @@ import {
   LucideLayoutDashboard,
   LucideLogOut,
   LucideMoon,
+  LucidePanelLeftClose,
+  LucidePanelLeftOpen,
   LucideSettings,
   LucideSun,
 } from '@lucide/angular';
@@ -15,11 +17,26 @@ import {
 import { AuthSessionService } from '../../services/auth-session.service';
 import { ThemeService } from '../../services/theme.service';
 import { Select, type SelectOption } from '../../../shared/ui/select/select';
+import {
+  canAccessBusinessSection,
+  type BusinessSectionKey,
+} from '../../constants/business-section-access';
 
 interface BusinessNavItem {
-  path: string;
+  path: BusinessSectionKey;
   label: string;
 }
+
+const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
+  { path: 'business-data', label: 'Datos del negocio' },
+  { path: 'accounts', label: 'Cuentas bancarias' },
+  { path: 'notifiers', label: 'Notificadores' },
+  { path: 'requests', label: 'Solicitudes' },
+  { path: 'employees', label: 'Empleados' },
+  { path: 'locations', label: 'Sedes' },
+  { path: 'schedules', label: 'Horarios' },
+  { path: 'reports', label: 'Informes' },
+];
 
 @Component({
   selector: 'app-sidebar',
@@ -34,6 +51,8 @@ interface BusinessNavItem {
     LucideLayoutDashboard,
     LucideLogOut,
     LucideMoon,
+    LucidePanelLeftClose,
+    LucidePanelLeftOpen,
     LucideSettings,
     LucideSun,
   ],
@@ -45,11 +64,17 @@ export class Sidebar {
   private readonly session = inject(AuthSessionService);
   private readonly theme = inject(ThemeService);
 
+  /** Rail colapsado (solo íconos) vs. sidebar completo; controlado por el shell. */
+  readonly collapsed = input(false);
+
   /** Emitido al navegar o cerrar sesión para que el shell cierre el drawer en móvil. */
   readonly navigated = output<void>();
 
   /** Solicita cerrar sesión; el shell muestra la confirmación y ejecuta el cierre. */
   readonly logoutRequested = output<void>();
+
+  /** Pide al shell alternar el ancho del sidebar (rail colapsable). */
+  readonly collapseToggled = output<void>();
 
   readonly user = this.session.user;
   readonly isDark = this.theme.isDark;
@@ -66,16 +91,18 @@ export class Sidebar {
   /** Grupo "Negocio" expandible; inicia abierto para dar contexto. */
   readonly businessGroupOpen = signal(true);
 
-  /** Subsecciones del negocio activo (dependen del negocio seleccionado). */
-  readonly businessSections: BusinessNavItem[] = [
-    { path: 'business-data', label: 'Datos del negocio' },
-    { path: 'accounts', label: 'Cuentas bancarias' },
-    { path: 'notifiers', label: 'Notificadores' },
-    { path: 'requests', label: 'Solicitudes' },
-    { path: 'employees', label: 'Empleados' },
-    { path: 'locations', label: 'Sedes' },
-    { path: 'schedules', label: 'Horarios' },
-  ];
+  /**
+   * Subsecciones del negocio activo, filtradas según el rol de la
+   * membership activa (cuentas staff ven un subconjunto: ver
+   * business-section-access.ts, que espeja lo que ya exige el backend).
+   */
+  readonly businessSections = computed<BusinessNavItem[]>(() => {
+    const role = this.activeMembership()?.role;
+    const isSu = this.session.isSuperUser();
+    return ALL_BUSINESS_SECTIONS.filter((section) =>
+      canAccessBusinessSection(section.path, role, isSu),
+    );
+  });
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */
   readonly dashboardLink = computed(() => {
@@ -163,6 +190,14 @@ export class Sidebar {
 
   onNavigate(): void {
     this.navigated.emit();
+  }
+
+  toggleCollapse(): void {
+    this.collapseToggled.emit();
+  }
+
+  collapseLabel(): string {
+    return this.collapsed() ? 'Expandir menú' : 'Colapsar menú';
   }
 
   toggleTheme(): void {

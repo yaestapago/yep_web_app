@@ -90,7 +90,7 @@
         </thead>
         <tbody>
           @for (tx of paged(); track tx.id) {
-            <tr>
+            <tr class="tx-row" (click)="view.emit(tx)">
               <td class="ref">
                 <span class="ref__main">{{ tx.reference || 'Sin referencia' }}</span>
                 @if (tx.sender?.name) {
@@ -103,14 +103,11 @@
               <td><span class="badge badge--{{ tone(tx) }}">{{ statusLabel(tx) }}</span></td>
               <td class="actions-col">
                 <div class="row-actions">
-                  <button type="button" class="icon-btn" (click)="view.emit(tx)" aria-label="Ver detalle" title="Ver detalle">
-                    <svg lucideEye aria-hidden="true"></svg>
-                  </button>
                   @if (isActionable(tx)) {
                     <button
                       type="button"
                       class="icon-btn icon-btn--verify"
-                      (click)="verify.emit(tx)"
+                      (click)="$event.stopPropagation(); verify.emit(tx)"
                       [disabled]="verifyingId() === tx.id"
                       aria-label="Verificar"
                       title="Verificar"
@@ -120,6 +117,17 @@
                       } @else {
                         <svg lucideShieldCheck aria-hidden="true"></svg>
                       }
+                    </button>
+                  }
+                  @if (isInvoiceActionable(tx)) {
+                    <button
+                      type="button"
+                      class="icon-btn icon-btn--invoice"
+                      (click)="$event.stopPropagation(); applyInvoice.emit(tx)"
+                      aria-label="Aplicar pago a factura"
+                      title="Aplicar pago a factura"
+                    >
+                      <svg lucideReceipt aria-hidden="true"></svg>
                     </button>
                   }
                 </div>

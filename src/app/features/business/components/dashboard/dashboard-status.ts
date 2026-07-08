@@ -1,8 +1,6 @@
-import { Component, input as defineInput, output } from '@angular/core';
+import { Component, input as defineInput, signal } from '@angular/core';
 import {
   LucideBellRing,
-  LucideChevronDown,
-  LucideChevronUp,
   LucideCircleCheck,
   LucideLoaderCircle,
   LucideTriangleAlert,
@@ -14,6 +12,8 @@ import {
   type NotifierStatusLevel,
 } from '../../../../shared/utils/notifier-status';
 import type { Notifier } from '../../../../shared/models/notifier.models';
+import type { DashboardAlert } from '../../../../shared/models/dashboard-summary.models';
+import { Modal } from '../../../../shared/ui/modal/modal';
 
 export type SemaphoreLevel = 'green' | 'yellow' | 'red';
 
@@ -35,30 +35,29 @@ export interface NotifierStatusRow {
  */
 @Component({
   selector: 'app-dashboard-status',
-  imports: [
-    LucideBellRing,
-    LucideChevronDown,
-    LucideChevronUp,
-    LucideCircleCheck,
-    LucideLoaderCircle,
-    LucideTriangleAlert,
-  ],
+  imports: [LucideBellRing, LucideCircleCheck, LucideLoaderCircle, LucideTriangleAlert, Modal],
   templateUrl: './dashboard-status.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-status.scss'],
 })
 export class DashboardStatusPanel {
   readonly semaphore = defineInput.required<Semaphore>();
   readonly rows = defineInput.required<NotifierStatusRow[]>();
+  readonly alerts = defineInput<DashboardAlert[]>([]);
   readonly loading = defineInput(false);
   readonly error = defineInput('');
-  readonly collapsed = defineInput(false);
-  /**
-   * `vertical` (por defecto): columna estrecha junto a las gráficas.
-   * `horizontal`: barra a lo ancho (cuando las gráficas están ocultas), con el
-   * semáforo a la izquierda y los notificadores como chips que envuelven.
-   */
-  readonly layout = defineInput<'vertical' | 'horizontal'>('vertical');
-  readonly toggleCollapse = output<void>();
+  readonly detailsOpen = signal(false);
+
+  openDetails(): void {
+    this.detailsOpen.set(true);
+  }
+
+  closeDetails(): void {
+    this.detailsOpen.set(false);
+  }
+
+  severityLabel(severity: DashboardAlert['severity']): string {
+    return severity === 'red' ? 'Atención' : 'Pendiente';
+  }
 
   notifierName(notifier: Notifier): string {
     return notifier.displayName?.trim() || 'Notificador sin nombre';

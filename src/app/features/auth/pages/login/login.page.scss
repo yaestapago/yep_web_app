@@ -1,1 +1,33 @@
 @use '../shared-auth';
+
+.theme-toggle-corner {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  position: fixed;
+  right: var(--space-4);
+  top: var(--space-4);
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast),
+    border-color var(--motion-fast);
+  width: 44px;
+  z-index: 10;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+    border-color: color-mix(in srgb, var(--color-secondary) 40%, var(--color-border));
+    color: var(--color-text-primary);
+  }
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
+}

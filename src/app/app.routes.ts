@@ -4,6 +4,8 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { businessGuard } from './core/guards/business.guard';
 import { businessContextGuard } from './core/guards/business-context.guard';
+import { businessSectionGuard } from './core/guards/business-section.guard';
+import { superAdminGuard } from './core/guards/super-admin.guard';
 import { Shell } from './core/layout/shell/shell';
 import { AuthSessionService } from './core/services/auth-session.service';
 
@@ -50,6 +52,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
   },
   {
+    // Vista de superadmin (path obscuro, NO enlazado en el sidebar): CRUD del
+    // catálogo global de reglas de notificadores. Fuera del Shell porque un
+    // superadmin puede no tener negocio activo. La seguridad real la impone el
+    // AccountSuGuard del backend; el path solo evita descubrimiento casual.
+    path: '__ops/notifier-rules',
+    canActivate: [authGuard, superAdminGuard],
+    loadComponent: () =>
+      import('./features/banks/pages/bank-admin/bank-admin.page').then(
+        (m) => m.BankAdminPage,
+      ),
+  },
+  {
     path: '',
     component: Shell,
     canActivate: [businessGuard],
@@ -92,6 +106,8 @@ export const routes: Routes = [
           },
           {
             path: 'notifiers',
+            data: { section: 'notifiers' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-notifiers.section').then(
                 (m) => m.BusinessNotifiersSection,
@@ -99,6 +115,8 @@ export const routes: Routes = [
           },
           {
             path: 'accounts',
+            data: { section: 'accounts' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-accounts.section').then(
                 (m) => m.BusinessAccountsSection,
@@ -106,6 +124,8 @@ export const routes: Routes = [
           },
           {
             path: 'requests',
+            data: { section: 'requests' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-requests.section').then(
                 (m) => m.BusinessRequestsSection,
@@ -113,6 +133,8 @@ export const routes: Routes = [
           },
           {
             path: 'locations',
+            data: { section: 'locations' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-locations.section').then(
                 (m) => m.BusinessLocationsSection,
@@ -120,6 +142,8 @@ export const routes: Routes = [
           },
           {
             path: 'employees',
+            data: { section: 'employees' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-employees.section').then(
                 (m) => m.BusinessEmployeesSection,
@@ -127,13 +151,26 @@ export const routes: Routes = [
           },
           {
             path: 'schedules',
+            data: { section: 'schedules' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-schedules.section').then(
                 (m) => m.BusinessSchedulesSection,
               ),
           },
           {
+            path: 'reports',
+            data: { section: 'reports' },
+            canActivate: [businessSectionGuard],
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-reports.section').then(
+                (m) => m.BusinessReportsSection,
+              ),
+          },
+          {
             path: 'business-data',
+            data: { section: 'business-data' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-data.section').then(
                 (m) => m.BusinessDataSection,

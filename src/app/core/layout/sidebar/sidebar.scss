@@ -20,14 +20,22 @@
   scrollbar-gutter: stable;
 }
 
-.brand {
+.sidebar-header {
   align-items: center;
   border-bottom: 1px solid var(--color-border);
   display: flex;
   flex: 0 0 auto;
-  justify-content: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-2);
   padding: var(--space-2) var(--space-2) var(--space-4);
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
 }
 
 .brand__logo {
@@ -40,6 +48,37 @@
 
 .brand__logo--dark {
   display: none;
+}
+
+.brand__mark {
+  border-radius: var(--radius-md);
+  display: block;
+  height: 36px;
+  width: 36px;
+}
+
+.collapse-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  flex: 0 0 auto;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.collapse-toggle:hover {
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  color: var(--color-text-primary);
+}
+
+.collapse-toggle svg {
+  height: 18px;
+  width: 18px;
 }
 
 :host-context([data-theme='dark']) {
@@ -301,4 +340,51 @@ svg {
   flex-shrink: 0;
   height: 20px;
   width: 20px;
+}
+
+/* Rail colapsado: solo íconos. Solo aplica en escritorio — en el drawer móvil
+   el sidebar siempre se ve completo, sin importar el estado de colapso, ya
+   que ese ya se abre/cierra con su propio botón de menú. El grupo "Negocio"
+   (selector + subsecciones) necesita texto para ser útil, así que se oculta
+   entero en vez de degradar a un estado a medias; el usuario expande el
+   sidebar para usarlo. */
+@media (min-width: 861px) {
+  .sidebar.collapsed {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+
+  .sidebar.collapsed .sidebar-header {
+    flex-direction: column;
+    padding: var(--space-2) 0 var(--space-3);
+  }
+
+  .sidebar.collapsed .user-meta,
+  .sidebar.collapsed .business-select,
+  .sidebar.collapsed .manage-business,
+  .sidebar.collapsed .nav-subgroup,
+  .sidebar.collapsed .nav-group a span,
+  .sidebar.collapsed .nav-settings span,
+  .sidebar.collapsed .theme-toggle span,
+  .sidebar.collapsed .logout span {
+    display: none;
+  }
+
+  .sidebar.collapsed .user-card,
+  .sidebar.collapsed .nav-group a,
+  .sidebar.collapsed .nav-settings,
+  .sidebar.collapsed .theme-toggle,
+  .sidebar.collapsed .logout {
+    gap: 0;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+/* En el drawer móvil el sidebar no es colapsable (tiene su propio botón de
+   apertura/cierre en la topbar), así que el toggle no aporta nada ahí. */
+@media (max-width: 860px) {
+  .collapse-toggle {
+    display: none;
+  }
 }

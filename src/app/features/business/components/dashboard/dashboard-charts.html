@@ -1,46 +1,31 @@
-<div class="zone" [class.zone--collapsed]="collapsed()">
+<div class="zone">
   <div class="zone__head">
-    <h3 class="zone__title"><svg lucideChartPie aria-hidden="true"></svg> Gráficas</h3>
+    <h3 class="zone__title"><svg lucideChartPie aria-hidden="true"></svg> Graficas</h3>
     <div class="zone__actions">
       <button
         type="button"
         class="icon-btn"
         (click)="openConfig()"
-        aria-label="Configurar gráficas"
-        title="Elegir gráficas"
+        aria-label="Configurar graficas"
+        title="Elegir graficas"
       >
         <svg lucideSettings2 aria-hidden="true"></svg>
-      </button>
-      <button
-        type="button"
-        class="icon-btn"
-        (click)="toggleCollapse.emit()"
-        [attr.aria-expanded]="!collapsed()"
-        [attr.aria-label]="collapsed() ? 'Mostrar gráficas' : 'Ocultar gráficas'"
-        [title]="collapsed() ? 'Mostrar gráficas' : 'Ocultar gráficas'"
-      >
-        @if (collapsed()) {
-          <svg lucideChevronDown aria-hidden="true"></svg>
-        } @else {
-          <svg lucideChevronUp aria-hidden="true"></svg>
-        }
       </button>
     </div>
   </div>
 
-  @if (!collapsed()) {
   <div class="zone__body charts-body">
     @if (!hasData()) {
       <div class="state">
         <svg lucideChartPie aria-hidden="true"></svg>
-        <h4>Sin datos todavía</h4>
-        <p>Cuando registres transacciones y eventos verás aquí tus gráficas.</p>
+        <h4>Sin datos todavia</h4>
+        <p>Cuando registres transacciones y eventos veras aqui tus graficas.</p>
       </div>
     } @else if (views().length === 0) {
       <div class="state">
         <svg lucideChartPie aria-hidden="true"></svg>
-        <h4>Ninguna gráfica seleccionada</h4>
-        <p>Usa el botón de configurar para elegir qué gráficas mostrar.</p>
+        <h4>Ninguna grafica seleccionada</h4>
+        <p>Usa el boton de configurar para elegir que graficas mostrar.</p>
       </div>
     } @else {
       <div class="charts-grid">
@@ -68,13 +53,12 @@
       </div>
     }
   </div>
-  }
 </div>
 
 <yep-modal
   [open]="configOpen()"
-  title="Configurar gráficas"
-  subtitle="Elige qué gráficas quieres ver en el panel."
+  title="Configurar graficas"
+  subtitle="Elige que graficas quieres ver en el panel."
   size="sm"
   (closeRequested)="closeConfig()"
 >

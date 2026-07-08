@@ -1,25 +1,40 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 
 import { environment } from '../../../../../environments/environment';
 import { RegisterPage } from './register.page';
+
+function activatedRouteStub(queryParams: Record<string, string>) {
+  return { snapshot: { queryParamMap: convertToParamMap(queryParams) } };
+}
 
 describe('RegisterPage', () => {
   let httpMock: HttpTestingController;
   let router: Router;
 
-  beforeEach(async () => {
+  async function configure(queryParams: Record<string, string> = {}) {
     localStorage.clear();
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [RegisterPage],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: activatedRouteStub(queryParams) },
+      ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  }
+
+  beforeEach(async () => {
+    await configure();
   });
 
   afterEach(() => {
@@ -45,6 +60,7 @@ describe('RegisterPage', () => {
       },
       password: 'secret123',
       confirmPassword: 'secret123',
+      acceptTerms: true,
     });
 
     component.submit();
@@ -72,6 +88,8 @@ describe('RegisterPage', () => {
       cellphoneNumber: '+573001234567',
       password: 'secret123',
       verificationCode: '123456',
+      acceptedTerms: true,
+      termsVersion: '2026-07',
     });
     expect(registerRequest.request.body).not.toHaveProperty('accountName');
 
@@ -90,6 +108,125 @@ describe('RegisterPage', () => {
     vi.advanceTimersByTime(450);
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/onboarding');
+    fixture.destroy();
+  });
+});
+
+describe('RegisterPage — invitación a un negocio (código/link/QR)', () => {
+  let httpMock: HttpTestingController;
+  let router: Router;
+
+  async function configure(queryParams: Record<string, string> = {}) {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [RegisterPage],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: activatedRouteStub(queryParams) },
+      ],
+    }).compileComponents();
+
+    httpMock = TestBed.inject(HttpTestingController);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  }
+
+  afterEach(() => {
+    httpMock.verify();
+    localStorage.clear();
+    vi.useRealTimers();
+  });
+
+  it('lee el código y el negocio desde el link/QR y los muestra en el banner', async () => {
+    await configure({ code: 'abc123', businessName: 'Café Central' });
+    const fixture = TestBed.createComponent(RegisterPage);
+
+    expect(fixture.componentInstance.inviteCode()).toBe('ABC123');
+    expect(fixture.componentInstance.inviteBusinessName()).toBe('Café Central');
+    fixture.destroy();
+  });
+
+  it('tras registrarse con una invitación, resuelve el código y solicita acceso staff', async () => {
+    vi.useFakeTimers();
+    await configure({ code: 'abc123', businessName: 'Café Central' });
+    const fixture = TestBed.createComponent(RegisterPage);
+    const component = fixture.componentInstance;
+
+    component.form.setValue({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: { countryCode: '57', nationalNumber: '3001234567', e164: '+573001234567' },
+      password: 'secret123',
+      confirmPassword: 'secret123',
+      acceptTerms: true,
+    });
+    component.submit();
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`).flush({
+      message: 'Te enviamos un codigo de verificacion al correo registrado.',
+      resendInSeconds: 60,
+    });
+    component.completeRegistration('123456');
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/register`).flush({
+      accessToken: 'token',
+      user: {
+        id: 'user-1',
+        firstName: 'Pedro',
+        lastName: 'Ramirez',
+        email: 'pedro@example.com',
+        identificationNumber: '123456789',
+        cellphoneNumber: '3001234567',
+      },
+      memberships: [],
+    });
+
+    const lookupRequest = httpMock.expectOne(
+      (req) =>
+        req.url === `${environment.apiUrl}/business-accounts/lookup` &&
+        req.params.get('code') === 'ABC123',
+    );
+    lookupRequest.flush({ businessAccounts: [{ id: 'biz-1', name: 'Café Central', city: 'Bogotá' }] });
+
+    const requestMembershipReq = httpMock.expectOne(
+      `${environment.apiUrl}/business-accounts/membership-requests`,
+    );
+    expect(requestMembershipReq.request.body).toEqual({
+      businessAccountId: 'biz-1',
+      role: 'account_staff',
+    });
+    requestMembershipReq.flush({
+      membership: {
+        id: 'm1',
+        businessAccountId: 'biz-1',
+        role: 'account_staff',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    expect(component.success()).toContain('Solicitud enviada al negocio');
+    fixture.destroy();
+  });
+
+  it('salir de la invitación limpia el estado local, no llama al backend y vuelve al login sin invitación', async () => {
+    await configure({ code: 'abc123', businessName: 'Café Central' });
+    const fixture = TestBed.createComponent(RegisterPage);
+    const component = fixture.componentInstance;
+
+    component.exitInvite();
+
+    expect(component.inviteCode()).toBe('');
+    expect(component.inviteBusinessName()).toBe('');
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    httpMock.verify();
     fixture.destroy();
   });
 });

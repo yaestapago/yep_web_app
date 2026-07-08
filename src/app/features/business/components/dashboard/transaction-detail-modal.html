@@ -20,8 +20,56 @@
         <div><dt>Fecha / hora</dt><dd>{{ tx.transactionDate | date: 'medium' }}</dd></div>
         <div><dt>Referencia</dt><dd>{{ tx.reference || '—' }}</dd></div>
         <div><dt>Origen / pagador</dt><dd>{{ sender(tx) }}</dd></div>
+        <div><dt>Generada por</dt><dd>{{ tx.employeeName || 'No registrado' }}</dd></div>
       </dl>
     </section>
+
+    <!-- Completar datos faltantes (NEEDS_INPUT) -->
+    @if (needsInput()) {
+      <section class="detail-section needs-input">
+        <h3 class="detail-section__title">
+          <svg lucideTriangleAlert aria-hidden="true"></svg> Faltan datos del comprobante
+        </h3>
+        <p class="needs-input__hint">
+          El lector automático no pudo obtener estos datos. Complétalos aquí o
+          pídelos al staff por WhatsApp; la corrección queda registrada.
+        </p>
+        <div class="field-form">
+          @for (field of missingFields(); track field) {
+            <label class="field">
+              <span class="field__label">{{ fieldLabel(field) }}</span>
+              <input
+                class="control"
+                type="text"
+                [placeholder]="fieldPlaceholder(field)"
+                [ngModel]="formValue(field)"
+                (ngModelChange)="setFormValue(field, $event)"
+                [attr.aria-label]="fieldLabel(field)"
+              />
+            </label>
+          }
+        </div>
+        @if (completeError()) {
+          <div class="inline-state inline-state--error">
+            <svg lucideTriangleAlert aria-hidden="true"></svg> {{ completeError() }}
+          </div>
+        }
+        <div class="field-form__actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="submitCompleteData()"
+            [disabled]="!canSubmit() || submitting()"
+          >
+            @if (submitting()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Guardando…
+            } @else {
+              <svg lucideCheck aria-hidden="true"></svg> Guardar datos
+            }
+          </button>
+        </div>
+      </section>
+    }
 
     <!-- Validación -->
     <section class="detail-section">
@@ -32,9 +80,9 @@
       </div>
     </section>
 
-    <!-- Verificadores -->
+    <!-- Soportes relacionados: eventos bancarios + comprobante + confirmaciones -->
     <section class="detail-section">
-      <h3 class="detail-section__title">Verificadores</h3>
+      <h3 class="detail-section__title">Soportes relacionados</h3>
       @if (loadingSupports()) {
         <div class="inline-state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando evidencias…</div>
       } @else if (supportsError()) {
@@ -42,44 +90,73 @@
           <svg lucideTriangleAlert aria-hidden="true"></svg> {{ supportsError() }}
         </div>
       }
-      <ul class="verifiers">
-        @for (verifier of verifiers(); track verifier.label) {
-          <li class="verifier verifier--{{ verifier.matched === true ? 'ok' : verifier.matched === false ? 'no' : 'na' }}">
-            <span class="verifier__mark" aria-hidden="true">
-              {{ verifier.matched === true ? '✓' : verifier.matched === false ? '✕' : '–' }}
-            </span>
-            <span class="verifier__text">
-              <span class="verifier__label">{{ verifier.label }}</span>
-              <span class="verifier__detail">{{ verifier.detail }}</span>
-            </span>
-          </li>
-        }
-      </ul>
-    </section>
+      @if (receiptError()) {
+        <div class="inline-state inline-state--error">
+          <svg lucideTriangleAlert aria-hidden="true"></svg> {{ receiptError() }}
+        </div>
+      }
 
-    <!-- Eventos / soportes relacionados -->
-    @if (supports().length > 0) {
-      <section class="detail-section">
-        <h3 class="detail-section__title">Soportes relacionados</h3>
+      @if (hasRelated()) {
         <ul class="supports">
-          @for (support of supports(); track support.id) {
-            <li class="support">
-              <svg lucideFileText aria-hidden="true"></svg>
+          <!-- Eventos bancarios enlazados (correo, notificador, sms, webhook) -->
+          @for (event of relatedEvents(); track event.eventId) {
+            <li class="support support--clickable" (click)="viewSourceEvent.emit(event.eventId)">
+              @switch (event.sourceType) {
+                @case ('EMAIL_GMAIL') { <svg lucideMail aria-hidden="true"></svg> }
+                @case ('NOTIFIER_APP') { <svg lucideSmartphone aria-hidden="true"></svg> }
+                @case ('BANK_SMS') { <svg lucideMessageSquare aria-hidden="true"></svg> }
+                @default { <svg lucideBell aria-hidden="true"></svg> }
+              }
               <span class="support__main">
-                <span class="support__type">{{ support.type }}</span>
+                <span class="support__type">{{ event.label }}</span>
+                <span class="support__sub">Enlazado {{ event.linkedAt | date: 'short' }}</span>
+              </span>
+            </li>
+          }
+
+          <!-- Soportes (comprobante de pago y otros) -->
+          @for (support of supports(); track support.id) {
+            <li
+              class="support"
+              [class.support--clickable]="hasPhoto(support)"
+              (click)="hasPhoto(support) && openReceipt(support)"
+            >
+              @if (support.type === 'OCR_RECEIPT') {
+                <svg lucideImage aria-hidden="true"></svg>
+              } @else {
+                <svg lucideFileText aria-hidden="true"></svg>
+              }
+              <span class="support__main">
+                <span class="support__type">{{ supportLabel(support.type) }}</span>
                 <span class="support__sub">
-                  {{ support.linkStatus }}
                   @if (support.extracted?.amount) {
-                    · {{ support.extracted?.amount | currency: support.extracted?.currency || tx.currency : 'symbol-narrow' : '1.0-0' }}
+                    {{ support.extracted?.amount | currency: support.extracted?.currency || tx.currency : 'symbol-narrow' : '1.0-0' }}
                   }
                   @if (support.extracted?.reference) { · Ref. {{ support.extracted?.reference }} }
+                  @if (hasPhoto(support)) { · Ver foto }
                 </span>
+              </span>
+              @if (loadingReceiptId() === support.id) {
+                <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+              }
+            </li>
+          }
+
+          <!-- Confirmaciones manuales y datos completados por el staff -->
+          @for (entry of manualEntries(); track entry.label) {
+            <li class="support support--manual">
+              <svg lucideUserCheck aria-hidden="true"></svg>
+              <span class="support__main">
+                <span class="support__type">{{ entry.label }}</span>
+                <span class="support__sub">{{ entry.detail }}</span>
               </span>
             </li>
           }
         </ul>
-      </section>
-    }
+      } @else if (!loadingSupports()) {
+        <p class="empty-hint">Aún no hay soportes relacionados.</p>
+      }
+    </section>
 
     <!-- Auditoría -->
     <section class="detail-section">
@@ -97,5 +174,15 @@
         }
       </dl>
     </section>
+  }
+
+  <!-- Lightbox de la foto del comprobante -->
+  @if (receiptUrl(); as url) {
+    <div class="receipt-lightbox" (click)="closeReceipt()">
+      <button type="button" class="receipt-lightbox__close" (click)="closeReceipt()" aria-label="Cerrar">
+        <svg lucideX aria-hidden="true"></svg>
+      </button>
+      <img class="receipt-lightbox__img" [src]="url" alt="Comprobante de pago" (click)="$event.stopPropagation()" />
+    </div>
   }
 </yep-modal>

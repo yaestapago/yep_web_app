@@ -24,7 +24,8 @@
 }
 
 .table-body {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 0;
 }
 
@@ -60,6 +61,11 @@
   background: color-mix(in srgb, var(--color-secondary) 6%, transparent);
 }
 
+/* Toda la fila abre el detalle (como la lista de eventos de ingreso). */
+.tx-row {
+  cursor: pointer;
+}
+
 .num {
   text-align: right;
 }
@@ -91,9 +97,21 @@
 }
 
 .actions-col {
+  background: var(--color-surface);
+  position: sticky;
+  right: 0;
   text-align: right;
   width: 1%;
   white-space: nowrap;
+  z-index: 1;
+}
+
+.txtable thead th.actions-col {
+  z-index: 2;
+}
+
+.tx-row:hover .actions-col {
+  background: color-mix(in srgb, var(--color-secondary) 6%, var(--color-surface));
 }
 
 .row-actions {
@@ -108,6 +126,15 @@
 
 .icon-btn--verify:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+.icon-btn--invoice {
+  border-color: color-mix(in srgb, var(--color-secondary) 40%, var(--color-border));
+  color: var(--color-secondary);
+}
+
+.icon-btn--invoice:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-secondary) 12%, var(--color-surface));
 }
 
 @media (max-width: 560px) {

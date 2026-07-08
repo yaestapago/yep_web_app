@@ -159,8 +159,11 @@
                 >
                   <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
                   <span class="shift-block__time"
-                    >{{ item.shift.startTime }}–{{ item.shift.endTime }}</span
-                  >
+                    >{{ item.shift.startTime }}–{{ item.shift.endTime }}
+                    @if (isNightHalf(item.shift)) {
+                      <span class="shift-block__night" title="Turno nocturno">🌙</span>
+                    }
+                  </span>
                   <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
                 </button>
               }
@@ -204,20 +207,54 @@
       [error]="isInvalid('userId') ? 'Selecciona un empleado' : ''"
     />
     <div class="shift-field">
-      <span class="shift-field__label">
-        {{ editingShiftId() ? 'Día' : 'Días (se repite cada semana)' }}
-      </span>
+      <div class="shift-field__label-row">
+        <span class="shift-field__label">
+          {{ editingShiftId() ? 'Día' : 'Días (se repite cada semana)' }}
+        </span>
+        @if (!editingShiftId()) {
+          <div class="quick-chip-row">
+            <button type="button" class="quick-chip" (click)="setDays(weekdays)">Lun–Vie</button>
+            <button type="button" class="quick-chip" (click)="setDays(allDays)">Todos</button>
+            <button type="button" class="quick-chip" (click)="setDays([])">Ninguno</button>
+          </div>
+        }
+      </div>
       <yep-day-picker formControlName="days" />
       @if (isInvalid('days')) {
         <small class="field-error">Selecciona al menos un día</small>
       }
     </div>
+    <div class="shift-field">
+      <span class="shift-field__label">Plantillas rápidas</span>
+      <div class="quick-chip-row">
+        @for (tpl of timeTemplates; track tpl.label) {
+          <button type="button" class="quick-chip" (click)="applyTimeTemplate(tpl)">
+            {{ tpl.label }}
+          </button>
+        }
+      </div>
+    </div>
     <div class="form-grid form-grid--2">
       <yep-time-picker formControlName="startTime" label="Hora inicio" />
       <yep-time-picker formControlName="endTime" label="Hora fin" />
     </div>
-    @if (shiftForm.errors?.['endBeforeStart']) {
-      <div class="field-error">La hora de fin debe ser mayor a la de inicio.</div>
+    @if (shiftDurationLabel()) {
+      <p class="shift-duration">{{ shiftDurationLabel() }}</p>
+    }
+    @if (isOvernightShift()) {
+      <p class="shift-overnight-hint">
+        Turno nocturno: cruza la medianoche y se guardará como dos turnos (hasta las 23:59 y
+        desde las 00:00 del día siguiente).
+      </p>
+    }
+    @if (isEditingOvernightHalf()) {
+      <p class="shift-overnight-hint">
+        Esta es una mitad de un turno nocturno. Si cambias el horario, revisa también la otra
+        mitad (el día anterior o siguiente) para que sigan encajando.
+      </p>
+    }
+    @if (shiftForm.errors?.['sameStartAndEnd']) {
+      <div class="field-error">La hora de fin no puede ser igual a la de inicio.</div>
     }
     @if (overlapError()) {
       <div class="field-error" role="alert">{{ overlapError() }}</div>

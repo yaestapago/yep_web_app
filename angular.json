@@ -89,6 +89,9 @@
             "production": {
               "buildTarget": "yep-web:build:production"
             },
+            "staging": {
+              "buildTarget": "yep-web:build:staging"
+            },
             "development": {
               "buildTarget": "yep-web:build:development"
             }

@@ -39,6 +39,8 @@ export class AuthSessionService {
   readonly onboardingRequired = computed(
     () => this.isAuthenticated() && this.approvedMemberships().length === 0,
   );
+  /** Super-usuario global: puede administrar el catálogo de bancos, etc. */
+  readonly isSuperUser = computed(() => this.user()?.globalRole === 'account_su');
 
   saveSession(response: AuthResponse): void {
     const memberships = this.normalizeMemberships(response.memberships ?? []);

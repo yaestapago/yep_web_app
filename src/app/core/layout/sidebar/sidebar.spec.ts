@@ -26,8 +26,13 @@ describe('Sidebar', () => {
       { businessAccountId: 'b1', businessAccount: { name: 'Café Uno' } },
       { businessAccountId: 'b2', businessAccount: { name: '' } },
     ]),
-    activeMembership: signal({ businessAccountId: 'b1', businessAccount: { name: 'Café Uno' } }),
+    activeMembership: signal({
+      businessAccountId: 'b1',
+      businessAccount: { name: 'Café Uno' },
+      role: 'account_owner',
+    }),
     activeBusinessAccountId: signal('b1'),
+    isSuperUser: signal(false),
     setActiveBusinessAccountId,
     clearSession: vi.fn(),
   };
@@ -74,7 +79,7 @@ describe('Sidebar', () => {
 
   it('exposes the business sections without the old overview', () => {
     const sidebar = create();
-    expect(sidebar.businessSections.map((item) => item.path)).toEqual([
+    expect(sidebar.businessSections().map((item) => item.path)).toEqual([
       'business-data',
       'accounts',
       'notifiers',
@@ -82,6 +87,22 @@ describe('Sidebar', () => {
       'employees',
       'locations',
       'schedules',
+      'reports',
+    ]);
+  });
+
+  it('hides owner-only sections for a staff membership', () => {
+    session.activeMembership.set({
+      businessAccountId: 'b1',
+      businessAccount: { name: 'Café Uno' },
+      role: 'account_staff',
+    });
+    const sidebar = create();
+    expect(sidebar.businessSections().map((item) => item.path)).toEqual([
+      'business-data',
+      'notifiers',
+      'schedules',
+      'reports',
     ]);
   });
 

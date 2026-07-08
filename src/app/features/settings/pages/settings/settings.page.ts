@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   LucideBell,
   LucideChevronDown,
+  LucideFileText,
+  LucideMessageCircle,
   LucideMoon,
   LucidePalette,
   LucidePencil,
@@ -21,6 +23,10 @@ import type {
   GeneralPreferences,
   NotificationPreferences,
 } from '../../../../shared/models/auth.models';
+import {
+  SUPPORT_WHATSAPP_URL,
+  TERMS_URL,
+} from '../../../../shared/constants/legal.constants';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -62,6 +68,8 @@ interface NotificationToggle {
     Toggle,
     LucideBell,
     LucideChevronDown,
+    LucideFileText,
+    LucideMessageCircle,
     LucideMoon,
     LucidePalette,
     LucidePencil,
@@ -82,6 +90,9 @@ export class SettingsPage implements OnInit {
 
   readonly user = this.session.user;
   readonly isDark = this.theme.isDark;
+
+  readonly termsUrl = TERMS_URL;
+  readonly supportWhatsappUrl = SUPPORT_WHATSAPP_URL;
 
   readonly notifications = computed<NotificationPreferences>(
     () => this.user()?.preferences?.notifications ?? DEFAULT_NOTIFICATIONS,

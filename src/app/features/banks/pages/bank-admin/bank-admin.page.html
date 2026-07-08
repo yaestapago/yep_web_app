@@ -1,0 +1,319 @@
+<div class="bank-admin">
+  <header class="bank-admin__header">
+    <div>
+      <a class="bank-admin__back" routerLink="/businesses">
+        <svg lucideArrowLeft aria-hidden="true"></svg>
+        Volver
+      </a>
+      <h1 class="bank-admin__title">Reglas de notificadores (superadmin)</h1>
+      <p class="bank-admin__subtitle">
+        Catálogo global de bancos. Define qué apps y textos escucha cada
+        notificador de la flota. Los cambios se aplican en el próximo latido de
+        cada dispositivo, sin re-emparejar.
+      </p>
+    </div>
+    <yep-button size="sm" (clicked)="openCreate()">
+      <svg lucidePlus aria-hidden="true"></svg>
+      Nuevo banco
+    </yep-button>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
+
+  @if (loading()) {
+    <div class="bank-admin__loading">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando bancos…
+    </div>
+  } @else if (banks().length === 0) {
+    <div class="bank-admin__empty">
+      <h3>Aún no hay bancos</h3>
+      <p>Crea el primer banco para definir qué escucharán los notificadores.</p>
+    </div>
+  } @else {
+    <div class="bank-admin__list">
+      @for (bank of banks(); track bank.code) {
+        <article class="bank-card" [class.bank-card--inactive]="!bank.isActive">
+          <div class="bank-card__main">
+            <div class="bank-card__titlerow">
+              <h3 class="bank-card__title">{{ bank.name }}</h3>
+              <code class="bank-card__code">{{ bank.code }}</code>
+            </div>
+            <yep-status-dot
+              [level]="bank.isActive ? 'online' : 'offline'"
+              [label]="bank.isActive ? 'Activo' : 'Inactivo'"
+            />
+            <div class="bank-card__badges">
+              @for (badge of channelBadges(bank); track badge) {
+                <span class="bank-card__badge">{{ badge }}</span>
+              }
+              @if (channelBadges(bank).length === 0) {
+                <span class="bank-card__badge bank-card__badge--muted">Sin canales</span>
+              }
+            </div>
+          </div>
+          <div class="bank-card__actions">
+            <yep-button
+              variant="ghost"
+              size="sm"
+              [title]="'Editar'"
+              [disabled]="actingCode() === bank.code"
+              (clicked)="openEdit(bank)"
+            >
+              <svg lucidePencil aria-label="Editar"></svg>
+            </yep-button>
+            @if (bank.isActive) {
+              <yep-button
+                variant="danger"
+                size="sm"
+                [title]="'Desactivar'"
+                [loading]="actingCode() === bank.code"
+                (clicked)="remove(bank)"
+              >
+                <svg lucideTrash2 aria-label="Desactivar"></svg>
+              </yep-button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>
+
+<yep-modal
+  [open]="modalOpen()"
+  size="lg"
+  [title]="editingCode() ? 'Editar banco' : 'Nuevo banco'"
+  subtitle="Define qué escucha la flota para este banco. Todo se guarda en minúsculas."
+  [loading]="saving()"
+  (closeRequested)="closeModal()"
+>
+  <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
+    <div class="bank-form__row">
+      <yep-input
+        formControlName="code"
+        label="Código"
+        placeholder="bancolombia"
+        [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios. Coincide con el bankId de las cuentas.'"
+        [error]="isInvalid('code') ? 'Código inválido (minúsculas, dígitos, - o _).' : ''"
+      />
+      <yep-input
+        formControlName="name"
+        label="Nombre visible"
+        placeholder="Bancolombia"
+        [error]="isInvalid('name') ? 'Ingresa un nombre' : ''"
+      />
+    </div>
+
+    <label class="bank-form__switch">
+      <yep-toggle
+        appearance="switch"
+        [pressed]="form.controls.isActive.value"
+        ariaLabel="Banco activo"
+        (toggled)="setToggle('isActive', $event)"
+      />
+      <span>Banco activo (visible y escuchado por la flota)</span>
+    </label>
+
+    <!-- Canal Teléfono -->
+    <fieldset class="bank-form__channel">
+      <legend>
+        <yep-toggle
+          appearance="switch"
+          [pressed]="form.controls.phoneEnabled.value"
+          ariaLabel="Canal teléfono habilitado"
+          (toggled)="setToggle('phoneEnabled', $event)"
+        />
+        Teléfono
+      </legend>
+      <label class="bank-form__field">
+        <span>Paquetes de apps (uno por línea)</span>
+        <textarea formControlName="phonePackageNames" rows="2" placeholder="com.nequi.mobileapp"></textarea>
+      </label>
+      <label class="bank-form__field">
+        <span>Patrones de contenido (uno por línea; vacío = sin filtro)</span>
+        <textarea formControlName="phoneContentPatterns" rows="2" placeholder="te enviaron"></textarea>
+      </label>
+      <label class="bank-form__field">
+        <span>Remitente/ID en el título del SMS (uno por línea)</span>
+        <textarea formControlName="phoneTitlePatterns" rows="2" placeholder="bancolombia&#10;891900"></textarea>
+        <small class="bank-form__hint">El número o nombre corto que aparece como remitente del SMS (llega en el título de la notificación).</small>
+      </label>
+      <label class="bank-form__field">
+        <span>Nombres visibles para escritorio (uno por línea)</span>
+        <textarea formControlName="phoneDisplayNames" rows="2" placeholder="nequi colombia"></textarea>
+      </label>
+
+      <details class="bank-form__advanced">
+        <summary>Extracción (parser) — avanzado</summary>
+        <p class="bank-form__hint">
+          Reglas de extracción en JSON (monto, remitente, dirección, tipo…). Vacío
+          = usa el parser por defecto del banco. Usa el <strong>probador</strong>
+          de abajo para verificar qué extrae.
+        </p>
+        <yep-button
+          variant="secondary"
+          size="sm"
+          type="button"
+          [loading]="loadingDefaults()"
+          (clicked)="loadDefaults('phone')"
+        >
+          Cargar reglas por defecto
+        </yep-button>
+        <textarea
+          class="bank-form__code"
+          formControlName="phoneParseRules"
+          rows="8"
+          spellcheck="false"
+          placeholder='{ "currency": "COP", "amount": [{ "pattern": "\$\\s*([\\d.,]+)" }] }'
+        ></textarea>
+        @if (parseRulesInvalid('phone')) {
+          <small class="bank-form__error">JSON inválido.</small>
+        }
+      </details>
+    </fieldset>
+
+    <!-- Canal Correo -->
+    <fieldset class="bank-form__channel">
+      <legend>
+        <yep-toggle
+          appearance="switch"
+          [pressed]="form.controls.emailEnabled.value"
+          ariaLabel="Canal correo habilitado"
+          (toggled)="setToggle('emailEnabled', $event)"
+        />
+        Correo
+      </legend>
+      <label class="bank-form__field">
+        <span>Paquetes / remitentes (uno por línea)</span>
+        <textarea formControlName="emailPackageNames" rows="2"></textarea>
+      </label>
+      <label class="bank-form__field">
+        <span>Patrones de contenido (uno por línea)</span>
+        <textarea formControlName="emailContentPatterns" rows="2"></textarea>
+      </label>
+      <label class="bank-form__field">
+        <span>Remitentes del banco a atribuir (uno por línea)</span>
+        <textarea formControlName="emailSenderPatterns" rows="2" placeholder="notificacionesbancolombia.com"></textarea>
+        <small class="bank-form__hint">Tokens/direcciones del remitente oficial del banco que aparecen en el correo reenviado.</small>
+      </label>
+      <label class="bank-form__field">
+        <span>Nombres visibles (uno por línea)</span>
+        <textarea formControlName="emailDisplayNames" rows="2"></textarea>
+      </label>
+
+      <details class="bank-form__advanced">
+        <summary>Extracción (parser) — avanzado</summary>
+        <p class="bank-form__hint">
+          Reglas de extracción en JSON. Vacío = usa el parser por defecto del banco.
+        </p>
+        <yep-button
+          variant="secondary"
+          size="sm"
+          type="button"
+          [loading]="loadingDefaults()"
+          (clicked)="loadDefaults('email')"
+        >
+          Cargar reglas por defecto
+        </yep-button>
+        <textarea
+          class="bank-form__code"
+          formControlName="emailParseRules"
+          rows="8"
+          spellcheck="false"
+        ></textarea>
+        @if (parseRulesInvalid('email')) {
+          <small class="bank-form__error">JSON inválido.</small>
+        }
+      </details>
+    </fieldset>
+
+    <!-- Panel de claridad: traduce las reglas a lenguaje natural, en vivo -->
+    <yep-alert variant="info" title="Qué hará este banco">
+      <ul class="bank-form__clarity">
+        @for (line of clarity(); track line.channel) {
+          <li>{{ line.text }}</li>
+        }
+      </ul>
+    </yep-alert>
+
+    <!-- Probador: pega un mensaje real y ve qué extraería la config actual -->
+    <details class="bank-form__advanced">
+      <summary>Probar con un mensaje real</summary>
+      <div class="bank-tester">
+        <div class="bank-tester__channel">
+          <button
+            type="button"
+            [class.is-active]="testChannel() === 'phone'"
+            (click)="setTestChannel('phone')"
+          >
+            Teléfono
+          </button>
+          <button
+            type="button"
+            [class.is-active]="testChannel() === 'email'"
+            (click)="setTestChannel('email')"
+          >
+            Correo
+          </button>
+        </div>
+        <label class="bank-form__field">
+          <span>{{ testChannel() === 'email' ? 'Asunto' : 'Título' }}</span>
+          <input
+            type="text"
+            [value]="testTitle()"
+            (input)="onTestTitle($any($event.target).value)"
+            placeholder="Bancolombia"
+          />
+        </label>
+        <label class="bank-form__field">
+          <span>{{ testChannel() === 'email' ? 'Cuerpo del correo' : 'Texto del SMS/notificación' }}</span>
+          <textarea
+            rows="3"
+            [value]="testBody()"
+            (input)="onTestBody($any($event.target).value)"
+            placeholder="Recibiste $50.000 de JUAN PEREZ"
+          ></textarea>
+        </label>
+
+        @if (testError()) {
+          <small class="bank-form__error">{{ testError() }}</small>
+        }
+        @if (testing()) {
+          <p class="bank-form__hint">Probando…</p>
+        } @else if (testResult(); as r) {
+          <div class="bank-tester__result">
+            <yep-status-dot
+              [level]="r.attributed ? 'online' : 'offline'"
+              [label]="r.attributed ? 'Se atribuiría a este banco' : 'NO se atribuiría'"
+            />
+            <dl class="bank-tester__grid">
+              <dt>Monto</dt><dd>{{ r.parsed.amount ?? '—' }}</dd>
+              <dt>Remitente</dt><dd>{{ r.parsed.senderName ?? '—' }}</dd>
+              <dt>Dirección</dt><dd>{{ r.parsed.direction ?? '—' }}</dd>
+              <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
+              <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
+              <dt>Cuenta origen</dt><dd>{{ r.parsed.senderAccount ?? '—' }}</dd>
+              <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
+              <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
+            </dl>
+          </div>
+        }
+      </div>
+    </details>
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeModal()">
+      Cancelar
+    </yep-button>
+    <yep-button type="submit" [loading]="saving()" (clicked)="save()">
+      {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
+    </yep-button>
+  </ng-container>
+</yep-modal>

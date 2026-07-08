@@ -1,4 +1,18 @@
 <main class="auth-page">
+  <button
+    class="theme-toggle-corner"
+    type="button"
+    (click)="toggleTheme()"
+    [attr.aria-label]="themeLabel()"
+    [title]="themeLabel()"
+  >
+    @if (isDark()) {
+      <svg lucideSun aria-hidden="true"></svg>
+    } @else {
+      <svg lucideMoon aria-hidden="true"></svg>
+    }
+  </button>
+
   <section class="auth-panel">
     <div class="auth-logo" aria-label="Ya Está Pago">
       <img
@@ -20,6 +34,15 @@
         <span>Entrarás para solicitar acceso staff a {{ inviteBusinessName() }}.</span>
       } @else if (inviteCode()) {
         <span>Entrarás para solicitar acceso staff a este negocio.</span>
+      }
+      @if (inviteCode()) {
+        <button
+          class="auth-inline-action"
+          type="button"
+          (click)="exitInvite()"
+        >
+          Salir de la invitación
+        </button>
       }
     </div>
 

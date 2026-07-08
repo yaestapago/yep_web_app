@@ -1,6 +1,6 @@
 <div class="zone">
   <div class="zone__head">
-    <h3 class="zone__title"><svg lucideFileText aria-hidden="true"></svg> Reportes de ingreso</h3>
+    <h3 class="zone__title"><svg lucideBell aria-hidden="true"></svg> Eventos de ingreso</h3>
     <span class="zone__count">{{ events().length }}{{ hasMore() ? '+' : '' }}</span>
   </div>
 
@@ -12,8 +12,8 @@
         type="search"
         [value]="search()"
         (input)="search.set($any($event.target).value)"
-        placeholder="Buscar referencia o ID..."
-        aria-label="Buscar reportes por referencia o ID"
+        placeholder="Buscar monto o texto..."
+        aria-label="Buscar eventos por monto o texto del aviso"
       />
     </span>
     <yep-select
@@ -40,7 +40,12 @@
     }
   </div>
 
-  <div class="zone__body events-body">
+  <div
+    class="zone__body events-body"
+    appAutoFitRows=".event"
+    [autoFitGap]="8"
+    (fit)="pageSize.set($event)"
+  >
     @if (loading()) {
       <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
     } @else if (error()) {

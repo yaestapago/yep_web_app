@@ -100,6 +100,18 @@
   min-width: 0;
 }
 
+.report-filters {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.report-filters__location {
+  min-width: 200px;
+}
+
 .list-card__titlerow {
   align-items: center;
   display: flex;
@@ -288,6 +300,64 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-snug);
+}
+
+.shift-field__label-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+/* Atajos de días/horarios dentro del formulario de turno. */
+.quick-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.quick-chip {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-3);
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.quick-chip:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  color: var(--color-primary);
+}
+
+/* Duración calculada del turno, ayuda visual junto a hora inicio/fin. */
+.shift-duration {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  width: fit-content;
+}
+
+/* Aviso de turno nocturno (cruza medianoche) en el formulario. */
+.shift-overnight-hint {
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
 }
 
 .employee-filter {
@@ -561,6 +631,11 @@
 .shift-block__time {
   font-size: 11px;
   opacity: 0.85;
+}
+
+.shift-block__night {
+  font-size: 10px;
+  margin-left: 2px;
 }
 
 .shift-block__loc {

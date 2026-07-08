@@ -1,20 +1,43 @@
-<aside class="sidebar">
-  <div class="brand" aria-label="Ya Está Pago">
-    <img class="brand__logo brand__logo--light" src="/brand/yep-light.svg" alt="Ya Está Pago" />
-    <img
-      class="brand__logo brand__logo--dark"
-      src="/brand/yep-dark.svg"
-      alt=""
-      aria-hidden="true"
-    />
+<aside class="sidebar" [class.collapsed]="collapsed()">
+  <div class="sidebar-header">
+    <div class="brand" aria-label="Ya Está Pago">
+      @if (collapsed()) {
+        <img class="brand__mark" src="/brand/icon.svg" alt="Ya Está Pago" />
+      } @else {
+        <img class="brand__logo brand__logo--light" src="/brand/yep-light.svg" alt="Ya Está Pago" />
+        <img
+          class="brand__logo brand__logo--dark"
+          src="/brand/yep-dark.svg"
+          alt=""
+          aria-hidden="true"
+        />
+      }
+    </div>
+
+    <button
+      type="button"
+      class="collapse-toggle"
+      (click)="toggleCollapse()"
+      [attr.aria-label]="collapseLabel()"
+      [attr.title]="collapseLabel()"
+      aria-controls="sidebar-main"
+      [attr.aria-expanded]="!collapsed()"
+    >
+      @if (collapsed()) {
+        <svg lucidePanelLeftOpen aria-hidden="true"></svg>
+      } @else {
+        <svg lucidePanelLeftClose aria-hidden="true"></svg>
+      }
+    </button>
   </div>
 
-  <div class="sidebar-main">
+  <div class="sidebar-main" id="sidebar-main">
     <a
       class="user-card"
       routerLink="/settings"
       (click)="onNavigate()"
       aria-label="Perfil y configuración"
+      title="Perfil y configuración"
     >
       <span class="avatar" aria-hidden="true">{{ initials() }}</span>
       <span class="user-meta">
@@ -45,12 +68,17 @@
     </button>
 
     <nav class="nav-group" aria-label="Navegación principal">
-      <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()">
+      <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()" title="Novedades">
         <svg lucideHouse aria-hidden="true"></svg>
         <span>Novedades</span>
       </a>
 
-      <a [routerLink]="dashboardLink()" routerLinkActive="active" (click)="onNavigate()">
+      <a
+        [routerLink]="dashboardLink()"
+        routerLinkActive="active"
+        (click)="onNavigate()"
+        title="Panel de control"
+      >
         <svg lucideLayoutDashboard aria-hidden="true"></svg>
         <span>Panel de control</span>
       </a>
@@ -62,6 +90,7 @@
           class="nav-subgroup__header"
           [attr.aria-expanded]="businessGroupOpen()"
           aria-controls="business-subnav"
+          title="Negocio"
           (click)="toggleBusinessGroup()"
         >
           <svg lucideBuilding2 aria-hidden="true"></svg>
@@ -77,7 +106,7 @@
         @if (businessGroupOpen()) {
           <div class="nav-subgroup__items" id="business-subnav">
             @if (activeBusinessAccountId()) {
-              @for (item of businessSections; track item.path) {
+              @for (item of businessSections(); track item.path) {
                 <a
                   [routerLink]="businessLink(item.path)"
                   routerLinkActive="active"
@@ -101,6 +130,7 @@
       type="button"
       (click)="toggleTheme()"
       [attr.aria-label]="themeLabel()"
+      [attr.title]="themeLabel()"
     >
       @if (isDark()) {
         <svg lucideSun aria-hidden="true"></svg>
@@ -111,12 +141,18 @@
       }
     </button>
 
-    <a class="nav-settings" routerLink="/settings" routerLinkActive="active" (click)="onNavigate()">
+    <a
+      class="nav-settings"
+      routerLink="/settings"
+      routerLinkActive="active"
+      (click)="onNavigate()"
+      title="Configuración"
+    >
       <svg lucideSettings aria-hidden="true"></svg>
       <span>Configuración</span>
     </a>
 
-    <button class="logout" type="button" (click)="requestLogout()">
+    <button class="logout" type="button" (click)="requestLogout()" title="Cerrar sesión">
       <svg lucideLogOut aria-hidden="true"></svg>
       <span>Cerrar sesión</span>
     </button>

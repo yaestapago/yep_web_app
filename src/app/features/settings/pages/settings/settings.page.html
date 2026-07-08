@@ -100,6 +100,28 @@
       </yep-button>
     </article>
 
+    <!-- Términos y Condiciones -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideFileText></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Términos y Condiciones</h2>
+        <p class="setting-desc">Consulta los términos de uso y la política de privacidad.</p>
+      </div>
+      <a class="setting-link" [href]="termsUrl" target="_blank" rel="noopener">Ver</a>
+    </article>
+
+    <!-- Contacto / Soporte -->
+    <article class="setting-card">
+      <span class="setting-icon" aria-hidden="true"><svg lucideMessageCircle></svg></span>
+      <div class="setting-body">
+        <h2 class="setting-title">Contacto y soporte</h2>
+        <p class="setting-desc">¿Necesitas ayuda? Escríbenos por WhatsApp.</p>
+      </div>
+      <a class="setting-link" [href]="supportWhatsappUrl" target="_blank" rel="noopener"
+        >Escribir</a
+      >
+    </article>
+
     <!--
       Preferencias generales: ocultas temporalmente. La implementación (generalForm,
       saveGeneral, syncGeneralForm en el componente) se conserva para recuperarla

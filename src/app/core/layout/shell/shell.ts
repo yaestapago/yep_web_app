@@ -10,6 +10,8 @@ import { Modal } from '../../../shared/ui/modal/modal';
 import { AuthSessionService } from '../../services/auth-session.service';
 import { Sidebar } from '../sidebar/sidebar';
 
+const SIDEBAR_COLLAPSED_KEY = 'yep-sidebar-collapsed';
+
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, LucideFileScan, LucideMenu],
@@ -25,6 +27,9 @@ export class Shell {
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);
   readonly receiptCaptureOpen = signal(false);
+
+  /** Rail colapsable en escritorio; se recuerda entre sesiones. */
+  readonly sidebarCollapsed = signal(this.loadSidebarCollapsed());
 
   /** Controla el modal de confirmación de cierre de sesión. */
   readonly logoutModalOpen = signal(false);
@@ -58,6 +63,25 @@ export class Shell {
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
+  }
+
+  /** Alterna el sidebar entre ancho completo y rail de solo íconos. */
+  toggleSidebarCollapse(): void {
+    const collapsed = !this.sidebarCollapsed();
+    this.sidebarCollapsed.set(collapsed);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+    } catch {
+      // Almacenamiento no disponible (modo privado, cuota, etc.): no persiste, no rompe.
+    }
+  }
+
+  private loadSidebarCollapsed(): boolean {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
   }
 
   openReceiptCapture(): void {

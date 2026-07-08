@@ -5,14 +5,19 @@ import { Observable, Subject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthSessionService } from '../../../core/services/auth-session.service';
 import type { SourceEvent } from '../../../shared/models/source-event.models';
+import type { Notifier } from '../../../shared/models/notifier.models';
+import type { PaymentTransaction } from '../../../shared/models/transaction.models';
 
 /**
- * Canal en vivo de source_events (SSE). Pide un ticket efímero autenticado y
- * abre un `EventSource` contra `/source-events/stream`. Emite por `events$`
- * cada evento entrante de la cuenta activa. Se reconecta solo (con ticket
- * nuevo) ante caídas y al cambiar de negocio activo.
+ * Canal en vivo por cuenta (SSE, multi-tópico). Pide un ticket efímero
+ * autenticado y abre un `EventSource` contra `/source-events/stream`. Emite por
+ * observables tipados cada mensaje entrante de la cuenta activa:
+ * - `events$`         → nuevos source_events de banco.
+ * - `transactions$`   → transacción creada/actualizada (mismo shape que la API).
+ * - `notifierStatus$` → estado de un notificador tras su heartbeat.
+ * Se reconecta solo (con ticket nuevo) ante caídas y al cambiar de negocio.
  *
- * La UI solo consume `events$` y `connected`; no necesita conocer SSE.
+ * La UI solo consume los observables y `connected`; no necesita conocer SSE.
  */
 @Injectable({ providedIn: 'root' })
 export class SourceEventsStreamService {
@@ -23,9 +28,17 @@ export class SourceEventsStreamService {
   private eventSource: EventSource | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly incoming = new Subject<SourceEvent>();
+  private readonly incomingTransactions = new Subject<PaymentTransaction>();
+  private readonly incomingNotifierStatus = new Subject<Notifier>();
 
   /** Eventos entrantes de la cuenta activa, en tiempo real. */
   readonly events$: Observable<SourceEvent> = this.incoming.asObservable();
+  /** Transacciones creadas/actualizadas de la cuenta activa, en tiempo real. */
+  readonly transactions$: Observable<PaymentTransaction> =
+    this.incomingTransactions.asObservable();
+  /** Estado de notificadores (tras heartbeat) de la cuenta activa. */
+  readonly notifierStatus$: Observable<Notifier> =
+    this.incomingNotifierStatus.asObservable();
   /** Estado de conexión, para afordances de UI. */
   readonly connected = signal(false);
 
@@ -89,6 +102,26 @@ export class SourceEventsStreamService {
         this.incoming.next(parsed);
       } catch {
         // Ignora payloads malformados; el siguiente evento sigue su curso.
+      }
+    });
+
+    source.addEventListener('transaction', (event) => {
+      try {
+        const parsed = JSON.parse(
+          (event as MessageEvent).data,
+        ) as PaymentTransaction;
+        this.incomingTransactions.next(parsed);
+      } catch {
+        // Ignora payloads malformados.
+      }
+    });
+
+    source.addEventListener('notifier-status', (event) => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent).data) as Notifier;
+        this.incomingNotifierStatus.next(parsed);
+      } catch {
+        // Ignora payloads malformados.
       }
     });
 

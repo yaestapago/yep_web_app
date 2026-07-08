@@ -1,11 +1,33 @@
 :host {
   --sidebar-width: 264px;
+  --sidebar-width-collapsed: 76px;
 }
 
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
   min-height: 100vh;
+  transition: grid-template-columns var(--motion-base);
+}
+
+/* Rail colapsable: el sidebar se reduce a solo íconos y el contenido gana
+   el espacio liberado (ver toggle en la parte superior del sidebar). */
+.shell--collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+
+/* Rutas inmersivas (panel de control): `min-height` por sí solo es un piso, no
+   un techo — si un descendiente (p. ej. la grilla del dashboard) pide más
+   alto que el viewport, todo el shell crecía para acomodarlo y la página
+   terminaba scrolleando completa (justo lo que `.content--immersive` intenta
+   evitar). Fijamos una fila explícita `1fr` sobre un contenedor de altura
+   definida para que `.shell-main` (y todo lo que cuelga de él) quede acotado
+   al viewport de verdad; el overflow que sobre se recorta aquí, no empuja la
+   página. */
+.shell--immersive {
+  grid-template-rows: minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .sidebar-slot {
@@ -18,6 +40,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.shell--immersive .shell-main {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .content {
@@ -205,7 +232,22 @@
   }
 
   /* En móvil hay topbar y se permite apilar/scroll: el panel deja de fijar
-     la altura del viewport. */
+     la altura del viewport. Esto tiene que revertir TODA la cadena que fija
+     el viewport para rutas inmersivas (`.shell--immersive`, `.shell-main`,
+     `.content--immersive`) — si solo se revierte un eslabón, los de arriba
+     siguen con `overflow: hidden` a una altura fija y recortan en silencio
+     el contenido que en móvil debería poder verse haciendo scroll de página. */
+  .shell--immersive {
+    height: auto;
+    grid-template-rows: none;
+    overflow: visible;
+  }
+
+  .shell--immersive .shell-main {
+    min-height: auto;
+    overflow: visible;
+  }
+
   .content--immersive {
     height: auto;
     overflow: visible;

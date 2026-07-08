@@ -82,7 +82,9 @@ export class RequestMembershipModal {
       return;
     }
 
-    if (this.form.dirty) {
+    // Si ya se envió la solicitud (success) no hay nada que "descartar": el
+    // formulario sigue dirty pero sus datos ya fueron enviados al backend.
+    if (this.form.dirty && !this.success()) {
       const confirmed = await this.notificationModal.confirm({
         title: 'Descartar cambios',
         message: 'Tienes cambios sin guardar en la solicitud.',

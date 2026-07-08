@@ -1,0 +1,48 @@
+<yep-modal
+  [open]="open()"
+  title="Aplicar pago a factura"
+  [subtitle]="
+    required()
+      ? 'Este negocio exige ' + label() + ' para confirmar el pago.'
+      : 'Asocia este pago a una ' + label() + ' para poder buscarlo luego.'
+  "
+  size="sm"
+  [loading]="saving()"
+  (closeRequested)="close()"
+>
+  @if (transaction(); as tx) {
+    <dl class="verify-summary">
+      <div class="verify-row">
+        <dt>Referencia</dt>
+        <dd>{{ tx.reference || 'Sin referencia' }}</dd>
+      </div>
+      <div class="verify-row">
+        <dt>Monto</dt>
+        <dd class="verify-amount">{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
+      </div>
+    </dl>
+  }
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="save()" id="apply-invoice-form">
+    <yep-input
+      formControlName="invoiceReference"
+      [label]="label()"
+      [placeholder]="label()"
+      [required]="required()"
+      [error]="fieldError()"
+    />
+  </form>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="saving()" (clicked)="close()">
+      {{ required() ? 'Cancelar' : 'Ahora no' }}
+    </yep-button>
+    <yep-button type="submit" [loading]="saving()" (clicked)="save()">
+      {{ required() ? 'Confirmar pago' : 'Guardar' }}
+    </yep-button>
+  </ng-container>
+</yep-modal>
