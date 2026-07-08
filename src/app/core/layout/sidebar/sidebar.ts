@@ -17,11 +17,26 @@ import {
 import { AuthSessionService } from '../../services/auth-session.service';
 import { ThemeService } from '../../services/theme.service';
 import { Select, type SelectOption } from '../../../shared/ui/select/select';
+import {
+  canAccessBusinessSection,
+  type BusinessSectionKey,
+} from '../../constants/business-section-access';
 
 interface BusinessNavItem {
-  path: string;
+  path: BusinessSectionKey;
   label: string;
 }
+
+const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
+  { path: 'business-data', label: 'Datos del negocio' },
+  { path: 'accounts', label: 'Cuentas bancarias' },
+  { path: 'notifiers', label: 'Notificadores' },
+  { path: 'requests', label: 'Solicitudes' },
+  { path: 'employees', label: 'Empleados' },
+  { path: 'locations', label: 'Sedes' },
+  { path: 'schedules', label: 'Horarios' },
+  { path: 'reports', label: 'Informes' },
+];
 
 @Component({
   selector: 'app-sidebar',
@@ -76,16 +91,18 @@ export class Sidebar {
   /** Grupo "Negocio" expandible; inicia abierto para dar contexto. */
   readonly businessGroupOpen = signal(true);
 
-  /** Subsecciones del negocio activo (dependen del negocio seleccionado). */
-  readonly businessSections: BusinessNavItem[] = [
-    { path: 'business-data', label: 'Datos del negocio' },
-    { path: 'accounts', label: 'Cuentas bancarias' },
-    { path: 'notifiers', label: 'Notificadores' },
-    { path: 'requests', label: 'Solicitudes' },
-    { path: 'employees', label: 'Empleados' },
-    { path: 'locations', label: 'Sedes' },
-    { path: 'schedules', label: 'Horarios' },
-  ];
+  /**
+   * Subsecciones del negocio activo, filtradas según el rol de la
+   * membership activa (cuentas staff ven un subconjunto: ver
+   * business-section-access.ts, que espeja lo que ya exige el backend).
+   */
+  readonly businessSections = computed<BusinessNavItem[]>(() => {
+    const role = this.activeMembership()?.role;
+    const isSu = this.session.isSuperUser();
+    return ALL_BUSINESS_SECTIONS.filter((section) =>
+      canAccessBusinessSection(section.path, role, isSu),
+    );
+  });
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */
   readonly dashboardLink = computed(() => {

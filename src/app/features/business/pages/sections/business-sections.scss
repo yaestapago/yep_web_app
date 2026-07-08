@@ -100,6 +100,18 @@
   min-width: 0;
 }
 
+.report-filters {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.report-filters__location {
+  min-width: 200px;
+}
+
 .list-card__titlerow {
   align-items: center;
   display: flex;

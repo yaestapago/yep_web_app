@@ -106,7 +106,7 @@
         @if (businessGroupOpen()) {
           <div class="nav-subgroup__items" id="business-subnav">
             @if (activeBusinessAccountId()) {
-              @for (item of businessSections; track item.path) {
+              @for (item of businessSections(); track item.path) {
                 <a
                   [routerLink]="businessLink(item.path)"
                   routerLinkActive="active"

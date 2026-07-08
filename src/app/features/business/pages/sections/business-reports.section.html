@@ -1,0 +1,45 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Informes</h2>
+      <p class="section-subtitle">Generá y descargá informes del negocio en PDF.</p>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="field-error" role="alert">{{ error() }}</div>
+  }
+
+  <article class="list-card">
+    <div class="list-card__main">
+      <h3 class="list-card__title">Cierre de caja</h3>
+      <p class="section-subtitle">
+        Monto capturado, por banco y por estado (pagado, pendiente, en revisión, rechazado)
+        para el rango de fechas y la sede seleccionados. Incluye negocio, sede, quién lo
+        genera y fecha/hora de generación (hora local).
+      </p>
+      <div class="report-filters">
+        <yep-date-range-picker
+          [range]="range()"
+          [preset]="preset()"
+          (rangeChange)="onRangeChange($event)"
+        />
+        <yep-select
+          class="report-filters__location"
+          label="Sede"
+          size="sm"
+          [options]="locationOptions()"
+          [ngModel]="locationId()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onLocationChange($event)"
+        />
+      </div>
+    </div>
+    <div class="list-card__actions">
+      <yep-button size="sm" [loading]="generating()" (clicked)="generateCashSummary()">
+        <svg lucideFileDown aria-hidden="true"></svg>
+        Generar PDF
+      </yep-button>
+    </div>
+  </article>
+</div>
