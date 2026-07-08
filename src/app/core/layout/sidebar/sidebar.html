@@ -62,11 +62,6 @@
       />
     </div>
 
-    <button type="button" class="manage-business" routerLink="/businesses" (click)="onNavigate()">
-      <svg lucideBuilding2 aria-hidden="true"></svg>
-      <span>Gestionar negocios</span>
-    </button>
-
     <nav class="nav-group" aria-label="Navegación principal">
       <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()" title="Novedades">
         <svg lucideHouse aria-hidden="true"></svg>
@@ -124,37 +119,82 @@
     </nav>
   </div>
 
-  <div class="sidebar-footer">
-    <button
-      class="theme-toggle"
-      type="button"
-      (click)="toggleTheme()"
-      [attr.aria-label]="themeLabel()"
-      [attr.title]="themeLabel()"
-    >
-      @if (isDark()) {
-        <svg lucideSun aria-hidden="true"></svg>
-        <span>Modo claro</span>
-      } @else {
-        <svg lucideMoon aria-hidden="true"></svg>
-        <span>Modo oscuro</span>
-      }
-    </button>
+  <div class="sidebar-footer sidebar-actions">
+    @if (footerMenuOpen()) {
+      <div class="sidebar-actions__menu" id="sidebar-actions-menu" role="menu">
+        <button
+          class="sidebar-actions__item"
+          type="button"
+          role="menuitem"
+          (click)="toggleTheme()"
+          [attr.aria-label]="themeLabel()"
+        >
+          @if (isDark()) {
+            <svg lucideSun aria-hidden="true"></svg>
+            <span>Modo claro</span>
+          } @else {
+            <svg lucideMoon aria-hidden="true"></svg>
+            <span>Modo oscuro</span>
+          }
+        </button>
 
-    <a
-      class="nav-settings"
-      routerLink="/settings"
-      routerLinkActive="active"
-      (click)="onNavigate()"
-      title="Configuración"
+        <a
+          class="sidebar-actions__item"
+          routerLink="/businesses"
+          routerLinkActive="active"
+          role="menuitem"
+          title="Gestionar negocios"
+          (click)="onNavigate()"
+        >
+          <svg lucideBuilding2 aria-hidden="true"></svg>
+          <span>Gestionar negocios</span>
+        </a>
+
+        <a
+          class="sidebar-actions__item"
+          routerLink="/settings"
+          routerLinkActive="active"
+          role="menuitem"
+          title="Configuración"
+          (click)="onNavigate()"
+        >
+          <svg lucideSettings aria-hidden="true"></svg>
+          <span>Configuración</span>
+        </a>
+
+        <button
+          class="sidebar-actions__item sidebar-actions__item--danger"
+          type="button"
+          role="menuitem"
+          (click)="requestLogout()"
+          title="Cerrar sesión"
+        >
+          <svg lucideLogOut aria-hidden="true"></svg>
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    }
+
+    <button
+      class="sidebar-actions__trigger"
+      type="button"
+      (click)="toggleFooterMenu()"
+      aria-haspopup="menu"
+      aria-controls="sidebar-actions-menu"
+      [attr.aria-expanded]="footerMenuOpen()"
+      aria-label="Abrir opciones de cuenta"
+      title="Opciones de cuenta"
     >
       <svg lucideSettings aria-hidden="true"></svg>
-      <span>Configuración</span>
-    </a>
-
-    <button class="logout" type="button" (click)="requestLogout()" title="Cerrar sesión">
-      <svg lucideLogOut aria-hidden="true"></svg>
-      <span>Cerrar sesión</span>
+      <span class="sidebar-actions__meta">
+        <span class="sidebar-actions__label">Más opciones</span>
+      </span>
+      <svg
+        class="sidebar-actions__chevron"
+        [class.open]="footerMenuOpen()"
+        lucideChevronDown
+        aria-hidden="true"
+      ></svg>
     </button>
   </div>
 </aside>
