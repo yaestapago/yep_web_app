@@ -1,35 +1,83 @@
-<div class="date-range">
-  <button type="button" class="date-range__button" (click)="toggle()" aria-label="Rango del resumen">
+<div class="date-range" [class.date-range--open]="open()">
+  <button
+    type="button"
+    class="date-range__button"
+    (click)="toggle()"
+    aria-label="Rango del resumen"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="open()"
+  >
     <svg lucideCalendarDays aria-hidden="true"></svg>
-    <span>{{ label() }}</span>
+    <span class="date-range__button-text">
+      <span class="date-range__button-label">Rango</span>
+      <span class="date-range__button-value">{{ label() }}</span>
+    </span>
     <svg class="date-range__chevron" lucideChevronDown aria-hidden="true"></svg>
   </button>
 
   @if (open()) {
-    <div class="date-range__panel">
-      <div class="date-range__presets">
+    <div class="date-range__panel" role="dialog" aria-label="Seleccionar rango de fechas">
+      <div class="date-range__calendar">
+        <div class="date-range__calendar-head">
+          <button
+            type="button"
+            class="date-range__nav"
+            (click)="previousMonth()"
+            aria-label="Mes anterior"
+          >
+            <svg lucideChevronLeft aria-hidden="true"></svg>
+          </button>
+
+          <strong class="date-range__month">{{ monthLabel() }}</strong>
+
+          <button
+            type="button"
+            class="date-range__nav"
+            (click)="nextMonth()"
+            aria-label="Mes siguiente"
+          >
+            <svg lucideChevronRight aria-hidden="true"></svg>
+          </button>
+        </div>
+
+        <div class="date-range__weekdays" aria-hidden="true">
+          @for (weekday of weekdays; track weekday) {
+            <span>{{ weekday }}</span>
+          }
+        </div>
+
+        <div class="date-range__days">
+          @for (day of calendarDays(); track day.date) {
+            <button
+              type="button"
+              class="date-range__day"
+              [class.date-range__day--muted]="!day.inCurrentMonth"
+              [class.date-range__day--today]="day.isToday"
+              [class.date-range__day--range]="day.isInRange"
+              [class.date-range__day--selected]="day.isSelectedStart || day.isSelectedEnd"
+              [disabled]="day.disabled"
+              [attr.aria-label]="day.date"
+              [attr.aria-pressed]="day.isSelectedStart || day.isSelectedEnd"
+              (click)="selectDate(day)"
+            >
+              {{ day.day }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="date-range__presets" aria-label="Atajos de rango">
+        <span class="date-range__section-title">Atajos</span>
         @for (option of presets; track option.id) {
-          <button type="button" class="date-range__preset" (click)="choosePreset(option.id)">
+          <button
+            type="button"
+            class="date-range__preset"
+            [class.active]="isPresetActive(option.id)"
+            (click)="choosePreset(option.id)"
+          >
             {{ option.label }}
           </button>
         }
-      </div>
-      <div class="date-range__custom">
-        <input
-          type="date"
-          class="date-range__input"
-          [value]="customFrom()"
-          (input)="customFrom.set($any($event.target).value)"
-          aria-label="Fecha inicial"
-        />
-        <input
-          type="date"
-          class="date-range__input"
-          [value]="customTo()"
-          (input)="customTo.set($any($event.target).value)"
-          aria-label="Fecha final"
-        />
-        <button type="button" class="date-range__apply" (click)="applyCustom()">Aplicar</button>
       </div>
     </div>
   }
