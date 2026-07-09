@@ -1,7 +1,7 @@
 <yep-modal
   [open]="open()"
   [title]="title()"
-  [subtitle]="detail()?.normalized?.reference || detail()?.externalId || ''"
+  [subtitle]="detail()?.normalized?.reference || ''"
   size="lg"
   [loading]="loading()"
   (closeRequested)="close.emit()"
@@ -44,10 +44,6 @@
         <div>
           <dt>Referencia</dt>
           <dd>{{ event.normalized?.reference || 'Sin referencia' }}</dd>
-        </div>
-        <div>
-          <dt>ID externo</dt>
-          <dd>{{ event.externalId || 'No reportado' }}</dd>
         </div>
       </dl>
     </section>
