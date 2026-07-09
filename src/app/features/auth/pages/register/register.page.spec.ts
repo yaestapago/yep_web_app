@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 
 import { environment } from '../../../../../environments/environment';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { RegisterPage } from './register.page';
 
 function activatedRouteStub(queryParams: Record<string, string>) {
@@ -13,6 +14,7 @@ function activatedRouteStub(queryParams: Record<string, string>) {
 describe('RegisterPage', () => {
   let httpMock: HttpTestingController;
   let router: Router;
+  let notifications: NotificationModalService;
 
   async function configure(queryParams: Record<string, string> = {}) {
     localStorage.clear();
@@ -29,6 +31,7 @@ describe('RegisterPage', () => {
 
     httpMock = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
+    notifications = TestBed.inject(NotificationModalService);
     vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
   }
@@ -69,6 +72,7 @@ describe('RegisterPage', () => {
     expect(codeRequest.request.body).toEqual({
       email: 'pedro@example.com',
       identificationNumber: '123456789',
+      cellphoneNumber: '+573001234567',
     });
     codeRequest.flush({
       message: 'Te enviamos un codigo de verificacion al correo registrado.',
@@ -108,6 +112,151 @@ describe('RegisterPage', () => {
     vi.advanceTimersByTime(450);
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/onboarding');
+    fixture.destroy();
+  });
+
+  it('marks cellphone number as duplicated when the registration code request is rejected', () => {
+    const fixture = TestBed.createComponent(RegisterPage);
+    const component = fixture.componentInstance;
+
+    component.form.setValue({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: {
+        countryCode: '57',
+        nationalNumber: '3001234567',
+        e164: '+573001234567',
+      },
+      password: 'secret123',
+      confirmPassword: 'secret123',
+      acceptTerms: true,
+    });
+
+    component.submit();
+
+    const codeRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`);
+    codeRequest.flush(
+      { message: 'Ya existe un usuario con este teléfono' },
+      { status: 409, statusText: 'Conflict' },
+    );
+
+    expect(component.form.controls.cellphoneNumber.hasError('serverDuplicate')).toBe(true);
+    expect(component.cellphoneNumberError()).toBe('Ya existe una cuenta con este celular.');
+    fixture.destroy();
+  });
+
+  it('shows a modal and stays on register when email already exists and the user cancels', async () => {
+    const fixture = TestBed.createComponent(RegisterPage);
+    const component = fixture.componentInstance;
+
+    component.form.setValue({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: {
+        countryCode: '57',
+        nationalNumber: '3001234567',
+        e164: '+573001234567',
+      },
+      password: 'secret123',
+      confirmPassword: 'secret123',
+      acceptTerms: true,
+    });
+
+    component.submit();
+
+    const codeRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`);
+    codeRequest.flush(
+      { message: 'Ya existe un usuario con este email' },
+      { status: 409, statusText: 'Conflict' },
+    );
+
+    expect(component.error()).toBe('');
+    expect(component.success()).toBe('');
+    expect(component.form.controls.email.hasError('serverDuplicate')).toBe(true);
+    expect(notifications.state()?.title).toBe('Ya tienes una cuenta');
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    notifications.resolve(false);
+    await Promise.resolve();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+    fixture.destroy();
+  });
+
+  it('shows a modal and navigates to login after confirmation when email already exists', async () => {
+    const fixture = TestBed.createComponent(RegisterPage);
+    const component = fixture.componentInstance;
+
+    component.form.setValue({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: {
+        countryCode: '57',
+        nationalNumber: '3001234567',
+        e164: '+573001234567',
+      },
+      password: 'secret123',
+      confirmPassword: 'secret123',
+      acceptTerms: true,
+    });
+
+    component.submit();
+
+    const codeRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`);
+    codeRequest.flush(
+      { message: 'Ya existe un usuario con este email' },
+      { status: 409, statusText: 'Conflict' },
+    );
+
+    expect(notifications.state()?.title).toBe('Ya tienes una cuenta');
+
+    notifications.resolve(true);
+    await Promise.resolve();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], { queryParams: {} });
+    fixture.destroy();
+  });
+
+  it('marks email as blocked and shows a clear modal for temporary email domains', () => {
+    const fixture = TestBed.createComponent(RegisterPage);
+    const component = fixture.componentInstance;
+
+    component.form.setValue({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@yopmail.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: {
+        countryCode: '57',
+        nationalNumber: '3001234567',
+        e164: '+573001234567',
+      },
+      password: 'secret123',
+      confirmPassword: 'secret123',
+      acceptTerms: true,
+    });
+
+    component.submit();
+
+    const codeRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`);
+    codeRequest.flush(
+      {
+        message:
+          'No aceptamos correos temporales. Usa un correo personal o corporativo válido para crear tu cuenta.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+
+    expect(component.form.controls.email.hasError('serverBlockedEmailDomain')).toBe(true);
+    expect(component.emailError()).toBe('Usa un correo personal o corporativo válido.');
+    expect(notifications.state()?.title).toBe('Correo no permitido');
+    expect(router.navigate).not.toHaveBeenCalled();
     fixture.destroy();
   });
 });
@@ -168,7 +317,13 @@ describe('RegisterPage — invitación a un negocio (código/link/QR)', () => {
     });
     component.submit();
 
-    httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`).flush({
+    const codeRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register/request-code`);
+    expect(codeRequest.request.body).toEqual({
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: '+573001234567',
+    });
+    codeRequest.flush({
       message: 'Te enviamos un codigo de verificacion al correo registrado.',
       resendInSeconds: 60,
     });

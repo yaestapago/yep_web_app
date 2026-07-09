@@ -21,6 +21,14 @@
   width: min(100%, 680px);
 }
 
+.register-page.auth-page {
+  align-items: flex-start;
+  box-sizing: border-box;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .auth-logo {
   align-items: center;
   display: flex;

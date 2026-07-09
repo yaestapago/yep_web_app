@@ -61,9 +61,7 @@
             type="text"
             autocomplete="off"
             formControlName="identificationNumber"
-            [error]="
-              isInvalid('identificationNumber') ? 'Ingresa tu número de identificación.' : ''
-            "
+            [error]="isInvalid('identificationNumber') ? identificationNumberError() : ''"
           />
 
           <yep-input
@@ -71,7 +69,7 @@
             type="email"
             autocomplete="username"
             formControlName="email"
-            [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
+            [error]="isInvalid('email') ? emailError() : ''"
           />
 
           <yep-input
@@ -96,7 +94,7 @@
             placeholder="300 123 4567"
             formControlName="cellphoneNumber"
             [required]="true"
-            [error]="isInvalid('cellphoneNumber') ? 'Ingresa tu celular.' : ''"
+            [error]="isInvalid('cellphoneNumber') ? cellphoneNumberError() : ''"
           ></yep-phone-input>
         </div>
 
