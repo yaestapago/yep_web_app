@@ -1,7 +1,21 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, effect, inject, input as defineInput, signal } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  computed,
+  effect,
+  inject,
+  input as defineInput,
+  signal,
+} from '@angular/core';
 import type { ChartData, ChartOptions, ChartType } from 'chart.js';
-import { LucideChartPie, LucideMaximize2, LucideSettings2 } from '@lucide/angular';
+import {
+  LucideChartPie,
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucideMaximize2,
+  LucideSettings2,
+} from '@lucide/angular';
 
 import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
@@ -74,7 +88,17 @@ const SOURCE_LABELS: Record<string, string> = {
  */
 @Component({
   selector: 'app-dashboard-charts',
-  imports: [Button, ChartCanvas, Checkbox, Modal, LucideChartPie, LucideMaximize2, LucideSettings2],
+  imports: [
+    Button,
+    ChartCanvas,
+    Checkbox,
+    Modal,
+    LucideChartPie,
+    LucideChevronLeft,
+    LucideChevronRight,
+    LucideMaximize2,
+    LucideSettings2,
+  ],
   templateUrl: './dashboard-charts.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-charts.scss'],
 })
@@ -123,6 +147,7 @@ export class DashboardChartsPanel {
     const id = this.expandedId();
     return id ? (this.views().find((view) => view.id === id) ?? null) : null;
   });
+  readonly canNavigateExpanded = computed(() => this.views().length > 1);
 
   chartTitle(id: string): string {
     return CATALOG.find((item) => item.id === id)?.title ?? id;
@@ -134,6 +159,33 @@ export class DashboardChartsPanel {
 
   closeExpanded(): void {
     this.expandedId.set(null);
+  }
+
+  navigateExpanded(direction: -1 | 1): void {
+    const views = this.views();
+    const current = this.expandedId();
+    if (!current || views.length < 2) {
+      return;
+    }
+
+    const index = views.findIndex((view) => view.id === current);
+    const safeIndex = index >= 0 ? index : 0;
+    const nextIndex = (safeIndex + direction + views.length) % views.length;
+    this.expandedId.set(views[nextIndex].id);
+  }
+
+  @HostListener('document:keydown.arrowleft')
+  previousExpandedFromKeyboard(): void {
+    if (this.expandedView()) {
+      this.navigateExpanded(-1);
+    }
+  }
+
+  @HostListener('document:keydown.arrowright')
+  nextExpandedFromKeyboard(): void {
+    if (this.expandedView()) {
+      this.navigateExpanded(1);
+    }
   }
 
   // --- Configuración --------------------------------------------------------
