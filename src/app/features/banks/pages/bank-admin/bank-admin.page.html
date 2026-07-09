@@ -7,15 +7,26 @@
       </a>
       <h1 class="bank-admin__title">Reglas de notificadores (superadmin)</h1>
       <p class="bank-admin__subtitle">
-        Catálogo global de bancos. Define qué apps y textos escucha cada
-        notificador de la flota. Los cambios se aplican en el próximo latido de
-        cada dispositivo, sin re-emparejar.
+        Catálogo global de bancos. Controla qué escucha cada notificador (móvil,
+        correo, escritorio) y guarda ejemplos de lo que sabemos que sí se reconoce.
+        Los cambios aplican en el próximo latido, sin re-emparejar.
       </p>
     </div>
-    <yep-button size="sm" (clicked)="openCreate()">
-      <svg lucidePlus aria-hidden="true"></svg>
-      Nuevo banco
-    </yep-button>
+    <div class="bank-admin__headeractions">
+      <yep-button
+        variant="ghost"
+        size="sm"
+        [loading]="migrating()"
+        title="Carga una sola vez las reglas conocidas a la BD (bancos existentes sin reglas)"
+        (clicked)="migrateDefaultRules()"
+      >
+        Migrar reglas por defecto
+      </yep-button>
+      <yep-button size="sm" (clicked)="openCreate()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nuevo banco
+      </yep-button>
+    </div>
   </header>
 
   @if (error()) {
@@ -99,7 +110,7 @@
         formControlName="code"
         label="Código"
         placeholder="bancolombia"
-        [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios. Coincide con el bankId de las cuentas.'"
+        [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios.'"
         [error]="isInvalid('code') ? 'Código inválido (minúsculas, dígitos, - o _).' : ''"
       />
       <yep-input
@@ -115,125 +126,247 @@
         appearance="switch"
         [pressed]="form.controls.isActive.value"
         ariaLabel="Banco activo"
-        (toggled)="setToggle('isActive', $event)"
+        (toggled)="setActive($event)"
       />
       <span>Banco activo (visible y escuchado por la flota)</span>
     </label>
 
-    <!-- Canal Teléfono -->
-    <fieldset class="bank-form__channel">
-      <legend>
+    <!-- Tabs de canal -->
+    <div class="bank-form__tabs">
+      @for (ch of channels; track ch.key) {
+        <button
+          type="button"
+          [class.is-active]="activeChannel() === ch.key"
+          (click)="activeChannel.set(ch.key)"
+        >
+          {{ ch.label }}
+          @if (channelEnabled(ch.key)) {
+            <span class="bank-form__tabdot" aria-label="activo"></span>
+          }
+        </button>
+      }
+    </div>
+
+    <!-- Campos del canal activo -->
+    <fieldset class="bank-form__channel" [formGroup]="channelCtrl(activeChannel())">
+      <label class="bank-form__switch">
         <yep-toggle
           appearance="switch"
-          [pressed]="form.controls.phoneEnabled.value"
-          ariaLabel="Canal teléfono habilitado"
-          (toggled)="setToggle('phoneEnabled', $event)"
+          [pressed]="channelEnabled(activeChannel())"
+          ariaLabel="Canal habilitado"
+          (toggled)="setChannelEnabled(activeChannel(), $event)"
         />
-        Teléfono
-      </legend>
-      <label class="bank-form__field">
-        <span>Paquetes de apps (uno por línea)</span>
-        <textarea formControlName="phonePackageNames" rows="2" placeholder="com.nequi.mobileapp"></textarea>
+        <span>Canal habilitado</span>
       </label>
+
+      @if (activeChannel() !== 'email') {
+        <label class="bank-form__field">
+          <span>Paquetes de apps (uno por línea)</span>
+          <textarea formControlName="packageNames" rows="2" placeholder="com.nequi.mobileapp"></textarea>
+          <small class="bank-form__hint">
+            Nombre EXACTO del paquete Android de la app que emite la notificación
+            (ej. <code>com.nequi.mobileapp</code>). Es lo que el celular escucha. Si
+            no hay patrones de contenido/remitente, el banco se atribuye con solo
+            que la notificación venga de una de estas apps.
+          </small>
+        </label>
+      }
+
       <label class="bank-form__field">
-        <span>Patrones de contenido (uno por línea; vacío = sin filtro)</span>
-        <textarea formControlName="phoneContentPatterns" rows="2" placeholder="te enviaron"></textarea>
+        <span>Patrones de contenido (uno por línea; vacío = sin filtro por contenido)</span>
+        <textarea formControlName="contentPatterns" rows="2" placeholder="te enviaron"></textarea>
+        <small class="bank-form__hint">
+          Texto que debe aparecer en el CUERPO del mensaje para atribuirlo a este
+          banco (ej. <code>bancolombia</code>, <code>te envió</code>). Útil cuando
+          varios bancos comparten la app de SMS. Vacío = no filtra por contenido.
+        </small>
       </label>
+
       <label class="bank-form__field">
-        <span>Remitente/ID en el título del SMS (uno por línea)</span>
-        <textarea formControlName="phoneTitlePatterns" rows="2" placeholder="bancolombia&#10;891900"></textarea>
-        <small class="bank-form__hint">El número o nombre corto que aparece como remitente del SMS (llega en el título de la notificación).</small>
+        <span>
+          @if (activeChannel() === 'email') {
+            Remitentes esperados del banco (uno por línea)
+          } @else {
+            Remitentes / números del SMS — en el título (uno por línea)
+          }
+        </span>
+        <textarea
+          formControlName="senderPatterns"
+          rows="2"
+          [placeholder]="activeChannel() === 'email' ? 'notificacionesbancolombia.com' : 'bancolombia&#10;87400'"
+        ></textarea>
+        @if (activeChannel() === 'email') {
+          <small class="bank-form__hint">
+            Remitente (o dominio) del correo del banco, ej.
+            <code>alertasynotificaciones&#64;bancolombia.com.co</code> o
+            <code>bancolombia.com.co</code>. El correo se atribuye si el remitente,
+            asunto o cuerpo contiene alguno de estos (o de los patrones de contenido).
+          </small>
+        } @else {
+          <small class="bank-form__hint">
+            Remitente del SMS/notificación, que llega en el <strong>título</strong>:
+            el número corto (ej. <code>87400</code>) o el nombre (ej.
+            <code>bancolombia</code>). Filtrado estricto: si pones alguno, SOLO se
+            atribuyen mensajes cuyo título lo contenga. Vacío = no filtra por
+            remitente (se atribuye por app/contenido).
+          </small>
+        }
       </label>
-      <label class="bank-form__field">
-        <span>Nombres visibles para escritorio (uno por línea)</span>
-        <textarea formControlName="phoneDisplayNames" rows="2" placeholder="nequi colombia"></textarea>
-      </label>
+
+      @if (activeChannel() !== 'email') {
+        <label class="bank-form__field">
+          <span>Nombres visibles para escritorio (uno por línea)</span>
+          <textarea formControlName="displayNames" rows="2" placeholder="nequi colombia"></textarea>
+          <small class="bank-form__hint">
+            Solo escritorio (Vínculo a Windows): nombre de la app tal como aparece en
+            la notificación reflejada (ej. <code>nequi colombia</code>), porque ahí no
+            llega el paquete Android. Sirve como señal de atribución cuando no hay
+            contenido/remitente.
+          </small>
+        </label>
+      }
 
       <details class="bank-form__advanced">
         <summary>Extracción (parser) — avanzado</summary>
         <p class="bank-form__hint">
-          Reglas de extracción en JSON (monto, remitente, dirección, tipo…). Vacío
-          = usa el parser por defecto del banco. Usa el <strong>probador</strong>
-          de abajo para verificar qué extrae.
+          Reglas de extracción en JSON (monto, remitente, dirección…). Vacío = este
+          canal NO extrae nada; genéralas con "Regenerar parser con IA" a partir de
+          los ejemplos. La base de datos es la única fuente de verdad (sin fallback).
         </p>
-        <yep-button
-          variant="secondary"
-          size="sm"
-          type="button"
-          [loading]="loadingDefaults()"
-          (clicked)="loadDefaults('phone')"
-        >
-          Cargar reglas por defecto
-        </yep-button>
+        <div class="bank-form__ruleactions">
+          @if (editingCode()) {
+            <yep-button
+              variant="secondary"
+              size="sm"
+              type="button"
+              [loading]="suggestingRules() && proposalChannel() === activeChannel()"
+              (clicked)="suggestRules(activeChannel())"
+            >
+              Regenerar parser con IA
+            </yep-button>
+            <button
+              type="button"
+              class="bank-form__prompt-btn"
+              [class.is-active]="promptEditorOpen()"
+              title="Editar el prompt que usa la IA para generar el parser (global)"
+              (click)="togglePromptEditor()"
+            >
+              ⚙ Prompt
+            </button>
+          }
+        </div>
+
+        <!-- Editor del prompt del copiloto (global, en caliente) -->
+        @if (promptEditorOpen()) {
+          <div class="bank-copilot">
+            <div class="bank-copilot__head">
+              <strong>Prompt del copiloto (global)</strong>
+              <span class="bank-form__hint">
+                {{ promptIsDefault() ? 'Usando el prompt por defecto' : 'Personalizado' }}
+              </span>
+            </div>
+            <p class="bank-form__hint">
+              Instrucciones de sistema para generar las <code>parseRules</code>. Marcadores
+              que se rellenan solos: <code>{{ '{{channel}}' }}</code> (canal) y
+              <code>{{ '{{fewShot}}' }}</code> (reglas de ejemplo). Los ejemplos del
+              banco se añaden aparte automáticamente. Aplica a TODOS los bancos.
+            </p>
+            @if (promptLoading()) {
+              <p class="bank-form__hint">Cargando…</p>
+            } @else {
+              <textarea
+                class="bank-form__code"
+                rows="10"
+                spellcheck="false"
+                [value]="promptText()"
+                (input)="promptText.set($any($event.target).value)"
+              ></textarea>
+              <div class="bank-form__ruleactions">
+                <yep-button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  [loading]="promptSaving()"
+                  (clicked)="savePrompt()"
+                >
+                  Guardar prompt
+                </yep-button>
+                <yep-button variant="ghost" size="sm" type="button" (clicked)="resetPromptToDefault()">
+                  Restaurar por defecto
+                </yep-button>
+                <yep-button variant="ghost" size="sm" type="button" (clicked)="togglePromptEditor()">
+                  Cerrar
+                </yep-button>
+              </div>
+            }
+          </div>
+        }
+
         <textarea
           class="bank-form__code"
-          formControlName="phoneParseRules"
+          formControlName="parseRules"
           rows="8"
           spellcheck="false"
-          placeholder='{ "currency": "COP", "amount": [{ "pattern": "\$\\s*([\\d.,]+)" }] }'
         ></textarea>
-        @if (parseRulesInvalid('phone')) {
+        @if (parseRulesInvalid(activeChannel())) {
           <small class="bank-form__error">JSON inválido.</small>
+        }
+
+        @if (suggestError()) {
+          <small class="bank-form__error">{{ suggestError() }}</small>
+        }
+
+        <!-- Propuesta del copiloto (solo del canal activo) -->
+        @if (proposal(); as p) {
+          @if (proposalChannel() === activeChannel()) {
+            <div class="bank-copilot" [class.bank-copilot--ok]="p.allPass">
+              <div class="bank-copilot__head">
+                <strong>
+                  {{ p.allPass ? '✅ Propuesta: todos los ejemplos pasan' : '⚠️ Propuesta: algunos ejemplos fallan' }}
+                </strong>
+                <span class="bank-form__hint">
+                  {{ p.iterations }} iteración(es) · ~${{ p.costUsd }} USD
+                </span>
+              </div>
+              <ul class="bank-copilot__results">
+                @for (r of p.results; track r.example.id) {
+                  <li>
+                    <span>{{ r.ok ? '✅' : '❌' }}</span>
+                    <span class="bank-tester__recent-snippet">
+                      {{ r.example.snippet }}{{ r.expectMatch === false ? ' 🚫' : '' }}
+                    </span>
+                    @if (r.expectMatch === false) {
+                      <span class="bank-copilot__expected">negativo: no debe parsear</span>
+                    } @else if (r.expected) {
+                      <span class="bank-copilot__expected">esperado: {{ expectedSummary(r.expected) }}</span>
+                    }
+                    <span class="bank-copilot__got">
+                      obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
+                      {{ r.parsed.senderName ? ' · ' + r.parsed.senderName : '' }}
+                      · {{ r.parsed.confidence }}
+                    </span>
+                  </li>
+                }
+              </ul>
+              <details class="bank-copilot__json">
+                <summary>Ver reglas propuestas (JSON)</summary>
+                <pre>{{ p.proposedRules | json }}</pre>
+              </details>
+              <div class="bank-form__ruleactions">
+                <yep-button variant="ghost" size="sm" type="button" (clicked)="dismissProposal()">
+                  Descartar
+                </yep-button>
+                <yep-button variant="primary" size="sm" type="button" (clicked)="acceptProposal()">
+                  Aceptar y cargar al editor
+                </yep-button>
+              </div>
+            </div>
+          }
         }
       </details>
     </fieldset>
 
-    <!-- Canal Correo -->
-    <fieldset class="bank-form__channel">
-      <legend>
-        <yep-toggle
-          appearance="switch"
-          [pressed]="form.controls.emailEnabled.value"
-          ariaLabel="Canal correo habilitado"
-          (toggled)="setToggle('emailEnabled', $event)"
-        />
-        Correo
-      </legend>
-      <label class="bank-form__field">
-        <span>Paquetes / remitentes (uno por línea)</span>
-        <textarea formControlName="emailPackageNames" rows="2"></textarea>
-      </label>
-      <label class="bank-form__field">
-        <span>Patrones de contenido (uno por línea)</span>
-        <textarea formControlName="emailContentPatterns" rows="2"></textarea>
-      </label>
-      <label class="bank-form__field">
-        <span>Remitentes del banco a atribuir (uno por línea)</span>
-        <textarea formControlName="emailSenderPatterns" rows="2" placeholder="notificacionesbancolombia.com"></textarea>
-        <small class="bank-form__hint">Tokens/direcciones del remitente oficial del banco que aparecen en el correo reenviado.</small>
-      </label>
-      <label class="bank-form__field">
-        <span>Nombres visibles (uno por línea)</span>
-        <textarea formControlName="emailDisplayNames" rows="2"></textarea>
-      </label>
-
-      <details class="bank-form__advanced">
-        <summary>Extracción (parser) — avanzado</summary>
-        <p class="bank-form__hint">
-          Reglas de extracción en JSON. Vacío = usa el parser por defecto del banco.
-        </p>
-        <yep-button
-          variant="secondary"
-          size="sm"
-          type="button"
-          [loading]="loadingDefaults()"
-          (clicked)="loadDefaults('email')"
-        >
-          Cargar reglas por defecto
-        </yep-button>
-        <textarea
-          class="bank-form__code"
-          formControlName="emailParseRules"
-          rows="8"
-          spellcheck="false"
-        ></textarea>
-        @if (parseRulesInvalid('email')) {
-          <small class="bank-form__error">JSON inválido.</small>
-        }
-      </details>
-    </fieldset>
-
-    <!-- Panel de claridad: traduce las reglas a lenguaje natural, en vivo -->
+    <!-- Panel de claridad -->
     <yep-alert variant="info" title="Qué hará este banco">
       <ul class="bank-form__clarity">
         @for (line of clarity(); track line.channel) {
@@ -242,33 +375,74 @@
       </ul>
     </yep-alert>
 
-    <!-- Probador: pega un mensaje real y ve qué extraería la config actual -->
-    <details class="bank-form__advanced">
-      <summary>Probar con un mensaje real</summary>
+    <!-- Probador -->
+    <details
+      class="bank-form__advanced"
+      [open]="testerOpen()"
+      (toggle)="testerOpen.set($any($event.target).open)"
+    >
+      <summary>{{ editingExampleId() ? 'Editando ejemplo' : 'Probar con un mensaje' }}</summary>
       <div class="bank-tester">
+        @if (editingExampleId()) {
+          <yep-alert variant="info">
+            Editando un ejemplo guardado del canal <strong>{{ testChannel() }}</strong>
+            (el canal no se puede cambiar). Ajusta y usa "Guardar cambios del ejemplo".
+          </yep-alert>
+        }
         <div class="bank-tester__channel">
-          <button
-            type="button"
-            [class.is-active]="testChannel() === 'phone'"
-            (click)="setTestChannel('phone')"
-          >
-            Teléfono
-          </button>
-          <button
-            type="button"
-            [class.is-active]="testChannel() === 'email'"
-            (click)="setTestChannel('email')"
-          >
-            Correo
-          </button>
+          @for (ch of channels; track ch.key) {
+            <button
+              type="button"
+              [class.is-active]="testChannel() === ch.key"
+              [disabled]="editingExampleId() !== null"
+              (click)="setTestChannel(ch.key)"
+            >
+              {{ ch.label }}
+            </button>
+          }
         </div>
+
+        @if (editingCode()) {
+          <div class="bank-tester__recentbar">
+            <yep-button
+              variant="ghost"
+              size="sm"
+              type="button"
+              [loading]="loadingRecent()"
+              (clicked)="loadRecentEvents()"
+            >
+              Cargar evento reciente
+            </yep-button>
+          </div>
+          @if (recentEvents().length) {
+            <ul class="bank-tester__recent">
+              @for (ev of recentEvents(); track ev.id) {
+                <li (click)="pickRecent(ev)">
+                  <span class="bank-tester__recent-date">{{ ev.occurredAt | date: 'short' }}</span>
+                  <span class="bank-tester__recent-snippet">{{ ev.snippet || '(sin texto)' }}</span>
+                </li>
+              }
+            </ul>
+          }
+        }
+
+        @if (testChannel() === 'email') {
+          <label class="bank-form__field">
+            <span>Remitente (from)</span>
+            <input
+              type="text"
+              [value]="testFrom()"
+              (input)="onTestFrom($any($event.target).value)"
+              placeholder="alertasynotificaciones@bancolombia.com.co"
+            />
+          </label>
+        }
         <label class="bank-form__field">
-          <span>{{ testChannel() === 'email' ? 'Asunto' : 'Título' }}</span>
+          <span>{{ testChannel() === 'email' ? 'Asunto' : 'Título (remitente del SMS)' }}</span>
           <input
             type="text"
             [value]="testTitle()"
             (input)="onTestTitle($any($event.target).value)"
-            placeholder="Bancolombia"
           />
         </label>
         <label class="bank-form__field">
@@ -298,14 +472,188 @@
               <dt>Dirección</dt><dd>{{ r.parsed.direction ?? '—' }}</dd>
               <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
               <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
-              <dt>Cuenta origen</dt><dd>{{ r.parsed.senderAccount ?? '—' }}</dd>
               <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
               <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
             </dl>
+            @if (editingCode()) {
+              <div class="bank-tester__expected">
+                <label class="bank-form__switch">
+                  <yep-toggle
+                    appearance="switch"
+                    [pressed]="!testExpectMatch()"
+                    ariaLabel="Ejemplo negativo"
+                    (toggled)="testExpectMatch.set(!$event)"
+                  />
+                  <span>Este mensaje NO debería parsearse (ejemplo negativo 🚫)</span>
+                </label>
+                <div class="bank-form__ruleactions">
+                  @if (testExpectMatch()) {
+                    <yep-button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      [loading]="suggestingExpected()"
+                      (clicked)="suggestExpected()"
+                    >
+                      Sugerir esperado con IA
+                    </yep-button>
+                  }
+                  <yep-button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    (clicked)="saveExampleFromTester()"
+                  >
+                    @if (editingExampleId()) {
+                      Guardar cambios del ejemplo
+                    } @else {
+                      {{ testExpectMatch() ? 'Guardar como ejemplo' : 'Guardar como negativo' }}
+                    }
+                  </yep-button>
+                  @if (editingExampleId()) {
+                    <yep-button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      (clicked)="cancelEditExample()"
+                    >
+                      Cancelar edición
+                    </yep-button>
+                  }
+                </div>
+                @if (testExpectMatch()) {
+                  @if (testExpected(); as exp) {
+                    <p class="bank-form__hint">
+                      Esperado (ground truth): <strong>{{ expectedSummary(exp) || '(vacío)' }}</strong>.
+                      Se guardará con el ejemplo para verificar el parser.
+                    </p>
+                  }
+                } @else {
+                  <p class="bank-form__hint">
+                    Negativo: pasará (✅) solo si el parser NO lo atribuye ni extrae. Sirve
+                    para acotar los patrones y que la IA evite falsos positivos.
+                  </p>
+                }
+              </div>
+            }
           </div>
         }
       </div>
     </details>
+
+    <!-- Biblioteca de ejemplos (solo al editar) -->
+    @if (editingCode()) {
+      <details class="bank-form__advanced" open>
+        <summary>Ejemplos guardados ({{ exampleResults().length }})</summary>
+        <p class="bank-form__hint">
+          Mensajes que sabemos que sí se escuchan/parsean (positivos) o que NO deberían
+          parsearse (negativos 🚫). Se corren contra la config guardada — ✅ si cumple
+          lo esperado, ❌ si no (con diagnóstico). Usa ✎ para editar un ejemplo.
+        </p>
+
+        <div class="bank-form__ruleactions">
+          <yep-button
+            variant="secondary"
+            size="sm"
+            type="button"
+            [loading]="testingEditor()"
+            (clicked)="testExamplesAgainstEditor()"
+          >
+            Probar con las reglas del editor ({{ activeChannel() }})
+          </yep-button>
+          @if (editorTestResults()) {
+            <yep-button variant="ghost" size="sm" type="button" (clicked)="clearEditorTest()">
+              Volver a la config guardada
+            </yep-button>
+          }
+        </div>
+
+        @if (editorTestResults(); as results) {
+          <div class="bank-copilot" [class.bank-copilot--ok]="results.length && !hasFailures(results)">
+            <div class="bank-copilot__head">
+              <strong>
+                Prueba contra el editor — canal {{ editorTestChannel() }} (sin guardar)
+              </strong>
+              <span class="bank-form__hint">
+                {{ results.length }} ejemplo(s); si algo falla, ajusta y vuelve a probar.
+              </span>
+            </div>
+            @if (results.length === 0) {
+              <p class="bank-form__hint">No hay ejemplos de este canal para probar.</p>
+            } @else {
+              <ul class="bank-copilot__results">
+                @for (r of results; track r.example.id) {
+                  <li>
+                    <span>{{ r.ok ? '✅' : '❌' }}</span>
+                    <span class="bank-tester__recent-snippet">
+                      {{ r.example.snippet }}{{ r.expectMatch === false ? ' 🚫' : '' }}
+                    </span>
+                    <span class="bank-copilot__got">
+                      obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
+                      {{ r.parsed.senderName ? ' · ' + r.parsed.senderName : '' }}
+                      · {{ r.parsed.confidence }}
+                    </span>
+                    @if (r.diagnosis?.fix; as fix) {
+                      <yep-button variant="secondary" size="sm" type="button" (clicked)="applyFix(fix)">
+                        Agregar «{{ fix.value }}»
+                      </yep-button>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        @if (runningExamples()) {
+          <p class="bank-form__hint">Verificando…</p>
+        } @else if (exampleResults().length === 0) {
+          <p class="bank-form__hint">Aún no hay ejemplos. Usa el probador y "Guardar como ejemplo".</p>
+        } @else {
+          <ul class="bank-tester__recent">
+            @for (r of exampleResults(); track r.example.id) {
+              <li class="bank-example" [class.bank-example--fail]="!r.ok">
+                <div class="bank-example__row">
+                  <span>{{ r.ok ? '✅' : '❌' }}</span>
+                  <span class="bank-tester__recent-date">
+                    {{ r.example.channel }}{{ r.expectMatch === false ? ' 🚫' : '' }}
+                  </span>
+                  <span class="bank-tester__recent-snippet">
+                    {{ r.example.label || r.example.snippet }}
+                    @if (r.parsed.amount) { · ${{ r.parsed.amount }} }
+                    @if (r.expected) {
+                      <em class="bank-copilot__expected">esperado: {{ expectedSummary(r.expected) }}</em>
+                    }
+                  </span>
+                  <button
+                    type="button"
+                    class="bank-tester__remove"
+                    title="Editar ejemplo"
+                    (click)="startEditExample(r.example.id)"
+                  >✎</button>
+                  <button type="button" class="bank-tester__remove" title="Eliminar" (click)="removeExample(r.example.id)">✕</button>
+                </div>
+                @if (r.diagnosis; as d) {
+                  <div class="bank-example__diag">
+                    <span>{{ d.message }}</span>
+                    @if (d.fix; as fix) {
+                      <yep-button
+                        variant="secondary"
+                        size="sm"
+                        type="button"
+                        (clicked)="applyFix(fix)"
+                      >
+                        Agregar «{{ fix.value }}»
+                      </yep-button>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </details>
+    }
   </form>
 
   <ng-container modalFooter>
