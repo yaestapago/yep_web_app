@@ -3,10 +3,15 @@
   margin-left: auto;
 }
 
+/* Icono-solo: píldora cuadrada y ajustada (sin texto, sin gap sobrante). */
 .tts-toggle ::ng-deep .yep-toggle--button {
-  font-size: var(--font-size-xs);
-  gap: var(--space-1);
-  padding: 2px var(--space-2);
+  gap: 0;
+  padding: var(--space-1);
+}
+
+/* La etiqueta vacía del toggle no debe ocupar espacio en modo icono-solo. */
+.tts-toggle ::ng-deep .yep-toggle__label:empty {
+  display: none;
 }
 
 .tts-toggle__icon {
@@ -14,8 +19,8 @@
 }
 
 .tts-toggle__icon svg {
-  height: 14px;
-  width: 14px;
+  height: 18px;
+  width: 18px;
 }
 
 .search {

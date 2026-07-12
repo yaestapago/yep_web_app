@@ -5,8 +5,8 @@
     <yep-toggle
       class="tts-toggle"
       appearance="button"
-      [label]="tts.enabled() ? 'Voz activada' : 'Voz'"
-      ariaLabel="Leer los eventos de ingreso en voz alta"
+      [ariaLabel]="tts.enabled() ? 'Desactivar lectura en voz alta' : 'Activar lectura en voz alta'"
+      [title]="tts.enabled() ? 'Desactivar lectura en voz alta' : 'Activar lectura en voz alta'"
       [pressed]="tts.enabled()"
       (toggled)="onToggleVoice($event)"
     >
