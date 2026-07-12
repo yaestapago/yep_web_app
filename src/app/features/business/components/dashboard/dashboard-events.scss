@@ -1,6 +1,21 @@
-/* Empuja el toggle de voz al extremo derecho de la cabecera, junto al contador. */
+/* Toggle de voz: píldora compacta con icono de bocina, al extremo derecho. */
 .tts-toggle {
   margin-left: auto;
+}
+
+.tts-toggle ::ng-deep .yep-toggle--button {
+  font-size: var(--font-size-xs);
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+}
+
+.tts-toggle__icon {
+  display: inline-flex;
+}
+
+.tts-toggle__icon svg {
+  height: 14px;
+  width: 14px;
 }
 
 .search {

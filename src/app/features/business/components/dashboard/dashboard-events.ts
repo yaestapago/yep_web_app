@@ -20,6 +20,8 @@ import {
   LucideSearch,
   LucideSmartphone,
   LucideTriangleAlert,
+  LucideVolume2,
+  LucideVolumeX,
 } from '@lucide/angular';
 import { debounceTime, distinctUntilChanged, skip } from 'rxjs';
 
@@ -102,6 +104,8 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     LucideSearch,
     LucideSmartphone,
     LucideTriangleAlert,
+    LucideVolume2,
+    LucideVolumeX,
     Select,
     Toggle,
     AutoFitRowsDirective,

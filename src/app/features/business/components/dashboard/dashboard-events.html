@@ -4,12 +4,20 @@
     <span class="zone__count">{{ events().length }}{{ hasMore() ? '+' : '' }}</span>
     <yep-toggle
       class="tts-toggle"
-      appearance="switch"
-      label="Voz"
+      appearance="button"
+      [label]="tts.enabled() ? 'Voz activada' : 'Voz'"
       ariaLabel="Leer los eventos de ingreso en voz alta"
       [pressed]="tts.enabled()"
       (toggled)="onToggleVoice($event)"
-    />
+    >
+      <span class="tts-toggle__icon" toggleLead aria-hidden="true">
+        @if (tts.enabled()) {
+          <svg lucideVolume2></svg>
+        } @else {
+          <svg lucideVolumeX></svg>
+        }
+      </span>
+    </yep-toggle>
   </div>
 
   <div class="filters">
