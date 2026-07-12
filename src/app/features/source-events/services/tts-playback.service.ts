@@ -21,9 +21,12 @@ const SILENT_WAV =
  * - `enabled` se persiste por navegador (localStorage), como `ThemeService`.
  * - La reproducción es **secuencial**: los eventos entran en cola y suenan uno
  *   tras otro, sin solaparse; si la cola se llena, se descartan los nuevos.
- * - `setEnabled(true)` debe llamarse desde un gesto del usuario (el click del
- *   toggle) para **desbloquear el autoplay** del navegador; ahí cebamos el
- *   elemento de audio con un WAV silencioso.
+ * - **Desbloqueo de autoplay:** el navegador exige un gesto del usuario antes de
+ *   reproducir audio. `setEnabled(true)` (el click del toggle) ceba el elemento
+ *   con un WAV silencioso. Pero si la voz quedó activada de una sesión previa
+ *   (localStorage), al recargar no hay gesto todavía: en ese caso armamos un
+ *   desbloqueo diferido al primer click/tecla del usuario, y lo re-armamos si un
+ *   `play()` llega a bloquearse. Así nunca queda "encendido pero mudo".
  */
 @Injectable({ providedIn: 'root' })
 export class TtsPlaybackService {
@@ -39,6 +42,10 @@ export class TtsPlaybackService {
 
   private readonly queue: SourceEvent[] = [];
   private playing = false;
+  /** El navegador ya permite reproducir audio (hubo un gesto del usuario). */
+  private unlocked = false;
+  /** Listener de "primer gesto" pendiente (para poder retirarlo). */
+  private gestureUnlock: (() => void) | null = null;
 
   readonly enabled = signal<boolean>(this.readEnabled());
 
@@ -47,6 +54,13 @@ export class TtsPlaybackService {
       const value = this.enabled();
       this.storage()?.setItem(STORAGE_KEY, value ? '1' : '0');
     });
+
+    // Rehidratada como activa desde una sesión anterior: aún no hay gesto en
+    // esta, así que el autoplay estaría bloqueado. Armamos el desbloqueo para el
+    // primer click/tecla del usuario.
+    if (this.enabled()) {
+      this.armAutoplayUnlock();
+    }
   }
 
   /**
@@ -113,8 +127,13 @@ export class TtsPlaybackService {
       audio.addEventListener('error', done);
       audio.src = url;
       // Si el navegador rechaza (autoplay) o `play` no está implementado
-      // (SSR/tests), terminamos este turno y seguimos con el siguiente.
-      this.tryPlay(audio, done);
+      // (SSR/tests), re-armamos el desbloqueo para el próximo gesto, terminamos
+      // este turno y seguimos con el siguiente.
+      this.tryPlay(audio, () => {
+        this.unlocked = false;
+        this.armAutoplayUnlock();
+        done();
+      });
     });
   }
 
@@ -122,9 +141,36 @@ export class TtsPlaybackService {
     if (!this.audio) {
       return;
     }
+    this.unlocked = true;
+    this.removeGestureListeners();
     this.audio.src = SILENT_WAV;
     // Si el navegador lo rechaza igual, el primer evento real reintentará.
     this.tryPlay(this.audio);
+  }
+
+  /**
+   * Difiere el desbloqueo del audio al primer gesto del usuario (click o tecla),
+   * para el caso en que la voz esté activada sin que haya habido un gesto en la
+   * sesión actual (p. ej. tras recargar). Idempotente.
+   */
+  private armAutoplayUnlock(): void {
+    const view = this.document.defaultView;
+    if (!this.audio || !view || this.unlocked || this.gestureUnlock) {
+      return;
+    }
+    const handler = () => this.unlockAutoplay();
+    this.gestureUnlock = handler;
+    view.addEventListener('pointerdown', handler, { once: true, passive: true });
+    view.addEventListener('keydown', handler, { once: true });
+  }
+
+  private removeGestureListeners(): void {
+    const view = this.document.defaultView;
+    if (view && this.gestureUnlock) {
+      view.removeEventListener('pointerdown', this.gestureUnlock);
+      view.removeEventListener('keydown', this.gestureUnlock);
+    }
+    this.gestureUnlock = null;
   }
 
   /** Llama a `play()` sin propagar excepciones síncronas ni promesas rechazadas. */
@@ -141,6 +187,7 @@ export class TtsPlaybackService {
 
   private stopAndClear(): void {
     this.queue.length = 0;
+    this.removeGestureListeners();
     if (this.audio) {
       this.audio.pause();
     }
