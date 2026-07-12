@@ -2,6 +2,14 @@
   <div class="zone__head">
     <h3 class="zone__title"><svg lucideBell aria-hidden="true"></svg> Eventos de ingreso</h3>
     <span class="zone__count">{{ events().length }}{{ hasMore() ? '+' : '' }}</span>
+    <yep-toggle
+      class="tts-toggle"
+      appearance="switch"
+      label="Voz"
+      ariaLabel="Leer los eventos de ingreso en voz alta"
+      [pressed]="tts.enabled()"
+      (toggled)="onToggleVoice($event)"
+    />
   </div>
 
   <div class="filters">
