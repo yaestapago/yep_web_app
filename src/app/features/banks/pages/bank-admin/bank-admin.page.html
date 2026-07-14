@@ -22,10 +22,6 @@
         <svg lucideInfo aria-hidden="true"></svg>
         Estados
       </yep-button>
-      <yep-button size="sm" (clicked)="openCreate()">
-        <svg lucidePlus aria-hidden="true"></svg>
-        Nuevo banco
-      </yep-button>
     </div>
   </header>
 
@@ -36,85 +32,75 @@
     <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
-  @if (loading()) {
-    <div class="bank-admin__loading">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando bancos…
-    </div>
-  } @else if (banks().length === 0) {
-    <div class="bank-admin__empty">
-      <h3>Aún no hay bancos</h3>
-      <p>Crea el primer banco para definir qué escucharán los notificadores.</p>
-    </div>
-  } @else {
-    <div class="bank-admin__list">
-      @for (bank of banks(); track bank.code) {
-        <article class="bank-card" [class.bank-card--inactive]="!bank.isActive">
-          <div class="bank-card__main">
-            <div class="bank-card__titlerow">
-              <h3 class="bank-card__title">{{ bank.name }}</h3>
-              <code class="bank-card__code">{{ bank.code }}</code>
-            </div>
-            <yep-status-dot
-              [level]="bank.isActive ? 'online' : 'offline'"
-              [label]="bank.isActive ? 'Activo' : 'Inactivo'"
-            />
-            <div class="bank-card__badges">
-              @for (badge of channelBadges(bank); track badge) {
-                <span class="bank-card__badge">{{ badge }}</span>
-              }
-              @if (channelBadges(bank).length === 0) {
-                <span class="bank-card__badge bank-card__badge--muted">Sin canales</span>
-              }
-            </div>
-            @let ready = mobileReadiness(bank);
-            <div class="bank-card__readyrow">
-              <span class="bank-card__readylabel">Preparación móvil:</span>
-              <span
-                class="bank-card__ready bank-card__ready--{{ ready.tone }}"
-                title="Qué tan listo está el canal móvil para producción (ver «ℹ️ Estados»)"
-              >
-                {{ ready.label }}
-              </span>
-            </div>
-          </div>
-          <div class="bank-card__actions">
-            <yep-button
-              variant="ghost"
-              size="sm"
-              [title]="'Editar'"
-              [disabled]="actingCode() === bank.code"
-              (clicked)="openEdit(bank)"
-            >
-              <svg lucidePencil aria-label="Editar"></svg>
-            </yep-button>
-            @if (bank.isActive) {
-              <yep-button
-                variant="danger"
-                size="sm"
-                [title]="'Desactivar'"
-                [loading]="actingCode() === bank.code"
-                (clicked)="remove(bank)"
-              >
-                <svg lucideTrash2 aria-label="Desactivar"></svg>
-              </yep-button>
-            }
-          </div>
-        </article>
-      }
-    </div>
-  }
-</div>
+  <div class="bank-admin__layout">
+    <!-- Menú lateral: lista de bancos -->
+    <aside class="bank-admin__sidebar">
+      <yep-button
+        size="sm"
+        class="bank-admin__newbtn"
+        (clicked)="openCreate()"
+      >
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nuevo banco
+      </yep-button>
 
-<yep-modal
-  [open]="modalOpen()"
-  size="lg"
-  [title]="editingCode() ? 'Editar banco' : 'Nuevo banco'"
-  subtitle="Define qué escucha la flota para este banco. Todo se guarda en minúsculas."
-  [loading]="saving()"
-  (closeRequested)="closeModal()"
->
-  <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
+      @if (loading()) {
+        <div class="bank-admin__loading">
+          <svg lucideLoaderCircle aria-hidden="true"></svg>
+          Cargando…
+        </div>
+      } @else if (banks().length === 0) {
+        <p class="bank-admin__sidenote">
+          Aún no hay bancos. Crea el primero con "Nuevo banco".
+        </p>
+      } @else {
+        <ul class="bank-list">
+          @for (bank of banks(); track bank.code) {
+            @let ready = mobileReadiness(bank);
+            <li>
+              <button
+                type="button"
+                class="bank-list__item"
+                [class.is-active]="editingCode() === bank.code && modalOpen()"
+                [class.bank-list__item--inactive]="!bank.isActive"
+                (click)="selectBank(bank)"
+              >
+                <span class="bank-list__toprow">
+                  <span class="bank-list__name">{{ bank.name }}</span>
+                  <yep-status-dot
+                    [level]="bank.isActive ? 'online' : 'offline'"
+                    [label]="bank.isActive ? 'Activo' : 'Inactivo'"
+                  />
+                </span>
+                <span class="bank-list__metarow">
+                  <code class="bank-card__code">{{ bank.code }}</code>
+                  <span
+                    class="bank-card__ready bank-card__ready--{{ ready.tone }}"
+                    [title]="'Preparación móvil (ver «Estados»)'"
+                  >{{ ready.label }}</span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </aside>
+
+    <!-- Panel de edición del banco seleccionado -->
+    <main class="bank-admin__editor">
+      @if (modalOpen()) {
+        <div class="bank-editor">
+          <div class="bank-editor__head">
+            <h2 class="bank-editor__title">
+              {{ editingCode() ? 'Editar banco' : 'Nuevo banco' }}
+            </h2>
+            <p class="bank-form__hint">
+              Define qué escucha la flota para este banco. Todo se guarda en
+              minúsculas. Los cambios aplican en el próximo latido.
+            </p>
+          </div>
+
+          <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
     <div class="bank-form__row">
       <yep-input
         formControlName="code"
@@ -922,17 +908,37 @@
         }
       </details>
     }
-  </form>
+          </form>
 
-  <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeModal()">
-      Cancelar
-    </yep-button>
-    <yep-button type="submit" [loading]="saving()" (clicked)="save()">
-      {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
-    </yep-button>
-  </ng-container>
-</yep-modal>
+          <div class="bank-editor__toolbar">
+            <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeModal()">
+              Cancelar
+            </yep-button>
+            @if (editingCode(); as code) {
+              @if (currentBankActive()) {
+                <yep-button
+                  variant="danger"
+                  [loading]="actingCode() === code"
+                  (clicked)="removeCurrent()"
+                >
+                  Desactivar banco
+                </yep-button>
+              }
+            }
+            <yep-button type="submit" form="bank-form" [loading]="saving()" (clicked)="save()">
+              {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
+            </yep-button>
+          </div>
+        </div>
+      } @else {
+        <div class="bank-admin__editorempty">
+          <h3>Selecciona un banco</h3>
+          <p>Elige un banco del menú de la izquierda para editarlo, o crea uno nuevo.</p>
+        </div>
+      }
+    </main>
+  </div>
+</div>
 
 <!-- Modal de ayuda: estados de preparación móvil -->
 <yep-modal

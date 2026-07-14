@@ -6,6 +6,16 @@ export interface BankPickerEntry {
   email: { enabled: boolean };
   /** Tipos de cuenta que ofrece el banco ([] = sin restricción). */
   supportedAccountTypes: SupportedAccountType[];
+  /**
+   * Tope de cuentas de este banco por notificador, por canal (`undefined` = sin
+   * límite). `1` implica exclusividad: la cuenta no puede estar en otro
+   * notificador del mismo canal.
+   */
+  accountLimits: {
+    mobile?: number;
+    email?: number;
+    desk?: number;
+  };
 }
 
 export interface BanksResponse {

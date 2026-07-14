@@ -5,12 +5,66 @@
 }
 
 .bank-admin {
-  max-width: 960px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: var(--space-6, 2rem) var(--space-4, 1rem);
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 1rem);
+
+  /* Master-detail: menú lateral de bancos + panel de edición. */
+  &__layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: var(--space-4, 1rem);
+    align-items: start;
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    position: sticky;
+    top: var(--space-4, 1rem);
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+
+    @media (max-width: 860px) {
+      position: static;
+      max-height: none;
+    }
+  }
+
+  &__newbtn {
+    align-self: stretch;
+  }
+
+  &__sidenote {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+
+  &__editor {
+    min-width: 0;
+  }
+
+  &__editorempty {
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+    padding: var(--space-8, 3rem) var(--space-4, 1rem);
+    text-align: center;
+    color: var(--color-text-secondary);
+
+    h3 {
+      margin: 0 0 var(--space-1, 0.25rem);
+      color: var(--color-text-primary);
+    }
+  }
 
   &__header {
     display: flex;
@@ -180,6 +234,103 @@
     display: flex;
     gap: var(--space-1, 0.25rem);
     flex-shrink: 0;
+  }
+}
+
+/* Menú lateral de bancos (master-detail). */
+.bank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+
+  &__item {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 0.5rem);
+    cursor: pointer;
+    color: var(--color-text-primary);
+
+    &:hover {
+      border-color: var(--color-accent);
+    }
+
+    &.is-active {
+      border-color: var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    }
+
+    &--inactive {
+      opacity: 0.6;
+    }
+  }
+
+  &__toprow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  &__name {
+    font-weight: var(--font-weight-semibold, 600);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__metarow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    flex-wrap: wrap;
+  }
+}
+
+/* Panel de edición del banco (reemplaza al modal). */
+.bank-editor {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 0.75rem);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--font-size-lg, 1.125rem);
+    font-weight: var(--font-weight-bold, 700);
+  }
+
+  .bank-form {
+    padding: var(--space-4, 1rem);
+  }
+
+  &__toolbar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-bottom-left-radius: var(--radius-lg, 0.75rem);
+    border-bottom-right-radius: var(--radius-lg, 0.75rem);
   }
 }
 

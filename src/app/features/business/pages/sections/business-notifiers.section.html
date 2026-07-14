@@ -246,11 +246,12 @@
       } @else {
         <div class="account-picker">
           @for (account of selectableAccounts(); track account.id) {
+            @let blockedReason = accountBlockedReason(account);
             <yep-checkbox
               class="account-option"
-              [class.account-option--disabled]="!isBankEligible(account)"
+              [class.account-option--disabled]="!!blockedReason && !isSelected(account.id)"
               [checked]="isSelected(account.id)"
-              [disabled]="!isBankEligible(account)"
+              [disabled]="!!blockedReason && !isSelected(account.id)"
               (checkedChange)="toggleAccount(account.id, $event)"
             >
               <span class="account-option__body">
@@ -265,10 +266,8 @@
                   }
                   · {{ account.isActive ? 'Activa' : 'Inactiva' }}
                 </span>
-                @if (!isBankEligible(account)) {
-                  <span class="field-error">
-                    {{ ineligibleReason() }}
-                  </span>
+                @if (blockedReason && !isSelected(account.id)) {
+                  <span class="field-error">{{ blockedReason }}</span>
                 }
               </span>
             </yep-checkbox>

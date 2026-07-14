@@ -347,7 +347,9 @@ export class BankAdminPage {
     };
   }
 
-  openCreate(): void {
+  async openCreate(): Promise<void> {
+    if (this.saving()) return;
+    if (!(await this.confirmDiscardIfDirty())) return;
     this.error.set('');
     this.success.set('');
     this.editingCode.set(null);
@@ -392,18 +394,45 @@ export class BankAdminPage {
     this.runExamples();
   }
 
+  /** Confirma descartar si hay cambios sin guardar. `true` = seguir adelante. */
+  private async confirmDiscardIfDirty(): Promise<boolean> {
+    if (!this.form.dirty) return true;
+    return this.notifications.confirm({
+      title: 'Descartar cambios',
+      message: 'Tienes cambios sin guardar en este banco.',
+      type: 'warning',
+      confirmText: 'Descartar',
+    });
+  }
+
   async closeModal(): Promise<void> {
     if (this.saving()) return;
-    if (this.form.dirty) {
-      const confirmed = await this.notifications.confirm({
-        title: 'Descartar cambios',
-        message: 'Tienes cambios sin guardar en este banco.',
-        type: 'warning',
-        confirmText: 'Descartar',
-      });
-      if (!confirmed) return;
-    }
+    if (!(await this.confirmDiscardIfDirty())) return;
     this.modalOpen.set(false);
+    this.editingCode.set(null);
+  }
+
+  /** Selecciona un banco del menú lateral para editarlo (con guardado seguro). */
+  async selectBank(bank: AdminBank): Promise<void> {
+    if (this.saving()) return;
+    if (this.editingCode() === bank.code && this.modalOpen()) return;
+    if (!(await this.confirmDiscardIfDirty())) return;
+    this.openEdit(bank);
+  }
+
+  /** ¿El banco en edición está activo? (para mostrar "Desactivar"). */
+  currentBankActive(): boolean {
+    const code = this.editingCode();
+    return code
+      ? (this.banks().find((b) => b.code === code)?.isActive ?? false)
+      : false;
+  }
+
+  /** Desactiva el banco que se está editando (reusa `remove`). */
+  removeCurrent(): void {
+    const code = this.editingCode();
+    const bank = code ? this.banks().find((b) => b.code === code) : undefined;
+    if (bank) void this.remove(bank);
   }
 
   // --- Guardar ------------------------------------------------------------
@@ -513,7 +542,13 @@ export class BankAdminPage {
               ? 'Cambios guardados. Los dispositivos se actualizarán en el próximo latido.'
               : 'Banco creado.',
           );
-          this.modalOpen.set(false);
+          // Master-detail: el editor sigue abierto mostrando el banco guardado.
+          // Fija el código (para create) y marca el form limpio para no disparar
+          // el aviso de "cambios sin guardar" al navegar a otro banco.
+          this.editingCode.set(bank.code);
+          this.form.controls.code.disable();
+          this.form.markAsPristine();
+          if (editingCode) this.runExamples();
         },
         error: (err) => this.error.set(httpErrorMessage(err)),
       });
