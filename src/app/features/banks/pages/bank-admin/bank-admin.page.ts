@@ -7,9 +7,7 @@ import {
   LucideArrowLeft,
   LucideInfo,
   LucideLoaderCircle,
-  LucidePencil,
   LucidePlus,
-  LucideTrash2,
 } from '@lucide/angular';
 import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
 
@@ -103,9 +101,7 @@ const ACCOUNT_TYPES: { key: SupportedAccountType; label: string }[] = [
     LucideArrowLeft,
     LucideInfo,
     LucideLoaderCircle,
-    LucidePencil,
     LucidePlus,
-    LucideTrash2,
   ],
   templateUrl: './bank-admin.page.html',
   styleUrl: './bank-admin.page.scss',
@@ -1075,13 +1071,6 @@ export class BankAdminPage {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  channelBadges(bank: AdminBank): string[] {
-    const badges: string[] = [];
-    if (bank.mobile?.enabled) badges.push('Móvil');
-    if (bank.email?.enabled) badges.push('Correo');
-    if (bank.desk?.enabled) badges.push('Escritorio');
-    return badges;
-  }
 
   /**
    * Estado de preparación del canal móvil (ver estrategia, capa 4): desde

@@ -114,92 +114,15 @@
       animation: bank-admin-spin 1s linear infinite;
     }
   }
-
-  &__empty {
-    text-align: center;
-    padding: var(--space-8, 3rem) var(--space-4, 1rem);
-    color: var(--color-text-secondary);
-  }
-
-  &__list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3, 0.75rem);
-  }
 }
 
 .bank-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3, 0.75rem);
-  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg, 0.75rem);
-  box-shadow: var(--shadow-xs);
-
-  &--inactive {
-    opacity: 0.65;
-  }
-
-  &__main {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2, 0.5rem);
-    min-width: 0;
-  }
-
-  &__titlerow {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2, 0.5rem);
-    flex-wrap: wrap;
-  }
-
-  &__title {
-    font-size: var(--font-size-md, 1rem);
-    font-weight: var(--font-weight-bold, 700);
-    margin: 0;
-  }
-
   &__code {
     font-size: var(--font-size-xs, 0.75rem);
     color: var(--color-text-secondary);
     background: var(--color-border);
     padding: 0 var(--space-1, 0.25rem);
     border-radius: var(--radius-sm, 0.25rem);
-  }
-
-  &__badges {
-    display: flex;
-    gap: var(--space-1, 0.25rem);
-    flex-wrap: wrap;
-  }
-
-  &__badge {
-    font-size: var(--font-size-xs, 0.75rem);
-    font-weight: var(--font-weight-semibold, 600);
-    padding: 2px var(--space-2, 0.5rem);
-    border-radius: var(--radius-full, 999px);
-    background: color-mix(in srgb, var(--color-accent) 15%, transparent);
-    color: var(--color-accent);
-
-    &--muted {
-      background: var(--color-border);
-      color: var(--color-text-secondary);
-    }
-  }
-
-  &__readyrow {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2, 0.5rem);
-  }
-
-  &__readylabel {
-    font-size: var(--font-size-xs, 0.75rem);
-    color: var(--color-text-secondary);
   }
 
   &__ready {
@@ -228,12 +151,6 @@
       background: color-mix(in srgb, var(--color-success, #16a34a) 18%, transparent);
       color: var(--color-success-strong, #15803d);
     }
-  }
-
-  &__actions {
-    display: flex;
-    gap: var(--space-1, 0.25rem);
-    flex-shrink: 0;
   }
 }
 
