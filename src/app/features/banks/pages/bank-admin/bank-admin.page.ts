@@ -914,6 +914,13 @@ export class BankAdminPage {
     const proposal = this.proposal();
     const channel = this.proposalChannel();
     if (!proposal || !channel) return;
+    // Solo se acepta una propuesta que pase TODOS los ejemplos.
+    if (!proposal.allPass) {
+      this.suggestError.set(
+        'La propuesta aún no pasa todos los ejemplos. Genera de nuevo o revisa los ejemplos que fallan.',
+      );
+      return;
+    }
     const ctrl = this.form.controls[channel].controls.parseRules;
     ctrl.setValue(JSON.stringify(proposal.proposedRules, null, 2));
     ctrl.markAsDirty();

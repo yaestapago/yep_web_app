@@ -380,11 +380,25 @@
                 <summary>Ver reglas propuestas (JSON)</summary>
                 <pre>{{ p.proposedRules | json }}</pre>
               </details>
+              @if (!p.allPass) {
+                <p class="bank-form__hint">
+                  No se puede aceptar: aún hay ejemplos que no pasan. Vuelve a generar,
+                  revisa los ejemplos que fallan (o sus valores esperados), y acepta solo
+                  cuando <strong>todos pasen ✅</strong>.
+                </p>
+              }
               <div class="bank-form__ruleactions">
                 <yep-button variant="ghost" size="sm" type="button" (clicked)="dismissProposal()">
                   Descartar
                 </yep-button>
-                <yep-button variant="primary" size="sm" type="button" (clicked)="acceptProposal()">
+                <yep-button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  [disabled]="!p.allPass"
+                  [title]="p.allPass ? '' : 'Solo se puede aceptar cuando todos los ejemplos pasan'"
+                  (clicked)="acceptProposal()"
+                >
                   Aceptar y cargar al editor
                 </yep-button>
               </div>
