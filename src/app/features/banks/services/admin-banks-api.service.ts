@@ -63,18 +63,6 @@ export class AdminBanksApiService {
     );
   }
 
-  /**
-   * Migración única: vuelca las reglas por defecto (en código) a la BD como
-   * `parseRules` de cada banco/canal, solo donde falten. Idempotente.
-   */
-  migrateDefaultRules(): Observable<{
-    report: Array<{ code: string; channelsFilled: string[] }>;
-  }> {
-    return this.http.post<{
-      report: Array<{ code: string; channelsFilled: string[] }>;
-    }>(`${this.apiUrl}/admin/banks/migrate-default-rules`, {});
-  }
-
   /** Corre los ejemplos del banco contra su config actual (✅/❌). */
   runExamples(code: string): Observable<ExampleRunResult[]> {
     return this.http.get<ExampleRunResult[]>(

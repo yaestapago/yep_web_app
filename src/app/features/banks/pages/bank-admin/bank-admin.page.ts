@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { RouterLink } from '@angular/router';
 import {
   LucideArrowLeft,
+  LucideInfo,
   LucideLoaderCircle,
   LucidePencil,
   LucidePlus,
@@ -20,16 +21,20 @@ import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import type {
+  AccountResolutionPolicy,
+  AccountResolutionStrategy,
   AdminBank,
   BankChannelConfig,
   ChannelKey,
   CreateBankRequest,
   ExampleRunResult,
+  ExpectedResolution,
   ExpectedValues,
   ParseTestRequest,
   ParseTestResponse,
   RecentEvent,
   SuggestRulesResponse,
+  SupportedAccountType,
   UpdateBankRequest,
 } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -40,10 +45,40 @@ interface ChannelClarity {
   text: string;
 }
 
+/** Estado de preparación del canal móvil de un banco (para el listado). */
+interface MobileReadiness {
+  key:
+    | 'mobile_disabled'
+    | 'mobile_origin_only'
+    | 'mobile_parses'
+    | 'mobile_resolves_account';
+  label: string;
+  tone: 'muted' | 'warn' | 'info' | 'ok';
+}
+
 const CHANNELS: { key: ChannelKey; label: string }[] = [
   { key: 'mobile', label: 'Móvil' },
   { key: 'email', label: 'Correo' },
   { key: 'desk', label: 'Escritorio' },
+];
+
+/** Opciones de estrategia de resolución de cuenta (`''` = sin política). */
+const RESOLUTION_STRATEGIES: { value: '' | AccountResolutionStrategy; label: string }[] = [
+  { value: '', label: 'Sin política — comportamiento por defecto (sufijo o unicidad)' },
+  { value: 'single_account_per_notifier', label: 'Una sola cuenta por notificador (Nequi, billeteras)' },
+  { value: 'single_account_for_bank', label: 'Una cuenta del banco → resolver por unicidad' },
+  { value: 'receiver_account_exact', label: 'Solo por número de cuenta completo' },
+  { value: 'receiver_account_suffix', label: 'Por sufijo / últimos dígitos' },
+  { value: 'single_or_suffix', label: 'Sufijo si viene; si no, por unicidad' },
+  { value: 'required_dynamic_account_match', label: 'Exige coincidencia dinámica (sufijo obligatorio)' },
+];
+
+/** Tipos de cuenta soportados por el banco (coinciden con `BankAccountType`). */
+const ACCOUNT_TYPES: { key: SupportedAccountType; label: string }[] = [
+  { key: 'savings', label: 'Ahorros' },
+  { key: 'checking', label: 'Corriente' },
+  { key: 'wallet', label: 'Billetera' },
+  { key: 'other', label: 'Otro' },
 ];
 
 /**
@@ -66,6 +101,7 @@ const CHANNELS: { key: ChannelKey; label: string }[] = [
     StatusDot,
     Toggle,
     LucideArrowLeft,
+    LucideInfo,
     LucideLoaderCircle,
     LucidePencil,
     LucidePlus,
@@ -81,6 +117,11 @@ export class BankAdminPage {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly channels = CHANNELS;
+  readonly resolutionStrategies = RESOLUTION_STRATEGIES;
+  readonly accountTypes = ACCOUNT_TYPES;
+  // Modales de ayuda (documentación embebida).
+  readonly readinessHelpOpen = signal(false);
+  readonly policyHelpOpen = signal(false);
   readonly banks = signal<AdminBank[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -90,12 +131,18 @@ export class BankAdminPage {
   readonly success = signal('');
   readonly modalOpen = signal(false);
   readonly activeChannel = signal<ChannelKey>('mobile');
-  readonly migrating = signal(false);
 
   readonly form = this.fb.group({
     code: ['', [Validators.required, Validators.pattern(/^[a-z0-9][a-z0-9_-]*$/)]],
     name: ['', [Validators.required, Validators.maxLength(120)]],
     isActive: [true],
+    // Tipos de cuenta soportados: propiedad del BANCO (no de un canal).
+    supportedAccountTypes: this.fb.group({
+      savings: [false],
+      checking: [false],
+      wallet: [false],
+      other: [false],
+    }),
     mobile: this.channelGroup(),
     email: this.channelGroup(),
     desk: this.channelGroup(),
@@ -139,6 +186,12 @@ export class BankAdminPage {
   readonly testExpected = signal<ExpectedValues | null>(null);
   readonly suggestingExpected = signal(false);
 
+  // --- Resolución de cuenta esperada (flujo completo, Fase 5) ---
+  // Cuentas del notificador simuladas (una por línea) + resultado esperado.
+  readonly testSimulatedAccounts = signal('');
+  readonly testExpectedResolution = signal<ExpectedResolution | ''>('');
+  readonly testExpectedResolvedAccount = signal('');
+
   // --- Editor del prompt del copiloto (global, en caliente) ---
   readonly promptEditorOpen = signal(false);
   readonly promptText = signal('');
@@ -155,7 +208,30 @@ export class BankAdminPage {
       displayNames: [''],
       senderPatterns: [''],
       parseRules: [''],
+      accountResolutionPolicy: this.fb.group({
+        strategy: [''],
+        minSuffixDigits: [''],
+        requireResolvedAccount: [false],
+        maxAccountsPerNotifier: [''],
+      }),
     });
+  }
+
+  /** Marca los tipos de cuenta del banco (grupo de booleanos) desde una lista. */
+  private accountTypesToForm(types?: SupportedAccountType[] | null) {
+    const set = new Set(types ?? []);
+    return {
+      savings: set.has('savings'),
+      checking: set.has('checking'),
+      wallet: set.has('wallet'),
+      other: set.has('other'),
+    };
+  }
+
+  /** Colecta los tipos de cuenta marcados del form del banco. */
+  private buildSupportedAccountTypes(): SupportedAccountType[] {
+    const g = this.form.controls.supportedAccountTypes.getRawValue();
+    return ACCOUNT_TYPES.filter((t) => g[t.key]).map((t) => t.key);
   }
 
   channelCtrl(key: ChannelKey): FormGroup {
@@ -240,10 +316,17 @@ export class BankAdminPage {
       displayNames: '',
       senderPatterns: '',
       parseRules: '',
+      accountResolutionPolicy: {
+        strategy: '',
+        minSuffixDigits: '',
+        requireResolvedAccount: false,
+        maxAccountsPerNotifier: '',
+      },
     };
   }
 
   private channelToForm(cfg: BankChannelConfig) {
+    const policy = cfg.accountResolutionPolicy ?? null;
     return {
       enabled: cfg.enabled,
       packageNames: (cfg.packageNames ?? []).join('\n'),
@@ -251,6 +334,16 @@ export class BankAdminPage {
       displayNames: (cfg.displayNames ?? []).join('\n'),
       senderPatterns: (cfg.senderPatterns ?? []).join('\n'),
       parseRules: cfg.parseRules ? JSON.stringify(cfg.parseRules, null, 2) : '',
+      accountResolutionPolicy: {
+        strategy: policy?.strategy ?? '',
+        minSuffixDigits:
+          policy?.minSuffixDigits != null ? String(policy.minSuffixDigits) : '',
+        requireResolvedAccount: policy?.requireResolvedAccount ?? false,
+        maxAccountsPerNotifier:
+          policy?.maxAccountsPerNotifier != null
+            ? String(policy.maxAccountsPerNotifier)
+            : '',
+      },
     };
   }
 
@@ -265,6 +358,7 @@ export class BankAdminPage {
       code: '',
       name: '',
       isActive: true,
+      supportedAccountTypes: this.accountTypesToForm([]),
       mobile: this.emptyChannelForm(),
       email: this.emptyChannelForm(),
       desk: this.emptyChannelForm(),
@@ -283,6 +377,7 @@ export class BankAdminPage {
       code: bank.code,
       name: bank.name,
       isActive: bank.isActive,
+      supportedAccountTypes: this.accountTypesToForm(bank.supportedAccountTypes),
       mobile: this.channelToForm(bank.mobile),
       email: this.channelToForm(bank.email),
       desk: this.channelToForm(bank.desk),
@@ -325,7 +420,41 @@ export class BankAdminPage {
       displayNames: this.toList(g.displayNames),
       senderPatterns: this.toList(g.senderPatterns),
       parseRules: rules ?? null,
+      accountResolutionPolicy: this.buildResolutionPolicy(
+        g.accountResolutionPolicy,
+      ),
     };
+  }
+
+  /** Arma la política; null si no se eligió estrategia (= sin política). */
+  private buildResolutionPolicy(g: {
+    strategy: string;
+    minSuffixDigits: string;
+    requireResolvedAccount: boolean;
+    maxAccountsPerNotifier: string;
+  }): BankChannelConfig['accountResolutionPolicy'] {
+    if (!g.strategy) return null;
+    const policy: AccountResolutionPolicy = {
+      strategy: g.strategy as AccountResolutionStrategy,
+    };
+    const minSuffix = Number.parseInt(g.minSuffixDigits, 10);
+    if (Number.isFinite(minSuffix)) policy.minSuffixDigits = minSuffix;
+    if (g.requireResolvedAccount) policy.requireResolvedAccount = true;
+    const maxAccounts = Number.parseInt(g.maxAccountsPerNotifier, 10);
+    if (Number.isFinite(maxAccounts)) policy.maxAccountsPerNotifier = maxAccounts;
+    return policy;
+  }
+
+  /** Como `toList` pero sin forzar minúsculas (para regex case-sensitive). */
+  private toRawList(raw: string): string[] {
+    return Array.from(
+      new Set(
+        (raw ?? '')
+          .split('\n')
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    );
   }
 
   save(): void {
@@ -342,6 +471,7 @@ export class BankAdminPage {
     }
 
     const v = this.form.getRawValue();
+    const supportedAccountTypes = this.buildSupportedAccountTypes();
     const editingCode = this.editingCode();
     this.saving.set(true);
     this.error.set('');
@@ -350,6 +480,7 @@ export class BankAdminPage {
       ? this.api.update(editingCode, {
           name: v.name.trim(),
           isActive: v.isActive,
+          supportedAccountTypes,
           mobile,
           email,
           desk,
@@ -358,6 +489,7 @@ export class BankAdminPage {
           code: v.code.trim().toLowerCase(),
           name: v.name.trim(),
           isActive: v.isActive,
+          supportedAccountTypes,
           mobile,
           email,
           desk,
@@ -416,43 +548,6 @@ export class BankAdminPage {
   }
 
   /**
-   * Migración única (superadmin): vuelca las reglas por defecto en código a la BD
-   * como `parseRules` de cada banco/canal donde falten. Idempotente; se corre una
-   * vez al bootstrap de un ambiente para que la BD sea la única fuente de verdad.
-   */
-  async migrateDefaultRules(): Promise<void> {
-    const confirmed = await this.notifications.confirm({
-      title: 'Cargar reglas por defecto a la BD',
-      message:
-        'Escribe las reglas de parseo conocidas (en código) en la base de datos, solo donde falten. No pisa reglas ya editadas. Es una migración de una sola vez.',
-      confirmText: 'Migrar',
-    });
-    if (!confirmed) return;
-    this.migrating.set(true);
-    this.error.set('');
-    this.api
-      .migrateDefaultRules()
-      .pipe(
-        finalize(() => this.migrating.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: ({ report }) => {
-          const filled = report
-            .map((r) => `${r.code}: ${r.channelsFilled.join(', ')}`)
-            .join(' · ');
-          this.success.set(
-            report.length
-              ? `Reglas migradas — ${filled}. Recarga el banco para verlas.`
-              : 'Nada que migrar: todos los bancos ya tienen sus reglas en BD.',
-          );
-          this.load();
-        },
-        error: (err) => this.error.set(httpErrorMessage(err)),
-      });
-  }
-
-  /**
    * Aplica un arreglo sugerido por el diagnóstico (agregar el patrón faltante al
    * FormControl del canal). NO guarda: el operador revisa y usa "Guardar cambios".
    */
@@ -486,6 +581,9 @@ export class BankAdminPage {
     this.recentEvents.set([]);
     this.testExpected.set(null);
     this.testExpectMatch.set(true);
+    this.testSimulatedAccounts.set('');
+    this.testExpectedResolution.set('');
+    this.testExpectedResolvedAccount.set('');
     this.suggestError.set('');
     this.editingExampleId.set(null);
     this.testerOpen.set(false);
@@ -560,6 +658,20 @@ export class BankAdminPage {
     const channel = this.testChannel();
     const expected = this.testExpected() ?? undefined;
     const expectMatch = this.testExpectMatch();
+    // Resolución de cuenta esperada: solo aplica a ejemplos positivos. Se manda
+    // `simulatedAccounts` siempre (aun vacío) para poder limpiarla al editar.
+    const sims = this.toRawList(this.testSimulatedAccounts());
+    const resolutionValue = this.testExpectedResolution();
+    const resolvedAccount = this.testExpectedResolvedAccount().trim();
+    const resolutionFields = expectMatch
+      ? {
+          simulatedAccounts: sims,
+          ...(resolutionValue ? { expectedResolution: resolutionValue } : {}),
+          ...(resolutionValue === 'account' && resolvedAccount
+            ? { expectedResolvedAccount: resolvedAccount }
+            : {}),
+        }
+      : {};
     const fields = {
       ...(channel === 'email'
         ? {
@@ -569,6 +681,7 @@ export class BankAdminPage {
           }
         : { title: this.testTitle(), text: this.testBody() }),
       ...(expected && expectMatch ? { expected } : {}),
+      ...resolutionFields,
       expectMatch,
     };
     const editingId = this.editingExampleId();
@@ -619,6 +732,9 @@ export class BankAdminPage {
     }
     this.testExpected.set(ex.expected ?? null);
     this.testExpectMatch.set(ex.expectMatch !== false);
+    this.testSimulatedAccounts.set((ex.simulatedAccounts ?? []).join('\n'));
+    this.testExpectedResolution.set(ex.expectedResolution ?? '');
+    this.testExpectedResolvedAccount.set(ex.expectedResolvedAccount ?? '');
     this.testError.set('');
     this.testResult.set(null);
     this.testerOpen.set(true);
@@ -633,6 +749,9 @@ export class BankAdminPage {
     this.testFrom.set('');
     this.testExpected.set(null);
     this.testExpectMatch.set(true);
+    this.testSimulatedAccounts.set('');
+    this.testExpectedResolution.set('');
+    this.testExpectedResolvedAccount.set('');
     this.testResult.set(null);
   }
 
@@ -811,6 +930,45 @@ export class BankAdminPage {
     this.proposalChannel.set(null);
   }
 
+  /**
+   * Edita a mano un campo del ground truth (`testExpected`). Vacío = quita el
+   * campo (no se verifica). `amount` se limpia a número; el resto es texto. Deja
+   * `null` si no queda ningún campo, para no guardar un `expected` vacío.
+   */
+  setExpectedField(key: keyof ExpectedValues, raw: string): void {
+    const current: Record<string, unknown> = { ...(this.testExpected() ?? {}) };
+    const value = (raw ?? '').trim();
+    if (key === 'amount') {
+      const n = Number.parseFloat(value.replace(/[^\d.]/g, ''));
+      if (value !== '' && Number.isFinite(n)) current['amount'] = n;
+      else delete current['amount'];
+    } else if (value === '') {
+      delete current[key];
+    } else {
+      current[key] = value;
+    }
+    this.testExpected.set(
+      Object.keys(current).length ? (current as ExpectedValues) : null,
+    );
+  }
+
+  /** Etiqueta legible de un resultado de resolución (`account`/`ambiguous`/`unresolved`). */
+  resolutionOutcomeLabel(outcome: ExpectedResolution): string {
+    return outcome === 'account'
+      ? 'resuelve a cuenta'
+      : outcome === 'ambiguous'
+        ? 'ambiguo'
+        : 'sin resolver';
+  }
+
+  /** Etiqueta de lo esperado en resolución (para el ❌ del reporte). */
+  resolutionExpectedLabel(res: ExampleRunResult['resolution']): string {
+    if (!res?.expected) return '';
+    return res.expected === 'account'
+      ? `cuenta ${res.expectedAccount ?? ''}`.trim()
+      : this.resolutionOutcomeLabel(res.expected);
+  }
+
   /** Resumen legible del `expected` de un ejemplo (para la lista y el reporte). */
   expectedSummary(expected?: ExpectedValues | null): string {
     if (!expected) return '';
@@ -881,6 +1039,29 @@ export class BankAdminPage {
     if (bank.email?.enabled) badges.push('Correo');
     if (bank.desk?.enabled) badges.push('Escritorio');
     return badges;
+  }
+
+  /**
+   * Estado de preparación del canal móvil (ver estrategia, capa 4): desde
+   * "deshabilitado" hasta "resuelve cuenta" (listo para producción). Heurística
+   * sobre la config guardada del banco.
+   */
+  mobileReadiness(bank: AdminBank): MobileReadiness {
+    const m = bank.mobile;
+    if (!m?.enabled) {
+      return { key: 'mobile_disabled', label: 'Móvil off', tone: 'muted' };
+    }
+    const hasParse = Boolean(
+      m.parseRules && Object.keys(m.parseRules).length > 0,
+    );
+    const hasPolicy = Boolean(m.accountResolutionPolicy?.strategy);
+    if (hasParse && hasPolicy) {
+      return { key: 'mobile_resolves_account', label: 'Resuelve cuenta', tone: 'ok' };
+    }
+    if (hasParse) {
+      return { key: 'mobile_parses', label: 'Extrae datos', tone: 'info' };
+    }
+    return { key: 'mobile_origin_only', label: 'Solo origen', tone: 'warn' };
   }
 
   parseRulesInvalid(channel: ChannelKey): boolean {

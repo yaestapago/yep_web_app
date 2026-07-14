@@ -1,5 +1,13 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LucideLoaderCircle, LucidePlus, LucideRefreshCw } from '@lucide/angular';
@@ -18,7 +26,10 @@ import type {
   BankAccountType,
   BusinessLocation,
 } from '../../../../shared/models/bank-account.models';
-import type { BankPickerEntry } from '../../../../shared/models/bank.models';
+import type {
+  BankPickerEntry,
+  SupportedAccountType,
+} from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BanksApiService } from '../../../banks/services/banks-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -65,7 +76,8 @@ export class BusinessAccountsSection implements OnInit {
   readonly modalTitle = computed(() =>
     this.editingId() ? 'Editar cuenta bancaria' : 'Nueva cuenta bancaria',
   );
-  readonly accountTypeOptions: readonly SelectOption[] = [
+  /** Catálogo completo de tipos (coincide con `BankAccountType`). */
+  private readonly allAccountTypeOptions: readonly SelectOption[] = [
     { id: 'wallet', label: 'Billetera' },
     { id: 'savings', label: 'Ahorros' },
     { id: 'checking', label: 'Corriente' },
@@ -94,6 +106,38 @@ export class BusinessAccountsSection implements OnInit {
     accountType: ['wallet' as BankAccountType],
     currency: ['COP', [Validators.required, Validators.maxLength(3)]],
   });
+
+  /** Banco seleccionado (reactivo) para filtrar los tipos de cuenta. */
+  private readonly selectedBankId = toSignal(
+    this.form.controls.bankId.valueChanges,
+    { initialValue: this.form.controls.bankId.value },
+  );
+
+  /**
+   * Tipos de cuenta ofrecidos: si el banco elegido declara
+   * `supportedAccountTypes`, solo esos; si no (vacío), todos. Coherente con la
+   * validación del backend.
+   */
+  readonly accountTypeOptions = computed<readonly SelectOption[]>(() => {
+    const bank = this.banks().find((b) => b.code === this.selectedBankId());
+    const supported = bank?.supportedAccountTypes ?? [];
+    if (supported.length === 0) return this.allAccountTypeOptions;
+    return this.allAccountTypeOptions.filter((o) =>
+      supported.includes(o.id as SupportedAccountType),
+    );
+  });
+
+  constructor() {
+    // Si el tipo elegido deja de ser válido al cambiar de banco, ajústalo al
+    // primero disponible para no enviar un tipo que el backend rechazaría.
+    effect(() => {
+      const options = this.accountTypeOptions();
+      const current = this.form.controls.accountType.value;
+      if (options.length && !options.some((o) => o.id === current)) {
+        this.form.controls.accountType.setValue(options[0].id as BankAccountType);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadLocations();

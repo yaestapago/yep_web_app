@@ -4,6 +4,8 @@ export interface BankPickerEntry {
   name: string;
   phone: { enabled: boolean };
   email: { enabled: boolean };
+  /** Tipos de cuenta que ofrece el banco ([] = sin restricción). */
+  supportedAccountTypes: SupportedAccountType[];
 }
 
 export interface BanksResponse {
@@ -13,12 +15,33 @@ export interface BanksResponse {
 /** Canal de un notificador. */
 export type ChannelKey = 'mobile' | 'email' | 'desk';
 
+/** Estrategia de resolución de cuenta (capa 4). Espejo del backend. */
+export type AccountResolutionStrategy =
+  | 'single_account_per_notifier'
+  | 'single_account_for_bank'
+  | 'receiver_account_exact'
+  | 'receiver_account_suffix'
+  | 'single_or_suffix'
+  | 'required_dynamic_account_match';
+
+/** Tipo de cuenta soportado por un banco. Espejo del enum `BankAccountType`. */
+export type SupportedAccountType = 'savings' | 'checking' | 'wallet' | 'other';
+
+/** Capa 4: política de resolución de `reportedBankAccountId`. */
+export interface AccountResolutionPolicy {
+  strategy: AccountResolutionStrategy;
+  minSuffixDigits?: number;
+  requireResolvedAccount?: boolean;
+  maxAccountsPerNotifier?: number;
+}
+
 /**
  * Config técnica de un canal de un banco. `packageNames` = apps a escuchar;
  * `contentPatterns` = si hay, solo pasan mensajes que contengan alguno (allowlist);
  * `displayNames` = señal para escritorio (Vínculo Windows); `senderPatterns` =
  * remitente (móvil/desk: título del SMS; email: remitentes esperados);
- * `parseRules` = reglas de extracción (regex).
+ * `parseRules` = reglas de extracción (regex); `accountResolutionPolicy` = cómo
+ * resolver la cuenta (capa 4).
  */
 export interface BankChannelConfig {
   enabled: boolean;
@@ -27,6 +50,7 @@ export interface BankChannelConfig {
   displayNames: string[];
   senderPatterns: string[];
   parseRules?: Record<string, unknown> | null;
+  accountResolutionPolicy?: AccountResolutionPolicy | null;
 }
 
 export type ParseConfidence = 'high' | 'medium' | 'low' | 'none';
@@ -70,9 +94,14 @@ export interface ParseTestResponse {
   parsed: ParsedBankNotification;
 }
 
-/** Valores esperados de la extracción (ground truth) de un ejemplo. */
+/**
+ * Valores esperados de la extracción (ground truth) de un ejemplo. Se comparan
+ * campo a campo contra lo que extrae el parser: un ejemplo pasa (✅) solo si cada
+ * campo lleno aquí coincide con lo extraído. Campos vacíos no se verifican.
+ */
 export interface ExpectedValues {
   amount?: number;
+  currency?: string;
   senderName?: string;
   direction?: string;
   kind?: string;
@@ -80,6 +109,9 @@ export interface ExpectedValues {
   senderAccount?: string;
   receiverAccount?: string;
 }
+
+/** Resultado de resolución esperado de un ejemplo (flujo completo). */
+export type ExpectedResolution = 'account' | 'ambiguous' | 'unresolved';
 
 /** Ejemplo curado (fixture) persistido en un banco. */
 export interface BankExample {
@@ -95,7 +127,22 @@ export interface BankExample {
   expected?: ExpectedValues | null;
   /** `false` = ejemplo negativo (NO debería parsearse). Por defecto `true`. */
   expectMatch?: boolean;
+  /** Cuentas del notificador simuladas para verificar la resolución de cuenta. */
+  simulatedAccounts?: string[] | null;
+  expectedResolution?: ExpectedResolution | null;
+  expectedResolvedAccount?: string | null;
   createdAt?: string;
+}
+
+/** Resultado de correr la resolución de cuenta de un ejemplo. */
+export interface ExampleResolutionResult {
+  outcome: ExpectedResolution;
+  resolvedAccount?: string;
+  reason?: string;
+  expected?: ExpectedResolution;
+  expectedAccount?: string;
+  /** `undefined` = el ejemplo no declara resolución esperada (solo informativo). */
+  ok?: boolean;
 }
 
 /**
@@ -141,6 +188,7 @@ export interface ExampleRunResult {
   attributed: boolean;
   parsed: ParsedBankNotification;
   ok: boolean;
+  resolution?: ExampleResolutionResult;
   diagnosis?: ExampleDiagnosis;
 }
 
@@ -157,6 +205,8 @@ export interface AdminBank {
   code: string;
   name: string;
   isActive: boolean;
+  /** Tipos de cuenta que ofrece el banco ([] = sin restricción). */
+  supportedAccountTypes: SupportedAccountType[];
   mobile: BankChannelConfig;
   email: BankChannelConfig;
   desk: BankChannelConfig;
@@ -177,6 +227,7 @@ export interface CreateBankRequest {
   code: string;
   name: string;
   isActive?: boolean;
+  supportedAccountTypes?: SupportedAccountType[];
   mobile?: Partial<BankChannelConfig>;
   email?: Partial<BankChannelConfig>;
   desk?: Partial<BankChannelConfig>;
@@ -197,6 +248,9 @@ export interface AddExampleRequest {
   from?: string;
   expected?: ExpectedValues;
   expectMatch?: boolean;
+  simulatedAccounts?: string[];
+  expectedResolution?: ExpectedResolution;
+  expectedResolvedAccount?: string;
 }
 
 /** Payload para pedir a la IA los valores esperados de un mensaje. */
@@ -216,4 +270,7 @@ export interface UpdateExampleRequest {
   from?: string;
   expected?: ExpectedValues | null;
   expectMatch?: boolean;
+  simulatedAccounts?: string[];
+  expectedResolution?: ExpectedResolution;
+  expectedResolvedAccount?: string;
 }

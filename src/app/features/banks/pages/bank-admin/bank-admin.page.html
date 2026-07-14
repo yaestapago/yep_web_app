@@ -16,11 +16,11 @@
       <yep-button
         variant="ghost"
         size="sm"
-        [loading]="migrating()"
-        title="Carga una sola vez las reglas conocidas a la BD (bancos existentes sin reglas)"
-        (clicked)="migrateDefaultRules()"
+        title="¿Qué significan los estados de preparación (Solo origen / Extrae datos / Resuelve cuenta)?"
+        (clicked)="readinessHelpOpen.set(true)"
       >
-        Migrar reglas por defecto
+        <svg lucideInfo aria-hidden="true"></svg>
+        Estados
       </yep-button>
       <yep-button size="sm" (clicked)="openCreate()">
         <svg lucidePlus aria-hidden="true"></svg>
@@ -66,6 +66,16 @@
               @if (channelBadges(bank).length === 0) {
                 <span class="bank-card__badge bank-card__badge--muted">Sin canales</span>
               }
+            </div>
+            @let ready = mobileReadiness(bank);
+            <div class="bank-card__readyrow">
+              <span class="bank-card__readylabel">Preparación móvil:</span>
+              <span
+                class="bank-card__ready bank-card__ready--{{ ready.tone }}"
+                title="Qué tan listo está el canal móvil para producción (ver «ℹ️ Estados»)"
+              >
+                {{ ready.label }}
+              </span>
             </div>
           </div>
           <div class="bank-card__actions">
@@ -130,6 +140,24 @@
       />
       <span>Banco activo (visible y escuchado por la flota)</span>
     </label>
+
+    <!-- Tipos de cuenta soportados (propiedad del banco, no de un canal) -->
+    <div class="bank-form__section" formGroupName="supportedAccountTypes">
+      <h4 class="bank-form__sectiontitle">Tipos de cuenta soportados</h4>
+      <p class="bank-form__hint">
+        Los tipos de cuenta que ofrece este banco. Al registrar una cuenta bancaria
+        de este banco, solo se podrán elegir estos tipos. <strong>Vacío = sin
+        restricción</strong> (se permite cualquier tipo).
+      </p>
+      <div class="bank-form__checks">
+        @for (t of accountTypes; track t.key) {
+          <label class="bank-form__check">
+            <input type="checkbox" [formControlName]="t.key" />
+            <span>{{ t.label }}</span>
+          </label>
+        }
+      </div>
+    </div>
 
     <!-- Tabs de canal -->
     <div class="bank-form__tabs">
@@ -364,6 +392,49 @@
           }
         }
       </details>
+
+      <!-- Sección: Resolución de cuenta (capa 4) -->
+      <div class="bank-form__section" formGroupName="accountResolutionPolicy">
+        <h4 class="bank-form__sectiontitle">
+          Resolución de cuenta
+          <button
+            type="button"
+            class="bank-form__infobtn"
+            title="¿Qué hace cada estrategia de resolución?"
+            aria-label="Ayuda: políticas de resolución de cuenta"
+            (click)="policyHelpOpen.set(true)"
+          >
+            <svg lucideInfo aria-hidden="true"></svg>
+          </button>
+        </h4>
+        <p class="bank-form__hint">
+          Cómo el backend decide a qué cuenta YEP pertenece la notificación
+          (<code>reportedBankAccountId</code>). Sin estrategia = comportamiento por
+          defecto (sufijo si viene en el mensaje; si no, por unicidad).
+        </p>
+        <label class="bank-form__field">
+          <span>Estrategia</span>
+          <select formControlName="strategy" class="bank-form__select">
+            @for (opt of resolutionStrategies; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <div class="bank-form__row">
+          <label class="bank-form__field">
+            <span>Mínimo de dígitos para sufijo</span>
+            <input type="number" min="1" max="20" formControlName="minSuffixDigits" placeholder="4" />
+          </label>
+          <label class="bank-form__field">
+            <span>Máx. cuentas de este banco por notificador</span>
+            <input type="number" min="1" formControlName="maxAccountsPerNotifier" placeholder="sin límite" />
+          </label>
+        </div>
+        <label class="bank-form__check">
+          <input type="checkbox" formControlName="requireResolvedAccount" />
+          <span>Exigir cuenta resuelta — si no se resuelve, no se enlaza automáticamente</span>
+        </label>
+      </div>
     </fieldset>
 
     <!-- Panel de claridad -->
@@ -493,6 +564,7 @@
                       size="sm"
                       type="button"
                       [loading]="suggestingExpected()"
+                      title="La IA propone los valores; luego los puedes ajustar a mano"
                       (clicked)="suggestExpected()"
                     >
                       Sugerir esperado con IA
@@ -522,12 +594,182 @@
                   }
                 </div>
                 @if (testExpectMatch()) {
-                  @if (testExpected(); as exp) {
+                  <div class="bank-expected">
                     <p class="bank-form__hint">
-                      Esperado (ground truth): <strong>{{ expectedSummary(exp) || '(vacío)' }}</strong>.
-                      Se guardará con el ejemplo para verificar el parser.
+                      <strong>Valores esperados (ground truth).</strong> Lo que el parser
+                      DEBERÍA extraer de este mensaje. Al guardar, el ejemplo se corre
+                      contra la config y pasa (✅) solo si lo extraído coincide con lo que
+                      escribas aquí. Escríbelos a mano para controlar exactamente lo
+                      esperado; "Sugerir con IA" solo los propone y luego los ajustas. El
+                      parser del banco se afina a partir de muchos ejemplos como este.
+                      <strong>Campos vacíos no se verifican.</strong>
                     </p>
-                  }
+                    <div class="bank-expected__grid">
+                      <label class="bank-form__field">
+                        <span>Monto</span>
+                        <input
+                          type="text"
+                          inputmode="decimal"
+                          [value]="testExpected()?.amount ?? ''"
+                          (input)="setExpectedField('amount', $any($event.target).value)"
+                          placeholder="50000"
+                        />
+                        <small class="bank-form__hint">
+                          Valor exacto de la transacción, solo dígitos: sin <code>$</code>
+                          ni puntos de miles. Ej: <code>50000</code>.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Dirección</span>
+                        <select
+                          class="bank-form__select"
+                          [value]="testExpected()?.direction ?? ''"
+                          (change)="setExpectedField('direction', $any($event.target).value)"
+                        >
+                          <option value="">—</option>
+                          <option value="incoming">Entrante — dinero recibido</option>
+                          <option value="outgoing">Saliente — dinero enviado</option>
+                        </select>
+                        <small class="bank-form__hint">
+                          Si el dinero ENTRA a la cuenta del negocio (<code>incoming</code>)
+                          o SALE (<code>outgoing</code>).
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Nombre del remitente / pagador</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.senderName ?? ''"
+                          (input)="setExpectedField('senderName', $any($event.target).value)"
+                          placeholder="JUAN PEREZ"
+                        />
+                        <small class="bank-form__hint">
+                          Quién envió/pagó, tal como debe leerse del mensaje. Es la contraparte
+                          de la transacción.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Cuenta receptora / últimos dígitos</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.receiverAccount ?? ''"
+                          (input)="setExpectedField('receiverAccount', $any($event.target).value)"
+                          placeholder="1234"
+                        />
+                        <small class="bank-form__hint">
+                          Cuenta (o últimos dígitos) de DESTINO. Es la señal clave que usa la
+                          resolución de cuenta para saber a qué cuenta YEP pertenece el evento.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Cuenta del remitente</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.senderAccount ?? ''"
+                          (input)="setExpectedField('senderAccount', $any($event.target).value)"
+                          placeholder="(si el mensaje la trae)"
+                        />
+                        <small class="bank-form__hint">
+                          Cuenta de ORIGEN si el mensaje la incluye. Opcional.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Referencia</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.reference ?? ''"
+                          (input)="setExpectedField('reference', $any($event.target).value)"
+                          placeholder="M1234567"
+                        />
+                        <small class="bank-form__hint">
+                          Código o comprobante de la transacción, si aplica.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Tipo de movimiento</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.kind ?? ''"
+                          (input)="setExpectedField('kind', $any($event.target).value)"
+                          placeholder="transfer"
+                        />
+                        <small class="bank-form__hint">
+                          Categoría del movimiento (ej. <code>transfer</code>,
+                          <code>payment</code>). Opcional.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Moneda</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.currency ?? ''"
+                          (input)="setExpectedField('currency', $any($event.target).value)"
+                          placeholder="COP"
+                        />
+                        <small class="bank-form__hint">
+                          Código de moneda. Opcional (por defecto <code>COP</code>).
+                        </small>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Resolución de cuenta esperada (flujo completo, Fase 5) -->
+                  <div class="bank-expected bank-expected--resolution">
+                    <p class="bank-form__hint">
+                      <strong>Resolución de cuenta (flujo completo).</strong> Prueba a qué
+                      cuenta YEP se asignaría el evento, dadas unas cuentas del notificador
+                      y la política de resolución del canal. Opcional: déjalo vacío si solo
+                      quieres verificar la extracción.
+                    </p>
+                    <div class="bank-expected__grid">
+                      <label class="bank-form__field">
+                        <span>Cuentas del notificador (simuladas, una por línea)</span>
+                        <textarea
+                          rows="2"
+                          [value]="testSimulatedAccounts()"
+                          (input)="testSimulatedAccounts.set($any($event.target).value)"
+                          placeholder="3001234567&#10;900011234"
+                        ></textarea>
+                        <small class="bank-form__hint">
+                          Las cuentas que tendría asociado el notificador en este escenario.
+                          Con una sola cuenta se prueba la resolución por unicidad; con
+                          varias que comparten sufijo, la ambigüedad.
+                        </small>
+                      </label>
+                      <label class="bank-form__field">
+                        <span>Resultado esperado</span>
+                        <select
+                          class="bank-form__select"
+                          [value]="testExpectedResolution()"
+                          (change)="testExpectedResolution.set($any($event.target).value)"
+                        >
+                          <option value="">— no verificar</option>
+                          <option value="account">Resuelve a una cuenta</option>
+                          <option value="ambiguous">Ambiguo (no se puede decidir)</option>
+                          <option value="unresolved">Sin resolver (ninguna coincide)</option>
+                        </select>
+                        <small class="bank-form__hint">
+                          Qué debe pasar con estas cuentas + la política del canal. Si eliges
+                          "Resuelve a una cuenta", indica cuál abajo.
+                        </small>
+                      </label>
+                      @if (testExpectedResolution() === 'account') {
+                        <label class="bank-form__field">
+                          <span>Cuenta que debe resolver</span>
+                          <input
+                            type="text"
+                            [value]="testExpectedResolvedAccount()"
+                            (input)="testExpectedResolvedAccount.set($any($event.target).value)"
+                            placeholder="3001234567"
+                          />
+                          <small class="bank-form__hint">
+                            Cuál de las cuentas simuladas debe quedar asignada
+                            (<code>reportedBankAccountId</code>). Acepta últimos dígitos.
+                          </small>
+                        </label>
+                      }
+                    </div>
+                  </div>
                 } @else {
                   <p class="bank-form__hint">
                     Negativo: pasará (✅) solo si el parser NO lo atribuye ni extrae. Sirve
@@ -633,6 +875,18 @@
                   >✎</button>
                   <button type="button" class="bank-tester__remove" title="Eliminar" (click)="removeExample(r.example.id)">✕</button>
                 </div>
+                @if (r.resolution; as res) {
+                  <div class="bank-example__resolution" [class.is-fail]="res.ok === false">
+                    <span>
+                      Resolución: {{ resolutionOutcomeLabel(res.outcome) }}{{ res.resolvedAccount ? ' → ' + res.resolvedAccount : '' }}
+                    </span>
+                    @if (res.ok === true) {
+                      <span>✅</span>
+                    } @else if (res.ok === false) {
+                      <span>❌ esperado: {{ resolutionExpectedLabel(res) }}</span>
+                    }
+                  </div>
+                }
                 @if (r.diagnosis; as d) {
                   <div class="bank-example__diag">
                     <span>{{ d.message }}</span>
@@ -663,5 +917,111 @@
     <yep-button type="submit" [loading]="saving()" (clicked)="save()">
       {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
     </yep-button>
+  </ng-container>
+</yep-modal>
+
+<!-- Modal de ayuda: estados de preparación móvil -->
+<yep-modal
+  [open]="readinessHelpOpen()"
+  size="md"
+  title="Estados de preparación (canal móvil)"
+  subtitle="Qué tan listo está cada banco para procesar notificaciones móviles de forma confiable."
+  (closeRequested)="readinessHelpOpen.set(false)"
+>
+  <div class="bank-help">
+    <p class="bank-help__intro">
+      El badge de cada banco indica hasta qué <strong>capa</strong> está configurado su
+      canal <strong>móvil</strong>. Van en escalera: cada nivel agrega algo sobre el
+      anterior. Es una guía de "cuánto has configurado", no una garantía — para eso están
+      los <strong>ejemplos guardados</strong>, que corren el flujo real y dan ✅/❌.
+    </p>
+    <ul class="bank-help__states">
+      <li>
+        <span class="bank-card__ready bank-card__ready--muted">Móvil off</span>
+        <span>El canal móvil está deshabilitado: el banco no se escucha por teléfono.</span>
+      </li>
+      <li>
+        <span class="bank-card__ready bank-card__ready--warn">Solo origen</span>
+        <span>
+          Sabe <strong>de dónde</strong> viene la notificación (paquetes de app / patrones
+          de remitente o contenido), pero aún no extrae datos ni resuelve cuenta.
+        </span>
+      </li>
+      <li>
+        <span class="bank-card__ready bank-card__ready--info">Extrae datos</span>
+        <span>
+          Tiene <strong>reglas de extracción</strong> (<code>parseRules</code>): saca monto,
+          dirección, referencia, cuenta, etc. del mensaje. Todavía no garantiza a qué cuenta
+          YEP pertenece.
+        </span>
+      </li>
+      <li>
+        <span class="bank-card__ready bank-card__ready--ok">Resuelve cuenta</span>
+        <span>
+          Extrae datos <strong>y</strong> tiene <strong>política de resolución de cuenta</strong>:
+          puede asignar el evento a una cuenta YEP concreta. Este es el estándar para
+          producción.
+        </span>
+      </li>
+    </ul>
+    <p class="bank-help__intro">
+      Para subir de nivel: agrega <code>parseRules</code> (usa "Regenerar parser con IA" a
+      partir de tus ejemplos) para llegar a <strong>Extrae datos</strong>, y define una
+      <strong>estrategia de resolución</strong> para llegar a <strong>Resuelve cuenta</strong>.
+    </p>
+  </div>
+  <ng-container modalFooter>
+    <yep-button (clicked)="readinessHelpOpen.set(false)">Entendido</yep-button>
+  </ng-container>
+</yep-modal>
+
+<!-- Modal de ayuda: políticas de resolución de cuenta -->
+<yep-modal
+  [open]="policyHelpOpen()"
+  size="lg"
+  title="Políticas de resolución de cuenta"
+  subtitle="Cómo decide el backend a qué cuenta YEP (reportedBankAccountId) pertenece una notificación."
+  (closeRequested)="policyHelpOpen.set(false)"
+>
+  <div class="bank-help">
+    <p class="bank-help__intro">
+      Cuando llega una notificación transaccional, el backend debe decidir a cuál de las
+      cuentas del notificador corresponde. La <strong>estrategia</strong> define cómo:
+    </p>
+    <dl class="bank-help__policies">
+      <dt>Sin política (por defecto)</dt>
+      <dd>Sufijo/últimos dígitos si el mensaje trae cuenta; si no, por unicidad. Es el comportamiento histórico.</dd>
+
+      <dt>Una sola cuenta por notificador</dt>
+      <dd>
+        El banco solo permite una cuenta por notificador (Nequi, billeteras). Resuelve por
+        esa única cuenta. Se combina con <em>máx. cuentas por notificador = 1</em> para
+        impedir asociar más.
+      </dd>
+
+      <dt>Una cuenta del banco → por unicidad</dt>
+      <dd>Si hay una sola cuenta de ese banco en el notificador, resuelve a ella; si hay varias, exige señal (cuenta/sufijo).</dd>
+
+      <dt>Solo por número de cuenta completo</dt>
+      <dd>Solo resuelve si el mensaje trae el número completo y coincide exactamente. Sin fallback por unicidad.</dd>
+
+      <dt>Por sufijo / últimos dígitos</dt>
+      <dd>Resuelve si los últimos dígitos del mensaje coinciden con una única cuenta (mín. configurable). Sin fallback por unicidad.</dd>
+
+      <dt>Sufijo si viene; si no, por unicidad</dt>
+      <dd>Intenta por sufijo/cuenta; si el mensaje no trae cuenta y hay una sola candidata, resuelve por unicidad. Útil para bancos que a veces incluyen dígitos y a veces no (p. ej. Bancolombia).</dd>
+
+      <dt>Exige coincidencia dinámica (sufijo obligatorio)</dt>
+      <dd>Exige que el mensaje traiga una señal de cuenta que coincida; nunca resuelve solo por unicidad. Para alto riesgo de falsos positivos o apps compartidas.</dd>
+    </dl>
+    <p class="bank-help__intro"><strong>Opciones adicionales:</strong></p>
+    <ul class="bank-help__states">
+      <li><span>Mínimo de dígitos para sufijo</span><span>Cuántos dígitos finales deben coincidir para aceptar un match por sufijo (por defecto 4).</span></li>
+      <li><span>Máx. cuentas por notificador</span><span>Límite de cuentas de este banco que se pueden asociar a un notificador (p. ej. Nequi = 1). Se valida al crear/editar el notificador.</span></li>
+      <li><span>Exigir cuenta resuelta</span><span>Si está activo y no se puede resolver la cuenta, el evento NO se enlaza automáticamente: queda en <code>needs_review</code> para revisión humana.</span></li>
+    </ul>
+  </div>
+  <ng-container modalFooter>
+    <yep-button (clicked)="policyHelpOpen.set(false)">Entendido</yep-button>
   </ng-container>
 </yep-modal>
