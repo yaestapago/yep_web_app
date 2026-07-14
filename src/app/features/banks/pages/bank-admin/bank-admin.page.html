@@ -498,6 +498,21 @@
         }
 
         @if (testChannel() === 'email') {
+          <div class="bank-form__uploadrow">
+            <label class="bank-form__uploadbtn">
+              <input
+                type="file"
+                accept=".eml,.msg,message/rfc822"
+                hidden
+                (change)="onEmailFileSelected($event)"
+              />
+              {{ uploadingEmailFile() ? 'Leyendo…' : 'Subir .eml / .msg' }}
+            </label>
+            <small class="bank-form__hint">
+              Sube el correo tal cual llega (mejor el reenviado a YEP): usamos su
+              texto plano real para que el ejemplo coincida con lo que ve el parser.
+            </small>
+          </div>
           <label class="bank-form__field">
             <span>Remitente (from)</span>
             <input
@@ -852,59 +867,73 @@
         } @else if (exampleResults().length === 0) {
           <p class="bank-form__hint">Aún no hay ejemplos. Usa el probador y "Guardar como ejemplo".</p>
         } @else {
-          <ul class="bank-tester__recent">
-            @for (r of exampleResults(); track r.example.id) {
-              <li class="bank-example" [class.bank-example--fail]="!r.ok">
-                <div class="bank-example__row">
-                  <span>{{ r.ok ? '✅' : '❌' }}</span>
-                  <span class="bank-tester__recent-date">
-                    {{ r.example.channel }}{{ r.expectMatch === false ? ' 🚫' : '' }}
-                  </span>
-                  <span class="bank-tester__recent-snippet">
-                    {{ r.example.label || r.example.snippet }}
-                    @if (r.parsed.amount) { · ${{ r.parsed.amount }} }
-                    @if (r.expected) {
-                      <em class="bank-copilot__expected">esperado: {{ expectedSummary(r.expected) }}</em>
-                    }
-                  </span>
-                  <button
-                    type="button"
-                    class="bank-tester__remove"
-                    title="Editar ejemplo"
-                    (click)="startEditExample(r.example.id)"
-                  >✎</button>
-                  <button type="button" class="bank-tester__remove" title="Eliminar" (click)="removeExample(r.example.id)">✕</button>
-                </div>
-                @if (r.resolution; as res) {
-                  <div class="bank-example__resolution" [class.is-fail]="res.ok === false">
-                    <span>
-                      Resolución: {{ resolutionOutcomeLabel(res.outcome) }}{{ res.resolvedAccount ? ' → ' + res.resolvedAccount : '' }}
-                    </span>
-                    @if (res.ok === true) {
-                      <span>✅</span>
-                    } @else if (res.ok === false) {
-                      <span>❌ esperado: {{ resolutionExpectedLabel(res) }}</span>
-                    }
-                  </div>
-                }
-                @if (r.diagnosis; as d) {
-                  <div class="bank-example__diag">
-                    <span>{{ d.message }}</span>
-                    @if (d.fix; as fix) {
-                      <yep-button
-                        variant="secondary"
-                        size="sm"
+          @for (group of exampleGroups(); track group.channel) {
+            <div class="bank-examples__group">
+              <div class="bank-examples__grouphead">
+                <span class="bank-examples__grouptitle">{{ group.label }}</span>
+                <span
+                  class="bank-examples__groupcount"
+                  [class.is-ok]="group.passing === group.total"
+                >
+                  {{ group.passing }}/{{ group.total }} pasan
+                </span>
+              </div>
+              <ul class="bank-tester__recent">
+                @for (r of group.items; track r.example.id) {
+                  <li class="bank-example" [class.bank-example--fail]="!r.ok">
+                    <div class="bank-example__row">
+                      <span class="bank-example__status">{{ r.ok ? '✅' : '❌' }}</span>
+                      <span class="bank-example__name">
+                        {{ r.example.label || r.example.snippet }}
+                      </span>
+                      @if (r.expectMatch === false) {
+                        <span class="bank-example__badge bank-example__badge--neg">negativo</span>
+                      }
+                      <span class="bank-example__spacer"></span>
+                      <button
                         type="button"
-                        (clicked)="applyFix(fix)"
-                      >
-                        Agregar «{{ fix.value }}»
-                      </yep-button>
+                        class="bank-tester__remove"
+                        title="Editar ejemplo"
+                        (click)="startEditExample(r.example.id)"
+                      >✎</button>
+                      <button type="button" class="bank-tester__remove" title="Eliminar" (click)="removeExample(r.example.id)">✕</button>
+                    </div>
+                    @if (r.parsed.amount || r.expected || r.resolution) {
+                      <div class="bank-example__chips">
+                        @if (r.parsed.amount) {
+                          <span class="bank-example__chip">${{ r.parsed.amount }}</span>
+                        }
+                        @if (r.expected) {
+                          <span class="bank-example__chip">esperado: {{ expectedSummary(r.expected) }}</span>
+                        }
+                        @if (r.resolution; as res) {
+                          <span
+                            class="bank-example__chip"
+                            [class.is-fail]="res.ok === false"
+                          >resolución: {{ resolutionOutcomeLabel(res.outcome) }}{{ res.resolvedAccount ? ' → ' + res.resolvedAccount : '' }}{{ res.ok === false ? ' ❌ esperaba ' + resolutionExpectedLabel(res) : (res.ok === true ? ' ✅' : '') }}</span>
+                        }
+                      </div>
                     }
-                  </div>
+                    @if (r.diagnosis; as d) {
+                      <div class="bank-example__diag">
+                        <span>{{ d.message }}</span>
+                        @if (d.fix; as fix) {
+                          <yep-button
+                            variant="secondary"
+                            size="sm"
+                            type="button"
+                            (clicked)="applyFix(fix)"
+                          >
+                            Agregar «{{ fix.value }}»
+                          </yep-button>
+                        }
+                      </div>
+                    }
+                  </li>
                 }
-              </li>
-            }
-          </ul>
+              </ul>
+            </div>
+          }
         }
       </details>
     }

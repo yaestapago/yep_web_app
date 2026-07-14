@@ -36,6 +36,20 @@ export class AdminBanksApiService {
     return this.http.get<AdminBanksResponse>(`${this.apiUrl}/admin/banks`);
   }
 
+  /**
+   * Sube un archivo de correo (.eml/.msg) y lo parsea a `subject`/`from`/
+   * `bodyText` (texto plano real) para prellenar el probador y crear ejemplos
+   * fieles al contenido que ve el backend.
+   */
+  parseEmailFile(file: File): Observable<{ sample: SampleMessage }> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<{ sample: SampleMessage }>(
+      `${this.apiUrl}/admin/banks/parse-email-file`,
+      form,
+    );
+  }
+
   get(code: string): Observable<AdminBankResponse> {
     return this.http.get<AdminBankResponse>(`${this.apiUrl}/admin/banks/${code}`);
   }

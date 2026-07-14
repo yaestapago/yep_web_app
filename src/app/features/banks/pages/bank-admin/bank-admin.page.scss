@@ -299,13 +299,6 @@
     color: var(--color-text-secondary);
 
     textarea {
-      font-family: inherit;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md, 0.5rem);
-      padding: var(--space-2, 0.5rem);
       resize: vertical;
       min-height: 2.5rem;
     }
@@ -431,26 +424,6 @@
     }
   }
 
-  &__select {
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
-    padding: var(--space-2, 0.5rem);
-  }
-
-  &__field input[type='number'] {
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
-    padding: var(--space-2, 0.5rem);
-  }
-
   &__checks {
     display: flex;
     flex-wrap: wrap;
@@ -478,13 +451,6 @@
 
   input,
   textarea {
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
-    padding: var(--space-2, 0.5rem);
     width: 100%;
   }
 
@@ -601,6 +567,30 @@
   margin-top: var(--spacing-sm, 0.5rem);
 }
 
+.bank-form__uploadrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.bank-form__uploadbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+  padding: 4px var(--space-3, 0.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+}
+
 .bank-expected {
   display: flex;
   flex-direction: column;
@@ -624,13 +614,6 @@
     input,
     select,
     textarea {
-      font-family: inherit;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md, 0.5rem);
-      padding: var(--space-2, 0.5rem);
       width: 100%;
     }
   }
@@ -736,15 +719,85 @@
   align-items: center;
 }
 
+.bank-examples__group {
+  & + & {
+    margin-top: var(--space-3, 0.75rem);
+  }
+}
+
+.bank-examples__grouphead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2, 0.5rem);
+  margin: var(--space-2, 0.5rem) 0 var(--space-1, 0.25rem);
+}
+
+.bank-examples__grouptitle {
+  font-weight: var(--font-weight-bold, 700);
+  font-size: var(--font-size-sm);
+}
+
+.bank-examples__groupcount {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+
+  &.is-ok {
+    color: var(--color-success-strong, #15803d);
+  }
+}
+
 .bank-example {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs, 0.25rem);
+  cursor: default;
 
   &__row {
     display: flex;
-    align-items: baseline;
-    gap: var(--spacing-xs, 0.25rem);
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  &__name {
+    font-weight: var(--font-weight-semibold, 600);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__badge {
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: 1px var(--space-2, 0.5rem);
+    border-radius: var(--radius-full, 999px);
+
+    &--neg {
+      background: color-mix(in srgb, var(--color-warning, #e0a800) 18%, transparent);
+      color: var(--color-warning-strong, #b45309);
+    }
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1, 0.25rem);
+    margin-left: 1.4rem;
+  }
+
+  &__chip {
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: 1px var(--space-2, 0.5rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    background: var(--color-surface-muted, rgba(0, 0, 0, 0.04));
+    color: var(--color-text-secondary);
+
+    &.is-fail {
+      color: var(--color-error, #d33);
+    }
   }
 
   &__diag {
@@ -816,6 +869,24 @@
       line-height: 1.5;
     }
   }
+}
+
+/* Estilo común de todos los controles del panel (consolidado para no repetir). */
+.bank-form__field textarea,
+.bank-form__select,
+.bank-form__field input[type='number'],
+.bank-tester input,
+.bank-tester textarea,
+.bank-expected__grid input,
+.bank-expected__grid select,
+.bank-expected__grid textarea {
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: var(--space-2, 0.5rem);
 }
 
 @keyframes bank-admin-spin {

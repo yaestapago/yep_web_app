@@ -165,6 +165,8 @@ export class BankAdminPage {
   readonly runningExamples = signal(false);
   readonly recentEvents = signal<RecentEvent[]>([]);
   readonly loadingRecent = signal(false);
+  // Subida de archivo .eml/.msg para prellenar el probador con el correo real.
+  readonly uploadingEmailFile = signal(false);
   // Edición de un ejemplo guardado (reusa el probador); null = modo "agregar".
   readonly editingExampleId = signal<string | null>(null);
   readonly testerOpen = signal(false);
@@ -172,6 +174,21 @@ export class BankAdminPage {
   readonly editorTestResults = signal<ExampleRunResult[] | null>(null);
   readonly editorTestChannel = signal<ChannelKey | null>(null);
   readonly testingEditor = signal(false);
+
+  /** Ejemplos guardados agrupados por canal (para el listado), con conteo ✅. */
+  readonly exampleGroups = computed(() => {
+    const results = this.exampleResults();
+    return CHANNELS.map(({ key, label }) => {
+      const items = results.filter((r) => r.example.channel === key);
+      return {
+        channel: key,
+        label,
+        items,
+        passing: items.filter((r) => r.ok).length,
+        total: items.length,
+      };
+    }).filter((g) => g.total > 0);
+  });
 
   // --- Copiloto de IA (autoría de reglas, on-demand) ---
   readonly suggestingRules = signal(false);
@@ -1062,6 +1079,36 @@ export class BankAdminPage {
     }
     this.recentEvents.set([]);
     this.testTrigger.next();
+  }
+
+  /**
+   * Sube un archivo de correo (.eml/.msg), lo parsea en el backend al texto plano
+   * real y prellena el probador (canal correo) para crear un ejemplo fiel.
+   */
+  onEmailFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // permite re-subir el mismo archivo
+    if (!file) return;
+    this.uploadingEmailFile.set(true);
+    this.suggestError.set('');
+    this.api
+      .parseEmailFile(file)
+      .pipe(
+        finalize(() => this.uploadingEmailFile.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ sample }) => {
+          this.testChannel.set('email');
+          this.testTitle.set(sample.subject ?? '');
+          this.testBody.set(sample.bodyText ?? '');
+          this.testFrom.set(sample.from ?? '');
+          this.testerOpen.set(true);
+          this.testTrigger.next();
+        },
+        error: (err) => this.suggestError.set(httpErrorMessage(err)),
+      });
   }
 
   // --- Utilidades ---------------------------------------------------------
