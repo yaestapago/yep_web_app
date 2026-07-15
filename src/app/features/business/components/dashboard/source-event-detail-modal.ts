@@ -102,7 +102,7 @@ export class SourceEventDetailModal {
       const name = acc.displayName || acc.holderName || acc.bankId;
       return `${name} ····${acc.accountNumberLast4}`;
     }
-    return event.normalized?.receiverAccount || 'No detectada';
+    return event.normalized?.receiverAccount || event.normalized?.receiverBreBKey || 'No detectada';
   }
 
   sourceLabel(event: SourceEvent): string {

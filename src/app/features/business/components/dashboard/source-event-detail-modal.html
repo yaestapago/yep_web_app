@@ -61,6 +61,10 @@
           <dd>{{ destinationAccount(event) }}</dd>
         </div>
         <div>
+          <dt>Resolucion</dt>
+          <dd>{{ event.normalized?.reportedBankAccountResolution || 'Sin resolver' }}</dd>
+        </div>
+        <div>
           <dt>Cuenta origen</dt>
           <dd>{{ event.normalized?.senderAccount || 'No detectada' }}</dd>
         </div>

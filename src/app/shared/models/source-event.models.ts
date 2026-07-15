@@ -24,6 +24,9 @@ export interface SourceEventNormalized {
   transactionDate?: string;
   senderAccount?: string;
   receiverAccount?: string;
+  receiverBreBKey?: string;
+  reportedBankAccountId?: string;
+  reportedBankAccountResolution?: string;
 }
 
 /** Cuenta YEP a la que el backend enlazó el evento (por política de resolución). */
