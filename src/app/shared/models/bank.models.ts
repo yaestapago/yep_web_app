@@ -88,6 +88,8 @@ export interface SampleMessage {
   bigText?: string;
   subject?: string;
   bodyText?: string;
+  /** Cuerpo HTML crudo (fallback cuando no hay texto plano, p. ej. .msg/.eml solo-HTML). */
+  bodyHtml?: string;
   from?: string;
   date?: string;
   postTime?: number;

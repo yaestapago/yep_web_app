@@ -1102,8 +1102,15 @@ export class BankAdminPage {
         next: ({ sample }) => {
           this.testChannel.set('email');
           this.testTitle.set(sample.subject ?? '');
-          this.testBody.set(sample.bodyText ?? '');
+          // Cuerpo: texto plano si viene; si no (p. ej. .msg/correo solo-HTML),
+          // cae al HTML crudo — que es justo lo que el parser corre en ese caso.
+          this.testBody.set(sample.bodyText || sample.bodyHtml || '');
           this.testFrom.set(sample.from ?? '');
+          if (!sample.bodyText && !sample.bodyHtml) {
+            this.suggestError.set(
+              'El archivo no traía cuerpo legible (asunto/remitente sí). Prueba con el correo reenviado (suele traer texto plano).',
+            );
+          }
           this.testerOpen.set(true);
           this.testTrigger.next();
         },
