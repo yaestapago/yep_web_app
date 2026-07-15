@@ -78,6 +78,8 @@ export interface ParsedBankNotification {
   receiverAccount?: string;
   direction?: TransactionDirection;
   kind?: string;
+  /** Llave Bre-B del receptor extraída del texto (ej. `@LEONARDOF6907`). */
+  llave?: string;
   confidence: ParseConfidence;
 }
 
@@ -120,6 +122,8 @@ export interface ExpectedValues {
   reference?: string;
   senderAccount?: string;
   receiverAccount?: string;
+  /** Llave Bre-B del receptor (ej. `@LEONARDOF6907`). */
+  llave?: string;
 }
 
 /** Resultado de resolución esperado de un ejemplo (flujo completo). */

@@ -309,6 +309,17 @@
     font-size: var(--font-size-xs, 0.75rem);
   }
 
+  &__hint-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    margin-left: var(--space-1, 0.25rem);
+    color: var(--color-accent);
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
   &__tabs {
     display: flex;
     gap: var(--space-1, 0.25rem);

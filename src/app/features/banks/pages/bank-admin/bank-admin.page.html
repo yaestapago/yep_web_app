@@ -725,6 +725,28 @@
                           Código de moneda. Opcional (por defecto <code>COP</code>).
                         </small>
                       </label>
+                      <label class="bank-form__field">
+                        <span>Llave Bre-B</span>
+                        <input
+                          type="text"
+                          [value]="testExpected()?.llave ?? ''"
+                          (input)="setExpectedField('llave', $any($event.target).value)"
+                          placeholder="@LEONARDOF6907"
+                        />
+                        <small class="bank-form__hint">
+                          Llave Bre-B del receptor, si aplica. Opcional.
+                          @if (testResult()?.parsed?.llave; as detected) {
+                            Detectada: <code>{{ detected }}</code>
+                            <button
+                              type="button"
+                              class="bank-form__hint-btn"
+                              (click)="setExpectedField('llave', detected)"
+                            >
+                              usar detectada
+                            </button>
+                          }
+                        </small>
+                      </label>
                     </div>
                   </div>
 
