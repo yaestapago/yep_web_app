@@ -976,7 +976,15 @@ export class BankAdminPage {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.proposal.set(response),
+        next: (response) => {
+          this.proposal.set(response);
+          this.loadProposalIntoEditor(response, channel);
+          this.success.set(
+            response.allPass
+              ? 'Parser generado y cargado en el editor. Usa "Guardar cambios" para aplicarlo.'
+              : 'Parser generado y cargado en el editor, pero algunos ejemplos fallan. Revísalo antes de guardar.',
+          );
+        },
         error: (err) => {
           this.proposalChannel.set(null);
           this.suggestError.set(err instanceof Error ? err.message : httpErrorMessage(err));
@@ -996,15 +1004,20 @@ export class BankAdminPage {
       );
       return;
     }
-    const ctrl = this.form.controls[channel].controls.parseRules;
-    ctrl.setValue(JSON.stringify(proposal.proposedRules, null, 2));
-    ctrl.markAsDirty();
+    this.loadProposalIntoEditor(proposal, channel);
     this.activeChannel.set(channel);
     this.proposal.set(null);
     this.proposalChannel.set(null);
     this.success.set(
       'Reglas propuestas cargadas en el editor. Revisa y usa "Guardar cambios" para aplicarlas.',
     );
+  }
+
+  private loadProposalIntoEditor(proposal: SuggestRulesResponse, channel: ChannelKey): void {
+    const ctrl = this.form.controls[channel].controls.parseRules;
+    ctrl.setValue(JSON.stringify(proposal.proposedRules, null, 2));
+    ctrl.markAsDirty();
+    this.activeChannel.set(channel);
   }
 
   dismissProposal(): void {
