@@ -9,7 +9,18 @@ import {
   LucideLoaderCircle,
   LucidePlus,
 } from '@lucide/angular';
-import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
+import {
+  Subject,
+  catchError,
+  debounceTime,
+  filter,
+  finalize,
+  map,
+  of,
+  switchMap,
+  take,
+  timer,
+} from 'rxjs';
 
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
@@ -945,6 +956,22 @@ export class BankAdminPage {
     this.api
       .suggestRules(code, channel)
       .pipe(
+        switchMap(({ jobId }) =>
+          timer(0, 2500).pipe(
+            switchMap(() => this.api.suggestRulesJob(code, jobId)),
+            map((job) => {
+              if (job.status === 'error') {
+                throw new Error(job.error ?? 'No se pudo generar el parser.');
+              }
+              if (job.status === 'done' && !job.result) {
+                throw new Error('La generación terminó sin devolver reglas.');
+              }
+              return job.status === 'done' ? job.result : null;
+            }),
+            filter((result): result is SuggestRulesResponse => result !== null),
+            take(1),
+          ),
+        ),
         finalize(() => this.suggestingRules.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -952,7 +979,7 @@ export class BankAdminPage {
         next: (response) => this.proposal.set(response),
         error: (err) => {
           this.proposalChannel.set(null);
-          this.suggestError.set(httpErrorMessage(err));
+          this.suggestError.set(err instanceof Error ? err.message : httpErrorMessage(err));
         },
       });
   }

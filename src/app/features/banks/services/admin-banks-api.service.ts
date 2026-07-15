@@ -16,6 +16,8 @@ import {
   ParseTestResponse,
   RecentEvent,
   SampleMessage,
+  SuggestRulesJobResponse,
+  SuggestRulesJobStartResponse,
   SuggestRulesResponse,
   UpdateBankRequest,
   UpdateExampleRequest,
@@ -137,10 +139,20 @@ export class AdminBanksApiService {
   suggestRules(
     code: string,
     channel: ChannelKey,
-  ): Observable<SuggestRulesResponse> {
-    return this.http.post<SuggestRulesResponse>(
+  ): Observable<SuggestRulesJobStartResponse> {
+    return this.http.post<SuggestRulesJobStartResponse>(
       `${this.apiUrl}/admin/banks/${code}/suggest-rules`,
       { channel },
+    );
+  }
+
+  /** Estado/resultado del job async de generación de reglas. */
+  suggestRulesJob(
+    code: string,
+    jobId: string,
+  ): Observable<SuggestRulesJobResponse> {
+    return this.http.get<SuggestRulesJobResponse>(
+      `${this.apiUrl}/admin/banks/${code}/suggest-rules/${jobId}`,
     );
   }
 

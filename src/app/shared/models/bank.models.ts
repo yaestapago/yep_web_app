@@ -192,6 +192,16 @@ export interface SuggestRulesResponse {
   costUsd: number;
 }
 
+export interface SuggestRulesJobStartResponse {
+  jobId: string;
+}
+
+export interface SuggestRulesJobResponse {
+  status: 'pending' | 'done' | 'error';
+  result: SuggestRulesResponse | null;
+  error: string | null;
+}
+
 /** Resultado de correr un ejemplo contra la config actual (o una propuesta). */
 export interface ExampleRunResult {
   example: { id: string; channel: ChannelKey; label?: string; snippet: string };
