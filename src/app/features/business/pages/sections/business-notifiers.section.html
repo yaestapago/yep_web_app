@@ -275,6 +275,51 @@
         </div>
       }
     </div>
+
+    @if (isEmailKind() && selectedBankAccountIds().length > 0) {
+      <div class="email-forwarding-help full-field">
+        <div class="email-forwarding-help__header">
+          <div>
+            <span class="field-label">Remitentes originales del banco</span>
+            <p class="section-subtitle">
+              Usa estos valores en el filtro de Gmail para identificar los correos del banco.
+            </p>
+          </div>
+          @if (selectedEmailSenderPatterns().length > 0) {
+            <button
+              type="button"
+              class="code-copy code-copy--wide"
+              (click)="copyEmailSenderPatterns()"
+              [attr.aria-label]="
+                senderPatternsCopied() ? 'Remitentes copiados' : 'Copiar remitentes'
+              "
+              [title]="senderPatternsCopied() ? 'Remitentes copiados' : 'Copiar remitentes'"
+            >
+              @if (senderPatternsCopied()) {
+                <svg lucideClipboardCheck aria-hidden="true"></svg>
+                <span>Copiado</span>
+              } @else {
+                <svg lucideClipboardCopy aria-hidden="true"></svg>
+                <span>Copiar</span>
+              }
+            </button>
+          }
+        </div>
+
+        @if (selectedEmailSenderPatterns().length > 0) {
+          <div class="sender-pattern-list" aria-label="Remitentes originales del banco">
+            @for (sender of selectedEmailSenderPatterns(); track sender) {
+              <code class="sender-pattern-list__item">{{ sender }}</code>
+            }
+          </div>
+        } @else {
+          <p class="section-subtitle">
+            La cuenta seleccionada pertenece a un banco compatible, pero aún no tiene remitentes
+            configurados en reglas.
+          </p>
+        }
+      </div>
+    }
   </form>
 
   <ng-container modalFooter>
