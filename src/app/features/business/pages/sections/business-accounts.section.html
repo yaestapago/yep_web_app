@@ -50,6 +50,7 @@
             <span class="list-card__meta">
               {{ account.currency }} · {{ account.accountType }} · {{ locationNames(account) }}
             </span>
+            <span class="list-card__meta">Bre-B: {{ account.breBKeys.join(', ') }}</span>
             <span class="list-card__meta">{{ account.isActive ? 'Activa' : 'Inactiva' }}</span>
           </div>
           @if (canManage()) {
@@ -107,12 +108,20 @@
       <yep-input formControlName="holderName" label="Titular (opcional)" />
     </div>
 
+    <label class="field full-field">
+      <span class="field-label">Llaves Bre-B</span>
+      <textarea formControlName="breBKeys" rows="3" placeholder="Una llave por línea"></textarea>
+      @if (isInvalid('breBKeys')) {
+        <span class="field-error">Agrega al menos una llave Bre-B</span>
+      }
+    </label>
+
     <div class="form-grid form-grid--2">
       <yep-select
         formControlName="accountType"
         label="Tipo"
         placeholder="Selecciona un tipo"
-        [options]="accountTypeOptions"
+        [options]="accountTypeOptions()"
       />
       <yep-select
         formControlName="currency"

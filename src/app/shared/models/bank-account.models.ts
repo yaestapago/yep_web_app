@@ -16,6 +16,7 @@ export interface BankAccount {
   id: string;
   bankId: string;
   accountNumberLast4: string;
+  breBKeys: string[];
   displayName?: string;
   holderName?: string;
   accountType?: BankAccountType;
@@ -53,6 +54,7 @@ export interface BankAccountResponse {
 export interface CreateBankAccountRequest {
   bankId: string;
   accountNumber: string;
+  breBKeys: string[];
   locationIds: string[];
   displayName?: string;
   holderName?: string;
@@ -61,7 +63,8 @@ export interface CreateBankAccountRequest {
   isActive?: boolean;
 }
 
-export interface UpdateBankAccountRequest
-  extends Partial<Omit<CreateBankAccountRequest, 'accountNumber'>> {
+export interface UpdateBankAccountRequest extends Partial<
+  Omit<CreateBankAccountRequest, 'accountNumber'>
+> {
   accountNumber?: string;
 }

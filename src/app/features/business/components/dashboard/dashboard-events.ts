@@ -20,6 +20,8 @@ import {
   LucideSearch,
   LucideSmartphone,
   LucideTriangleAlert,
+  LucideVolume2,
+  LucideVolumeX,
 } from '@lucide/angular';
 import { debounceTime, distinctUntilChanged, skip } from 'rxjs';
 
@@ -32,6 +34,8 @@ import type {
 } from '../../../../shared/models/source-event.models';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { Toggle } from '../../../../shared/ui/toggle/toggle';
+import { TtsPlaybackService } from '../../../source-events/services/tts-playback.service';
 import { AutoFitRowsDirective } from './auto-fit-rows.directive';
 import { DashboardPager } from './dashboard-pager';
 
@@ -100,7 +104,10 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     LucideSearch,
     LucideSmartphone,
     LucideTriangleAlert,
+    LucideVolume2,
+    LucideVolumeX,
     Select,
+    Toggle,
     AutoFitRowsDirective,
     DashboardPager,
   ],
@@ -109,6 +116,9 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
 })
 export class DashboardEventsPanel {
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Lectura en voz alta de los eventos (el toggle de la cabecera). */
+  readonly tts = inject(TtsPlaybackService);
 
   /** Eventos ya filtrados y paginados por el servidor (la ventana cargada). */
   readonly events = defineInput.required<SourceEvent[]>();
@@ -188,6 +198,11 @@ export class DashboardEventsPanel {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((filters) => this.filtersChange.emit(filters));
+  }
+
+  /** Enciende/apaga la voz. Debe correr en el gesto del click (desbloquea autoplay). */
+  onToggleVoice(on: boolean): void {
+    this.tts.setEnabled(on);
   }
 
   isUnread(event: SourceEvent): boolean {

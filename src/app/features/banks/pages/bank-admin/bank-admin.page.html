@@ -1,21 +1,28 @@
 <div class="bank-admin">
   <header class="bank-admin__header">
     <div>
-      <a class="bank-admin__back" routerLink="/businesses">
+      <button type="button" class="bank-admin__back" (click)="goBack()">
         <svg lucideArrowLeft aria-hidden="true"></svg>
         Volver
-      </a>
+      </button>
       <h1 class="bank-admin__title">Reglas de notificadores (superadmin)</h1>
       <p class="bank-admin__subtitle">
-        Catálogo global de bancos. Define qué apps y textos escucha cada
-        notificador de la flota. Los cambios se aplican en el próximo latido de
-        cada dispositivo, sin re-emparejar.
+        Catálogo global de bancos. Controla qué escucha cada notificador (móvil,
+        correo, escritorio) y guarda ejemplos de lo que sabemos que sí se reconoce.
+        Los cambios aplican en el próximo latido, sin re-emparejar.
       </p>
     </div>
-    <yep-button size="sm" (clicked)="openCreate()">
-      <svg lucidePlus aria-hidden="true"></svg>
-      Nuevo banco
-    </yep-button>
+    <div class="bank-admin__headeractions">
+      <yep-button
+        variant="ghost"
+        size="sm"
+        title="¿Qué significan los estados de preparación (Solo origen / Extrae datos / Resuelve cuenta)?"
+        (clicked)="readinessHelpOpen.set(true)"
+      >
+        <svg lucideInfo aria-hidden="true"></svg>
+        Estados
+      </yep-button>
+    </div>
   </header>
 
   @if (error()) {
@@ -25,250 +32,524 @@
     <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
-  @if (loading()) {
-    <div class="bank-admin__loading">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando bancos…
-    </div>
-  } @else if (banks().length === 0) {
-    <div class="bank-admin__empty">
-      <h3>Aún no hay bancos</h3>
-      <p>Crea el primer banco para definir qué escucharán los notificadores.</p>
-    </div>
-  } @else {
-    <div class="bank-admin__list">
-      @for (bank of banks(); track bank.code) {
-        <article class="bank-card" [class.bank-card--inactive]="!bank.isActive">
-          <div class="bank-card__main">
-            <div class="bank-card__titlerow">
-              <h3 class="bank-card__title">{{ bank.name }}</h3>
-              <code class="bank-card__code">{{ bank.code }}</code>
-            </div>
-            <yep-status-dot
-              [level]="bank.isActive ? 'online' : 'offline'"
-              [label]="bank.isActive ? 'Activo' : 'Inactivo'"
-            />
-            <div class="bank-card__badges">
-              @for (badge of channelBadges(bank); track badge) {
-                <span class="bank-card__badge">{{ badge }}</span>
-              }
-              @if (channelBadges(bank).length === 0) {
-                <span class="bank-card__badge bank-card__badge--muted">Sin canales</span>
-              }
-            </div>
+  <div class="bank-admin__layout">
+    <!-- Menú lateral: lista de bancos -->
+    <aside class="bank-admin__sidebar">
+      <yep-button
+        size="sm"
+        class="bank-admin__newbtn"
+        (clicked)="openCreate()"
+      >
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nuevo banco
+      </yep-button>
+
+      @if (loading()) {
+        <div class="bank-admin__loading">
+          <svg lucideLoaderCircle aria-hidden="true"></svg>
+          Cargando…
+        </div>
+      } @else if (banks().length === 0) {
+        <p class="bank-admin__sidenote">
+          Aún no hay bancos. Crea el primero con "Nuevo banco".
+        </p>
+      } @else {
+        <ul class="bank-list">
+          @for (bank of banks(); track bank.code) {
+            @let ready = mobileReadiness(bank);
+            <li>
+              <button
+                type="button"
+                class="bank-list__item"
+                [class.is-active]="editingCode() === bank.code && editorOpen()"
+                [class.bank-list__item--inactive]="!bank.isActive"
+                (click)="selectBank(bank)"
+              >
+                <span class="bank-list__toprow">
+                  <span class="bank-list__name">{{ bank.name }}</span>
+                  <yep-status-dot
+                    [level]="bank.isActive ? 'online' : 'offline'"
+                    [label]="bank.isActive ? 'Activo' : 'Inactivo'"
+                  />
+                </span>
+                <span class="bank-list__metarow">
+                  <code class="bank-card__code">{{ bank.code }}</code>
+                  <span
+                    class="bank-card__ready bank-card__ready--{{ ready.tone }}"
+                    [title]="'Preparación móvil (ver «Estados»)'"
+                  >{{ ready.label }}</span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </aside>
+
+    <!-- Panel de edición del banco seleccionado -->
+    <main class="bank-admin__editor">
+      @if (editorOpen()) {
+        <div class="bank-editor">
+          <div class="bank-editor__head">
+            <h2 class="bank-editor__title">
+              {{ editingCode() ? 'Editar banco' : 'Nuevo banco' }}
+            </h2>
+            <p class="bank-form__hint">
+              Define qué escucha la flota para este banco. Todo se guarda en
+              minúsculas. Los cambios aplican en el próximo latido.
+            </p>
           </div>
-          <div class="bank-card__actions">
+
+          <div class="bank-editor__layout">
+            <!-- Navegación de secciones (sticky) -->
+            <nav class="bank-editor__nav" aria-label="Secciones del editor">
+              @for (s of editorSections(); track s.id) {
+                <button
+                  type="button"
+                  [class.is-active]="activeSection() === s.id"
+                  (click)="scrollToSection(s.id)"
+                >
+                  {{ s.label }}
+                </button>
+              }
+            </nav>
+
+            <div class="bank-editor__content">
+              <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
+    <!-- ═══ Sección: Datos base ═══ -->
+    <section id="sec-base" class="bank-form__block">
+      <h3 class="bank-form__blocktitle">Datos base</h3>
+
+      <div class="bank-form__row">
+        <yep-input
+          formControlName="code"
+          label="Código"
+          placeholder="bancolombia"
+          [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios.'"
+          [error]="isInvalid('code') ? 'Código inválido (minúsculas, dígitos, - o _).' : ''"
+        />
+        <yep-input
+          formControlName="name"
+          label="Nombre visible"
+          placeholder="Bancolombia"
+          [error]="isInvalid('name') ? 'Ingresa un nombre' : ''"
+        />
+      </div>
+
+      <label class="bank-form__switch">
+        <yep-toggle
+          appearance="switch"
+          [pressed]="form.controls.isActive.value"
+          ariaLabel="Banco activo"
+          (toggled)="setActive($event)"
+        />
+        <span>Banco activo (visible y escuchado por la flota)</span>
+      </label>
+
+      <!-- Tipos de cuenta soportados (propiedad del banco, no de un canal) -->
+      <div class="bank-form__section" formGroupName="supportedAccountTypes">
+        <h4 class="bank-form__sectiontitle">Tipos de cuenta soportados</h4>
+        <p class="bank-form__hint">
+          Los tipos de cuenta que ofrece este banco. Al registrar una cuenta bancaria
+          de este banco, solo se podrán elegir estos tipos. <strong>Vacío = sin
+          restricción</strong> (se permite cualquier tipo).
+        </p>
+        <div class="bank-form__checks">
+          @for (t of accountTypes; track t.key) {
+            <label class="bank-form__check">
+              <input type="checkbox" [formControlName]="t.key" />
+              <span>{{ t.label }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Sección: Canales ═══ -->
+    <section id="sec-canales" class="bank-form__block">
+      <h3 class="bank-form__blocktitle">Canales</h3>
+
+      <!-- Tabs de canal -->
+      <div class="bank-form__tabs">
+        @for (ch of channels; track ch.key) {
+          <button
+            type="button"
+            [class.is-active]="activeChannel() === ch.key"
+            (click)="activeChannel.set(ch.key)"
+          >
+            {{ ch.label }}
+            @if (channelEnabled(ch.key)) {
+              <span class="bank-form__tabdot" aria-label="activo"></span>
+            }
+          </button>
+        }
+      </div>
+
+      <!-- Campos del canal activo -->
+      <fieldset class="bank-form__channel" [formGroup]="channelCtrl(activeChannel())">
+      <label class="bank-form__switch">
+        <yep-toggle
+          appearance="switch"
+          [pressed]="channelEnabled(activeChannel())"
+          ariaLabel="Canal habilitado"
+          (toggled)="setChannelEnabled(activeChannel(), $event)"
+        />
+        <span>Canal habilitado</span>
+      </label>
+
+      @if (activeChannel() !== 'email') {
+        <label class="bank-form__field">
+          <span>Paquetes de apps (uno por línea)</span>
+          <textarea formControlName="packageNames" rows="2" placeholder="com.nequi.mobileapp"></textarea>
+          <small class="bank-form__hint">
+            Nombre EXACTO del paquete Android de la app que emite la notificación
+            (ej. <code>com.nequi.mobileapp</code>). Es lo que el celular escucha. Si
+            no hay patrones de contenido/remitente, el banco se atribuye con solo
+            que la notificación venga de una de estas apps.
+          </small>
+        </label>
+      }
+
+      <label class="bank-form__field">
+        <span>Patrones de contenido (uno por línea; vacío = sin filtro por contenido)</span>
+        <textarea formControlName="contentPatterns" rows="2" placeholder="te enviaron"></textarea>
+        <small class="bank-form__hint">
+          Texto que debe aparecer en el CUERPO del mensaje para atribuirlo a este
+          banco (ej. <code>bancolombia</code>, <code>te envió</code>). Útil cuando
+          varios bancos comparten la app de SMS. Vacío = no filtra por contenido.
+        </small>
+      </label>
+
+      <label class="bank-form__field">
+        <span>
+          @if (activeChannel() === 'email') {
+            Remitentes esperados del banco (uno por línea)
+          } @else {
+            Remitentes / números del SMS — en el título (uno por línea)
+          }
+        </span>
+        <textarea
+          formControlName="senderPatterns"
+          rows="2"
+          [placeholder]="activeChannel() === 'email' ? 'notificacionesbancolombia.com' : 'bancolombia&#10;87400'"
+        ></textarea>
+        @if (activeChannel() === 'email') {
+          <small class="bank-form__hint">
+            Remitente (o dominio) del correo del banco, ej.
+            <code>alertasynotificaciones&#64;bancolombia.com.co</code> o
+            <code>bancolombia.com.co</code>. El correo se atribuye si el remitente,
+            asunto o cuerpo contiene alguno de estos (o de los patrones de contenido).
+          </small>
+        } @else {
+          <small class="bank-form__hint">
+            Remitente del SMS/notificación, que llega en el <strong>título</strong>:
+            el número corto (ej. <code>87400</code>) o el nombre (ej.
+            <code>bancolombia</code>). Filtrado estricto: si pones alguno, SOLO se
+            atribuyen mensajes cuyo título lo contenga. Vacío = no filtra por
+            remitente (se atribuye por app/contenido).
+          </small>
+        }
+      </label>
+
+      @if (activeChannel() !== 'email') {
+        <label class="bank-form__field">
+          <span>Nombres visibles para escritorio (uno por línea)</span>
+          <textarea formControlName="displayNames" rows="2" placeholder="nequi colombia"></textarea>
+          <small class="bank-form__hint">
+            Solo escritorio (Vínculo a Windows): nombre de la app tal como aparece en
+            la notificación reflejada (ej. <code>nequi colombia</code>), porque ahí no
+            llega el paquete Android. Sirve como señal de atribución cuando no hay
+            contenido/remitente.
+          </small>
+        </label>
+      }
+
+      <details class="bank-form__advanced">
+        <summary>Extracción (parser) — avanzado</summary>
+        <p class="bank-form__hint">
+          Reglas de extracción en JSON (monto, remitente, dirección…). Vacío = este
+          canal NO extrae nada; genéralas con "Regenerar parser con IA" a partir de
+          los ejemplos. La base de datos es la única fuente de verdad (sin fallback).
+        </p>
+        <div class="bank-form__ruleactions">
+          @if (editingCode()) {
+            <yep-button
+              variant="secondary"
+              size="sm"
+              type="button"
+              [loading]="suggestingRules() && proposalChannel() === activeChannel()"
+              (clicked)="suggestRules(activeChannel())"
+            >
+              Regenerar parser con IA
+            </yep-button>
+            <button
+              type="button"
+              class="bank-form__prompt-btn"
+              [class.is-active]="promptEditorOpen()"
+              title="Editar el prompt que usa la IA para generar el parser (global)"
+              (click)="togglePromptEditor()"
+            >
+              ⚙ Prompt
+            </button>
+          }
+        </div>
+
+        <!-- Editor del prompt del copiloto (global, en caliente) -->
+        @if (promptEditorOpen()) {
+          <div class="bank-copilot">
+            <div class="bank-copilot__head">
+              <strong>Prompt del copiloto (global)</strong>
+              <span class="bank-form__hint">
+                {{ promptIsDefault() ? 'Usando el prompt por defecto' : 'Personalizado' }}
+              </span>
+            </div>
+            <p class="bank-form__hint">
+              Instrucciones de sistema para generar las <code>parseRules</code>. Marcadores
+              que se rellenan solos: <code>{{ '{{channel}}' }}</code> (canal) y
+              <code>{{ '{{fewShot}}' }}</code> (reglas de ejemplo). Los ejemplos del
+              banco se añaden aparte automáticamente. Aplica a TODOS los bancos.
+            </p>
+            @if (promptLoading()) {
+              <p class="bank-form__hint">Cargando…</p>
+            } @else {
+              <textarea
+                class="bank-form__code"
+                rows="10"
+                spellcheck="false"
+                [value]="promptText()"
+                (input)="promptText.set($any($event.target).value)"
+              ></textarea>
+              <div class="bank-form__ruleactions">
+                <yep-button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  [loading]="promptSaving()"
+                  (clicked)="savePrompt()"
+                >
+                  Guardar prompt
+                </yep-button>
+                <yep-button variant="ghost" size="sm" type="button" (clicked)="resetPromptToDefault()">
+                  Restaurar por defecto
+                </yep-button>
+                <yep-button variant="ghost" size="sm" type="button" (clicked)="togglePromptEditor()">
+                  Cerrar
+                </yep-button>
+              </div>
+            }
+          </div>
+        }
+
+        <textarea
+          class="bank-form__code"
+          formControlName="parseRules"
+          rows="8"
+          spellcheck="false"
+        ></textarea>
+        @if (parseRulesInvalid(activeChannel())) {
+          <small class="bank-form__error">JSON inválido.</small>
+        }
+
+        @if (suggestError()) {
+          <small class="bank-form__error">{{ suggestError() }}</small>
+        }
+
+        <!-- Propuesta del copiloto (solo del canal activo) -->
+        @if (proposal(); as p) {
+          @if (proposalChannel() === activeChannel()) {
+            <div class="bank-copilot" [class.bank-copilot--ok]="p.allPass">
+              <div class="bank-copilot__head">
+                <strong>
+                  {{ p.allPass ? '✅ Propuesta: todos los ejemplos pasan' : '⚠️ Propuesta: algunos ejemplos fallan' }}
+                </strong>
+                <span class="bank-form__hint">
+                  {{ p.iterations }} iteración(es) · ~${{ p.costUsd }} USD
+                </span>
+              </div>
+              <ul class="bank-copilot__results">
+                @for (r of p.results; track r.example.id) {
+                  <li>
+                    <span>{{ r.ok ? '✅' : '❌' }}</span>
+                    <span class="bank-tester__recent-snippet">
+                      {{ r.example.snippet }}{{ r.expectMatch === false ? ' 🚫' : '' }}
+                    </span>
+                    @if (r.expectMatch === false) {
+                      <span class="bank-copilot__expected">negativo: no debe parsear</span>
+                    } @else if (r.expected) {
+                      <span class="bank-copilot__expected">esperado: {{ expectedSummary(r.expected) }}</span>
+                    }
+                    <span class="bank-copilot__got">
+                      obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
+                      {{ r.parsed.senderName ? ' · ' + r.parsed.senderName : '' }}
+                      · {{ r.parsed.confidence }}
+                    </span>
+                  </li>
+                }
+              </ul>
+              <details class="bank-copilot__json">
+                <summary>Ver reglas propuestas (JSON)</summary>
+                <pre>{{ p.proposedRules | json }}</pre>
+              </details>
+              @if (!p.allPass) {
+                <p class="bank-form__hint">
+                  No se puede aceptar: aún hay ejemplos que no pasan. Vuelve a generar,
+                  revisa los ejemplos que fallan (o sus valores esperados), y acepta solo
+                  cuando <strong>todos pasen ✅</strong>.
+                </p>
+              }
+              <div class="bank-form__ruleactions">
+                <yep-button variant="ghost" size="sm" type="button" (clicked)="dismissProposal()">
+                  Descartar
+                </yep-button>
+                <yep-button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  [disabled]="!p.allPass"
+                  [title]="p.allPass ? '' : 'Solo se puede aceptar cuando todos los ejemplos pasan'"
+                  (clicked)="acceptProposal()"
+                >
+                  Aceptar y cargar al editor
+                </yep-button>
+              </div>
+            </div>
+          }
+        }
+      </details>
+
+      <!-- Sección: Resolución de cuenta (capa 4) -->
+      <div class="bank-form__section" formGroupName="accountResolutionPolicy">
+        <h4 class="bank-form__sectiontitle">
+          Resolución de cuenta
+          <button
+            type="button"
+            class="bank-form__infobtn"
+            title="¿Qué hace cada estrategia de resolución?"
+            aria-label="Ayuda: políticas de resolución de cuenta"
+            (click)="policyHelpOpen.set(true)"
+          >
+            <svg lucideInfo aria-hidden="true"></svg>
+          </button>
+        </h4>
+        <p class="bank-form__hint">
+          Cómo el backend decide a qué cuenta YEP pertenece la notificación
+          (<code>reportedBankAccountId</code>). Sin estrategia = comportamiento por
+          defecto (sufijo si viene en el mensaje; si no, por unicidad).
+        </p>
+        <label class="bank-form__field">
+          <span>Estrategia</span>
+          <select formControlName="strategy" class="bank-form__select">
+            @for (opt of resolutionStrategies; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <div class="bank-form__row">
+          <label class="bank-form__field">
+            <span>Mínimo de dígitos para sufijo</span>
+            <input type="number" min="1" max="20" formControlName="minSuffixDigits" placeholder="4" />
+          </label>
+          <label class="bank-form__field">
+            <span>Máx. cuentas de este banco por notificador</span>
+            <input type="number" min="1" formControlName="maxAccountsPerNotifier" placeholder="sin límite" />
+          </label>
+        </div>
+        <label class="bank-form__check">
+          <input type="checkbox" formControlName="requireResolvedAccount" />
+          <span>Exigir cuenta resuelta — si no se resuelve, no se enlaza automáticamente</span>
+        </label>
+      </div>
+      </fieldset>
+    </section>
+
+    <!-- ═══ Sección: Resumen ═══ -->
+    <section id="sec-resumen" class="bank-form__block">
+      <yep-alert variant="info" title="Qué hará este banco">
+        <ul class="bank-form__clarity">
+          @for (line of clarity(); track line.channel) {
+            <li>{{ line.text }}</li>
+          }
+        </ul>
+      </yep-alert>
+    </section>
+
+    <!-- ═══ Sección: Probador ═══ -->
+    <section id="sec-probador" class="bank-form__block">
+      <h3 class="bank-form__blocktitle">Probar con un mensaje</h3>
+      <p class="bank-form__hint">
+        Pega un mensaje (o carga un evento real) y mira en vivo si se atribuiría y
+        qué extraen las reglas TAL COMO están en el editor. Si el resultado te
+        convence, usa "Guardar como ejemplo…" para volverlo un fixture del banco.
+      </p>
+      <div class="bank-tester">
+        <div class="bank-tester__channel">
+          @for (ch of channels; track ch.key) {
+            <button
+              type="button"
+              [class.is-active]="testChannel() === ch.key"
+              (click)="setTestChannel(ch.key)"
+            >
+              {{ ch.label }}
+            </button>
+          }
+        </div>
+
+        @if (editingCode()) {
+          <div class="bank-tester__recentbar">
             <yep-button
               variant="ghost"
               size="sm"
-              [title]="'Editar'"
-              [disabled]="actingCode() === bank.code"
-              (clicked)="openEdit(bank)"
+              type="button"
+              [loading]="loadingRecent()"
+              (clicked)="loadRecentEvents()"
             >
-              <svg lucidePencil aria-label="Editar"></svg>
+              Cargar evento reciente
             </yep-button>
-            @if (bank.isActive) {
-              <yep-button
-                variant="danger"
-                size="sm"
-                [title]="'Desactivar'"
-                [loading]="actingCode() === bank.code"
-                (clicked)="remove(bank)"
-              >
-                <svg lucideTrash2 aria-label="Desactivar"></svg>
-              </yep-button>
-            }
           </div>
-        </article>
-      }
-    </div>
-  }
-</div>
-
-<yep-modal
-  [open]="modalOpen()"
-  size="lg"
-  [title]="editingCode() ? 'Editar banco' : 'Nuevo banco'"
-  subtitle="Define qué escucha la flota para este banco. Todo se guarda en minúsculas."
-  [loading]="saving()"
-  (closeRequested)="closeModal()"
->
-  <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
-    <div class="bank-form__row">
-      <yep-input
-        formControlName="code"
-        label="Código"
-        placeholder="bancolombia"
-        [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios. Coincide con el bankId de las cuentas.'"
-        [error]="isInvalid('code') ? 'Código inválido (minúsculas, dígitos, - o _).' : ''"
-      />
-      <yep-input
-        formControlName="name"
-        label="Nombre visible"
-        placeholder="Bancolombia"
-        [error]="isInvalid('name') ? 'Ingresa un nombre' : ''"
-      />
-    </div>
-
-    <label class="bank-form__switch">
-      <yep-toggle
-        appearance="switch"
-        [pressed]="form.controls.isActive.value"
-        ariaLabel="Banco activo"
-        (toggled)="setToggle('isActive', $event)"
-      />
-      <span>Banco activo (visible y escuchado por la flota)</span>
-    </label>
-
-    <!-- Canal Teléfono -->
-    <fieldset class="bank-form__channel">
-      <legend>
-        <yep-toggle
-          appearance="switch"
-          [pressed]="form.controls.phoneEnabled.value"
-          ariaLabel="Canal teléfono habilitado"
-          (toggled)="setToggle('phoneEnabled', $event)"
-        />
-        Teléfono
-      </legend>
-      <label class="bank-form__field">
-        <span>Paquetes de apps (uno por línea)</span>
-        <textarea formControlName="phonePackageNames" rows="2" placeholder="com.nequi.mobileapp"></textarea>
-      </label>
-      <label class="bank-form__field">
-        <span>Patrones de contenido (uno por línea; vacío = sin filtro)</span>
-        <textarea formControlName="phoneContentPatterns" rows="2" placeholder="te enviaron"></textarea>
-      </label>
-      <label class="bank-form__field">
-        <span>Remitente/ID en el título del SMS (uno por línea)</span>
-        <textarea formControlName="phoneTitlePatterns" rows="2" placeholder="bancolombia&#10;891900"></textarea>
-        <small class="bank-form__hint">El número o nombre corto que aparece como remitente del SMS (llega en el título de la notificación).</small>
-      </label>
-      <label class="bank-form__field">
-        <span>Nombres visibles para escritorio (uno por línea)</span>
-        <textarea formControlName="phoneDisplayNames" rows="2" placeholder="nequi colombia"></textarea>
-      </label>
-
-      <details class="bank-form__advanced">
-        <summary>Extracción (parser) — avanzado</summary>
-        <p class="bank-form__hint">
-          Reglas de extracción en JSON (monto, remitente, dirección, tipo…). Vacío
-          = usa el parser por defecto del banco. Usa el <strong>probador</strong>
-          de abajo para verificar qué extrae.
-        </p>
-        <yep-button
-          variant="secondary"
-          size="sm"
-          type="button"
-          [loading]="loadingDefaults()"
-          (clicked)="loadDefaults('phone')"
-        >
-          Cargar reglas por defecto
-        </yep-button>
-        <textarea
-          class="bank-form__code"
-          formControlName="phoneParseRules"
-          rows="8"
-          spellcheck="false"
-          placeholder='{ "currency": "COP", "amount": [{ "pattern": "\$\\s*([\\d.,]+)" }] }'
-        ></textarea>
-        @if (parseRulesInvalid('phone')) {
-          <small class="bank-form__error">JSON inválido.</small>
+          @if (recentEvents().length) {
+            <ul class="bank-tester__recent">
+              @for (ev of recentEvents(); track ev.id) {
+                <li (click)="pickRecent(ev)">
+                  <span class="bank-tester__recent-date">{{ ev.occurredAt | date: 'short' }}</span>
+                  <span class="bank-tester__recent-snippet">{{ ev.snippet || '(sin texto)' }}</span>
+                </li>
+              }
+            </ul>
+          }
         }
-      </details>
-    </fieldset>
 
-    <!-- Canal Correo -->
-    <fieldset class="bank-form__channel">
-      <legend>
-        <yep-toggle
-          appearance="switch"
-          [pressed]="form.controls.emailEnabled.value"
-          ariaLabel="Canal correo habilitado"
-          (toggled)="setToggle('emailEnabled', $event)"
-        />
-        Correo
-      </legend>
-      <label class="bank-form__field">
-        <span>Paquetes / remitentes (uno por línea)</span>
-        <textarea formControlName="emailPackageNames" rows="2"></textarea>
-      </label>
-      <label class="bank-form__field">
-        <span>Patrones de contenido (uno por línea)</span>
-        <textarea formControlName="emailContentPatterns" rows="2"></textarea>
-      </label>
-      <label class="bank-form__field">
-        <span>Remitentes del banco a atribuir (uno por línea)</span>
-        <textarea formControlName="emailSenderPatterns" rows="2" placeholder="notificacionesbancolombia.com"></textarea>
-        <small class="bank-form__hint">Tokens/direcciones del remitente oficial del banco que aparecen en el correo reenviado.</small>
-      </label>
-      <label class="bank-form__field">
-        <span>Nombres visibles (uno por línea)</span>
-        <textarea formControlName="emailDisplayNames" rows="2"></textarea>
-      </label>
-
-      <details class="bank-form__advanced">
-        <summary>Extracción (parser) — avanzado</summary>
-        <p class="bank-form__hint">
-          Reglas de extracción en JSON. Vacío = usa el parser por defecto del banco.
-        </p>
-        <yep-button
-          variant="secondary"
-          size="sm"
-          type="button"
-          [loading]="loadingDefaults()"
-          (clicked)="loadDefaults('email')"
-        >
-          Cargar reglas por defecto
-        </yep-button>
-        <textarea
-          class="bank-form__code"
-          formControlName="emailParseRules"
-          rows="8"
-          spellcheck="false"
-        ></textarea>
-        @if (parseRulesInvalid('email')) {
-          <small class="bank-form__error">JSON inválido.</small>
+        @if (testChannel() === 'email') {
+          <div class="bank-form__uploadrow">
+            <label class="bank-form__uploadbtn">
+              <input
+                type="file"
+                accept=".eml,.msg,message/rfc822"
+                hidden
+                (change)="onEmailFileSelected($event)"
+              />
+              {{ uploadingEmailFile() ? 'Leyendo…' : 'Subir .eml / .msg' }}
+            </label>
+            <small class="bank-form__hint">
+              Sube el correo tal cual llega (mejor el reenviado a YEP): usamos su
+              texto plano real para que el ejemplo coincida con lo que ve el parser.
+            </small>
+          </div>
+          <label class="bank-form__field">
+            <span>Remitente (from)</span>
+            <input
+              type="text"
+              [value]="testFrom()"
+              (input)="onTestFrom($any($event.target).value)"
+              placeholder="alertasynotificaciones@bancolombia.com.co"
+            />
+          </label>
         }
-      </details>
-    </fieldset>
-
-    <!-- Panel de claridad: traduce las reglas a lenguaje natural, en vivo -->
-    <yep-alert variant="info" title="Qué hará este banco">
-      <ul class="bank-form__clarity">
-        @for (line of clarity(); track line.channel) {
-          <li>{{ line.text }}</li>
-        }
-      </ul>
-    </yep-alert>
-
-    <!-- Probador: pega un mensaje real y ve qué extraería la config actual -->
-    <details class="bank-form__advanced">
-      <summary>Probar con un mensaje real</summary>
-      <div class="bank-tester">
-        <div class="bank-tester__channel">
-          <button
-            type="button"
-            [class.is-active]="testChannel() === 'phone'"
-            (click)="setTestChannel('phone')"
-          >
-            Teléfono
-          </button>
-          <button
-            type="button"
-            [class.is-active]="testChannel() === 'email'"
-            (click)="setTestChannel('email')"
-          >
-            Correo
-          </button>
-        </div>
         <label class="bank-form__field">
-          <span>{{ testChannel() === 'email' ? 'Asunto' : 'Título' }}</span>
+          <span>{{ testChannel() === 'email' ? 'Asunto' : 'Título (remitente del SMS)' }}</span>
           <input
             type="text"
             [value]="testTitle()"
             (input)="onTestTitle($any($event.target).value)"
-            placeholder="Bancolombia"
           />
         </label>
         <label class="bank-form__field">
@@ -298,22 +579,332 @@
               <dt>Dirección</dt><dd>{{ r.parsed.direction ?? '—' }}</dd>
               <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
               <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
-              <dt>Cuenta origen</dt><dd>{{ r.parsed.senderAccount ?? '—' }}</dd>
               <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
               <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
             </dl>
           </div>
         }
-      </div>
-    </details>
-  </form>
 
+        @if (editingCode()) {
+          <div class="bank-form__ruleactions">
+            <yep-button
+              variant="secondary"
+              size="sm"
+              type="button"
+              [disabled]="!testTitle() && !testBody()"
+              (clicked)="openExampleFromTester()"
+            >
+              Guardar como ejemplo…
+            </yep-button>
+            <small class="bank-form__hint">
+              Abre el editor de ejemplo con este mensaje precargado, para completar
+              lo esperado (ground truth) y guardarlo.
+            </small>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ═══ Sección: Ejemplos guardados (solo al editar) ═══ -->
+    @if (editingCode()) {
+      <section id="sec-ejemplos" class="bank-form__block">
+        <div class="bank-examples__header">
+          <h3 class="bank-form__blocktitle">Ejemplos guardados ({{ exampleResults().length }})</h3>
+          <yep-button size="sm" type="button" (clicked)="openNewExample()">
+            <svg lucidePlus aria-hidden="true"></svg>
+            Agregar ejemplo
+          </yep-button>
+        </div>
+        <p class="bank-form__hint">
+          Mensajes que sabemos que sí se escuchan/parsean (positivos) o que NO deberían
+          parsearse (negativos 🚫). Se corren contra la config guardada — ✅ si cumple
+          lo esperado, ❌ si no (con diagnóstico). <strong>Haz clic en un ejemplo para
+          verlo o editarlo.</strong>
+        </p>
+
+        <div class="bank-form__ruleactions">
+          <yep-button
+            variant="secondary"
+            size="sm"
+            type="button"
+            [loading]="testingEditor()"
+            (clicked)="testExamplesAgainstEditor()"
+          >
+            Probar con las reglas del editor ({{ activeChannel() }})
+          </yep-button>
+          @if (editorTestResults()) {
+            <yep-button variant="ghost" size="sm" type="button" (clicked)="clearEditorTest()">
+              Volver a la config guardada
+            </yep-button>
+          }
+        </div>
+
+        @if (editorTestResults(); as results) {
+          <div class="bank-copilot" [class.bank-copilot--ok]="results.length && !hasFailures(results)">
+            <div class="bank-copilot__head">
+              <strong>
+                Prueba contra el editor — canal {{ editorTestChannel() }} (sin guardar)
+              </strong>
+              <span class="bank-form__hint">
+                {{ results.length }} ejemplo(s); si algo falla, ajusta y vuelve a probar.
+              </span>
+            </div>
+            @if (results.length === 0) {
+              <p class="bank-form__hint">No hay ejemplos de este canal para probar.</p>
+            } @else {
+              <ul class="bank-copilot__results">
+                @for (r of results; track r.example.id) {
+                  <li>
+                    <span>{{ r.ok ? '✅' : '❌' }}</span>
+                    <span class="bank-tester__recent-snippet">
+                      {{ r.example.snippet }}{{ r.expectMatch === false ? ' 🚫' : '' }}
+                    </span>
+                    <span class="bank-copilot__got">
+                      obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
+                      {{ r.parsed.senderName ? ' · ' + r.parsed.senderName : '' }}
+                      · {{ r.parsed.confidence }}
+                    </span>
+                    @if (r.diagnosis?.fix; as fix) {
+                      <yep-button variant="secondary" size="sm" type="button" (clicked)="applyFix(fix)">
+                        Agregar «{{ fix.value }}»
+                      </yep-button>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        @if (runningExamples()) {
+          <p class="bank-form__hint">Verificando…</p>
+        } @else if (exampleResults().length === 0) {
+          <p class="bank-form__hint">
+            Aún no hay ejemplos. Usa "Agregar ejemplo" o captura uno desde el probador.
+          </p>
+        } @else {
+          @for (group of exampleGroups(); track group.channel) {
+            <div class="bank-examples__group">
+              <div class="bank-examples__grouphead">
+                <span class="bank-examples__grouptitle">{{ group.label }}</span>
+                <span
+                  class="bank-examples__groupcount"
+                  [class.is-ok]="group.passing === group.total"
+                >
+                  {{ group.passing }}/{{ group.total }} pasan
+                </span>
+              </div>
+              <div class="bank-examples__grid">
+                @for (r of group.items; track r.example.id) {
+                  <div
+                    class="example-card"
+                    [class.example-card--fail]="!r.ok"
+                    role="button"
+                    tabindex="0"
+                    title="Ver / editar este ejemplo"
+                    (click)="openExample(r)"
+                    (keyup.enter)="openExample(r)"
+                  >
+                    <div class="example-card__row">
+                      <span class="example-card__status">{{ r.ok ? '✅' : '❌' }}</span>
+                      <span class="example-card__name">
+                        {{ r.example.label || r.example.snippet }}
+                      </span>
+                      @if (r.expectMatch === false) {
+                        <span class="example-card__badge">negativo</span>
+                      }
+                    </div>
+                    @if (r.parsed.amount || r.expected || r.resolution) {
+                      <div class="example-card__chips">
+                        @if (r.parsed.amount) {
+                          <span class="example-card__chip">${{ r.parsed.amount }}</span>
+                        }
+                        @if (r.expected) {
+                          <span class="example-card__chip">esperado: {{ expectedSummary(r.expected) }}</span>
+                        }
+                        @if (r.resolution; as res) {
+                          <span
+                            class="example-card__chip"
+                            [class.is-fail]="res.ok === false"
+                          >resolución: {{ resolutionOutcomeLabel(res.outcome) }}{{ res.resolvedAccount ? ' → ' + res.resolvedAccount : '' }}{{ res.ok === false ? ' ❌ esperaba ' + resolutionExpectedLabel(res) : (res.ok === true ? ' ✅' : '') }}</span>
+                        }
+                      </div>
+                    }
+                    @if (r.diagnosis; as d) {
+                      <div class="example-card__diag">
+                        <span>{{ d.message }}</span>
+                        @if (d.fix; as fix) {
+                          <yep-button
+                            variant="secondary"
+                            size="sm"
+                            type="button"
+                            (clicked)="applyFix(fix); $event.stopPropagation()"
+                          >
+                            Agregar «{{ fix.value }}»
+                          </yep-button>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      </section>
+    }
+              </form>
+            </div>
+          </div>
+
+          <div class="bank-editor__toolbar">
+            <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeEditor()">
+              Cancelar
+            </yep-button>
+            @if (editingCode(); as code) {
+              @if (currentBankActive()) {
+                <yep-button
+                  variant="danger"
+                  [loading]="actingCode() === code"
+                  (clicked)="removeCurrent()"
+                >
+                  Desactivar banco
+                </yep-button>
+              }
+            }
+            <yep-button [loading]="saving()" (clicked)="save()">
+              {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
+            </yep-button>
+          </div>
+        </div>
+      } @else {
+        <div class="bank-admin__editorempty">
+          <h3>Selecciona un banco</h3>
+          <p>Elige un banco del menú de la izquierda para editarlo, o crea uno nuevo.</p>
+        </div>
+      }
+    </main>
+  </div>
+</div>
+
+<!-- Modal de CRUD de un ejemplo (crear / ver / editar / borrar) -->
+@if (editingCode(); as code) {
+  <app-example-editor-modal
+    [open]="exampleModalOpen()"
+    [bankCode]="code"
+    [example]="exampleModalExample()"
+    [runResult]="exampleModalRunResult()"
+    [initialChannel]="exampleModalChannel()"
+    [initialSample]="exampleModalSeed()"
+    [configProvider]="exampleConfigProvider"
+    (saved)="onExampleSaved($event)"
+    (deleted)="onExampleDeleted($event)"
+    (closed)="closeExampleModal()"
+  />
+}
+
+<!-- Modal de ayuda: estados de preparación móvil -->
+<yep-modal
+  [open]="readinessHelpOpen()"
+  size="md"
+  title="Estados de preparación (canal móvil)"
+  subtitle="Qué tan listo está cada banco para procesar notificaciones móviles de forma confiable."
+  (closeRequested)="readinessHelpOpen.set(false)"
+>
+  <div class="bank-help">
+    <p class="bank-help__intro">
+      El badge de cada banco indica hasta qué <strong>capa</strong> está configurado su
+      canal <strong>móvil</strong>. Van en escalera: cada nivel agrega algo sobre el
+      anterior. Es una guía de "cuánto has configurado", no una garantía — para eso están
+      los <strong>ejemplos guardados</strong>, que corren el flujo real y dan ✅/❌.
+    </p>
+    <ul class="bank-help__states">
+      <li>
+        <span class="bank-card__ready bank-card__ready--muted">Móvil off</span>
+        <span>El canal móvil está deshabilitado: el banco no se escucha por teléfono.</span>
+      </li>
+      <li>
+        <span class="bank-card__ready bank-card__ready--warn">Solo origen</span>
+        <span>
+          Sabe <strong>de dónde</strong> viene la notificación (paquetes de app / patrones
+          de remitente o contenido), pero aún no extrae datos ni resuelve cuenta.
+        </span>
+      </li>
+      <li>
+        <span class="bank-card__ready bank-card__ready--info">Extrae datos</span>
+        <span>
+          Tiene <strong>reglas de extracción</strong> (<code>parseRules</code>): saca monto,
+          dirección, referencia, cuenta, etc. del mensaje. Todavía no garantiza a qué cuenta
+          YEP pertenece.
+        </span>
+      </li>
+      <li>
+        <span class="bank-card__ready bank-card__ready--ok">Resuelve cuenta</span>
+        <span>
+          Extrae datos <strong>y</strong> tiene <strong>política de resolución de cuenta</strong>:
+          puede asignar el evento a una cuenta YEP concreta. Este es el estándar para
+          producción.
+        </span>
+      </li>
+    </ul>
+    <p class="bank-help__intro">
+      Para subir de nivel: agrega <code>parseRules</code> (usa "Regenerar parser con IA" a
+      partir de tus ejemplos) para llegar a <strong>Extrae datos</strong>, y define una
+      <strong>estrategia de resolución</strong> para llegar a <strong>Resuelve cuenta</strong>.
+    </p>
+  </div>
   <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeModal()">
-      Cancelar
-    </yep-button>
-    <yep-button type="submit" [loading]="saving()" (clicked)="save()">
-      {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
-    </yep-button>
+    <yep-button (clicked)="readinessHelpOpen.set(false)">Entendido</yep-button>
+  </ng-container>
+</yep-modal>
+
+<!-- Modal de ayuda: políticas de resolución de cuenta -->
+<yep-modal
+  [open]="policyHelpOpen()"
+  size="lg"
+  title="Políticas de resolución de cuenta"
+  subtitle="Cómo decide el backend a qué cuenta YEP (reportedBankAccountId) pertenece una notificación."
+  (closeRequested)="policyHelpOpen.set(false)"
+>
+  <div class="bank-help">
+    <p class="bank-help__intro">
+      Cuando llega una notificación transaccional, el backend debe decidir a cuál de las
+      cuentas del notificador corresponde. La <strong>estrategia</strong> define cómo:
+    </p>
+    <dl class="bank-help__policies">
+      <dt>Sin política (por defecto)</dt>
+      <dd>Sufijo/últimos dígitos si el mensaje trae cuenta; si no, por unicidad. Es el comportamiento histórico.</dd>
+
+      <dt>Una sola cuenta por notificador</dt>
+      <dd>
+        El banco solo permite una cuenta por notificador (Nequi, billeteras). Resuelve por
+        esa única cuenta. Se combina con <em>máx. cuentas por notificador = 1</em> para
+        impedir asociar más.
+      </dd>
+
+      <dt>Una cuenta del banco → por unicidad</dt>
+      <dd>Si hay una sola cuenta de ese banco en el notificador, resuelve a ella; si hay varias, exige señal (cuenta/sufijo).</dd>
+
+      <dt>Solo por número de cuenta completo</dt>
+      <dd>Solo resuelve si el mensaje trae el número completo y coincide exactamente. Sin fallback por unicidad.</dd>
+
+      <dt>Por sufijo / últimos dígitos</dt>
+      <dd>Resuelve si los últimos dígitos del mensaje coinciden con una única cuenta (mín. configurable). Sin fallback por unicidad.</dd>
+
+      <dt>Sufijo si viene; si no, por unicidad</dt>
+      <dd>Intenta por sufijo/cuenta; si el mensaje no trae cuenta y hay una sola candidata, resuelve por unicidad. Útil para bancos que a veces incluyen dígitos y a veces no (p. ej. Bancolombia).</dd>
+
+      <dt>Exige coincidencia dinámica (sufijo obligatorio)</dt>
+      <dd>Exige que el mensaje traiga una señal de cuenta que coincida; nunca resuelve solo por unicidad. Para alto riesgo de falsos positivos o apps compartidas.</dd>
+    </dl>
+    <p class="bank-help__intro"><strong>Opciones adicionales:</strong></p>
+    <ul class="bank-help__states">
+      <li><span>Mínimo de dígitos para sufijo</span><span>Cuántos dígitos finales deben coincidir para aceptar un match por sufijo (por defecto 4).</span></li>
+      <li><span>Máx. cuentas por notificador</span><span>Límite de cuentas de este banco que se pueden asociar a un notificador (p. ej. Nequi = 1). Se valida al crear/editar el notificador.</span></li>
+      <li><span>Exigir cuenta resuelta</span><span>Si está activo y no se puede resolver la cuenta, el evento NO se enlaza automáticamente: queda en <code>needs_review</code> para revisión humana.</span></li>
+    </ul>
+  </div>
+  <ng-container modalFooter>
+    <yep-button (clicked)="policyHelpOpen.set(false)">Entendido</yep-button>
   </ng-container>
 </yep-modal>

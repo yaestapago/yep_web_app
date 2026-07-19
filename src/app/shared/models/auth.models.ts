@@ -98,6 +98,7 @@ export interface RegisterRequest {
 export interface RegisterRequestCodeRequest {
   email: string;
   identificationNumber: string;
+  cellphoneNumber: string;
 }
 
 export interface RegisterRequestCodeResponse {

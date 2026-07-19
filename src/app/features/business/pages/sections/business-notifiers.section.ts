@@ -430,25 +430,94 @@ export class BusinessNotifiersSection implements OnInit {
     this.modalOpen.set(false);
   }
 
+  /** Canal de config del banco según el tipo (kind) seleccionado. */
+  private channelForKind(): 'mobile' | 'email' | 'desk' {
+    const kind = this.selectedKind();
+    if (kind === 'email') return 'email';
+    if (kind === 'desktop') return 'desk';
+    return 'mobile';
+  }
+
+  /** Etiqueta legible del tipo seleccionado (para mensajes). */
+  private kindLabel(): string {
+    const kind = this.selectedKind();
+    return kind === 'email' ? 'de correo' : kind === 'desktop' ? 'de escritorio' : 'móvil';
+  }
+
+  /** Tope de cuentas de este banco por notificador para el canal actual. */
+  private bankLimit(bankId: string): number | undefined {
+    return this.banksByCode().get(bankId)?.accountLimits?.[this.channelForKind()];
+  }
+
   /** ¿El banco de esta cuenta soporta el canal del tipo seleccionado? */
   isBankEligible(account: BankAccount): boolean {
     const entry = this.banksByCode().get(account.bankId);
     // Si el catálogo aún no cargó o el banco no está listado, deja que el
     // backend valide; solo bloqueamos cuando sabemos que NO está disponible.
+    // (El picker expone `phone`/`email`; escritorio reutiliza `phone`.)
     if (this.isEmailKind()) {
       return entry ? Boolean(entry.email?.enabled) : true;
     }
     return entry ? Boolean(entry.phone?.enabled) : true;
   }
 
-  /** Mensaje de por qué una cuenta no es elegible para el tipo actual. */
-  ineligibleReason(): string {
-    return this.isEmailKind()
-      ? 'Esta cuenta todavía no permite un notificador de correo.'
-      : 'Esta cuenta todavía no está disponible para monitoreo desde teléfono.';
+  /**
+   * ¿La cuenta ya está en OTRO notificador del mismo tipo? Solo cuenta cuando el
+   * banco exige exclusividad (tope = 1) para el canal. Excluye el notificador en
+   * edición. Refleja la validación de exclusividad del backend.
+   */
+  private usedByOtherNotifier(account: BankAccount): boolean {
+    if (this.bankLimit(account.bankId) !== 1) return false;
+    const type = this.kindToType(this.selectedKind());
+    const editing = this.editingId();
+    return this.notifiers().some(
+      (n) =>
+        n.type === type &&
+        n.id !== editing &&
+        (n.bankAccountIds ?? []).includes(account.id),
+    );
+  }
+
+  /**
+   * Motivo por el que una cuenta NO se puede seleccionar para el tipo actual, o
+   * `null` si sí. Combina: canal no soportado, exclusividad (ya usada) y tope de
+   * cuentas por notificador ya alcanzado con otra(s) cuenta(s) del mismo banco.
+   */
+  accountBlockedReason(account: BankAccount): string | null {
+    if (!this.isBankEligible(account)) {
+      return this.isEmailKind()
+        ? 'Esta cuenta todavía no permite un notificador de correo.'
+        : 'Esta cuenta todavía no está disponible para monitoreo desde este canal.';
+    }
+    if (this.usedByOtherNotifier(account)) {
+      return `Ya asignada a otro notificador ${this.kindLabel()}.`;
+    }
+    const limit = this.bankLimit(account.bankId);
+    if (limit !== undefined && !this.isSelected(account.id)) {
+      const selectedSameBank = this.selectedBankAccountIds().filter((id) => {
+        const acc = this.bankAccounts().find((a) => a.id === id);
+        return acc?.bankId === account.bankId;
+      }).length;
+      if (selectedSameBank >= limit) {
+        const bankName = this.banksByCode().get(account.bankId)?.name ?? account.bankId;
+        return limit === 1
+          ? `${bankName} permite una sola cuenta por notificador.`
+          : `Máximo ${limit} cuentas de ${bankName} por notificador.`;
+      }
+    }
+    return null;
+  }
+
+  isAccountBlocked(account: BankAccount): boolean {
+    return this.accountBlockedReason(account) !== null;
   }
 
   toggleAccount(accountId: string, checked: boolean): void {
+    if (checked) {
+      const account = this.bankAccounts().find((a) => a.id === accountId);
+      // Defensa: no agregar una cuenta bloqueada (el checkbox ya va disabled).
+      if (account && this.accountBlockedReason(account)) return;
+    }
     this.selectedBankAccountIds.update((ids) =>
       checked ? Array.from(new Set([...ids, accountId])) : ids.filter((id) => id !== accountId),
     );

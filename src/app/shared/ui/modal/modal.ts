@@ -1,8 +1,11 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, effect, inject, input as defineInput, output } from '@angular/core';
+import { Component, OnDestroy, effect, inject, input as defineInput, output } from '@angular/core';
 import { LucideX } from '@lucide/angular';
 
 type ModalSize = 'sm' | 'md' | 'lg';
+
+let bodyScrollLockCount = 0;
+let previousBodyOverflow: string | null = null;
 
 /**
  * Modal reutilizable con proyección de contenido.
@@ -27,8 +30,9 @@ type ModalSize = 'sm' | 'md' | 'lg';
   templateUrl: './modal.html',
   styleUrl: './modal.scss',
 })
-export class Modal {
+export class Modal implements OnDestroy {
   private readonly document = inject(DOCUMENT);
+  private bodyScrollLocked = false;
 
   readonly open = defineInput(false);
   readonly title = defineInput('');
@@ -46,12 +50,53 @@ export class Modal {
   constructor() {
     // Bloquea el scroll del body mientras el modal está abierto.
     effect(() => {
-      const body = this.document.body;
-      if (!body) {
-        return;
-      }
-      body.style.overflow = this.open() ? 'hidden' : '';
+      this.syncBodyScrollLock(this.open());
     });
+  }
+
+  ngOnDestroy(): void {
+    this.syncBodyScrollLock(false);
+  }
+
+  private syncBodyScrollLock(shouldLock: boolean): void {
+    if (shouldLock && !this.bodyScrollLocked) {
+      this.lockBodyScroll();
+      this.bodyScrollLocked = true;
+      return;
+    }
+
+    if (!shouldLock && this.bodyScrollLocked) {
+      this.unlockBodyScroll();
+      this.bodyScrollLocked = false;
+    }
+  }
+
+  private lockBodyScroll(): void {
+    const body = this.document.body;
+    if (!body) {
+      return;
+    }
+
+    if (bodyScrollLockCount === 0) {
+      previousBodyOverflow = body.style.overflow;
+      body.style.overflow = 'hidden';
+    }
+
+    bodyScrollLockCount += 1;
+  }
+
+  private unlockBodyScroll(): void {
+    const body = this.document.body;
+    if (!body) {
+      return;
+    }
+
+    bodyScrollLockCount = Math.max(0, bodyScrollLockCount - 1);
+
+    if (bodyScrollLockCount === 0) {
+      body.style.overflow = previousBodyOverflow ?? '';
+      previousBodyOverflow = null;
+    }
   }
 
   requestClose(): void {

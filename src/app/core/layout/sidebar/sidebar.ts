@@ -1,4 +1,12 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
@@ -90,6 +98,7 @@ export class Sidebar {
 
   /** Grupo "Negocio" expandible; inicia abierto para dar contexto. */
   readonly businessGroupOpen = signal(true);
+  readonly footerMenuOpen = signal(false);
 
   /**
    * Subsecciones del negocio activo, filtradas según el rol de la
@@ -155,6 +164,27 @@ export class Sidebar {
     this.businessGroupOpen.update((open) => !open);
   }
 
+  toggleFooterMenu(): void {
+    this.footerMenuOpen.update((open) => !open);
+  }
+
+  closeFooterMenu(): void {
+    this.footerMenuOpen.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeFooterMenuFromOutside(event: MouseEvent): void {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target?.closest('.sidebar-actions')) {
+      this.closeFooterMenu();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  closeFooterMenuFromEscape(): void {
+    this.closeFooterMenu();
+  }
+
   /**
    * Cambia el negocio activo desde el selector (única fuente visual de cambio).
    * Si el usuario está en una vista contextual del negocio, conserva la misma
@@ -172,6 +202,7 @@ export class Sidebar {
     }
 
     this.session.setActiveBusinessAccountId(businessAccountId);
+    this.closeFooterMenu();
     this.navigated.emit();
 
     const path = this.router.url.split('?')[0];
@@ -189,6 +220,7 @@ export class Sidebar {
   }
 
   onNavigate(): void {
+    this.closeFooterMenu();
     this.navigated.emit();
   }
 
@@ -202,6 +234,7 @@ export class Sidebar {
 
   toggleTheme(): void {
     this.theme.toggleTheme();
+    this.closeFooterMenu();
   }
 
   themeLabel(): string {
@@ -210,6 +243,7 @@ export class Sidebar {
 
   /** Pide al shell que confirme y ejecute el cierre de sesión. */
   requestLogout(): void {
+    this.closeFooterMenu();
     this.logoutRequested.emit();
   }
 }

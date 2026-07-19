@@ -33,6 +33,7 @@ import {
   TERMS_VERSION,
 } from '../../../../shared/constants/legal.constants';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { AuthApiService } from '../../services/auth-api.service';
 
@@ -44,6 +45,7 @@ interface RegisterFlowResult {
 
 type RegisterStep = 'form' | 'code';
 type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
+type RegisterIdentityControlName = 'email' | 'identificationNumber' | 'cellphoneNumber';
 
 @Component({
   selector: 'app-register-page',
@@ -70,6 +72,7 @@ export class RegisterPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly notifications = inject(NotificationModalService);
 
   readonly termsUrl = TERMS_URL;
   readonly privacyUrl = PRIVACY_URL;
@@ -118,6 +121,16 @@ export class RegisterPage implements OnDestroy {
     const businessName = this.route.snapshot.queryParamMap.get('businessName')?.trim() ?? '';
     this.inviteCode.set(code.toUpperCase());
     this.inviteBusinessName.set(businessName);
+
+    this.form.controls.email.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.clearServerDuplicateError('email'));
+    this.form.controls.identificationNumber.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.clearServerDuplicateError('identificationNumber'));
+    this.form.controls.cellphoneNumber.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.clearServerDuplicateError('cellphoneNumber'));
   }
 
   ngOnDestroy(): void {
@@ -135,10 +148,12 @@ export class RegisterPage implements OnDestroy {
 
     this.loading.set(true);
     this.otpStatus.set('sending');
+    const cellphoneNumber = this.form.controls.cellphoneNumber.value;
     this.authApi
       .requestRegistrationVerificationCode({
         email: this.form.controls.email.value,
         identificationNumber: this.form.controls.identificationNumber.value,
+        cellphoneNumber: cellphoneNumber?.e164 ?? '',
       })
       .pipe(
         finalize(() => {
@@ -203,7 +218,15 @@ export class RegisterPage implements OnDestroy {
         },
         error: (error) => {
           this.otpStatus.set('error');
-          this.otpError.set(httpErrorMessage(error));
+          const message = httpErrorMessage(error);
+          if (this.applyRegistrationConflict(message)) {
+            this.step.set('form');
+            this.otpStatus.set('idle');
+            void this.showRegistrationConflictFeedback(message);
+            return;
+          }
+
+          this.otpError.set(message);
         },
       });
   }
@@ -247,6 +270,34 @@ export class RegisterPage implements OnDestroy {
     return '';
   }
 
+  emailError(): string {
+    if (this.form.controls.email.hasError('serverBlockedEmailDomain')) {
+      return 'Usa un correo personal o corporativo válido.';
+    }
+
+    if (this.form.controls.email.hasError('serverDuplicate')) {
+      return 'Ya existe una cuenta con este correo.';
+    }
+
+    return 'Ingresa un correo válido.';
+  }
+
+  identificationNumberError(): string {
+    if (this.form.controls.identificationNumber.hasError('serverDuplicate')) {
+      return 'Ya existe una cuenta con esta identificación.';
+    }
+
+    return 'Ingresa tu número de identificación.';
+  }
+
+  cellphoneNumberError(): string {
+    if (this.form.controls.cellphoneNumber.hasError('serverDuplicate')) {
+      return 'Ya existe una cuenta con este celular.';
+    }
+
+    return 'Ingresa tu celular.';
+  }
+
   private passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
     const confirmPassword = control.get('confirmPassword')?.value;
@@ -257,24 +308,142 @@ export class RegisterPage implements OnDestroy {
 
   private handleRegisterError(error: unknown): void {
     const message = httpErrorMessage(error);
-    this.error.set(message);
 
-    if (!this.isExistingEmailError(message)) {
+    const hasRegistrationConflict = this.applyRegistrationConflict(message);
+
+    if (hasRegistrationConflict) {
+      void this.showRegistrationConflictFeedback(message);
       return;
     }
 
-    this.success.set('Ya tienes una cuenta. Te llevaremos al inicio de sesión.');
-    setTimeout(
-      () =>
-        void this.router.navigate(['/login'], {
-          queryParams: this.loginQueryParams(),
-        }),
-      1000,
-    );
+    this.error.set(message);
   }
 
   private isExistingEmailError(message: string): boolean {
     return message.toLowerCase().includes('ya existe un usuario con este email');
+  }
+
+  private isBlockedEmailDomainError(message: string): boolean {
+    const normalizedMessage = message
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '');
+
+    return (
+      normalizedMessage.includes('correos temporales') ||
+      normalizedMessage.includes('correo personal o corporativo')
+    );
+  }
+
+  private applyRegistrationConflict(message: string): boolean {
+    const controlName = this.registrationConflictControl(message);
+    if (!controlName) {
+      return false;
+    }
+
+    const control = this.form.controls[controlName];
+    const errorKey =
+      controlName === 'email' && this.isBlockedEmailDomainError(message)
+        ? 'serverBlockedEmailDomain'
+        : 'serverDuplicate';
+    control.setErrors({ ...(control.errors ?? {}), [errorKey]: true });
+    control.markAsTouched();
+    return true;
+  }
+
+  private async showRegistrationConflictFeedback(message: string): Promise<void> {
+    if (this.isExistingEmailError(message)) {
+      const goToLogin = await this.notifications.confirm({
+        title: 'Ya tienes una cuenta',
+        message:
+          'Encontramos una cuenta registrada con este correo. Inicia sesión para continuar.',
+        type: 'warning',
+        confirmText: 'Iniciar sesión',
+        cancelText: 'Ok',
+      });
+      if (goToLogin) {
+        await this.router.navigate(['/login'], {
+          queryParams: this.loginQueryParams(),
+        });
+      }
+      return;
+    }
+
+    const controlName = this.registrationConflictControl(message);
+    await this.notifications.error({
+      title: this.registrationConflictTitle(controlName),
+      message: this.registrationConflictMessage(controlName),
+      confirmText: 'Revisar datos',
+    });
+  }
+
+  private registrationConflictTitle(controlName: RegisterIdentityControlName | null): string {
+    switch (controlName) {
+      case 'email':
+        return 'Correo no permitido';
+      case 'identificationNumber':
+        return 'Identificación ya registrada';
+      case 'cellphoneNumber':
+        return 'Celular ya registrado';
+      default:
+        return 'No pudimos continuar el registro';
+    }
+  }
+
+  private registrationConflictMessage(controlName: RegisterIdentityControlName | null): string {
+    switch (controlName) {
+      case 'email':
+        return 'No aceptamos correos temporales. Usa un correo personal o corporativo para crear tu cuenta.';
+      case 'identificationNumber':
+        return 'Ya existe una cuenta con este número de identificación. Revisa el dato o inicia sesión si la cuenta es tuya.';
+      case 'cellphoneNumber':
+        return 'Ya existe una cuenta con este celular. Revisa el número o inicia sesión si la cuenta es tuya.';
+      default:
+        return 'Ya existe una cuenta con estos datos. Revisa la información antes de intentarlo de nuevo.';
+    }
+  }
+
+  private registrationConflictControl(message: string): RegisterIdentityControlName | null {
+    const normalizedMessage = message
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '');
+
+    if (normalizedMessage.includes('email') || normalizedMessage.includes('correo')) {
+      return 'email';
+    }
+
+    if (
+      normalizedMessage.includes('identificacion') ||
+      normalizedMessage.includes('documento')
+    ) {
+      return 'identificationNumber';
+    }
+
+    if (
+      normalizedMessage.includes('telefono') ||
+      normalizedMessage.includes('celular') ||
+      normalizedMessage.includes('phone')
+    ) {
+      return 'cellphoneNumber';
+    }
+
+    return null;
+  }
+
+  private clearServerDuplicateError(controlName: RegisterIdentityControlName): void {
+    const control = this.form.controls[controlName];
+    const errors = control.errors;
+    if (!errors?.['serverDuplicate'] && !errors?.['serverBlockedEmailDomain']) {
+      return;
+    }
+
+    const {
+      serverDuplicate: _serverDuplicate,
+      serverBlockedEmailDomain: _serverBlockedEmailDomain,
+      ...remainingErrors
+    } = errors;
+    control.setErrors(Object.keys(remainingErrors).length ? remainingErrors : null);
   }
 
   private buildRegisterRequest(verificationCode: string): RegisterRequest {

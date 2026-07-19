@@ -59,6 +59,7 @@ import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { SourceEventsStreamService } from '../../../source-events/services/source-events-stream.service';
+import { TtsPlaybackService } from '../../../source-events/services/tts-playback.service';
 import { TransactionEventsService } from '../../../transactions/services/transaction-events.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 import { DashboardChartsPanel } from '../../components/dashboard/dashboard-charts';
@@ -185,6 +186,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   private readonly dashboardApi = inject(DashboardApiService);
   private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly sourceEventsStream = inject(SourceEventsStreamService);
+  private readonly tts = inject(TtsPlaybackService);
   private readonly notifiersApi = inject(NotifiersApiService);
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly transactionEvents = inject(TransactionEventsService);
@@ -539,6 +541,10 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     if (!this.isMoneyReportEvent(event)) {
       return;
     }
+
+    // Lectura en voz alta (si el operador activó el toggle). No depende del
+    // filtro de la tabla: se anuncia todo ingreso, aunque no esté visible.
+    this.tts.speak(event);
 
     this.metricsEvents.update((events) => this.upsert(events, event));
     this.loadSummary();

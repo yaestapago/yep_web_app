@@ -93,12 +93,36 @@
 >
   @if (expandedView(); as view) {
     <div class="chart-expanded">
+      @if (canNavigateExpanded()) {
+        <button
+          type="button"
+          class="chart-expanded__nav chart-expanded__nav--prev"
+          (click)="navigateExpanded(-1)"
+          aria-label="Ver gráfica anterior"
+          title="Anterior"
+        >
+          <svg lucideChevronLeft aria-hidden="true"></svg>
+        </button>
+      }
+
       <yep-chart-canvas
         [type]="view.type"
         [data]="view.data"
         [options]="view.options"
         [ariaLabel]="view.ariaLabel"
       />
+
+      @if (canNavigateExpanded()) {
+        <button
+          type="button"
+          class="chart-expanded__nav chart-expanded__nav--next"
+          (click)="navigateExpanded(1)"
+          aria-label="Ver gráfica siguiente"
+          title="Siguiente"
+        >
+          <svg lucideChevronRight aria-hidden="true"></svg>
+        </button>
+      }
     </div>
   }
 </yep-modal>

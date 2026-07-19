@@ -1,5 +1,5 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LucideLoaderCircle, LucidePlus, LucideRefreshCw } from '@lucide/angular';
@@ -18,7 +18,7 @@ import type {
   BankAccountType,
   BusinessLocation,
 } from '../../../../shared/models/bank-account.models';
-import type { BankPickerEntry } from '../../../../shared/models/bank.models';
+import type { BankPickerEntry, SupportedAccountType } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BanksApiService } from '../../../banks/services/banks-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -65,7 +65,8 @@ export class BusinessAccountsSection implements OnInit {
   readonly modalTitle = computed(() =>
     this.editingId() ? 'Editar cuenta bancaria' : 'Nueva cuenta bancaria',
   );
-  readonly accountTypeOptions: readonly SelectOption[] = [
+  /** Catálogo completo de tipos (coincide con `BankAccountType`). */
+  private readonly allAccountTypeOptions: readonly SelectOption[] = [
     { id: 'wallet', label: 'Billetera' },
     { id: 'savings', label: 'Ahorros' },
     { id: 'checking', label: 'Corriente' },
@@ -89,11 +90,43 @@ export class BusinessAccountsSection implements OnInit {
   readonly form = this.fb.group({
     bankId: ['', [Validators.required, Validators.maxLength(80)]],
     accountNumber: ['', [Validators.required, Validators.maxLength(80)]],
+    breBKeys: ['', [Validators.required, Validators.maxLength(800)]],
     displayName: ['', [Validators.maxLength(120)]],
     holderName: ['', [Validators.maxLength(160)]],
     accountType: ['wallet' as BankAccountType],
     currency: ['COP', [Validators.required, Validators.maxLength(3)]],
   });
+
+  /** Banco seleccionado (reactivo) para filtrar los tipos de cuenta. */
+  private readonly selectedBankId = toSignal(this.form.controls.bankId.valueChanges, {
+    initialValue: this.form.controls.bankId.value,
+  });
+
+  /**
+   * Tipos de cuenta ofrecidos: si el banco elegido declara
+   * `supportedAccountTypes`, solo esos; si no (vacío), todos. Coherente con la
+   * validación del backend.
+   */
+  readonly accountTypeOptions = computed<readonly SelectOption[]>(() => {
+    const bank = this.banks().find((b) => b.code === this.selectedBankId());
+    const supported = bank?.supportedAccountTypes ?? [];
+    if (supported.length === 0) return this.allAccountTypeOptions;
+    return this.allAccountTypeOptions.filter((o) =>
+      supported.includes(o.id as SupportedAccountType),
+    );
+  });
+
+  constructor() {
+    // Si el tipo elegido deja de ser válido al cambiar de banco, ajústalo al
+    // primero disponible para no enviar un tipo que el backend rechazaría.
+    effect(() => {
+      const options = this.accountTypeOptions();
+      const current = this.form.controls.accountType.value;
+      if (options.length && !options.some((o) => o.id === current)) {
+        this.form.controls.accountType.setValue(options[0].id as BankAccountType);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadLocations();
@@ -160,16 +193,14 @@ export class BusinessAccountsSection implements OnInit {
     this.form.reset({
       bankId: '',
       accountNumber: '',
+      breBKeys: '',
       displayName: '',
       holderName: '',
       accountType: 'wallet',
       currency: 'COP',
     });
     // Al crear, el número de cuenta es obligatorio.
-    this.form.controls.accountNumber.setValidators([
-      Validators.required,
-      Validators.maxLength(80),
-    ]);
+    this.form.controls.accountNumber.setValidators([Validators.required, Validators.maxLength(80)]);
     this.form.controls.accountNumber.updateValueAndValidity();
     this.modalOpen.set(true);
   }
@@ -182,6 +213,7 @@ export class BusinessAccountsSection implements OnInit {
     this.form.reset({
       bankId: bankAccount.bankId,
       accountNumber: '',
+      breBKeys: bankAccount.breBKeys.join('\n'),
       displayName: bankAccount.displayName ?? '',
       holderName: bankAccount.holderName ?? '',
       accountType: bankAccount.accountType ?? 'wallet',
@@ -244,6 +276,13 @@ export class BusinessAccountsSection implements OnInit {
     }
 
     const raw = this.form.getRawValue();
+    const breBKeys = this.parseBreBKeys(raw.breBKeys);
+    if (breBKeys.length === 0) {
+      this.form.controls.breBKeys.setErrors({ required: true });
+      this.form.controls.breBKeys.markAsTouched();
+      this.error.set('Agrega al menos una llave Bre-B.');
+      return;
+    }
     this.creating.set(true);
     this.error.set('');
 
@@ -251,6 +290,7 @@ export class BusinessAccountsSection implements OnInit {
       .createBankAccount(businessId, {
         bankId: raw.bankId.trim(),
         accountNumber: raw.accountNumber.trim(),
+        breBKeys,
         displayName: this.optional(raw.displayName),
         holderName: this.optional(raw.holderName),
         accountType: raw.accountType,
@@ -271,13 +311,16 @@ export class BusinessAccountsSection implements OnInit {
       });
   }
 
-  private updateAccount(
-    businessId: string,
-    bankAccountId: string,
-    locationIds: string[],
-  ): void {
+  private updateAccount(businessId: string, bankAccountId: string, locationIds: string[]): void {
     const raw = this.form.getRawValue();
     const accountNumber = raw.accountNumber.trim();
+    const breBKeys = this.parseBreBKeys(raw.breBKeys);
+    if (breBKeys.length === 0) {
+      this.form.controls.breBKeys.setErrors({ required: true });
+      this.form.controls.breBKeys.markAsTouched();
+      this.error.set('Agrega al menos una llave Bre-B.');
+      return;
+    }
     this.creating.set(true);
     this.error.set('');
 
@@ -286,6 +329,7 @@ export class BusinessAccountsSection implements OnInit {
         bankId: raw.bankId.trim(),
         // Sólo se reenvía el número si el usuario ingresó uno nuevo.
         ...(accountNumber ? { accountNumber } : {}),
+        breBKeys,
         displayName: this.optional(raw.displayName),
         holderName: this.optional(raw.holderName),
         accountType: raw.accountType,
@@ -381,5 +425,16 @@ export class BusinessAccountsSection implements OnInit {
   private optional(value: string): string | undefined {
     const trimmed = value.trim();
     return trimmed ? trimmed : undefined;
+  }
+
+  private parseBreBKeys(value: string): string[] {
+    return Array.from(
+      new Set(
+        value
+          .split(/\r?\n|,/)
+          .map((item) => item.trim())
+          .filter(Boolean),
+      ),
+    );
   }
 }

@@ -90,6 +90,21 @@ export class SourceEventDetailModal {
 
   readonly amount = computed(() => this.detail()?.normalized?.amount ?? null);
 
+  /**
+   * Cuenta destino: la cuenta YEP a la que el backend ENLAZÓ el evento
+   * (`reportedBankAccount`, resuelta por política — p. ej. Nequi por unicidad),
+   * mostrada como "nombre ····1234". Si no se resolvió, cae a la cuenta extraída
+   * del texto (`receiverAccount`) y, si tampoco, a "No detectada".
+   */
+  destinationAccount(event: SourceEvent): string {
+    const acc = event.reportedBankAccount;
+    if (acc) {
+      const name = acc.displayName || acc.holderName || acc.bankId;
+      return `${name} ····${acc.accountNumberLast4}`;
+    }
+    return event.normalized?.receiverAccount || event.normalized?.receiverBreBKey || 'No detectada';
+  }
+
   sourceLabel(event: SourceEvent): string {
     return event.sourceType === 'EMAIL_GMAIL' ? 'Correo' : 'Notificador';
   }

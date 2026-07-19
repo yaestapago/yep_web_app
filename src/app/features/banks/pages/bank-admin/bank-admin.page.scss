@@ -5,12 +5,66 @@
 }
 
 .bank-admin {
-  max-width: 960px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: var(--space-6, 2rem) var(--space-4, 1rem);
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 1rem);
+
+  /* Master-detail: menú lateral de bancos + panel de edición. */
+  &__layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: var(--space-4, 1rem);
+    align-items: start;
+
+    @media (max-width: 860px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    position: sticky;
+    top: var(--space-4, 1rem);
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+
+    @media (max-width: 860px) {
+      position: static;
+      max-height: none;
+    }
+  }
+
+  &__newbtn {
+    align-self: stretch;
+  }
+
+  &__sidenote {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+
+  &__editor {
+    min-width: 0;
+  }
+
+  &__editorempty {
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+    padding: var(--space-8, 3rem) var(--space-4, 1rem);
+    text-align: center;
+    color: var(--color-text-secondary);
+
+    h3 {
+      margin: 0 0 var(--space-1, 0.25rem);
+      color: var(--color-text-primary);
+    }
+  }
 
   &__header {
     display: flex;
@@ -28,6 +82,14 @@
     font-size: var(--font-size-sm);
     text-decoration: none;
     margin-bottom: var(--space-2, 0.5rem);
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--color-text-primary);
+    }
 
     svg {
       width: 1rem;
@@ -60,55 +122,9 @@
       animation: bank-admin-spin 1s linear infinite;
     }
   }
-
-  &__empty {
-    text-align: center;
-    padding: var(--space-8, 3rem) var(--space-4, 1rem);
-    color: var(--color-text-secondary);
-  }
-
-  &__list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3, 0.75rem);
-  }
 }
 
 .bank-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3, 0.75rem);
-  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg, 0.75rem);
-  box-shadow: var(--shadow-xs);
-
-  &--inactive {
-    opacity: 0.65;
-  }
-
-  &__main {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2, 0.5rem);
-    min-width: 0;
-  }
-
-  &__titlerow {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2, 0.5rem);
-    flex-wrap: wrap;
-  }
-
-  &__title {
-    font-size: var(--font-size-md, 1rem);
-    font-weight: var(--font-weight-bold, 700);
-    margin: 0;
-  }
-
   &__code {
     font-size: var(--font-size-xs, 0.75rem);
     color: var(--color-text-secondary);
@@ -117,37 +133,225 @@
     border-radius: var(--radius-sm, 0.25rem);
   }
 
-  &__badges {
-    display: flex;
-    gap: var(--space-1, 0.25rem);
-    flex-wrap: wrap;
-  }
-
-  &__badge {
+  &__ready {
     font-size: var(--font-size-xs, 0.75rem);
     font-weight: var(--font-weight-semibold, 600);
     padding: 2px var(--space-2, 0.5rem);
     border-radius: var(--radius-full, 999px);
-    background: color-mix(in srgb, var(--color-accent) 15%, transparent);
-    color: var(--color-accent);
+    border: 1px solid transparent;
 
     &--muted {
       background: var(--color-border);
       color: var(--color-text-secondary);
     }
+
+    &--warn {
+      background: color-mix(in srgb, var(--color-warning, #e0a800) 18%, transparent);
+      color: var(--color-warning-strong, var(--color-warning, #b45309));
+    }
+
+    &--info {
+      background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+      color: var(--color-accent);
+    }
+
+    &--ok {
+      background: color-mix(in srgb, var(--color-success, #16a34a) 18%, transparent);
+      color: var(--color-success-strong, #15803d);
+    }
+  }
+}
+
+/* Menú lateral de bancos (master-detail). */
+.bank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+
+  &__item {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 0.5rem);
+    cursor: pointer;
+    color: var(--color-text-primary);
+
+    &:hover {
+      border-color: var(--color-accent);
+    }
+
+    &.is-active {
+      border-color: var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    }
+
+    &--inactive {
+      opacity: 0.6;
+    }
   }
 
-  &__actions {
+  &__toprow {
     display: flex;
-    gap: var(--space-1, 0.25rem);
-    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  &__name {
+    font-weight: var(--font-weight-semibold, 600);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__metarow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    flex-wrap: wrap;
+  }
+}
+
+/* Panel de edición del banco (reemplaza al modal). */
+.bank-editor {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 0.75rem);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--font-size-lg, 1.125rem);
+    font-weight: var(--font-weight-bold, 700);
+  }
+
+  /* Nav de secciones (sticky) + contenido del form. */
+  &__layout {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    align-items: start;
+
+    @media (max-width: 1000px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__nav {
+    position: sticky;
+    top: var(--space-3, 0.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-3, 0.75rem);
+
+    button {
+      text-align: left;
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+      border-left: 2px solid var(--color-border);
+      border-radius: 0 var(--radius-sm, 0.25rem) var(--radius-sm, 0.25rem) 0;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--color-text-primary);
+        background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+      }
+
+      &.is-active {
+        color: var(--color-accent);
+        border-left-color: var(--color-accent);
+        font-weight: var(--font-weight-semibold, 600);
+      }
+    }
+
+    /* En pantallas angostas pasa a barra horizontal pegada arriba. */
+    @media (max-width: 1000px) {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      flex-direction: row;
+      overflow-x: auto;
+      gap: var(--space-1, 0.25rem);
+      padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+
+      button {
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+
+        &.is-active {
+          border-bottom-color: var(--color-accent);
+        }
+      }
+    }
+  }
+
+  &__content {
+    min-width: 0;
+  }
+
+  .bank-form {
+    padding: var(--space-4, 1rem);
+  }
+
+  &__toolbar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-bottom-left-radius: var(--radius-lg, 0.75rem);
+    border-bottom-right-radius: var(--radius-lg, 0.75rem);
   }
 }
 
 .bank-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4, 1rem);
+  gap: var(--space-5, 1.5rem);
+
+  /* Sección navegable del editor (ancla del nav sticky). */
+  &__block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3, 0.75rem);
+    /* Que el scrollIntoView no esconda el título bajo la barra sticky (móvil). */
+    scroll-margin-top: 3.5rem;
+  }
+
+  &__blocktitle {
+    margin: 0;
+    font-size: var(--font-size-md, 1rem);
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-primary);
+    padding-bottom: var(--space-1, 0.25rem);
+    border-bottom: 1px solid var(--color-border);
+  }
 
   &__row {
     display: grid;
@@ -192,13 +396,6 @@
     color: var(--color-text-secondary);
 
     textarea {
-      font-family: inherit;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md, 0.5rem);
-      padding: var(--space-2, 0.5rem);
       resize: vertical;
       min-height: 2.5rem;
     }
@@ -207,6 +404,36 @@
   &__hint {
     color: var(--color-text-secondary);
     font-size: var(--font-size-xs, 0.75rem);
+  }
+
+  &__hint-btn {
+    border: none;
+    background: none;
+    padding: 0;
+    margin-left: var(--space-1, 0.25rem);
+    color: var(--color-accent);
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: var(--space-1, 0.25rem);
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1, 0.25rem);
+    }
+  }
+
+  &__tabdot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success-strong, #16a34a);
+    display: inline-block;
   }
 
   &__error {
@@ -251,6 +478,83 @@
     gap: var(--space-1, 0.25rem);
     font-size: var(--font-size-sm);
   }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+    padding: var(--space-3, 0.75rem);
+  }
+
+  &__sectiontitle {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--color-text-primary);
+  }
+
+  &__infobtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0;
+    line-height: 0;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    &:hover {
+      color: var(--color-accent);
+    }
+  }
+
+  &__checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    input {
+      accent-color: var(--color-accent);
+    }
+  }
+}
+
+/* Pill de canal, compartida por las tabs del form y el selector del probador. */
+.bank-form__tabs button,
+.bank-tester__channel button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full, 999px);
+  padding: 2px var(--space-3, 0.75rem);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  &.is-active {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: var(--color-accent);
+  }
 }
 
 .bank-tester {
@@ -260,35 +564,12 @@
 
   input,
   textarea {
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
-    padding: var(--space-2, 0.5rem);
     width: 100%;
   }
 
   &__channel {
     display: flex;
     gap: var(--space-1, 0.25rem);
-
-    button {
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      color: var(--color-text-secondary);
-      border-radius: var(--radius-full, 999px);
-      padding: 2px var(--space-3, 0.75rem);
-      font-size: var(--font-size-sm);
-      cursor: pointer;
-
-      &.is-active {
-        background: var(--color-accent);
-        color: #fff;
-        border-color: var(--color-accent);
-      }
-    }
   }
 
   &__result {
@@ -313,6 +594,367 @@
       color: var(--color-text-primary);
     }
   }
+
+  &__recentbar {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  &__recent {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1, 0.25rem);
+    max-height: 220px;
+    overflow-y: auto;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2, 0.5rem);
+      padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md, 0.5rem);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+
+      &:hover {
+        background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+      }
+    }
+  }
+
+  &__recent-date {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs, 0.75rem);
+    white-space: nowrap;
+  }
+
+  &__recent-snippet {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-primary);
+  }
+}
+
+.bank-form__ruleactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 0.5rem);
+  margin: var(--spacing-sm, 0.5rem) 0;
+}
+
+.bank-form__uploadrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.bank-form__uploadbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 0.25rem);
+  padding: 4px var(--space-3, 0.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+}
+
+.bank-form__prompt-btn {
+  border: 1px solid var(--color-border, #ddd);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm, 4px);
+  padding: 0 var(--spacing-sm, 0.5rem);
+  font-size: var(--font-size-xs, 0.75rem);
+  cursor: pointer;
+
+  &:hover,
+  &.is-active {
+    color: var(--color-text-primary);
+    border-color: var(--color-primary, #3b82f6);
+  }
+}
+
+.bank-copilot {
+  margin-top: var(--spacing-md, 0.75rem);
+  padding: var(--spacing-md, 0.75rem);
+  border: 1px solid var(--color-border, #ddd);
+  border-left: 3px solid var(--color-warning, #e0a800);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface-muted, rgba(0, 0, 0, 0.02));
+
+  &--ok {
+    border-left-color: var(--color-success, #2e7d32);
+  }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-xs, 0.25rem);
+    margin-bottom: var(--spacing-sm, 0.5rem);
+  }
+
+  &__results {
+    list-style: none;
+    margin: 0 0 var(--spacing-sm, 0.5rem);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs, 0.25rem);
+
+    li {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: var(--spacing-xs, 0.25rem);
+      font-size: var(--font-size-xs, 0.75rem);
+    }
+  }
+
+  &__expected,
+  &__got {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs, 0.75rem);
+  }
+
+  &__json {
+    margin: var(--spacing-sm, 0.5rem) 0;
+
+    pre {
+      max-height: 220px;
+      overflow: auto;
+      padding: var(--spacing-sm, 0.5rem);
+      border-radius: var(--radius-sm, 4px);
+      background: var(--color-surface, #111);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs, 0.7rem);
+    }
+  }
+}
+
+.bank-admin__headeractions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm, 0.5rem);
+  align-items: center;
+}
+
+.bank-examples__group {
+  & + & {
+    margin-top: var(--space-3, 0.75rem);
+  }
+}
+
+.bank-examples__grouphead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2, 0.5rem);
+  margin: var(--space-2, 0.5rem) 0 var(--space-1, 0.25rem);
+}
+
+.bank-examples__grouptitle {
+  font-weight: var(--font-weight-bold, 700);
+  font-size: var(--font-size-sm);
+}
+
+.bank-examples__groupcount {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+
+  &.is-ok {
+    color: var(--color-success-strong, #15803d);
+  }
+}
+
+/* Cabecera de la sección de ejemplos: título + "Agregar ejemplo". */
+.bank-examples__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+
+  .bank-form__blocktitle {
+    flex: 1;
+  }
+}
+
+/* Grid de cards de ejemplos: TODO visible, sin scroll interno. */
+.bank-examples__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-2, 0.5rem);
+  align-items: stretch;
+}
+
+.example-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+  text-align: left;
+  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-success, #16a34a);
+  border-radius: var(--radius-md, 0.5rem);
+  background: var(--color-surface);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-xs);
+    outline: none;
+  }
+
+  &--fail {
+    border-left-color: var(--color-error, #d33);
+  }
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2, 0.5rem);
+  }
+
+  &__status {
+    flex-shrink: 0;
+  }
+
+  &__name {
+    flex: 1;
+    font-weight: var(--font-weight-semibold, 600);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: 1px var(--space-2, 0.5rem);
+    border-radius: var(--radius-full, 999px);
+    background: color-mix(in srgb, var(--color-warning, #e0a800) 18%, transparent);
+    color: var(--color-warning-strong, #b45309);
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1, 0.25rem);
+  }
+
+  &__chip {
+    font-size: var(--font-size-xs, 0.75rem);
+    padding: 1px var(--space-2, 0.5rem);
+    border-radius: var(--radius-sm, 0.25rem);
+    background: var(--color-surface-muted, rgba(0, 0, 0, 0.04));
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+
+    &.is-fail {
+      color: var(--color-error, #d33);
+    }
+  }
+
+  &__diag {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm, 0.5rem);
+    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
+    border-left: 2px solid var(--color-error, #d33);
+    font-size: var(--font-size-xs, 0.75rem);
+    color: var(--color-text-secondary);
+  }
+}
+
+.bank-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+
+  &__intro {
+    margin: 0;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  &__states {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2, 0.5rem);
+
+    li {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      align-items: start;
+      gap: var(--space-3, 0.75rem);
+
+      > span:first-child {
+        white-space: nowrap;
+        color: var(--color-text-secondary);
+        font-weight: var(--font-weight-semibold, 600);
+      }
+    }
+  }
+
+  &__policies {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2, 0.5rem);
+
+    dt {
+      font-weight: var(--font-weight-bold, 700);
+      color: var(--color-text-primary);
+    }
+
+    dd {
+      margin: 0 0 var(--space-1, 0.25rem);
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+  }
+}
+
+/* Estilo común de todos los controles del panel (consolidado para no repetir). */
+.bank-form__field textarea,
+.bank-form__select,
+.bank-form__field input[type='number'],
+.bank-tester input,
+.bank-tester textarea {
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: var(--space-2, 0.5rem);
 }
 
 @keyframes bank-admin-spin {

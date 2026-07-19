@@ -24,6 +24,18 @@ export interface SourceEventNormalized {
   transactionDate?: string;
   senderAccount?: string;
   receiverAccount?: string;
+  receiverBreBKey?: string;
+  reportedBankAccountId?: string;
+  reportedBankAccountResolution?: string;
+}
+
+/** Cuenta YEP a la que el backend enlazó el evento (por política de resolución). */
+export interface ReportedBankAccountView {
+  id: string;
+  bankId: string;
+  displayName?: string;
+  holderName?: string;
+  accountNumberLast4: string;
 }
 
 export interface SourceEvent {
@@ -32,6 +44,8 @@ export interface SourceEvent {
   sourceType: SourceEventType;
   notifierId?: string;
   reportedBankAccountId?: string;
+  /** Solo en el detalle: datos de la cuenta YEP resuelta (nombre + últimos 4). */
+  reportedBankAccount?: ReportedBankAccountView | null;
   externalId?: string;
   rawPayload: Record<string, unknown>;
   normalized?: SourceEventNormalized;

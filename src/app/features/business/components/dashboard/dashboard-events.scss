@@ -1,3 +1,28 @@
+/* Toggle de voz: píldora compacta con icono de bocina, al extremo derecho. */
+.tts-toggle {
+  margin-left: auto;
+}
+
+/* Icono-solo: píldora cuadrada y ajustada (sin texto, sin gap sobrante). */
+.tts-toggle ::ng-deep .yep-toggle--button {
+  gap: 0;
+  padding: var(--space-1);
+}
+
+/* La etiqueta vacía del toggle no debe ocupar espacio en modo icono-solo. */
+.tts-toggle ::ng-deep .yep-toggle__label:empty {
+  display: none;
+}
+
+.tts-toggle__icon {
+  display: inline-flex;
+}
+
+.tts-toggle__icon svg {
+  height: 18px;
+  width: 18px;
+}
+
 .search {
   position: relative;
 }
