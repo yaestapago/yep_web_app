@@ -3,6 +3,8 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
+  LucideClipboardCheck,
+  LucideClipboardCopy,
   LucideLink,
   LucideLoaderCircle,
   LucidePencil,
@@ -68,6 +70,8 @@ interface NotifierKindOption {
     StatusDot,
     Toggle,
     NotifierRuntimeConfigModal,
+    LucideClipboardCheck,
+    LucideClipboardCopy,
     LucideLink,
     LucideLoaderCircle,
     LucidePencil,
@@ -103,6 +107,7 @@ export class BusinessNotifiersSection implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
   readonly modalOpen = signal(false);
+  readonly senderPatternsCopied = signal(false);
 
   /** Notificador cuyo modal de cadencias está abierto (null = cerrado). */
   readonly configNotifier = signal<Notifier | null>(null);
@@ -193,6 +198,27 @@ export class BusinessNotifiersSection implements OnInit {
     if (banks.size === 0) return true;
     return this.selectableAccounts().some((account) => banks.get(account.bankId)?.email?.enabled);
   });
+
+  /** Remitentes oficiales del banco para que el usuario arme su filtro de Gmail. */
+  readonly selectedEmailSenderPatterns = computed(() => {
+    const selectedIds = new Set(this.selectedBankAccountIds());
+    const bankIds = Array.from(
+      new Set(
+        this.bankAccounts()
+          .filter((account) => selectedIds.has(account.id))
+          .map((account) => account.bankId),
+      ),
+    );
+    return Array.from(
+      new Set(
+        bankIds.flatMap((bankId) => this.banksByCode().get(bankId)?.email?.senderPatterns ?? []),
+      ),
+    );
+  });
+
+  readonly selectedEmailSenderPatternsText = computed(() =>
+    this.selectedEmailSenderPatterns().join('\n'),
+  );
 
   readonly statuses = computed<Array<{ notifier: Notifier; status: NotifierStatus }>>(() => {
     const now = this.now();
@@ -338,6 +364,7 @@ export class BusinessNotifiersSection implements OnInit {
   openCreate(): void {
     this.error.set('');
     this.success.set('');
+    this.senderPatternsCopied.set(false);
     this.editingId.set(null);
     this.selectedBankAccountIds.set([]);
     this.form.reset({ kind: 'phone', displayName: '', senderEmail: '' });
@@ -348,6 +375,7 @@ export class BusinessNotifiersSection implements OnInit {
   openEdit(notifier: Notifier): void {
     this.error.set('');
     this.success.set('');
+    this.senderPatternsCopied.set(false);
     this.editingId.set(notifier.id);
     this.selectedBankAccountIds.set([...notifier.bankAccountIds]);
     this.form.reset({
@@ -525,6 +553,15 @@ export class BusinessNotifiersSection implements OnInit {
 
   isSelected(accountId: string): boolean {
     return this.selectedBankAccountIds().includes(accountId);
+  }
+
+  copyEmailSenderPatterns(): void {
+    const value = this.selectedEmailSenderPatternsText();
+    if (!value) return;
+    void navigator.clipboard?.writeText(value).then(() => {
+      this.senderPatternsCopied.set(true);
+      setTimeout(() => this.senderPatternsCopied.set(false), 1500);
+    });
   }
 
   accountTypeLabel(account: BankAccount): string {

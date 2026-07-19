@@ -3,7 +3,11 @@ export interface BankPickerEntry {
   code: string;
   name: string;
   phone: { enabled: boolean };
-  email: { enabled: boolean };
+  email: {
+    enabled: boolean;
+    /** Remitentes/dominios oficiales del banco para filtros de reenvío Gmail. */
+    senderPatterns: string[];
+  };
   /** Tipos de cuenta que ofrece el banco ([] = sin restricción). */
   supportedAccountTypes: SupportedAccountType[];
   /**
