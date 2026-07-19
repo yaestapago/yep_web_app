@@ -1,0 +1,176 @@
+<yep-modal
+  [open]="open()"
+  size="lg"
+  [title]="isEditing() ? 'Editar ejemplo' : 'Nuevo ejemplo'"
+  [subtitle]="isEditing()
+    ? 'Ajusta el mensaje o lo esperado; el canal es inmutable.'
+    : 'Guarda un mensaje real como fixture: se validará contra las reglas del banco.'"
+  [loading]="busy()"
+  [dismissOnBackdrop]="false"
+  (closeRequested)="requestClose()"
+>
+  <div class="example-editor">
+    @if (error()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
+
+    <!-- Veredicto contra la config GUARDADA (solo al editar) -->
+    @if (runResult(); as r) {
+      <div class="example-editor__verdict" [class.example-editor__verdict--fail]="!r.ok">
+        <span>{{ r.ok ? '✅ Pasa con la config guardada' : '❌ Falla con la config guardada' }}</span>
+        @if (r.diagnosis; as d) {
+          <span class="example-editor__diag">{{ d.message }}</span>
+        }
+      </div>
+    }
+
+    <!-- Canal: selector al crear, badge al editar -->
+    @if (isEditing()) {
+      <div class="example-editor__channelrow">
+        <span class="example-editor__channellabel">Canal</span>
+        <span class="example-editor__channelbadge">{{ channelLabel() }}</span>
+        <small class="bank-form__hint">
+          El canal de un ejemplo no se puede cambiar (borra y crea uno nuevo).
+        </small>
+      </div>
+    } @else {
+      <div class="example-editor__channelrow">
+        <span class="example-editor__channellabel">Canal</span>
+        <div class="example-editor__channels">
+          @for (ch of channels; track ch.key) {
+            <button
+              type="button"
+              [class.is-active]="channel() === ch.key"
+              (click)="setChannel(ch.key)"
+            >
+              {{ ch.label }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <label class="bank-form__field">
+      <span>Nombre del ejemplo (opcional)</span>
+      <input
+        type="text"
+        maxlength="120"
+        [value]="label()"
+        (input)="label.set($any($event.target).value)"
+        placeholder="Transferencia recibida Nequi"
+      />
+      <small class="bank-form__hint">
+        Un nombre corto para reconocerlo en la lista; si lo dejas vacío se
+        muestra el inicio del mensaje.
+      </small>
+    </label>
+
+    <!-- Mensaje según canal -->
+    @if (channel() === 'email') {
+      <label class="bank-form__field">
+        <span>Remitente (from)</span>
+        <input
+          type="text"
+          [value]="from()"
+          (input)="from.set($any($event.target).value)"
+          placeholder="alertasynotificaciones@bancolombia.com.co"
+        />
+      </label>
+    }
+    <label class="bank-form__field">
+      <span>{{ channel() === 'email' ? 'Asunto' : 'Título (remitente del SMS)' }}</span>
+      <input
+        type="text"
+        [value]="title()"
+        (input)="title.set($any($event.target).value)"
+      />
+    </label>
+    <label class="bank-form__field">
+      <span>{{ channel() === 'email' ? 'Cuerpo del correo' : 'Texto del SMS/notificación' }}</span>
+      <textarea
+        rows="4"
+        [value]="body()"
+        (input)="body.set($any($event.target).value)"
+        placeholder="Recibiste $50.000 de JUAN PEREZ"
+      ></textarea>
+    </label>
+
+    <!-- Probar contra el editor -->
+    <div class="example-editor__testbar">
+      <yep-button
+        variant="secondary"
+        size="sm"
+        type="button"
+        [loading]="testing()"
+        (clicked)="test()"
+      >
+        Probar contra el editor
+      </yep-button>
+      @if (expectMatch()) {
+        <yep-button
+          variant="ghost"
+          size="sm"
+          type="button"
+          [loading]="suggesting()"
+          title="La IA propone los valores esperados; luego los ajustas a mano"
+          (clicked)="suggestExpected()"
+        >
+          Sugerir esperado con IA
+        </yep-button>
+      }
+      <small class="bank-form__hint">
+        Usa las reglas TAL COMO están en el editor del banco (aunque no las hayas
+        guardado), para iterar reglas y ejemplo juntos.
+      </small>
+    </div>
+
+    @if (testResult(); as r) {
+      <div class="example-editor__result">
+        <yep-status-dot
+          [level]="r.attributed ? 'online' : 'offline'"
+          [label]="r.attributed ? 'Se atribuiría a este banco' : 'NO se atribuiría'"
+        />
+        <dl class="example-editor__grid">
+          <dt>Monto</dt><dd>{{ r.parsed.amount ?? '—' }}</dd>
+          <dt>Remitente</dt><dd>{{ r.parsed.senderName ?? '—' }}</dd>
+          <dt>Dirección</dt><dd>{{ r.parsed.direction ?? '—' }}</dd>
+          <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
+          <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
+          <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
+          <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
+        </dl>
+      </div>
+    }
+
+    <!-- Ground truth + resolución esperada -->
+    <app-expected-values-form
+      [(expected)]="expected"
+      [(expectMatch)]="expectMatch"
+      [(simulatedAccounts)]="simulatedAccounts"
+      [(expectedResolution)]="expectedResolution"
+      [(expectedResolvedAccount)]="expectedResolvedAccount"
+      [detectedLlave]="testResult()?.parsed?.llave ?? null"
+    />
+  </div>
+
+  <ng-container modalFooter>
+    @if (isEditing()) {
+      <yep-button
+        variant="danger"
+        type="button"
+        [loading]="deleting()"
+        [disabled]="saving()"
+        (clicked)="remove()"
+      >
+        Eliminar
+      </yep-button>
+      <span class="example-editor__footerspacer"></span>
+    }
+    <yep-button variant="ghost" type="button" [disabled]="busy()" (clicked)="requestClose()">
+      Cancelar
+    </yep-button>
+    <yep-button type="button" [loading]="saving()" [disabled]="deleting()" (clicked)="save()">
+      {{ isEditing() ? 'Guardar cambios' : 'Crear ejemplo' }}
+    </yep-button>
+  </ng-container>
+</yep-modal>

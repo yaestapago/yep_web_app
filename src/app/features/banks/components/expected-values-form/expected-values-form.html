@@ -1,0 +1,215 @@
+<label class="bank-form__switch">
+  <yep-toggle
+    appearance="switch"
+    [pressed]="!expectMatch()"
+    ariaLabel="Ejemplo negativo"
+    (toggled)="expectMatch.set(!$event)"
+  />
+  <span>Este mensaje NO debería parsearse (ejemplo negativo 🚫)</span>
+</label>
+
+@if (expectMatch()) {
+  <div class="bank-expected">
+    <p class="bank-form__hint">
+      <strong>Valores esperados (ground truth).</strong> Lo que el parser
+      DEBERÍA extraer de este mensaje. Al guardar, el ejemplo se corre
+      contra la config y pasa (✅) solo si lo extraído coincide con lo que
+      escribas aquí. Escríbelos a mano para controlar exactamente lo
+      esperado; "Sugerir con IA" solo los propone y luego los ajustas. El
+      parser del banco se afina a partir de muchos ejemplos como este.
+      <strong>Campos vacíos no se verifican.</strong>
+    </p>
+    <div class="bank-expected__grid">
+      <label class="bank-form__field">
+        <span>Monto</span>
+        <input
+          type="text"
+          inputmode="decimal"
+          [value]="expected()?.amount ?? ''"
+          (input)="setExpectedField('amount', $any($event.target).value)"
+          placeholder="50000"
+        />
+        <small class="bank-form__hint">
+          Valor exacto de la transacción, solo dígitos: sin <code>$</code>
+          ni puntos de miles. Ej: <code>50000</code>.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Dirección</span>
+        <select
+          class="bank-form__select"
+          [value]="expected()?.direction ?? ''"
+          (change)="setExpectedField('direction', $any($event.target).value)"
+        >
+          <option value="">—</option>
+          <option value="incoming">Entrante — dinero recibido</option>
+          <option value="outgoing">Saliente — dinero enviado</option>
+        </select>
+        <small class="bank-form__hint">
+          Si el dinero ENTRA a la cuenta del negocio (<code>incoming</code>)
+          o SALE (<code>outgoing</code>).
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Nombre del remitente / pagador</span>
+        <input
+          type="text"
+          [value]="expected()?.senderName ?? ''"
+          (input)="setExpectedField('senderName', $any($event.target).value)"
+          placeholder="JUAN PEREZ"
+        />
+        <small class="bank-form__hint">
+          Quién envió/pagó, tal como debe leerse del mensaje. Es la contraparte
+          de la transacción.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Cuenta receptora / últimos dígitos</span>
+        <input
+          type="text"
+          [value]="expected()?.receiverAccount ?? ''"
+          (input)="setExpectedField('receiverAccount', $any($event.target).value)"
+          placeholder="1234"
+        />
+        <small class="bank-form__hint">
+          Cuenta (o últimos dígitos) de DESTINO. Es la señal clave que usa la
+          resolución de cuenta para saber a qué cuenta YEP pertenece el evento.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Cuenta del remitente</span>
+        <input
+          type="text"
+          [value]="expected()?.senderAccount ?? ''"
+          (input)="setExpectedField('senderAccount', $any($event.target).value)"
+          placeholder="(si el mensaje la trae)"
+        />
+        <small class="bank-form__hint">
+          Cuenta de ORIGEN si el mensaje la incluye. Opcional.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Referencia</span>
+        <input
+          type="text"
+          [value]="expected()?.reference ?? ''"
+          (input)="setExpectedField('reference', $any($event.target).value)"
+          placeholder="M1234567"
+        />
+        <small class="bank-form__hint">
+          Código o comprobante de la transacción, si aplica.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Tipo de movimiento</span>
+        <input
+          type="text"
+          [value]="expected()?.kind ?? ''"
+          (input)="setExpectedField('kind', $any($event.target).value)"
+          placeholder="transfer"
+        />
+        <small class="bank-form__hint">
+          Categoría del movimiento (ej. <code>transfer</code>,
+          <code>payment</code>). Opcional.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Moneda</span>
+        <input
+          type="text"
+          [value]="expected()?.currency ?? ''"
+          (input)="setExpectedField('currency', $any($event.target).value)"
+          placeholder="COP"
+        />
+        <small class="bank-form__hint">
+          Código de moneda. Opcional (por defecto <code>COP</code>).
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Llave Bre-B</span>
+        <input
+          type="text"
+          [value]="expected()?.llave ?? ''"
+          (input)="setExpectedField('llave', $any($event.target).value)"
+          placeholder="@LEONARDOF6907"
+        />
+        <small class="bank-form__hint">
+          Llave Bre-B del receptor, si aplica. Opcional.
+          @if (detectedLlave(); as detected) {
+            Detectada: <code>{{ detected }}</code>
+            <button
+              type="button"
+              class="bank-form__hint-btn"
+              (click)="setExpectedField('llave', detected)"
+            >
+              usar detectada
+            </button>
+          }
+        </small>
+      </label>
+    </div>
+  </div>
+
+  <!-- Resolución de cuenta esperada (flujo completo) -->
+  <div class="bank-expected bank-expected--resolution">
+    <p class="bank-form__hint">
+      <strong>Resolución de cuenta (flujo completo).</strong> Prueba a qué
+      cuenta YEP se asignaría el evento, dadas unas cuentas del notificador
+      y la política de resolución del canal. Opcional: déjalo vacío si solo
+      quieres verificar la extracción.
+    </p>
+    <div class="bank-expected__grid">
+      <label class="bank-form__field">
+        <span>Cuentas del notificador (simuladas, una por línea)</span>
+        <textarea
+          rows="2"
+          [value]="simulatedAccounts()"
+          (input)="simulatedAccounts.set($any($event.target).value)"
+          placeholder="3001234567&#10;900011234"
+        ></textarea>
+        <small class="bank-form__hint">
+          Las cuentas que tendría asociado el notificador en este escenario.
+          Con una sola cuenta se prueba la resolución por unicidad; con
+          varias que comparten sufijo, la ambigüedad.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Resultado esperado</span>
+        <select
+          class="bank-form__select"
+          [value]="expectedResolution()"
+          (change)="onResolutionChange($any($event.target).value)"
+        >
+          <option value="">— no verificar</option>
+          <option value="account">Resuelve a una cuenta</option>
+          <option value="ambiguous">Ambiguo (no se puede decidir)</option>
+          <option value="unresolved">Sin resolver (ninguna coincide)</option>
+        </select>
+        <small class="bank-form__hint">
+          Qué debe pasar con estas cuentas + la política del canal. Si eliges
+          "Resuelve a una cuenta", indica cuál abajo.
+        </small>
+      </label>
+      @if (expectedResolution() === 'account') {
+        <label class="bank-form__field">
+          <span>Cuenta que debe resolver</span>
+          <input
+            type="text"
+            [value]="expectedResolvedAccount()"
+            (input)="expectedResolvedAccount.set($any($event.target).value)"
+            placeholder="3001234567"
+          />
+          <small class="bank-form__hint">
+            Cuál de las cuentas simuladas debe quedar asignada
+            (<code>reportedBankAccountId</code>). Acepta últimos dígitos.
+          </small>
+        </label>
+      }
+    </div>
+  </div>
+} @else {
+  <p class="bank-form__hint">
+    Negativo: pasará (✅) solo si el parser NO lo atribuye ni extrae. Sirve
+    para acotar los patrones y que la IA evite falsos positivos.
+  </p>
+}

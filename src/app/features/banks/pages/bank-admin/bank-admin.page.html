@@ -1,10 +1,10 @@
 <div class="bank-admin">
   <header class="bank-admin__header">
     <div>
-      <a class="bank-admin__back" routerLink="/businesses">
+      <button type="button" class="bank-admin__back" (click)="goBack()">
         <svg lucideArrowLeft aria-hidden="true"></svg>
         Volver
-      </a>
+      </button>
       <h1 class="bank-admin__title">Reglas de notificadores (superadmin)</h1>
       <p class="bank-admin__subtitle">
         Catálogo global de bancos. Controla qué escucha cada notificador (móvil,
@@ -61,7 +61,7 @@
               <button
                 type="button"
                 class="bank-list__item"
-                [class.is-active]="editingCode() === bank.code && modalOpen()"
+                [class.is-active]="editingCode() === bank.code && editorOpen()"
                 [class.bank-list__item--inactive]="!bank.isActive"
                 (click)="selectBank(bank)"
               >
@@ -88,7 +88,7 @@
 
     <!-- Panel de edición del banco seleccionado -->
     <main class="bank-admin__editor">
-      @if (modalOpen()) {
+      @if (editorOpen()) {
         <div class="bank-editor">
           <div class="bank-editor__head">
             <h2 class="bank-editor__title">
@@ -100,69 +100,93 @@
             </p>
           </div>
 
-          <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
-    <div class="bank-form__row">
-      <yep-input
-        formControlName="code"
-        label="Código"
-        placeholder="bancolombia"
-        [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios.'"
-        [error]="isInvalid('code') ? 'Código inválido (minúsculas, dígitos, - o _).' : ''"
-      />
-      <yep-input
-        formControlName="name"
-        label="Nombre visible"
-        placeholder="Bancolombia"
-        [error]="isInvalid('name') ? 'Ingresa un nombre' : ''"
-      />
-    </div>
+          <div class="bank-editor__layout">
+            <!-- Navegación de secciones (sticky) -->
+            <nav class="bank-editor__nav" aria-label="Secciones del editor">
+              @for (s of editorSections(); track s.id) {
+                <button
+                  type="button"
+                  [class.is-active]="activeSection() === s.id"
+                  (click)="scrollToSection(s.id)"
+                >
+                  {{ s.label }}
+                </button>
+              }
+            </nav>
 
-    <label class="bank-form__switch">
-      <yep-toggle
-        appearance="switch"
-        [pressed]="form.controls.isActive.value"
-        ariaLabel="Banco activo"
-        (toggled)="setActive($event)"
-      />
-      <span>Banco activo (visible y escuchado por la flota)</span>
-    </label>
+            <div class="bank-editor__content">
+              <form [formGroup]="form" (ngSubmit)="save()" id="bank-form" class="bank-form">
+    <!-- ═══ Sección: Datos base ═══ -->
+    <section id="sec-base" class="bank-form__block">
+      <h3 class="bank-form__blocktitle">Datos base</h3>
 
-    <!-- Tipos de cuenta soportados (propiedad del banco, no de un canal) -->
-    <div class="bank-form__section" formGroupName="supportedAccountTypes">
-      <h4 class="bank-form__sectiontitle">Tipos de cuenta soportados</h4>
-      <p class="bank-form__hint">
-        Los tipos de cuenta que ofrece este banco. Al registrar una cuenta bancaria
-        de este banco, solo se podrán elegir estos tipos. <strong>Vacío = sin
-        restricción</strong> (se permite cualquier tipo).
-      </p>
-      <div class="bank-form__checks">
-        @for (t of accountTypes; track t.key) {
-          <label class="bank-form__check">
-            <input type="checkbox" [formControlName]="t.key" />
-            <span>{{ t.label }}</span>
-          </label>
+      <div class="bank-form__row">
+        <yep-input
+          formControlName="code"
+          label="Código"
+          placeholder="bancolombia"
+          [hint]="editingCode() ? 'El código no se puede cambiar.' : 'Minúsculas, sin espacios.'"
+          [error]="isInvalid('code') ? 'Código inválido (minúsculas, dígitos, - o _).' : ''"
+        />
+        <yep-input
+          formControlName="name"
+          label="Nombre visible"
+          placeholder="Bancolombia"
+          [error]="isInvalid('name') ? 'Ingresa un nombre' : ''"
+        />
+      </div>
+
+      <label class="bank-form__switch">
+        <yep-toggle
+          appearance="switch"
+          [pressed]="form.controls.isActive.value"
+          ariaLabel="Banco activo"
+          (toggled)="setActive($event)"
+        />
+        <span>Banco activo (visible y escuchado por la flota)</span>
+      </label>
+
+      <!-- Tipos de cuenta soportados (propiedad del banco, no de un canal) -->
+      <div class="bank-form__section" formGroupName="supportedAccountTypes">
+        <h4 class="bank-form__sectiontitle">Tipos de cuenta soportados</h4>
+        <p class="bank-form__hint">
+          Los tipos de cuenta que ofrece este banco. Al registrar una cuenta bancaria
+          de este banco, solo se podrán elegir estos tipos. <strong>Vacío = sin
+          restricción</strong> (se permite cualquier tipo).
+        </p>
+        <div class="bank-form__checks">
+          @for (t of accountTypes; track t.key) {
+            <label class="bank-form__check">
+              <input type="checkbox" [formControlName]="t.key" />
+              <span>{{ t.label }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ Sección: Canales ═══ -->
+    <section id="sec-canales" class="bank-form__block">
+      <h3 class="bank-form__blocktitle">Canales</h3>
+
+      <!-- Tabs de canal -->
+      <div class="bank-form__tabs">
+        @for (ch of channels; track ch.key) {
+          <button
+            type="button"
+            [class.is-active]="activeChannel() === ch.key"
+            (click)="activeChannel.set(ch.key)"
+          >
+            {{ ch.label }}
+            @if (channelEnabled(ch.key)) {
+              <span class="bank-form__tabdot" aria-label="activo"></span>
+            }
+          </button>
         }
       </div>
-    </div>
 
-    <!-- Tabs de canal -->
-    <div class="bank-form__tabs">
-      @for (ch of channels; track ch.key) {
-        <button
-          type="button"
-          [class.is-active]="activeChannel() === ch.key"
-          (click)="activeChannel.set(ch.key)"
-        >
-          {{ ch.label }}
-          @if (channelEnabled(ch.key)) {
-            <span class="bank-form__tabdot" aria-label="activo"></span>
-          }
-        </button>
-      }
-    </div>
-
-    <!-- Campos del canal activo -->
-    <fieldset class="bank-form__channel" [formGroup]="channelCtrl(activeChannel())">
+      <!-- Campos del canal activo -->
+      <fieldset class="bank-form__channel" [formGroup]="channelCtrl(activeChannel())">
       <label class="bank-form__switch">
         <yep-toggle
           appearance="switch"
@@ -435,37 +459,34 @@
           <span>Exigir cuenta resuelta — si no se resuelve, no se enlaza automáticamente</span>
         </label>
       </div>
-    </fieldset>
+      </fieldset>
+    </section>
 
-    <!-- Panel de claridad -->
-    <yep-alert variant="info" title="Qué hará este banco">
-      <ul class="bank-form__clarity">
-        @for (line of clarity(); track line.channel) {
-          <li>{{ line.text }}</li>
-        }
-      </ul>
-    </yep-alert>
+    <!-- ═══ Sección: Resumen ═══ -->
+    <section id="sec-resumen" class="bank-form__block">
+      <yep-alert variant="info" title="Qué hará este banco">
+        <ul class="bank-form__clarity">
+          @for (line of clarity(); track line.channel) {
+            <li>{{ line.text }}</li>
+          }
+        </ul>
+      </yep-alert>
+    </section>
 
-    <!-- Probador -->
-    <details
-      class="bank-form__advanced"
-      [open]="testerOpen()"
-      (toggle)="testerOpen.set($any($event.target).open)"
-    >
-      <summary>{{ editingExampleId() ? 'Editando ejemplo' : 'Probar con un mensaje' }}</summary>
+    <!-- ═══ Sección: Probador ═══ -->
+    <section id="sec-probador" class="bank-form__block">
+      <h3 class="bank-form__blocktitle">Probar con un mensaje</h3>
+      <p class="bank-form__hint">
+        Pega un mensaje (o carga un evento real) y mira en vivo si se atribuiría y
+        qué extraen las reglas TAL COMO están en el editor. Si el resultado te
+        convence, usa "Guardar como ejemplo…" para volverlo un fixture del banco.
+      </p>
       <div class="bank-tester">
-        @if (editingExampleId()) {
-          <yep-alert variant="info">
-            Editando un ejemplo guardado del canal <strong>{{ testChannel() }}</strong>
-            (el canal no se puede cambiar). Ajusta y usa "Guardar cambios del ejemplo".
-          </yep-alert>
-        }
         <div class="bank-tester__channel">
           @for (ch of channels; track ch.key) {
             <button
               type="button"
               [class.is-active]="testChannel() === ch.key"
-              [disabled]="editingExampleId() !== null"
               (click)="setTestChannel(ch.key)"
             >
               {{ ch.label }}
@@ -561,273 +582,44 @@
               <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
               <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
             </dl>
-            @if (editingCode()) {
-              <div class="bank-tester__expected">
-                <label class="bank-form__switch">
-                  <yep-toggle
-                    appearance="switch"
-                    [pressed]="!testExpectMatch()"
-                    ariaLabel="Ejemplo negativo"
-                    (toggled)="testExpectMatch.set(!$event)"
-                  />
-                  <span>Este mensaje NO debería parsearse (ejemplo negativo 🚫)</span>
-                </label>
-                <div class="bank-form__ruleactions">
-                  @if (testExpectMatch()) {
-                    <yep-button
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      [loading]="suggestingExpected()"
-                      title="La IA propone los valores; luego los puedes ajustar a mano"
-                      (clicked)="suggestExpected()"
-                    >
-                      Sugerir esperado con IA
-                    </yep-button>
-                  }
-                  <yep-button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    (clicked)="saveExampleFromTester()"
-                  >
-                    @if (editingExampleId()) {
-                      Guardar cambios del ejemplo
-                    } @else {
-                      {{ testExpectMatch() ? 'Guardar como ejemplo' : 'Guardar como negativo' }}
-                    }
-                  </yep-button>
-                  @if (editingExampleId()) {
-                    <yep-button
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      (clicked)="cancelEditExample()"
-                    >
-                      Cancelar edición
-                    </yep-button>
-                  }
-                </div>
-                @if (testExpectMatch()) {
-                  <div class="bank-expected">
-                    <p class="bank-form__hint">
-                      <strong>Valores esperados (ground truth).</strong> Lo que el parser
-                      DEBERÍA extraer de este mensaje. Al guardar, el ejemplo se corre
-                      contra la config y pasa (✅) solo si lo extraído coincide con lo que
-                      escribas aquí. Escríbelos a mano para controlar exactamente lo
-                      esperado; "Sugerir con IA" solo los propone y luego los ajustas. El
-                      parser del banco se afina a partir de muchos ejemplos como este.
-                      <strong>Campos vacíos no se verifican.</strong>
-                    </p>
-                    <div class="bank-expected__grid">
-                      <label class="bank-form__field">
-                        <span>Monto</span>
-                        <input
-                          type="text"
-                          inputmode="decimal"
-                          [value]="testExpected()?.amount ?? ''"
-                          (input)="setExpectedField('amount', $any($event.target).value)"
-                          placeholder="50000"
-                        />
-                        <small class="bank-form__hint">
-                          Valor exacto de la transacción, solo dígitos: sin <code>$</code>
-                          ni puntos de miles. Ej: <code>50000</code>.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Dirección</span>
-                        <select
-                          class="bank-form__select"
-                          [value]="testExpected()?.direction ?? ''"
-                          (change)="setExpectedField('direction', $any($event.target).value)"
-                        >
-                          <option value="">—</option>
-                          <option value="incoming">Entrante — dinero recibido</option>
-                          <option value="outgoing">Saliente — dinero enviado</option>
-                        </select>
-                        <small class="bank-form__hint">
-                          Si el dinero ENTRA a la cuenta del negocio (<code>incoming</code>)
-                          o SALE (<code>outgoing</code>).
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Nombre del remitente / pagador</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.senderName ?? ''"
-                          (input)="setExpectedField('senderName', $any($event.target).value)"
-                          placeholder="JUAN PEREZ"
-                        />
-                        <small class="bank-form__hint">
-                          Quién envió/pagó, tal como debe leerse del mensaje. Es la contraparte
-                          de la transacción.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Cuenta receptora / últimos dígitos</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.receiverAccount ?? ''"
-                          (input)="setExpectedField('receiverAccount', $any($event.target).value)"
-                          placeholder="1234"
-                        />
-                        <small class="bank-form__hint">
-                          Cuenta (o últimos dígitos) de DESTINO. Es la señal clave que usa la
-                          resolución de cuenta para saber a qué cuenta YEP pertenece el evento.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Cuenta del remitente</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.senderAccount ?? ''"
-                          (input)="setExpectedField('senderAccount', $any($event.target).value)"
-                          placeholder="(si el mensaje la trae)"
-                        />
-                        <small class="bank-form__hint">
-                          Cuenta de ORIGEN si el mensaje la incluye. Opcional.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Referencia</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.reference ?? ''"
-                          (input)="setExpectedField('reference', $any($event.target).value)"
-                          placeholder="M1234567"
-                        />
-                        <small class="bank-form__hint">
-                          Código o comprobante de la transacción, si aplica.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Tipo de movimiento</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.kind ?? ''"
-                          (input)="setExpectedField('kind', $any($event.target).value)"
-                          placeholder="transfer"
-                        />
-                        <small class="bank-form__hint">
-                          Categoría del movimiento (ej. <code>transfer</code>,
-                          <code>payment</code>). Opcional.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Moneda</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.currency ?? ''"
-                          (input)="setExpectedField('currency', $any($event.target).value)"
-                          placeholder="COP"
-                        />
-                        <small class="bank-form__hint">
-                          Código de moneda. Opcional (por defecto <code>COP</code>).
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Llave Bre-B</span>
-                        <input
-                          type="text"
-                          [value]="testExpected()?.llave ?? ''"
-                          (input)="setExpectedField('llave', $any($event.target).value)"
-                          placeholder="@LEONARDOF6907"
-                        />
-                        <small class="bank-form__hint">
-                          Llave Bre-B del receptor, si aplica. Opcional.
-                          @if (testResult()?.parsed?.llave; as detected) {
-                            Detectada: <code>{{ detected }}</code>
-                            <button
-                              type="button"
-                              class="bank-form__hint-btn"
-                              (click)="setExpectedField('llave', detected)"
-                            >
-                              usar detectada
-                            </button>
-                          }
-                        </small>
-                      </label>
-                    </div>
-                  </div>
+          </div>
+        }
 
-                  <!-- Resolución de cuenta esperada (flujo completo, Fase 5) -->
-                  <div class="bank-expected bank-expected--resolution">
-                    <p class="bank-form__hint">
-                      <strong>Resolución de cuenta (flujo completo).</strong> Prueba a qué
-                      cuenta YEP se asignaría el evento, dadas unas cuentas del notificador
-                      y la política de resolución del canal. Opcional: déjalo vacío si solo
-                      quieres verificar la extracción.
-                    </p>
-                    <div class="bank-expected__grid">
-                      <label class="bank-form__field">
-                        <span>Cuentas del notificador (simuladas, una por línea)</span>
-                        <textarea
-                          rows="2"
-                          [value]="testSimulatedAccounts()"
-                          (input)="testSimulatedAccounts.set($any($event.target).value)"
-                          placeholder="3001234567&#10;900011234"
-                        ></textarea>
-                        <small class="bank-form__hint">
-                          Las cuentas que tendría asociado el notificador en este escenario.
-                          Con una sola cuenta se prueba la resolución por unicidad; con
-                          varias que comparten sufijo, la ambigüedad.
-                        </small>
-                      </label>
-                      <label class="bank-form__field">
-                        <span>Resultado esperado</span>
-                        <select
-                          class="bank-form__select"
-                          [value]="testExpectedResolution()"
-                          (change)="testExpectedResolution.set($any($event.target).value)"
-                        >
-                          <option value="">— no verificar</option>
-                          <option value="account">Resuelve a una cuenta</option>
-                          <option value="ambiguous">Ambiguo (no se puede decidir)</option>
-                          <option value="unresolved">Sin resolver (ninguna coincide)</option>
-                        </select>
-                        <small class="bank-form__hint">
-                          Qué debe pasar con estas cuentas + la política del canal. Si eliges
-                          "Resuelve a una cuenta", indica cuál abajo.
-                        </small>
-                      </label>
-                      @if (testExpectedResolution() === 'account') {
-                        <label class="bank-form__field">
-                          <span>Cuenta que debe resolver</span>
-                          <input
-                            type="text"
-                            [value]="testExpectedResolvedAccount()"
-                            (input)="testExpectedResolvedAccount.set($any($event.target).value)"
-                            placeholder="3001234567"
-                          />
-                          <small class="bank-form__hint">
-                            Cuál de las cuentas simuladas debe quedar asignada
-                            (<code>reportedBankAccountId</code>). Acepta últimos dígitos.
-                          </small>
-                        </label>
-                      }
-                    </div>
-                  </div>
-                } @else {
-                  <p class="bank-form__hint">
-                    Negativo: pasará (✅) solo si el parser NO lo atribuye ni extrae. Sirve
-                    para acotar los patrones y que la IA evite falsos positivos.
-                  </p>
-                }
-              </div>
-            }
+        @if (editingCode()) {
+          <div class="bank-form__ruleactions">
+            <yep-button
+              variant="secondary"
+              size="sm"
+              type="button"
+              [disabled]="!testTitle() && !testBody()"
+              (clicked)="openExampleFromTester()"
+            >
+              Guardar como ejemplo…
+            </yep-button>
+            <small class="bank-form__hint">
+              Abre el editor de ejemplo con este mensaje precargado, para completar
+              lo esperado (ground truth) y guardarlo.
+            </small>
           </div>
         }
       </div>
-    </details>
+    </section>
 
-    <!-- Biblioteca de ejemplos (solo al editar) -->
+    <!-- ═══ Sección: Ejemplos guardados (solo al editar) ═══ -->
     @if (editingCode()) {
-      <details class="bank-form__advanced" open>
-        <summary>Ejemplos guardados ({{ exampleResults().length }})</summary>
+      <section id="sec-ejemplos" class="bank-form__block">
+        <div class="bank-examples__header">
+          <h3 class="bank-form__blocktitle">Ejemplos guardados ({{ exampleResults().length }})</h3>
+          <yep-button size="sm" type="button" (clicked)="openNewExample()">
+            <svg lucidePlus aria-hidden="true"></svg>
+            Agregar ejemplo
+          </yep-button>
+        </div>
         <p class="bank-form__hint">
           Mensajes que sabemos que sí se escuchan/parsean (positivos) o que NO deberían
           parsearse (negativos 🚫). Se corren contra la config guardada — ✅ si cumple
-          lo esperado, ❌ si no (con diagnóstico). Usa ✎ para editar un ejemplo.
+          lo esperado, ❌ si no (con diagnóstico). <strong>Haz clic en un ejemplo para
+          verlo o editarlo.</strong>
         </p>
 
         <div class="bank-form__ruleactions">
@@ -887,7 +679,9 @@
         @if (runningExamples()) {
           <p class="bank-form__hint">Verificando…</p>
         } @else if (exampleResults().length === 0) {
-          <p class="bank-form__hint">Aún no hay ejemplos. Usa el probador y "Guardar como ejemplo".</p>
+          <p class="bank-form__hint">
+            Aún no hay ejemplos. Usa "Agregar ejemplo" o captura uno desde el probador.
+          </p>
         } @else {
           @for (group of exampleGroups(); track group.channel) {
             <div class="bank-examples__group">
@@ -900,69 +694,71 @@
                   {{ group.passing }}/{{ group.total }} pasan
                 </span>
               </div>
-              <ul class="bank-tester__recent">
+              <div class="bank-examples__grid">
                 @for (r of group.items; track r.example.id) {
-                  <li class="bank-example" [class.bank-example--fail]="!r.ok">
-                    <div class="bank-example__row">
-                      <span class="bank-example__status">{{ r.ok ? '✅' : '❌' }}</span>
-                      <span class="bank-example__name">
+                  <div
+                    class="example-card"
+                    [class.example-card--fail]="!r.ok"
+                    role="button"
+                    tabindex="0"
+                    title="Ver / editar este ejemplo"
+                    (click)="openExample(r)"
+                    (keyup.enter)="openExample(r)"
+                  >
+                    <div class="example-card__row">
+                      <span class="example-card__status">{{ r.ok ? '✅' : '❌' }}</span>
+                      <span class="example-card__name">
                         {{ r.example.label || r.example.snippet }}
                       </span>
                       @if (r.expectMatch === false) {
-                        <span class="bank-example__badge bank-example__badge--neg">negativo</span>
+                        <span class="example-card__badge">negativo</span>
                       }
-                      <span class="bank-example__spacer"></span>
-                      <button
-                        type="button"
-                        class="bank-tester__remove"
-                        title="Editar ejemplo"
-                        (click)="startEditExample(r.example.id)"
-                      >✎</button>
-                      <button type="button" class="bank-tester__remove" title="Eliminar" (click)="removeExample(r.example.id)">✕</button>
                     </div>
                     @if (r.parsed.amount || r.expected || r.resolution) {
-                      <div class="bank-example__chips">
+                      <div class="example-card__chips">
                         @if (r.parsed.amount) {
-                          <span class="bank-example__chip">${{ r.parsed.amount }}</span>
+                          <span class="example-card__chip">${{ r.parsed.amount }}</span>
                         }
                         @if (r.expected) {
-                          <span class="bank-example__chip">esperado: {{ expectedSummary(r.expected) }}</span>
+                          <span class="example-card__chip">esperado: {{ expectedSummary(r.expected) }}</span>
                         }
                         @if (r.resolution; as res) {
                           <span
-                            class="bank-example__chip"
+                            class="example-card__chip"
                             [class.is-fail]="res.ok === false"
                           >resolución: {{ resolutionOutcomeLabel(res.outcome) }}{{ res.resolvedAccount ? ' → ' + res.resolvedAccount : '' }}{{ res.ok === false ? ' ❌ esperaba ' + resolutionExpectedLabel(res) : (res.ok === true ? ' ✅' : '') }}</span>
                         }
                       </div>
                     }
                     @if (r.diagnosis; as d) {
-                      <div class="bank-example__diag">
+                      <div class="example-card__diag">
                         <span>{{ d.message }}</span>
                         @if (d.fix; as fix) {
                           <yep-button
                             variant="secondary"
                             size="sm"
                             type="button"
-                            (clicked)="applyFix(fix)"
+                            (clicked)="applyFix(fix); $event.stopPropagation()"
                           >
                             Agregar «{{ fix.value }}»
                           </yep-button>
                         }
                       </div>
                     }
-                  </li>
+                  </div>
                 }
-              </ul>
+              </div>
             </div>
           }
         }
-      </details>
+      </section>
     }
-          </form>
+              </form>
+            </div>
+          </div>
 
           <div class="bank-editor__toolbar">
-            <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeModal()">
+            <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeEditor()">
               Cancelar
             </yep-button>
             @if (editingCode(); as code) {
@@ -976,7 +772,7 @@
                 </yep-button>
               }
             }
-            <yep-button type="submit" form="bank-form" [loading]="saving()" (clicked)="save()">
+            <yep-button [loading]="saving()" (clicked)="save()">
               {{ editingCode() ? 'Guardar cambios' : 'Crear banco' }}
             </yep-button>
           </div>
@@ -990,6 +786,22 @@
     </main>
   </div>
 </div>
+
+<!-- Modal de CRUD de un ejemplo (crear / ver / editar / borrar) -->
+@if (editingCode(); as code) {
+  <app-example-editor-modal
+    [open]="exampleModalOpen()"
+    [bankCode]="code"
+    [example]="exampleModalExample()"
+    [runResult]="exampleModalRunResult()"
+    [initialChannel]="exampleModalChannel()"
+    [initialSample]="exampleModalSeed()"
+    [configProvider]="exampleConfigProvider"
+    (saved)="onExampleSaved($event)"
+    (deleted)="onExampleDeleted($event)"
+    (closed)="closeExampleModal()"
+  />
+}
 
 <!-- Modal de ayuda: estados de preparación móvil -->
 <yep-modal
