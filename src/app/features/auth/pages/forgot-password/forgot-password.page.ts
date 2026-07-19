@@ -10,6 +10,7 @@ import { finalize } from 'rxjs';
 import { Alert, Button, Input, OtpInput } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../services/auth-api.service';
+import { MailStatusService } from '../../services/mail-status.service';
 
 type ForgotPasswordStep = 'email' | 'code';
 type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
@@ -25,7 +26,9 @@ export class ForgotPasswordPage implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly router = inject(Router);
+  private readonly mailStatus = inject(MailStatusService);
 
+  readonly mailEnabled = this.mailStatus.enabled;
   readonly step = signal<ForgotPasswordStep>('email');
   readonly loading = signal(false);
   readonly otpStatus = signal<OtpStatus>('idle');
@@ -44,6 +47,10 @@ export class ForgotPasswordPage implements OnDestroy {
   });
 
   private resendInterval: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    this.mailStatus.ensureLoaded();
+  }
 
   ngOnDestroy(): void {
     this.clearResendTimer();

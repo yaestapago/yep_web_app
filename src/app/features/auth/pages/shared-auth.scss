@@ -145,6 +145,17 @@ form {
   color: var(--color-primary);
 }
 
+.auth-recovery-link--disabled {
+  color: var(--color-text-secondary);
+  cursor: default;
+  font-size: var(--font-size-xs);
+  text-decoration: none;
+}
+
+.auth-recovery-link--disabled:hover {
+  color: var(--color-text-secondary);
+}
+
 .auth-inline-action {
   background: transparent;
   border: 0;

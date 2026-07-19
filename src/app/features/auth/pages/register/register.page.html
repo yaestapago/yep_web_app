@@ -124,10 +124,16 @@
           [disabled]="form.invalid || loading()"
           [fullWidth]="true"
         >
-          @if (!loading()) {
+          @if (!loading() && mailEnabled()) {
             <svg lucideMail aria-hidden="true"></svg>
           }
-          <span>{{ loading() ? 'Enviando' : 'Enviar código' }}</span>
+          <span>
+            {{
+              mailEnabled()
+                ? (loading() ? 'Enviando' : 'Enviar código')
+                : (loading() ? 'Creando cuenta' : 'Registrar')
+            }}
+          </span>
         </yep-button>
       </form>
     } @else {

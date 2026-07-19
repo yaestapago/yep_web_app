@@ -27,6 +27,8 @@ async function setup(queryParams: Record<string, string> = {}) {
   vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
   const fixture: ComponentFixture<LoginPage> = TestBed.createComponent(LoginPage);
+  // El constructor consulta GET /auth/mail-status (ver MailStatusService).
+  httpMock.expectOne(`${environment.apiUrl}/auth/mail-status`).flush({ enabled: true });
   return { fixture, component: fixture.componentInstance, httpMock, router };
 }
 

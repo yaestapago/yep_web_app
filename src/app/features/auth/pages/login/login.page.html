@@ -63,7 +63,13 @@
         [error]="isInvalid('password') ? 'La contraseña debe tener al menos 8 caracteres.' : ''"
       />
 
-      <a class="auth-recovery-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
+      @if (mailEnabled()) {
+        <a class="auth-recovery-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
+      } @else {
+        <span class="auth-recovery-link auth-recovery-link--disabled">
+          Recuperación de contraseña no disponible temporalmente. Contáctanos si necesitas ayuda.
+        </span>
+      }
 
       @if (error()) {
         <yep-alert variant="error">{{ error() }}</yep-alert>
