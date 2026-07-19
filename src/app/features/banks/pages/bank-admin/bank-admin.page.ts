@@ -1,8 +1,8 @@
-import { DatePipe, JsonPipe } from '@angular/common';
+import { DatePipe, JsonPipe, Location } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   LucideArrowLeft,
   LucideInfo,
@@ -34,6 +34,7 @@ import type {
   AccountResolutionStrategy,
   AdminBank,
   BankChannelConfig,
+  BankExample,
   ChannelKey,
   CreateBankRequest,
   ExampleRunResult,
@@ -42,12 +43,14 @@ import type {
   ParseTestRequest,
   ParseTestResponse,
   RecentEvent,
+  SampleMessage,
   SuggestRulesResponse,
   SupportedAccountType,
   UpdateBankRequest,
 } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
+import { ExampleEditorModal } from '../../components/example-editor-modal/example-editor-modal';
 
 interface ChannelClarity {
   channel: string;
@@ -102,13 +105,13 @@ const ACCOUNT_TYPES: { key: SupportedAccountType; label: string }[] = [
     DatePipe,
     JsonPipe,
     ReactiveFormsModule,
-    RouterLink,
     Alert,
     Button,
     Input,
     Modal,
     StatusDot,
     Toggle,
+    ExampleEditorModal,
     LucideArrowLeft,
     LucideInfo,
     LucideLoaderCircle,
@@ -122,6 +125,8 @@ export class BankAdminPage {
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notifications = inject(NotificationModalService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly location = inject(Location);
+  private readonly router = inject(Router);
 
   readonly channels = CHANNELS;
   readonly resolutionStrategies = RESOLUTION_STRATEGIES;
@@ -136,7 +141,8 @@ export class BankAdminPage {
   readonly editingCode = signal<string | null>(null);
   readonly error = signal('');
   readonly success = signal('');
-  readonly modalOpen = signal(false);
+  // Editor inline (master-detail) abierto con un banco cargado.
+  readonly editorOpen = signal(false);
   readonly activeChannel = signal<ChannelKey>('mobile');
 
   readonly form = this.fb.group({
@@ -167,8 +173,6 @@ export class BankAdminPage {
   readonly testResult = signal<ParseTestResponse | null>(null);
   readonly testing = signal(false);
   readonly testError = signal('');
-  // `false` = el ejemplo a guardar es NEGATIVO (no debería parsearse).
-  readonly testExpectMatch = signal(true);
   private readonly testTrigger = new Subject<void>();
 
   // --- Biblioteca de ejemplos (banco en edición) ---
@@ -178,13 +182,38 @@ export class BankAdminPage {
   readonly loadingRecent = signal(false);
   // Subida de archivo .eml/.msg para prellenar el probador con el correo real.
   readonly uploadingEmailFile = signal(false);
-  // Edición de un ejemplo guardado (reusa el probador); null = modo "agregar".
-  readonly editingExampleId = signal<string | null>(null);
-  readonly testerOpen = signal(false);
   // Prueba de los ejemplos contra las reglas del EDITOR (sin guardar).
   readonly editorTestResults = signal<ExampleRunResult[] | null>(null);
   readonly editorTestChannel = signal<ChannelKey | null>(null);
   readonly testingEditor = signal(false);
+
+  // --- Modal de CRUD de un ejemplo ---
+  readonly exampleModalOpen = signal(false);
+  // Ejemplo en edición (null = modo crear) + su veredicto guardado.
+  readonly exampleModalExample = signal<BankExample | null>(null);
+  readonly exampleModalRunResult = signal<ExampleRunResult | null>(null);
+  // Semilla para el modo crear (mensaje capturado en el probador).
+  readonly exampleModalChannel = signal<ChannelKey>('mobile');
+  readonly exampleModalSeed = signal<SampleMessage | null>(null);
+  /** Config del canal según el EDITOR (sin guardar), para probar en el modal. */
+  readonly exampleConfigProvider = (
+    channel: ChannelKey,
+  ): Partial<BankChannelConfig> | null => this.buildChannelConfig(channel);
+
+  // --- Navegación de secciones del editor (nav sticky con anchors) ---
+  readonly activeSection = signal('sec-base');
+  readonly editorSections = computed(() => {
+    const sections = [
+      { id: 'sec-base', label: 'Datos base' },
+      { id: 'sec-canales', label: 'Canales' },
+      { id: 'sec-resumen', label: 'Resumen' },
+      { id: 'sec-probador', label: 'Probador' },
+    ];
+    if (this.editingCode()) {
+      sections.push({ id: 'sec-ejemplos', label: 'Ejemplos' });
+    }
+    return sections;
+  });
 
   /** Ejemplos guardados agrupados por canal (para el listado), con conteo ✅. */
   readonly exampleGroups = computed(() => {
@@ -206,15 +235,6 @@ export class BankAdminPage {
   readonly proposal = signal<SuggestRulesResponse | null>(null);
   readonly proposalChannel = signal<ChannelKey | null>(null);
   readonly suggestError = signal('');
-  // Ground truth propuesto por la IA para el mensaje del probador (editable).
-  readonly testExpected = signal<ExpectedValues | null>(null);
-  readonly suggestingExpected = signal(false);
-
-  // --- Resolución de cuenta esperada (flujo completo, Fase 5) ---
-  // Cuentas del notificador simuladas (una por línea) + resultado esperado.
-  readonly testSimulatedAccounts = signal('');
-  readonly testExpectedResolution = signal<ExpectedResolution | ''>('');
-  readonly testExpectedResolvedAccount = signal('');
 
   // --- Editor del prompt del copiloto (global, en caliente) ---
   readonly promptEditorOpen = signal(false);
@@ -391,8 +411,9 @@ export class BankAdminPage {
     });
     this.form.controls.code.enable();
     this.activeChannel.set('mobile');
+    this.activeSection.set('sec-base');
     this.resetTester();
-    this.modalOpen.set(true);
+    this.editorOpen.set(true);
   }
 
   openEdit(bank: AdminBank): void {
@@ -410,11 +431,12 @@ export class BankAdminPage {
     });
     this.form.controls.code.disable();
     this.activeChannel.set('mobile');
+    this.activeSection.set('sec-base');
     this.resetTester();
     this.exampleResults.set([]);
     this.proposal.set(null);
     this.proposalChannel.set(null);
-    this.modalOpen.set(true);
+    this.editorOpen.set(true);
     this.runExamples();
   }
 
@@ -429,17 +451,23 @@ export class BankAdminPage {
     });
   }
 
-  async closeModal(): Promise<void> {
+  async closeEditor(): Promise<void> {
     if (this.saving()) return;
     if (!(await this.confirmDiscardIfDirty())) return;
-    this.modalOpen.set(false);
+    this.editorOpen.set(false);
     this.editingCode.set(null);
+  }
+
+  /** Vuelve a la página anterior; si no hay historial, al listado de negocios. */
+  goBack(): void {
+    if (history.length > 1) this.location.back();
+    else void this.router.navigate(['/businesses']);
   }
 
   /** Selecciona un banco del menú lateral para editarlo (con guardado seguro). */
   async selectBank(bank: AdminBank): Promise<void> {
     if (this.saving()) return;
-    if (this.editingCode() === bank.code && this.modalOpen()) return;
+    if (this.editingCode() === bank.code && this.editorOpen()) return;
     if (!(await this.confirmDiscardIfDirty())) return;
     this.openEdit(bank);
   }
@@ -498,19 +526,8 @@ export class BankAdminPage {
     return policy;
   }
 
-  /** Como `toList` pero sin forzar minúsculas (para regex case-sensitive). */
-  private toRawList(raw: string): string[] {
-    return Array.from(
-      new Set(
-        (raw ?? '')
-          .split('\n')
-          .map((value) => value.trim())
-          .filter(Boolean),
-      ),
-    );
-  }
-
   save(): void {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -625,6 +642,16 @@ export class BankAdminPage {
     this.success.set(
       `Agregado «${fix.value}». Revisa el canal ${fix.channel} y usa "Guardar cambios"; luego se revalidan los ejemplos.`,
     );
+    // Lleva al operador a VER dónde quedó el patrón agregado.
+    this.scrollToSection('sec-canales');
+  }
+
+  /** Desplaza el editor a una sección (nav sticky y saltos automáticos). */
+  scrollToSection(id: string): void {
+    this.activeSection.set(id);
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // --- Probador -----------------------------------------------------------
@@ -638,14 +665,7 @@ export class BankAdminPage {
     this.testError.set('');
     this.testing.set(false);
     this.recentEvents.set([]);
-    this.testExpected.set(null);
-    this.testExpectMatch.set(true);
-    this.testSimulatedAccounts.set('');
-    this.testExpectedResolution.set('');
-    this.testExpectedResolvedAccount.set('');
     this.suggestError.set('');
-    this.editingExampleId.set(null);
-    this.testerOpen.set(false);
     this.editorTestResults.set(null);
     this.editorTestChannel.set(null);
   }
@@ -707,111 +727,73 @@ export class BankAdminPage {
       });
   }
 
-  /**
-   * Guarda el mensaje del probador como ejemplo. Si hay `editingExampleId`,
-   * MODIFICA ese ejemplo (el canal es inmutable); si no, agrega uno nuevo.
-   */
-  saveExampleFromTester(): void {
-    const code = this.editingCode();
-    if (!code) return;
-    const channel = this.testChannel();
-    const expected = this.testExpected() ?? undefined;
-    const expectMatch = this.testExpectMatch();
-    // Resolución de cuenta esperada: solo aplica a ejemplos positivos. Se manda
-    // `simulatedAccounts` siempre (aun vacío) para poder limpiarla al editar.
-    const sims = this.toRawList(this.testSimulatedAccounts());
-    const resolutionValue = this.testExpectedResolution();
-    const resolvedAccount = this.testExpectedResolvedAccount().trim();
-    const resolutionFields = expectMatch
-      ? {
-          simulatedAccounts: sims,
-          ...(resolutionValue ? { expectedResolution: resolutionValue } : {}),
-          ...(resolutionValue === 'account' && resolvedAccount
-            ? { expectedResolvedAccount: resolvedAccount }
-            : {}),
-        }
-      : {};
-    const fields = {
-      ...(channel === 'email'
+  // --- Modal de CRUD de un ejemplo -----------------------------------------
+
+  /** Abre el modal con el ejemplo de una card (ver/editar/borrar). */
+  openExample(result: ExampleRunResult): void {
+    const bank = this.banks().find((b) => b.code === this.editingCode());
+    const example = bank?.examples.find((e) => e.id === result.example.id);
+    if (!example) return;
+    this.exampleModalExample.set(example);
+    this.exampleModalRunResult.set(result);
+    this.exampleModalSeed.set(null);
+    this.exampleModalChannel.set(example.channel);
+    this.exampleModalOpen.set(true);
+  }
+
+  /** Abre el modal vacío en modo crear (canal = tab activa). */
+  openNewExample(): void {
+    this.exampleModalExample.set(null);
+    this.exampleModalRunResult.set(null);
+    this.exampleModalSeed.set(null);
+    this.exampleModalChannel.set(this.activeChannel());
+    this.exampleModalOpen.set(true);
+  }
+
+  /** Abre el modal en modo crear, prellenado con el mensaje del probador. */
+  openExampleFromTester(): void {
+    const seed: SampleMessage =
+      this.testChannel() === 'email'
         ? {
             subject: this.testTitle(),
             bodyText: this.testBody(),
             from: this.testFrom(),
           }
-        : { title: this.testTitle(), text: this.testBody() }),
-      ...(expected && expectMatch ? { expected } : {}),
-      ...resolutionFields,
-      expectMatch,
-    };
-    const editingId = this.editingExampleId();
-    const request$ = editingId
-      ? this.api.updateExample(code, editingId, {
-          ...fields,
-          // El cuerpo se edita en un solo campo; limpia bigText para no duplicar.
-          ...(channel === 'email' ? {} : { bigText: '' }),
-          // Al editar, si es negativo o se limpió el esperado, mándalo en null.
-          expected: expectMatch ? (expected ?? null) : null,
-        })
-      : this.api.addExample(code, { channel, ...fields });
-
-    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (response) => {
-        this.banks.update((banks) =>
-          banks.map((b) => (b.code === response.bank.code ? response.bank : b)),
-        );
-        this.success.set(
-          editingId
-            ? 'Ejemplo actualizado.'
-            : expectMatch
-              ? 'Ejemplo agregado.'
-              : 'Ejemplo negativo agregado.',
-        );
-        this.cancelEditExample();
-        this.runExamples();
-      },
-      error: (err) => this.error.set(httpErrorMessage(err)),
-    });
+        : { title: this.testTitle(), text: this.testBody() };
+    this.exampleModalExample.set(null);
+    this.exampleModalRunResult.set(null);
+    this.exampleModalSeed.set(seed);
+    this.exampleModalChannel.set(this.testChannel());
+    this.exampleModalOpen.set(true);
   }
 
-  /** Carga un ejemplo guardado en el probador para editarlo (canal fijo). */
-  startEditExample(exampleId: string): void {
-    const bank = this.banks().find((b) => b.code === this.editingCode());
-    const ex = bank?.examples.find((e) => e.id === exampleId);
-    if (!ex) return;
-    this.editingExampleId.set(exampleId);
-    this.testChannel.set(ex.channel);
-    if (ex.channel === 'email') {
-      this.testTitle.set(ex.subject ?? '');
-      this.testBody.set(ex.bodyText ?? '');
-      this.testFrom.set(ex.from ?? '');
-    } else {
-      this.testTitle.set(ex.title ?? '');
-      this.testBody.set([ex.text, ex.bigText].filter(Boolean).join('\n'));
-      this.testFrom.set('');
-    }
-    this.testExpected.set(ex.expected ?? null);
-    this.testExpectMatch.set(ex.expectMatch !== false);
-    this.testSimulatedAccounts.set((ex.simulatedAccounts ?? []).join('\n'));
-    this.testExpectedResolution.set(ex.expectedResolution ?? '');
-    this.testExpectedResolvedAccount.set(ex.expectedResolvedAccount ?? '');
-    this.testError.set('');
-    this.testResult.set(null);
-    this.testerOpen.set(true);
-    this.testTrigger.next();
+  /** El modal guardó (POST/PATCH): refresca el banco SIN tocar el form sucio. */
+  onExampleSaved(bank: AdminBank): void {
+    this.banks.update((banks) =>
+      banks.map((b) => (b.code === bank.code ? bank : b)),
+    );
+    this.success.set(
+      this.exampleModalExample() ? 'Ejemplo actualizado.' : 'Ejemplo agregado.',
+    );
+    this.closeExampleModal();
+    this.runExamples();
   }
 
-  /** Sale del modo edición y limpia el probador. */
-  cancelEditExample(): void {
-    this.editingExampleId.set(null);
-    this.testTitle.set('');
-    this.testBody.set('');
-    this.testFrom.set('');
-    this.testExpected.set(null);
-    this.testExpectMatch.set(true);
-    this.testSimulatedAccounts.set('');
-    this.testExpectedResolution.set('');
-    this.testExpectedResolvedAccount.set('');
-    this.testResult.set(null);
+  /** El modal borró el ejemplo (con confirmación). */
+  onExampleDeleted(bank: AdminBank): void {
+    this.banks.update((banks) =>
+      banks.map((b) => (b.code === bank.code ? bank : b)),
+    );
+    this.success.set('Ejemplo eliminado.');
+    this.closeExampleModal();
+    this.runExamples();
+  }
+
+  closeExampleModal(): void {
+    this.exampleModalOpen.set(false);
+    this.exampleModalExample.set(null);
+    this.exampleModalRunResult.set(null);
+    this.exampleModalSeed.set(null);
   }
 
   /**
@@ -912,33 +894,6 @@ export class BankAdminPage {
   // --- Copiloto de IA -----------------------------------------------------
 
   /**
-   * La IA lee el mensaje del probador y propone los valores esperados (ground
-   * truth). No guarda nada: llena `testExpected` para que el operador lo revise
-   * y se persista al "Agregar ejemplo".
-   */
-  suggestExpected(): void {
-    const code = this.editingCode();
-    if (!code) return;
-    const channel = this.testChannel();
-    const sample =
-      channel === 'email'
-        ? { subject: this.testTitle(), bodyText: this.testBody(), from: this.testFrom() }
-        : { title: this.testTitle(), text: this.testBody() };
-    this.suggestingExpected.set(true);
-    this.suggestError.set('');
-    this.api
-      .suggestExpected(code, channel, sample)
-      .pipe(
-        finalize(() => this.suggestingExpected.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => this.testExpected.set(response.expected),
-        error: (err) => this.suggestError.set(httpErrorMessage(err)),
-      });
-  }
-
-  /**
    * Pide a la IA que proponga/reparen los `parseRules` del canal usando los
    * ejemplos guardados. El backend valida (RE2) y corre todos los ejemplos; aquí
    * solo se MUESTRA la propuesta + el reporte. Se aplica con `acceptProposal()`.
@@ -1025,28 +980,6 @@ export class BankAdminPage {
     this.proposalChannel.set(null);
   }
 
-  /**
-   * Edita a mano un campo del ground truth (`testExpected`). Vacío = quita el
-   * campo (no se verifica). `amount` se limpia a número; el resto es texto. Deja
-   * `null` si no queda ningún campo, para no guardar un `expected` vacío.
-   */
-  setExpectedField(key: keyof ExpectedValues, raw: string): void {
-    const current: Record<string, unknown> = { ...(this.testExpected() ?? {}) };
-    const value = (raw ?? '').trim();
-    if (key === 'amount') {
-      const n = Number.parseFloat(value.replace(/[^\d.]/g, ''));
-      if (value !== '' && Number.isFinite(n)) current['amount'] = n;
-      else delete current['amount'];
-    } else if (value === '') {
-      delete current[key];
-    } else {
-      current[key] = value;
-    }
-    this.testExpected.set(
-      Object.keys(current).length ? (current as ExpectedValues) : null,
-    );
-  }
-
   /** Etiqueta legible de un resultado de resolución (`account`/`ambiguous`/`unresolved`). */
   resolutionOutcomeLabel(outcome: ExpectedResolution): string {
     return outcome === 'account'
@@ -1071,23 +1004,6 @@ export class BankAdminPage {
       .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '')
       .map(([k, v]) => `${k}=${v}`)
       .join(', ');
-  }
-
-  removeExample(exampleId: string): void {
-    const code = this.editingCode();
-    if (!code) return;
-    this.api
-      .removeExample(code, exampleId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.banks.update((banks) =>
-            banks.map((b) => (b.code === response.bank.code ? response.bank : b)),
-          );
-          this.runExamples();
-        },
-        error: (err) => this.error.set(httpErrorMessage(err)),
-      });
   }
 
   /** Carga eventos reales recientes del banco para capturarlos como ejemplo. */
@@ -1151,7 +1067,6 @@ export class BankAdminPage {
               'El archivo no traía cuerpo legible (asunto/remitente sí). Prueba con el correo reenviado (suele traer texto plano).',
             );
           }
-          this.testerOpen.set(true);
           this.testTrigger.next();
         },
         error: (err) => this.suggestError.set(httpErrorMessage(err)),

@@ -289,7 +289,11 @@ export interface SuggestExpectedRequest {
   sample: SampleMessage;
 }
 
-/** Patch para modificar un ejemplo guardado (el canal es inmutable). */
+/**
+ * Patch para modificar un ejemplo guardado (el canal es inmutable). `null` en
+ * `expected`/`expectedResolution` limpia el campo; `label`/
+ * `expectedResolvedAccount` se limpian con string vacío.
+ */
 export interface UpdateExampleRequest {
   label?: string;
   title?: string;
@@ -301,6 +305,6 @@ export interface UpdateExampleRequest {
   expected?: ExpectedValues | null;
   expectMatch?: boolean;
   simulatedAccounts?: string[];
-  expectedResolution?: ExpectedResolution;
+  expectedResolution?: ExpectedResolution | null;
   expectedResolvedAccount?: string;
 }
