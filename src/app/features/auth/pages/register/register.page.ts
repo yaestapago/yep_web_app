@@ -36,6 +36,7 @@ import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { AuthApiService } from '../../services/auth-api.service';
+import { MailStatusService } from '../../services/mail-status.service';
 
 interface RegisterFlowResult {
   response: AuthResponse;
@@ -73,6 +74,9 @@ export class RegisterPage implements OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notifications = inject(NotificationModalService);
+  private readonly mailStatus = inject(MailStatusService);
+
+  readonly mailEnabled = this.mailStatus.enabled;
 
   readonly termsUrl = TERMS_URL;
   readonly privacyUrl = PRIVACY_URL;
@@ -117,6 +121,8 @@ export class RegisterPage implements OnDestroy {
   private resendInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
+    this.mailStatus.ensureLoaded();
+
     const code = this.route.snapshot.queryParamMap.get('code')?.trim() ?? '';
     const businessName = this.route.snapshot.queryParamMap.get('businessName')?.trim() ?? '';
     this.inviteCode.set(code.toUpperCase());
@@ -143,6 +149,11 @@ export class RegisterPage implements OnDestroy {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+
+    if (!this.mailEnabled()) {
+      this.registerWithoutVerification();
       return;
     }
 
@@ -174,6 +185,26 @@ export class RegisterPage implements OnDestroy {
       });
   }
 
+  /**
+   * Registro directo, sin código de verificación por correo: solo se usa
+   * cuando el backend reporta SES deshabilitado (ver MailStatusService).
+   */
+  private registerWithoutVerification(): void {
+    this.loading.set(true);
+
+    this.authApi
+      .register(this.buildRegisterRequest())
+      .pipe(
+        switchMap((response) => this.requestStaffAccessFromInvite(response)),
+        finalize(() => this.loading.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (result) => this.handleRegistrationSuccess(result),
+        error: (error) => this.handleRegisterError(error),
+      });
+  }
+
   resendCode(): void {
     if (this.resendSeconds() > 0 || this.loading()) return;
     this.submit();
@@ -198,24 +229,7 @@ export class RegisterPage implements OnDestroy {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (result) => {
-          this.otpStatus.set('success');
-          if (result.requestError) {
-            this.error.set(result.requestError);
-          }
-          this.success.set(
-            result.requestedAccess
-              ? `Cuenta creada para ${result.response.user.firstName}. Solicitud enviada al negocio.`
-              : `Cuenta creada para ${result.response.user.firstName}.`,
-          );
-          setTimeout(
-            () =>
-              void this.router.navigateByUrl(
-                this.session.onboardingRequired() ? '/onboarding' : '/dashboard',
-              ),
-            450,
-          );
-        },
+        next: (result) => this.handleRegistrationSuccess(result),
         error: (error) => {
           this.otpStatus.set('error');
           const message = httpErrorMessage(error);
@@ -229,6 +243,25 @@ export class RegisterPage implements OnDestroy {
           this.otpError.set(message);
         },
       });
+  }
+
+  private handleRegistrationSuccess(result: RegisterFlowResult): void {
+    this.otpStatus.set('success');
+    if (result.requestError) {
+      this.error.set(result.requestError);
+    }
+    this.success.set(
+      result.requestedAccess
+        ? `Cuenta creada para ${result.response.user.firstName}. Solicitud enviada al negocio.`
+        : `Cuenta creada para ${result.response.user.firstName}.`,
+    );
+    setTimeout(
+      () =>
+        void this.router.navigateByUrl(
+          this.session.onboardingRequired() ? '/onboarding' : '/dashboard',
+        ),
+      450,
+    );
   }
 
   handleCodeChanged(value: string): void {
@@ -446,7 +479,7 @@ export class RegisterPage implements OnDestroy {
     control.setErrors(Object.keys(remainingErrors).length ? remainingErrors : null);
   }
 
-  private buildRegisterRequest(verificationCode: string): RegisterRequest {
+  private buildRegisterRequest(verificationCode?: string): RegisterRequest {
     const {
       confirmPassword: _confirmPassword,
       acceptTerms: _acceptTerms,
@@ -457,7 +490,7 @@ export class RegisterPage implements OnDestroy {
     return {
       ...rawRequest,
       cellphoneNumber: cellphoneNumber?.e164 ?? '',
-      verificationCode,
+      ...(verificationCode ? { verificationCode } : {}),
       acceptedTerms: true,
       termsVersion: TERMS_VERSION,
     };

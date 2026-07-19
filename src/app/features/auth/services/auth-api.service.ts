@@ -12,6 +12,7 @@ import {
   ForgotPasswordVerifyCodeRequest,
   ForgotPasswordVerifyCodeResponse,
   LoginRequest,
+  MailStatusResponse,
   MeResponse,
   RegisterRequestCodeRequest,
   RegisterRequestCodeResponse,
@@ -40,6 +41,10 @@ export class AuthApiService {
       `${this.apiUrl}/auth/register/request-code`,
       request,
     );
+  }
+
+  getMailStatus(): Observable<MailStatusResponse> {
+    return this.http.get<MailStatusResponse>(`${this.apiUrl}/auth/mail-status`);
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {

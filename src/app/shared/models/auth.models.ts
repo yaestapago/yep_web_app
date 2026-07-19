@@ -90,9 +90,14 @@ export interface RegisterRequest {
   identificationNumber: string;
   cellphoneNumber: string;
   password: string;
-  verificationCode: string;
+  /** Omitido cuando SES está deshabilitado (ver MailStatusService). */
+  verificationCode?: string;
   acceptedTerms: boolean;
   termsVersion: string;
+}
+
+export interface MailStatusResponse {
+  enabled: boolean;
 }
 
 export interface RegisterRequestCodeRequest {

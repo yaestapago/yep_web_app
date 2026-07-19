@@ -11,6 +11,17 @@ function activatedRouteStub(queryParams: Record<string, string>) {
   return { snapshot: { queryParamMap: convertToParamMap(queryParams) } };
 }
 
+/**
+ * El constructor de RegisterPage consulta `GET /auth/mail-status` (ver
+ * MailStatusService). Se responde `enabled: true` para conservar el flujo
+ * con verificación por correo en los tests existentes.
+ */
+function createRegisterPageFixture(httpMock: HttpTestingController) {
+  const fixture = TestBed.createComponent(RegisterPage);
+  httpMock.expectOne(`${environment.apiUrl}/auth/mail-status`).flush({ enabled: true });
+  return fixture;
+}
+
 describe('RegisterPage', () => {
   let httpMock: HttpTestingController;
   let router: Router;
@@ -48,7 +59,7 @@ describe('RegisterPage', () => {
 
   it('requests an email code before registering and routes new users to onboarding', () => {
     vi.useFakeTimers();
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.form.setValue({
@@ -115,8 +126,65 @@ describe('RegisterPage', () => {
     fixture.destroy();
   });
 
-  it('marks cellphone number as duplicated when the registration code request is rejected', () => {
+  it('registers directly without a verification code when mail is disabled', () => {
+    vi.useFakeTimers();
+
     const fixture = TestBed.createComponent(RegisterPage);
+    httpMock.expectOne(`${environment.apiUrl}/auth/mail-status`).flush({ enabled: false });
+    const component = fixture.componentInstance;
+
+    expect(component.mailEnabled()).toBe(false);
+
+    component.form.setValue({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: {
+        countryCode: '57',
+        nationalNumber: '3001234567',
+        e164: '+573001234567',
+      },
+      password: 'secret123',
+      confirmPassword: 'secret123',
+      acceptTerms: true,
+    });
+
+    component.submit();
+
+    const registerRequest = httpMock.expectOne(`${environment.apiUrl}/auth/register`);
+    expect(registerRequest.request.body).toEqual({
+      firstName: 'Pedro',
+      lastName: 'Ramirez',
+      email: 'pedro@example.com',
+      identificationNumber: '123456789',
+      cellphoneNumber: '+573001234567',
+      password: 'secret123',
+      acceptedTerms: true,
+      termsVersion: '2026-07',
+    });
+    expect(registerRequest.request.body).not.toHaveProperty('verificationCode');
+
+    registerRequest.flush({
+      accessToken: 'token',
+      user: {
+        id: 'user-1',
+        firstName: 'Pedro',
+        lastName: 'Ramirez',
+        email: 'pedro@example.com',
+        identificationNumber: '123456789',
+        cellphoneNumber: '3001234567',
+      },
+      memberships: [],
+    });
+    vi.advanceTimersByTime(450);
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/onboarding');
+    fixture.destroy();
+  });
+
+  it('marks cellphone number as duplicated when the registration code request is rejected', () => {
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.form.setValue({
@@ -148,7 +216,7 @@ describe('RegisterPage', () => {
   });
 
   it('shows a modal and stays on register when email already exists and the user cancels', async () => {
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.form.setValue({
@@ -188,7 +256,7 @@ describe('RegisterPage', () => {
   });
 
   it('shows a modal and navigates to login after confirmation when email already exists', async () => {
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.form.setValue({
@@ -224,7 +292,7 @@ describe('RegisterPage', () => {
   });
 
   it('marks email as blocked and shows a clear modal for temporary email domains', () => {
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.form.setValue({
@@ -292,7 +360,7 @@ describe('RegisterPage — invitación a un negocio (código/link/QR)', () => {
 
   it('lee el código y el negocio desde el link/QR y los muestra en el banner', async () => {
     await configure({ code: 'abc123', businessName: 'Café Central' });
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
 
     expect(fixture.componentInstance.inviteCode()).toBe('ABC123');
     expect(fixture.componentInstance.inviteBusinessName()).toBe('Café Central');
@@ -302,7 +370,7 @@ describe('RegisterPage — invitación a un negocio (código/link/QR)', () => {
   it('tras registrarse con una invitación, resuelve el código y solicita acceso staff', async () => {
     vi.useFakeTimers();
     await configure({ code: 'abc123', businessName: 'Café Central' });
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.form.setValue({
@@ -373,7 +441,7 @@ describe('RegisterPage — invitación a un negocio (código/link/QR)', () => {
 
   it('salir de la invitación limpia el estado local, no llama al backend y vuelve al login sin invitación', async () => {
     await configure({ code: 'abc123', businessName: 'Café Central' });
-    const fixture = TestBed.createComponent(RegisterPage);
+    const fixture = createRegisterPageFixture(httpMock);
     const component = fixture.componentInstance;
 
     component.exitInvite();

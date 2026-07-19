@@ -13,6 +13,7 @@ import { Alert, Button, Input } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../../business/services/business-accounts-api.service';
 import { AuthApiService } from '../../services/auth-api.service';
+import { MailStatusService } from '../../services/mail-status.service';
 
 interface LoginFlowResult {
   response: AuthResponse;
@@ -45,8 +46,10 @@ export class LoginPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
+  private readonly mailStatus = inject(MailStatusService);
 
   readonly isDark = this.theme.isDark;
+  readonly mailEnabled = this.mailStatus.enabled;
 
   readonly loading = signal(false);
   readonly error = signal('');
@@ -68,6 +71,8 @@ export class LoginPage {
   });
 
   constructor() {
+    this.mailStatus.ensureLoaded();
+
     const code = this.route.snapshot.queryParamMap.get('code')?.trim() ?? '';
     const businessName = this.route.snapshot.queryParamMap.get('businessName')?.trim() ?? '';
     this.inviteCode.set(code.toUpperCase());
