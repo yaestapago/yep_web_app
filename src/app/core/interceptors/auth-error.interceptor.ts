@@ -1,27 +1,22 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { Observable, catchError, finalize, shareReplay, switchMap, throwError } from 'rxjs';
 
+import { AuthApiService } from '../../features/auth/services/auth-api.service';
+import { AuthResponse } from '../../shared/models/auth.models';
 import { AuthSessionService } from '../services/auth-session.service';
 
-/**
- * Mensajes que devuelve el guard JWT del backend cuando el token es inválido o
- * falta. Ante cualquiera de ellos cerramos sesión y volvemos al login.
- */
 const INVALID_TOKEN_MESSAGES = [
-  'Token de autenticación inválido',
-  'Token de autenticación requerido',
+  'Token de autenticaciÃ³n invÃ¡lido',
+  'Token de autenticaciÃ³n requerido',
 ];
 
-/**
- * Intercepta respuestas 401 causadas por un token de sesión inválido o expirado
- * y redirige inmediatamente al login. Solo actúa cuando había una sesión activa,
- * de modo que no interfiere con 401 de lógica de negocio (p. ej. "Credenciales
- * inválidas" al iniciar sesión o "Contraseña actual inválida" al cambiarla).
- */
+let refreshRequest$: Observable<AuthResponse> | null = null;
+
 export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const session = inject(AuthSessionService);
+  const authApi = inject(AuthApiService);
   const router = inject(Router);
 
   return next(request).pipe(
@@ -30,10 +25,26 @@ export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
         error instanceof HttpErrorResponse &&
         error.status === 401 &&
         session.isAuthenticated() &&
-        isInvalidTokenError(error)
+        isInvalidTokenError(error) &&
+        !isRefreshRequest(request.url)
       ) {
-        session.clearSession();
-        void router.navigate(['/login']);
+        return getRefreshRequest(authApi).pipe(
+          catchError(() => {
+            session.clearSession();
+            void router.navigate(['/login']);
+            return throwError(() => error);
+          }),
+          switchMap((response) => {
+            session.saveSession(response);
+            return next(
+              request.clone({
+                setHeaders: {
+                  Authorization: `Bearer ${response.accessToken}`,
+                },
+              }),
+            );
+          }),
+        );
       }
 
       return throwError(() => error);
@@ -44,4 +55,19 @@ export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
 function isInvalidTokenError(error: HttpErrorResponse): boolean {
   const message = error.error?.message;
   return typeof message === 'string' && INVALID_TOKEN_MESSAGES.includes(message);
+}
+
+function isRefreshRequest(url: string): boolean {
+  return url.includes('/auth/refresh');
+}
+
+function getRefreshRequest(authApi: AuthApiService): Observable<AuthResponse> {
+  refreshRequest$ ??= authApi.refresh().pipe(
+    finalize(() => {
+      refreshRequest$ = null;
+    }),
+    shareReplay({ bufferSize: 1, refCount: false }),
+  );
+
+  return refreshRequest$;
 }

@@ -31,7 +31,9 @@ export class AuthApiService {
   private readonly apiUrl = environment.apiUrl;
 
   register(request: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, request);
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, request, {
+      withCredentials: true,
+    });
   }
 
   requestRegistrationVerificationCode(
@@ -48,7 +50,25 @@ export class AuthApiService {
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request);
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request, {
+      withCredentials: true,
+    });
+  }
+
+  refresh(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(
+      `${this.apiUrl}/auth/refresh`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
+  logout(): Observable<{ loggedOut: boolean }> {
+    return this.http.post<{ loggedOut: boolean }>(
+      `${this.apiUrl}/auth/logout`,
+      {},
+      { withCredentials: true },
+    );
   }
 
   me(): Observable<MeResponse> {

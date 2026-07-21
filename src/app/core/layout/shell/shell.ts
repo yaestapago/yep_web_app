@@ -4,6 +4,7 @@ import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/ro
 import { LucideFileScan, LucideMenu } from '@lucide/angular';
 import { filter, startWith } from 'rxjs';
 
+import { AuthApiService } from '../../../features/auth/services/auth-api.service';
 import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
 import { Button } from '../../../shared/ui/button/button';
 import { Modal } from '../../../shared/ui/modal/modal';
@@ -23,6 +24,7 @@ export class Shell {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly session = inject(AuthSessionService);
+  private readonly authApi = inject(AuthApiService);
 
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);
@@ -106,6 +108,16 @@ export class Shell {
   confirmLogout(): void {
     this.logoutModalOpen.set(false);
     this.closeDrawer();
+    this.authApi
+      .logout()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.finishLogout(),
+        error: () => this.finishLogout(),
+      });
+  }
+
+  private finishLogout(): void {
     this.session.clearSession();
     void this.router.navigateByUrl('/login');
   }

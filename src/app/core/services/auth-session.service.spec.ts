@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 
 import { AuthResponse, BusinessMembership, User } from '../../shared/models/auth.models';
 import { AuthSessionService } from './auth-session.service';
@@ -43,7 +44,7 @@ const pendingMembership: BusinessMembership = {
 describe('AuthSessionService', () => {
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
   });
 
   afterEach(() => {
@@ -162,7 +163,7 @@ describe('AuthSessionService', () => {
       }),
     );
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
 
     const service = TestBed.inject(AuthSessionService);
 

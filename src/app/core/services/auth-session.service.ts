@@ -1,9 +1,17 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
-import { AuthResponse, BusinessAccount, BusinessMembership, User } from '../../shared/models/auth.models';
+import { environment } from '../../../environments/environment';
+import {
+  AuthResponse,
+  BusinessAccount,
+  BusinessMembership,
+  User,
+} from '../../shared/models/auth.models';
 
 interface StoredSession {
-  accessToken: string;
+  accessToken: string | null;
   user: User;
   memberships: BusinessMembership[];
   activeBusinessAccountId: string | null;
@@ -11,6 +19,8 @@ interface StoredSession {
 
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = environment.apiUrl;
   private readonly storageKey = 'yep_web.auth_session';
   private readonly session = signal<StoredSession | null>(this.readStoredSession());
 
@@ -160,9 +170,23 @@ export class AuthSessionService {
     localStorage.removeItem(this.storageKey);
   }
 
+  async restoreSession(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true }),
+      );
+      this.saveSession(response);
+    } catch {
+      if (!this.accessToken()) {
+        this.clearSession();
+      }
+    }
+  }
+
   private persist(session: StoredSession): void {
     this.session.set(session);
-    localStorage.setItem(this.storageKey, JSON.stringify(session));
+    const { accessToken: _accessToken, ...storedSession } = session;
+    localStorage.setItem(this.storageKey, JSON.stringify(storedSession));
   }
 
   private resolveActiveBusinessAccountId(
@@ -251,14 +275,14 @@ export class AuthSessionService {
 
       const stored = JSON.parse(rawSession) as Partial<StoredSession>;
 
-      if (!stored.accessToken || !stored.user) {
+      if (!stored.user) {
         return null;
       }
 
       const memberships = this.normalizeMemberships(stored.memberships ?? []);
 
       return {
-        accessToken: stored.accessToken,
+        accessToken: stored.accessToken ?? null,
         user: stored.user,
         memberships,
         activeBusinessAccountId: this.resolveActiveBusinessAccountId(
