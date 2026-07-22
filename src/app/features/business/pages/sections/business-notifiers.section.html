@@ -108,9 +108,7 @@
               <yep-toggle
                 appearance="switch"
                 [pressed]="row.notifier.active"
-                [ariaLabel]="
-                  row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'
-                "
+                [ariaLabel]="row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'"
                 [disabled]="actingId() === row.notifier.id"
                 [title]="
                   row.notifier.active
@@ -275,6 +273,45 @@
         </div>
       }
     </div>
+
+    @if (isEmailKind() && selectedBankAccountIds().length > 0) {
+      <div class="field full-field">
+        <div class="field-heading-row">
+          <div>
+            <span class="field-label">Llaves Bre-B escuchadas</span>
+            <p class="section-subtitle">
+              Todas quedan activas por defecto. Desmarca las que no pertenecen a este negocio.
+            </p>
+          </div>
+          @if (selectedEmailBreBKeyOptions().length > 0) {
+            <button type="button" class="inline-action" (click)="selectAllBreBKeys()">
+              Seleccionar todas
+            </button>
+          }
+        </div>
+
+        @if (selectedEmailBreBKeyOptions().length === 0) {
+          <p class="section-subtitle">La cuenta seleccionada no tiene llaves Bre-B registradas.</p>
+        } @else {
+          <div class="key-picker">
+            @for (option of selectedEmailBreBKeyOptions(); track option.account.id + option.key) {
+              <yep-checkbox
+                class="key-option"
+                [checked]="isBreBKeySelected(option.key)"
+                (checkedChange)="toggleBreBKey(option.key, $event)"
+              >
+                <span class="key-option__body">
+                  <code class="key-option__value">{{ option.key }}</code>
+                  <span class="key-option__meta">
+                    {{ bankName(option.account) }} Â· ****{{ option.account.accountNumberLast4 }}
+                  </span>
+                </span>
+              </yep-checkbox>
+            }
+          </div>
+        }
+      </div>
+    }
 
     @if (isEmailKind() && selectedBankAccountIds().length > 0) {
       <div class="email-forwarding-help full-field">

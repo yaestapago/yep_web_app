@@ -100,6 +100,7 @@ export class BusinessNotifiersSection implements OnInit {
   /** Catálogo de bancos por `code` para saber qué cuentas soportan teléfono. */
   private readonly banksByCode = signal<Map<string, BankPickerEntry>>(new Map());
   readonly selectedBankAccountIds = signal<string[]>([]);
+  readonly selectedAllowedBreBKeys = signal<string[]>([]);
   readonly loading = signal(false);
   readonly creating = signal(false);
   readonly actingId = signal<string | null>(null);
@@ -219,6 +220,18 @@ export class BusinessNotifiersSection implements OnInit {
   readonly selectedEmailSenderPatternsText = computed(() =>
     this.selectedEmailSenderPatterns().join('\n'),
   );
+
+  readonly selectedEmailBreBKeyOptions = computed(() => {
+    const selectedIds = new Set(this.selectedBankAccountIds());
+    return this.bankAccounts()
+      .filter((account) => selectedIds.has(account.id))
+      .flatMap((account) =>
+        (account.breBKeys ?? []).map((key) => ({
+          key,
+          account,
+        })),
+      );
+  });
 
   readonly statuses = computed<Array<{ notifier: Notifier; status: NotifierStatus }>>(() => {
     const now = this.now();
@@ -367,6 +380,7 @@ export class BusinessNotifiersSection implements OnInit {
     this.senderPatternsCopied.set(false);
     this.editingId.set(null);
     this.selectedBankAccountIds.set([]);
+    this.selectedAllowedBreBKeys.set([]);
     this.form.reset({ kind: 'phone', displayName: '', senderEmail: '' });
     this.loadBankAccounts();
     this.modalOpen.set(true);
@@ -378,6 +392,11 @@ export class BusinessNotifiersSection implements OnInit {
     this.senderPatternsCopied.set(false);
     this.editingId.set(notifier.id);
     this.selectedBankAccountIds.set([...notifier.bankAccountIds]);
+    this.selectedAllowedBreBKeys.set(
+      (notifier.allowedBreBKeys ?? []).length > 0
+        ? [...notifier.allowedBreBKeys]
+        : notifier.bankAccounts.flatMap((account) => account.breBKeys ?? []),
+    );
     this.form.reset({
       kind: this.typeToKind(notifier.type),
       displayName: notifier.displayName ?? '',
@@ -499,10 +518,7 @@ export class BusinessNotifiersSection implements OnInit {
     const type = this.kindToType(this.selectedKind());
     const editing = this.editingId();
     return this.notifiers().some(
-      (n) =>
-        n.type === type &&
-        n.id !== editing &&
-        (n.bankAccountIds ?? []).includes(account.id),
+      (n) => n.type === type && n.id !== editing && (n.bankAccountIds ?? []).includes(account.id),
     );
   }
 
@@ -549,10 +565,52 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedBankAccountIds.update((ids) =>
       checked ? Array.from(new Set([...ids, accountId])) : ids.filter((id) => id !== accountId),
     );
+    this.syncSelectedBreBKeysAfterAccountToggle(accountId, checked);
   }
 
   isSelected(accountId: string): boolean {
     return this.selectedBankAccountIds().includes(accountId);
+  }
+
+  toggleBreBKey(key: string, checked: boolean): void {
+    this.selectedAllowedBreBKeys.update((keys) =>
+      checked ? Array.from(new Set([...keys, key])) : keys.filter((current) => current !== key),
+    );
+  }
+
+  isBreBKeySelected(key: string): boolean {
+    return this.selectedAllowedBreBKeys().includes(key);
+  }
+
+  selectAllBreBKeys(): void {
+    this.selectedAllowedBreBKeys.set(
+      this.selectedEmailBreBKeyOptions().map((option) => option.key),
+    );
+  }
+
+  private syncSelectedBreBKeysAfterAccountToggle(accountId: string, checked: boolean): void {
+    if (!this.isEmailKind()) return;
+    const account = this.bankAccounts().find((current) => current.id === accountId);
+    const keys = account?.breBKeys ?? [];
+    if (checked) {
+      this.selectedAllowedBreBKeys.update((selected) =>
+        Array.from(new Set([...selected, ...keys])),
+      );
+      return;
+    }
+    this.selectedAllowedBreBKeys.update((selected) =>
+      selected.filter((key) => !keys.includes(key)),
+    );
+  }
+
+  private selectedBreBKeyPayload(): string[] | undefined {
+    if (!this.isEmailKind()) return undefined;
+    const available = this.selectedEmailBreBKeyOptions().map((option) => option.key);
+    const selected = this.selectedAllowedBreBKeys().filter((key) => available.includes(key));
+    if (available.length === 0 || selected.length === available.length) {
+      return undefined;
+    }
+    return selected;
   }
 
   copyEmailSenderPatterns(): void {
@@ -602,6 +660,12 @@ export class BusinessNotifiersSection implements OnInit {
       return;
     }
 
+    const allowedBreBKeys = this.selectedBreBKeyPayload();
+    if (isEmail && this.selectedEmailBreBKeyOptions().length > 0 && allowedBreBKeys?.length === 0) {
+      this.error.set('Selecciona al menos una llave Bre-B para este notificador.');
+      return;
+    }
+
     const displayName = this.form.controls.displayName.value.trim();
     const senderEmail = this.form.controls.senderEmail.value.trim();
     this.creating.set(true);
@@ -617,6 +681,7 @@ export class BusinessNotifiersSection implements OnInit {
                 identifier: senderEmail,
                 identifierType: 'email',
                 bankAccountIds,
+                ...(allowedBreBKeys !== undefined ? { allowedBreBKeys } : {}),
               }
             : { displayName, bankAccountIds },
         )
@@ -628,6 +693,7 @@ export class BusinessNotifiersSection implements OnInit {
                 identifier: senderEmail,
                 identifierType: 'email',
                 bankAccountIds,
+                ...(allowedBreBKeys !== undefined ? { allowedBreBKeys } : {}),
               }
             : {
                 type: this.kindToType(kind),
