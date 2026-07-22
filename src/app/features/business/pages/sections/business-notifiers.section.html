@@ -274,7 +274,7 @@
       }
     </div>
 
-    @if (isEmailKind() && selectedBankAccountIds().length > 0) {
+    @if (supportsBreBKeySelection() && selectedBankAccountIds().length > 0) {
       <div class="field full-field">
         <div class="field-heading-row">
           <div>
@@ -283,18 +283,18 @@
               Todas quedan activas por defecto. Desmarca las que no pertenecen a este negocio.
             </p>
           </div>
-          @if (selectedEmailBreBKeyOptions().length > 0) {
+          @if (selectedBreBKeyOptions().length > 0) {
             <button type="button" class="inline-action" (click)="selectAllBreBKeys()">
               Seleccionar todas
             </button>
           }
         </div>
 
-        @if (selectedEmailBreBKeyOptions().length === 0) {
+        @if (selectedBreBKeyOptions().length === 0) {
           <p class="section-subtitle">La cuenta seleccionada no tiene llaves Bre-B registradas.</p>
         } @else {
           <div class="key-picker">
-            @for (option of selectedEmailBreBKeyOptions(); track option.account.id + option.key) {
+            @for (option of selectedBreBKeyOptions(); track option.account.id + option.key) {
               <yep-checkbox
                 class="key-option"
                 [checked]="isBreBKeySelected(option.key)"

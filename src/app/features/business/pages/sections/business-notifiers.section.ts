@@ -221,7 +221,7 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedEmailSenderPatterns().join('\n'),
   );
 
-  readonly selectedEmailBreBKeyOptions = computed(() => {
+  readonly selectedBreBKeyOptions = computed(() => {
     const selectedIds = new Set(this.selectedBankAccountIds());
     return this.bankAccounts()
       .filter((account) => selectedIds.has(account.id))
@@ -270,6 +270,9 @@ export class BusinessNotifiersSection implements OnInit {
 
   /** Teléfono y Escritorio monitorean cuentas y se emparejan; el correo no. */
   readonly isEmailKind = computed(() => this.selectedKind() === 'email');
+  readonly supportsBreBKeySelection = computed(
+    () => this.selectedKind() === 'email' || this.selectedKind() === 'phone',
+  );
   readonly monitorsBanks = computed(() => !this.isEmailKind());
 
   readonly modalSubtitle = computed(() => {
@@ -303,6 +306,13 @@ export class BusinessNotifiersSection implements OnInit {
           control.setValue('');
         }
         control.updateValueAndValidity();
+        if (!this.editingId()) {
+          this.selectedAllowedBreBKeys.set(
+            kind === 'email' || kind === 'phone'
+              ? this.selectedBreBKeyOptions().map((option) => option.key)
+              : [],
+          );
+        }
       });
 
     // Refresco periódico: recalcula el tick y vuelve a pedir los notifiers.
@@ -584,12 +594,12 @@ export class BusinessNotifiersSection implements OnInit {
 
   selectAllBreBKeys(): void {
     this.selectedAllowedBreBKeys.set(
-      this.selectedEmailBreBKeyOptions().map((option) => option.key),
+      this.selectedBreBKeyOptions().map((option) => option.key),
     );
   }
 
   private syncSelectedBreBKeysAfterAccountToggle(accountId: string, checked: boolean): void {
-    if (!this.isEmailKind()) return;
+    if (!this.supportsBreBKeySelection()) return;
     const account = this.bankAccounts().find((current) => current.id === accountId);
     const keys = account?.breBKeys ?? [];
     if (checked) {
@@ -604,11 +614,11 @@ export class BusinessNotifiersSection implements OnInit {
   }
 
   private selectedBreBKeyPayload(): string[] | undefined {
-    if (!this.isEmailKind()) return undefined;
-    const available = this.selectedEmailBreBKeyOptions().map((option) => option.key);
+    if (!this.supportsBreBKeySelection()) return undefined;
+    const available = this.selectedBreBKeyOptions().map((option) => option.key);
     const selected = this.selectedAllowedBreBKeys().filter((key) => available.includes(key));
     if (available.length === 0 || selected.length === available.length) {
-      return undefined;
+      return this.editingId() && available.length > 0 ? [] : undefined;
     }
     return selected;
   }
@@ -644,6 +654,7 @@ export class BusinessNotifiersSection implements OnInit {
   save(): void {
     const kind = this.form.controls.kind.value;
     const isEmail = kind === 'email';
+    const supportsBreBKeySelection = kind === 'email' || kind === 'phone';
     const bankAccountIds = this.selectedBankAccountIds();
 
     // Tanto monitoreo (teléfono/escritorio) como correo requieren ahora al menos
@@ -661,7 +672,11 @@ export class BusinessNotifiersSection implements OnInit {
     }
 
     const allowedBreBKeys = this.selectedBreBKeyPayload();
-    if (isEmail && this.selectedEmailBreBKeyOptions().length > 0 && allowedBreBKeys?.length === 0) {
+    if (
+      supportsBreBKeySelection &&
+      this.selectedBreBKeyOptions().length > 0 &&
+      allowedBreBKeys?.length === 0
+    ) {
       this.error.set('Selecciona al menos una llave Bre-B para este notificador.');
       return;
     }
@@ -683,7 +698,13 @@ export class BusinessNotifiersSection implements OnInit {
                 bankAccountIds,
                 ...(allowedBreBKeys !== undefined ? { allowedBreBKeys } : {}),
               }
-            : { displayName, bankAccountIds },
+            : {
+                displayName,
+                bankAccountIds,
+                ...(supportsBreBKeySelection && allowedBreBKeys !== undefined
+                  ? { allowedBreBKeys }
+                  : {}),
+              },
         )
       : this.notifiersApi.create(
           isEmail
@@ -699,6 +720,9 @@ export class BusinessNotifiersSection implements OnInit {
                 type: this.kindToType(kind),
                 displayName,
                 bankAccountIds,
+                ...(supportsBreBKeySelection && allowedBreBKeys !== undefined
+                  ? { allowedBreBKeys }
+                  : {}),
               },
         );
 
