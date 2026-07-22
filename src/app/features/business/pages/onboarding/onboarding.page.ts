@@ -23,6 +23,7 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { AuthApiService } from '../../../auth/services/auth-api.service';
 import { RequestMembershipModal } from '../../components/request-membership-modal/request-membership-modal';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -51,6 +52,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
 export class OnboardingPage implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly authApi = inject(AuthApiService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
@@ -175,6 +177,16 @@ export class OnboardingPage implements OnInit {
 
   confirmLogout(): void {
     this.logoutModalOpen.set(false);
+    this.authApi
+      .logout()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.finishLogout(),
+        error: () => this.finishLogout(),
+      });
+  }
+
+  private finishLogout(): void {
     this.session.clearSession();
     void this.router.navigateByUrl('/login');
   }
