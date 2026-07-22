@@ -51,6 +51,7 @@ export interface Notifier {
   identifierType?: NotifierIdentifierType;
   bankIds: string[];
   bankAccountIds: string[];
+  allowedBreBKeys: string[];
   bankAccounts: BankAccount[];
   watchedPackages: string[];
   locationId?: string;
@@ -94,6 +95,7 @@ export interface CreateNotifierRequest {
   identifierType?: NotifierIdentifierType;
   bankIds?: string[];
   bankAccountIds?: string[];
+  allowedBreBKeys?: string[];
   watchedPackages?: string[];
   locationId?: string;
 }
