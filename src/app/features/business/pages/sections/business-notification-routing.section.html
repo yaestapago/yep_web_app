@@ -40,7 +40,7 @@
             <div class="list-card__titlerow">
               <div class="routing-employee-info">
                 <svg
-                  [attr.data-expanded]="expandedEmployeeId() === view.member.id"
+                  [attr.data-expanded]="expandedEmployeeIds().has(view.member.id)"
                   class="routing-chevron"
                   lucideChevronRight
                   aria-hidden="true"
@@ -58,7 +58,7 @@
                   <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
                 } @else {
                   @let count = activeAccountCount(view.member);
-                  @let total = totalBankCount();
+                  @let total = totalAccountCount();
                   @if (count > 0) {
                     <span class="routing-badge routing-badge--active">
                       {{ count }}/{{ total }} cuentas
@@ -73,35 +73,19 @@
             </div>
           </div>
 
-          @if (expandedEmployeeId() === view.member.id) {
+          @if (expandedEmployeeIds().has(view.member.id)) {
             <div class="routing-accounts">
               @for (entry of bankAccountsByBank(); track entry[0]) {
                 <div class="routing-bank-group">
-                  <div class="routing-bank-header">
-                    <yep-checkbox
-                      [checked]="isBankAccountEnabled(view.member, entry[0])"
-                      [disabled]="!canManage()"
-                      [label]="bankName(entry[0])"
-                      (checkedChange)="toggleBankAccount(view.member, entry[1][0])"
-                    />
-                  </div>
-                  @if (isBankAccountEnabled(view.member, entry[0])) {
-                    <div class="routing-breB-keys">
-                      @for (account of entry[1]; track account.id) {
-                        @for (key of getBreBKeysForAccount(account); track key) {
-                          <div class="routing-breB-key-row">
-                            <yep-checkbox
-                              [checked]="isBreBKeyEnabled(view.member, entry[0], key)"
-                              [disabled]="!canManage()"
-                              [label]="key"
-                              (checkedChange)="toggleBreBKey(view.member, entry[0], key)"
-                            />
-                          </div>
-                        }
-                      }
-                      @if (entry[1].every(a => getBreBKeysForAccount(a).length === 0)) {
-                        <span class="routing-no-keys">Sin llaves Bre-B configuradas</span>
-                      }
+                  <div class="routing-bank-label">{{ bankName(entry[0]) }}</div>
+                  @for (account of entry[1]; track account.id) {
+                    <div class="routing-account-row">
+                      <yep-checkbox
+                        [checked]="isBankAccountEnabled(view.member, account.id, entry[0])"
+                        [disabled]="!canManage()"
+                        [label]="accountDisplayName(account)"
+                        (checkedChange)="toggleBankAccount(view.member, account.id, entry[0])"
+                      />
                     </div>
                   }
                 </div>

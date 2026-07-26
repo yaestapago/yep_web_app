@@ -53,7 +53,7 @@ export class BusinessNotificationRoutingSection implements OnInit {
   readonly bankCatalog = signal<Map<string, BankPickerEntry>>(new Map());
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly expandedEmployeeId = signal<string | null>(null);
+  readonly expandedEmployeeIds = signal(new Set<string>());
   readonly actingId = signal<string | null>(null);
 
   readonly canManage = computed(() => {
@@ -141,14 +141,20 @@ export class BusinessNotificationRoutingSection implements OnInit {
     );
   }
 
-  isBankAccountEnabled(member: ApprovedMember, bankId: string): boolean {
-    if (!member.cellphoneNumber) return false;
-    return this.rules().some(
+  private findRule(member: ApprovedMember, bankId: string): NotificationRoutingRule | undefined {
+    if (!member.cellphoneNumber) return undefined;
+    return this.rules().find(
       (r) =>
         this.phoneMatch(r.recipientPhone, member.cellphoneNumber!) &&
-        r.bankId === bankId &&
-        r.active,
+        r.bankId === bankId,
     );
+  }
+
+  isBankAccountEnabled(member: ApprovedMember, accountId: string, bankId: string): boolean {
+    const rule = this.findRule(member, bankId);
+    if (!rule || !rule.active) return false;
+    if (rule.bankAccountIds.length === 0) return true;
+    return rule.bankAccountIds.includes(accountId);
   }
 
   isBreBKeyEnabled(
@@ -169,9 +175,13 @@ export class BusinessNotificationRoutingSection implements OnInit {
   }
 
   toggleExpand(employeeId: string): void {
-    this.expandedEmployeeId.set(
-      this.expandedEmployeeId() === employeeId ? null : employeeId,
-    );
+    const current = new Set(this.expandedEmployeeIds());
+    if (current.has(employeeId)) {
+      current.delete(employeeId);
+    } else {
+      current.add(employeeId);
+    }
+    this.expandedEmployeeIds.set(current);
   }
 
   toggleEmployee(member: ApprovedMember): void {
@@ -243,49 +253,80 @@ export class BusinessNotificationRoutingSection implements OnInit {
       });
   }
 
-  toggleBankAccount(member: ApprovedMember, bankAccount: BankAccount): void {
+  toggleBankAccount(member: ApprovedMember, accountId: string, bankId: string): void {
     if (!member.cellphoneNumber) return;
     this.actingId.set(member.id);
 
-    const existingRule = this.rules().find(
-      (r) =>
-        this.phoneMatch(r.recipientPhone, member.cellphoneNumber!) &&
-        r.bankId === bankAccount.bankId,
-    );
+    const existingRule = this.findRule(member, bankId);
+    const allIds = this.bankAccounts()
+      .filter((a) => a.bankId === bankId && a.isActive)
+      .map((a) => a.id);
 
-    if (existingRule) {
-      this.routingApi
-        .toggle(existingRule.id)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: () => {
-            this.load();
-            this.actingId.set(null);
-          },
-          error: (err) => {
-            void this.notifications.error({ title: httpErrorMessage(err) });
-            this.actingId.set(null);
-          },
-        });
-    } else {
+    if (!existingRule) {
       this.routingApi
         .create({
-          bankId: bankAccount.bankId,
+          bankId,
           recipientPhone: member.cellphoneNumber!,
           recipientUserId: member.userId,
+          bankAccountIds: [accountId],
         })
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: () => {
-            this.load();
-            this.actingId.set(null);
-          },
+          next: () => { this.load(); this.actingId.set(null); },
           error: (err) => {
             void this.notifications.error({ title: httpErrorMessage(err) });
             this.actingId.set(null);
           },
         });
+      return;
     }
+
+    const currentIds = existingRule.bankAccountIds;
+    let newIds: string[];
+
+    if (!existingRule.active) {
+      newIds = [accountId];
+    } else if (currentIds.length === 0) {
+      newIds = allIds.filter((id) => id !== accountId);
+    } else if (currentIds.includes(accountId)) {
+      newIds = currentIds.filter((id) => id !== accountId);
+    } else {
+      newIds = [...currentIds, accountId];
+      if (allIds.length > 0 && allIds.every((id) => newIds.includes(id))) {
+        newIds = [];
+      }
+    }
+
+    const shouldActivate = !existingRule.active || newIds.length > 0;
+
+    this.routingApi
+      .update(existingRule.id, {
+        bankAccountIds: newIds,
+        ...(shouldActivate !== existingRule.active ? {} : {}),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          if (shouldActivate !== existingRule.active) {
+            this.routingApi.toggle(existingRule.id)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe({
+                next: () => { this.load(); this.actingId.set(null); },
+                error: (err) => {
+                  void this.notifications.error({ title: httpErrorMessage(err) });
+                  this.actingId.set(null);
+                },
+              });
+          } else {
+            this.load();
+            this.actingId.set(null);
+          }
+        },
+        error: (err) => {
+          void this.notifications.error({ title: httpErrorMessage(err) });
+          this.actingId.set(null);
+        },
+      });
   }
 
   toggleBreBKey(
@@ -381,20 +422,26 @@ export class BusinessNotificationRoutingSection implements OnInit {
 
   activeAccountCount(member: ApprovedMember): number {
     if (!member.cellphoneNumber) return 0;
-    const activeBankIds = new Set(
-      this.rules()
-        .filter(
-          (r) =>
-            this.phoneMatch(r.recipientPhone, member.cellphoneNumber!) &&
-            r.active,
-        )
-        .map((r) => r.bankId),
-    );
-    return activeBankIds.size;
+    let count = 0;
+    for (const [bankId, accounts] of this.bankAccountsByBank()) {
+      const rule = this.rules().find(
+        (r) =>
+          this.phoneMatch(r.recipientPhone, member.cellphoneNumber!) &&
+          r.bankId === bankId &&
+          r.active,
+      );
+      if (!rule) continue;
+      if (rule.bankAccountIds.length === 0) {
+        count += accounts.length;
+      } else {
+        count += rule.bankAccountIds.length;
+      }
+    }
+    return count;
   }
 
-  totalBankCount(): number {
-    return this.bankAccountsByBank().length;
+  totalAccountCount(): number {
+    return this.bankAccounts().filter((a) => a.isActive).length;
   }
 
   toggleAllAccounts(member: ApprovedMember): void {
