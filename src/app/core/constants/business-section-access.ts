@@ -15,7 +15,8 @@ export type BusinessSectionKey =
   | 'employees'
   | 'locations'
   | 'schedules'
-  | 'reports';
+  | 'reports'
+  | 'notification-routing';
 
 export const BUSINESS_SECTION_ACCESS: Record<BusinessSectionKey, BusinessMembershipRole[]> = {
   'business-data': ['account_owner', 'account_staff'], // staff: solo lectura
@@ -26,6 +27,7 @@ export const BUSINESS_SECTION_ACCESS: Record<BusinessSectionKey, BusinessMembers
   locations: ['account_owner'],
   schedules: ['account_owner', 'account_staff'],
   reports: ['account_owner', 'account_staff'],
+  'notification-routing': ['account_owner', 'account_staff'],
 };
 
 /** El SU siempre tiene acceso, sin importar la sección. */
