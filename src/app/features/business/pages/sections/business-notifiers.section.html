@@ -245,73 +245,83 @@
         <div class="account-picker">
           @for (account of selectableAccounts(); track account.id) {
             @let blockedReason = accountBlockedReason(account);
-            <yep-checkbox
+            <div
               class="account-option"
+              [class.account-option--selected]="isSelected(account.id)"
               [class.account-option--disabled]="!!blockedReason && !isSelected(account.id)"
-              [checked]="isSelected(account.id)"
-              [disabled]="!!blockedReason && !isSelected(account.id)"
-              (checkedChange)="toggleAccount(account.id, $event)"
             >
-              <span class="account-option__body">
-                <span class="account-option__title">
-                  {{ bankName(account) }} ·
-                  {{ account.displayName || '****' + account.accountNumberLast4 }}
-                </span>
-                <span class="account-option__meta">
-                  ****{{ account.accountNumberLast4 }}
-                  @if (accountTypeLabel(account)) {
-                    · {{ accountTypeLabel(account) }}
+              <yep-checkbox
+                class="account-option__checkbox"
+                [checked]="isSelected(account.id)"
+                [disabled]="!!blockedReason && !isSelected(account.id)"
+                (checkedChange)="toggleAccount(account.id, $event)"
+              >
+                <span class="account-option__body">
+                  <span class="account-option__title">
+                    {{ bankName(account) }} ·
+                    {{ account.displayName || '****' + account.accountNumberLast4 }}
+                  </span>
+                  <span class="account-option__meta">
+                    ****{{ account.accountNumberLast4 }}
+                    @if (accountTypeLabel(account)) {
+                      · {{ accountTypeLabel(account) }}
+                    }
+                    · {{ account.isActive ? 'Activa' : 'Inactiva' }}
+                  </span>
+                  @if (blockedReason && !isSelected(account.id)) {
+                    <span class="field-error">{{ blockedReason }}</span>
                   }
-                  · {{ account.isActive ? 'Activa' : 'Inactiva' }}
                 </span>
-                @if (blockedReason && !isSelected(account.id)) {
-                  <span class="field-error">{{ blockedReason }}</span>
-                }
-              </span>
-            </yep-checkbox>
+              </yep-checkbox>
+
+              @if (supportsBreBKeySelection() && isSelected(account.id)) {
+                <div class="account-key-list" aria-label="Llaves Bre-B que escucha esta cuenta">
+                  <div class="account-key-list__header">
+                    <span class="account-key-hint">Llaves que escucha esta cuenta</span>
+                    <button
+                      type="button"
+                      class="inline-action"
+                      (click)="toggleAllBreBFiltersForAccount(account)"
+                    >
+                      {{
+                        areAllBreBFiltersSelectedForAccount(account)
+                          ? 'Deseleccionar todo'
+                          : 'Seleccionar todo'
+                      }}
+                    </button>
+                  </div>
+
+                  <yep-checkbox
+                    class="account-key-option"
+                    [checked]="isBreBKeySelected(directAccountFilterKey(account))"
+                    (checkedChange)="toggleBreBKey(directAccountFilterKey(account), $event)"
+                  >
+                    <span class="account-key-option__body">
+                      <span class="account-key-option__title">Cuenta directa</span>
+                      <span class="account-key-option__meta">Sin llave Bre-B</span>
+                    </span>
+                  </yep-checkbox>
+
+                  @for (key of account.breBKeys; track key) {
+                    <yep-checkbox
+                      class="account-key-option"
+                      [checked]="isBreBKeySelected(key)"
+                      (checkedChange)="toggleBreBKey(key, $event)"
+                    >
+                      <code class="account-key-option__value">{{ key }}</code>
+                    </yep-checkbox>
+                  }
+
+                  @if (account.breBKeys.length === 0) {
+                    <span class="account-key-empty">Sin llaves Bre-B registradas.</span>
+                  }
+                </div>
+              }
+            </div>
           }
         </div>
       }
     </div>
-
-    @if (supportsBreBKeySelection() && selectedBankAccountIds().length > 0) {
-      <div class="field full-field">
-        <div class="field-heading-row">
-          <div>
-            <span class="field-label">Llaves Bre-B escuchadas</span>
-            <p class="section-subtitle">
-              Todas quedan activas por defecto. Desmarca las que no pertenecen a este negocio.
-            </p>
-          </div>
-          @if (selectedBreBKeyOptions().length > 0) {
-            <button type="button" class="inline-action" (click)="selectAllBreBKeys()">
-              Seleccionar todas
-            </button>
-          }
-        </div>
-
-        @if (selectedBreBKeyOptions().length === 0) {
-          <p class="section-subtitle">La cuenta seleccionada no tiene llaves Bre-B registradas.</p>
-        } @else {
-          <div class="key-picker">
-            @for (option of selectedBreBKeyOptions(); track option.account.id + option.key) {
-              <yep-checkbox
-                class="key-option"
-                [checked]="isBreBKeySelected(option.key)"
-                (checkedChange)="toggleBreBKey(option.key, $event)"
-              >
-                <span class="key-option__body">
-                  <code class="key-option__value">{{ option.key }}</code>
-                  <span class="key-option__meta">
-                    {{ bankName(option.account) }} Â· ****{{ option.account.accountNumberLast4 }}
-                  </span>
-                </span>
-              </yep-checkbox>
-            }
-          </div>
-        }
-      </div>
-    }
 
     @if (isEmailKind() && selectedBankAccountIds().length > 0) {
       <div class="email-forwarding-help full-field">

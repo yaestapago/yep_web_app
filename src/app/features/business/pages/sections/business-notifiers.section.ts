@@ -57,6 +57,8 @@ interface NotifierKindOption {
   badge?: string;
 }
 
+const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
+
 @Component({
   selector: 'app-business-notifiers-section',
   imports: [
@@ -226,7 +228,7 @@ export class BusinessNotifiersSection implements OnInit {
     return this.bankAccounts()
       .filter((account) => selectedIds.has(account.id))
       .flatMap((account) =>
-        (account.breBKeys ?? []).map((key) => ({
+        [this.directAccountFilterKey(account), ...(account.breBKeys ?? [])].map((key) => ({
           key,
           account,
         })),
@@ -405,7 +407,10 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedAllowedBreBKeys.set(
       (notifier.allowedBreBKeys ?? []).length > 0
         ? [...notifier.allowedBreBKeys]
-        : notifier.bankAccounts.flatMap((account) => account.breBKeys ?? []),
+        : notifier.bankAccounts.flatMap((account) => [
+            this.directAccountFilterKey(account),
+            ...(account.breBKeys ?? []),
+          ]),
     );
     this.form.reset({
       kind: this.typeToKind(notifier.type),
@@ -582,6 +587,14 @@ export class BusinessNotifiersSection implements OnInit {
     return this.selectedBankAccountIds().includes(accountId);
   }
 
+  directAccountFilterKey(account: BankAccount): string {
+    return `${DIRECT_ACCOUNT_FILTER_PREFIX}${account.id}`;
+  }
+
+  breBFiltersForAccount(account: BankAccount): string[] {
+    return [this.directAccountFilterKey(account), ...(account.breBKeys ?? [])];
+  }
+
   toggleBreBKey(key: string, checked: boolean): void {
     this.selectedAllowedBreBKeys.update((keys) =>
       checked ? Array.from(new Set([...keys, key])) : keys.filter((current) => current !== key),
@@ -592,16 +605,26 @@ export class BusinessNotifiersSection implements OnInit {
     return this.selectedAllowedBreBKeys().includes(key);
   }
 
-  selectAllBreBKeys(): void {
-    this.selectedAllowedBreBKeys.set(
-      this.selectedBreBKeyOptions().map((option) => option.key),
-    );
+  areAllBreBFiltersSelectedForAccount(account: BankAccount): boolean {
+    const selected = new Set(this.selectedAllowedBreBKeys());
+    return this.breBFiltersForAccount(account).every((key) => selected.has(key));
+  }
+
+  toggleAllBreBFiltersForAccount(account: BankAccount): void {
+    const accountKeys = this.breBFiltersForAccount(account);
+    const selected = new Set(this.selectedAllowedBreBKeys());
+    const shouldSelectAll = accountKeys.some((key) => !selected.has(key));
+
+    this.selectedAllowedBreBKeys.update((current) => {
+      const withoutAccountKeys = current.filter((key) => !accountKeys.includes(key));
+      return shouldSelectAll ? [...withoutAccountKeys, ...accountKeys] : withoutAccountKeys;
+    });
   }
 
   private syncSelectedBreBKeysAfterAccountToggle(accountId: string, checked: boolean): void {
     if (!this.supportsBreBKeySelection()) return;
     const account = this.bankAccounts().find((current) => current.id === accountId);
-    const keys = account?.breBKeys ?? [];
+    const keys = account ? this.breBFiltersForAccount(account) : [];
     if (checked) {
       this.selectedAllowedBreBKeys.update((selected) =>
         Array.from(new Set([...selected, ...keys])),
