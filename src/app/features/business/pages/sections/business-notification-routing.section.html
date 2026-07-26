@@ -86,6 +86,16 @@
                         [label]="accountDisplayName(account)"
                         (checkedChange)="toggleBankAccount(view.member, account.id, entry[0])"
                       />
+                      @for (key of getBreBKeysForAccount(account); track key) {
+                        <div class="routing-bre-b-key-row">
+                          <yep-checkbox
+                            [checked]="isBreBKeyEnabled(view.member, entry[0], key)"
+                            [disabled]="!canManage()"
+                            [label]="formatPhone(key)"
+                            (checkedChange)="toggleBreBKey(view.member, entry[0], key)"
+                          />
+                        </div>
+                      }
                     </div>
                   }
                 </div>

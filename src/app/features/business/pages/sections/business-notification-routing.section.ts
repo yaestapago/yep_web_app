@@ -292,9 +292,6 @@ export class BusinessNotificationRoutingSection implements OnInit {
       newIds = currentIds.filter((id) => id !== accountId);
     } else {
       newIds = [...currentIds, accountId];
-      if (allIds.length > 0 && allIds.every((id) => newIds.includes(id))) {
-        newIds = [];
-      }
     }
 
     const shouldActivate = !existingRule.active || newIds.length > 0;
