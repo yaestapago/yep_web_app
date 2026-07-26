@@ -821,6 +821,30 @@
   overflow-wrap: anywhere;
 }
 
+/* Zona de peligro: separada del resto con espacio + borde propio para que no
+   se sienta amontonada contra la info del negocio. */
+.danger-zone {
+  border: 1px solid color-mix(in srgb, var(--color-error) 35%, var(--color-border));
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding: var(--space-5);
+}
+
+.danger-zone__title {
+  align-items: center;
+  color: var(--color-error);
+  display: flex;
+  gap: var(--space-2);
+}
+
+.danger-zone__title svg {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
 .invite-grid {
   display: grid;
   gap: var(--space-4);

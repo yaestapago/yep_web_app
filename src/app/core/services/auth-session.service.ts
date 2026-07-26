@@ -165,6 +165,21 @@ export class AuthSessionService {
     });
   }
 
+  /** Quita un negocio de las membresías locales (p. ej. tras eliminarlo). */
+  removeMembership(businessAccountId: string): void {
+    const current = this.session();
+
+    if (!current) {
+      return;
+    }
+
+    this.updateMemberships(
+      current.memberships.filter(
+        (membership) => membership.businessAccountId !== businessAccountId,
+      ),
+    );
+  }
+
   clearSession(): void {
     this.session.set(null);
     localStorage.removeItem(this.storageKey);
