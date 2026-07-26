@@ -176,6 +176,15 @@ export const routes: Routes = [
                 (m) => m.BusinessDataSection,
               ),
           },
+          {
+            path: 'notification-routing',
+            data: { section: 'notification-routing' },
+            canActivate: [businessSectionGuard],
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-notification-routing.section').then(
+                (m) => m.BusinessNotificationRoutingSection,
+              ),
+          },
           // Compatibilidad: la antigua vista combinada de "Configuración" ahora
           // se divide en "Datos del negocio" y "Sedes".
           { path: 'settings', pathMatch: 'full', redirectTo: 'business-data' },

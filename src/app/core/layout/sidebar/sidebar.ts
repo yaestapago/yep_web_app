@@ -43,6 +43,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
   { path: 'employees', label: 'Empleados' },
   { path: 'locations', label: 'Sedes' },
   { path: 'schedules', label: 'Horarios' },
+  { path: 'notification-routing', label: 'Alertas WhatsApp' },
   { path: 'reports', label: 'Informes' },
 ];
 

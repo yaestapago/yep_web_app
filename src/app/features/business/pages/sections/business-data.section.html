@@ -88,6 +88,26 @@
   </div>
 </div>
 
+@if (isSuperUser()) {
+  <div class="danger-zone">
+    <div class="section-heading">
+      <h2 class="section-title danger-zone__title">
+        <svg lucideTriangleAlert aria-hidden="true"></svg>
+        Zona de peligro
+      </h2>
+      <p class="section-subtitle">Solo visible para superadmin.</p>
+    </div>
+    <yep-alert variant="error">
+      Eliminar el negocio borra permanentemente todos sus datos: transacciones, notificadores,
+      empleados, sedes, cuentas bancarias y más. Esta acción no se puede deshacer.
+    </yep-alert>
+    <yep-button variant="danger" size="sm" (clicked)="confirmDeleteIntent()">
+      <svg lucideTrash2 aria-hidden="true"></svg>
+      Eliminar negocio
+    </yep-button>
+  </div>
+}
+
 <yep-modal
   [open]="editOpen()"
   title="Editar negocio"
@@ -127,5 +147,55 @@
     <yep-button type="submit" [loading]="savingBusiness()" (clicked)="saveBusiness()">
       Guardar
     </yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="deleteModalOpen()"
+  title="Eliminar negocio"
+  [loading]="deleting()"
+  (closeRequested)="closeDeleteModal()"
+>
+  @if (deleteStep() === 'password') {
+    <form [formGroup]="deletePasswordForm" (ngSubmit)="submitDeletePassword()" class="form-grid">
+      <p class="info-hint">Confirma tu contraseña para continuar con la eliminación del negocio.</p>
+      <yep-input
+        formControlName="password"
+        type="password"
+        label="Tu contraseña"
+        [error]="deleteError()"
+        autocomplete="current-password"
+      />
+    </form>
+  } @else {
+    <p class="info-hint">
+      Te enviamos un código de 6 dígitos a tu correo para confirmar la eliminación de
+      "{{ businessName() }}".
+    </p>
+    <yep-otp-input
+      engine="email"
+      [status]="deleteOtpStatus()"
+      [errorMessage]="deleteOtpError()"
+      [resendSeconds]="deleteResendSeconds()"
+      (codeChanged)="handleDeleteCodeChanged($event)"
+      (codeCompleted)="confirmDeleteCode($event)"
+      (resendRequested)="resendDeletionCode()"
+    />
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="deleting()" (clicked)="closeDeleteModal()">
+      Cancelar
+    </yep-button>
+    @if (deleteStep() === 'password') {
+      <yep-button
+        variant="danger"
+        type="submit"
+        [loading]="deleting()"
+        (clicked)="submitDeletePassword()"
+      >
+        Continuar
+      </yep-button>
+    }
   </ng-container>
 </yep-modal>

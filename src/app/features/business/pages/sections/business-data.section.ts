@@ -1,19 +1,32 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LucideClipboardCheck, LucideClipboardCopy, LucidePencil } from '@lucide/angular';
+import { Router } from '@angular/router';
+import {
+  LucideClipboardCheck,
+  LucideClipboardCopy,
+  LucidePencil,
+  LucideTrash2,
+  LucideTriangleAlert,
+} from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { AddressLocationValue } from '../../../../shared/models/geo.models';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { OtpInput } from '../../../../shared/ui/otp-input/otp-input';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { AdminBusinessesApiService } from '../../services/admin-businesses-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
+
+type DeleteBusinessStep = 'password' | 'code';
+type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
 
 /**
  * Datos del negocio: información general editable. Antes vivía junto a las sedes
@@ -25,23 +38,29 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   imports: [
     ReactiveFormsModule,
     AddressLocationSelect,
+    Alert,
     Button,
     Input,
     Modal,
+    OtpInput,
     PhoneInput,
     LucidePencil,
     LucideClipboardCopy,
     LucideClipboardCheck,
+    LucideTrash2,
+    LucideTriangleAlert,
   ],
   templateUrl: './business-data.section.html',
   styleUrl: './business-sections.scss',
 })
-export class BusinessDataSection {
+export class BusinessDataSection implements OnDestroy {
   private readonly businessApi = inject(BusinessAccountsApiService);
+  private readonly adminBusinessesApi = inject(AdminBusinessesApiService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notificationModal = inject(NotificationModalService);
+  private readonly router = inject(Router);
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly membership = this.session.activeMembership;
@@ -52,6 +71,7 @@ export class BusinessDataSection {
       this.membership()?.role === 'account_owner' ||
       this.session.user()?.globalRole === 'account_su',
   );
+  readonly isSuperUser = computed(() => this.session.user()?.globalRole === 'account_su');
 
   readonly savingBusiness = signal(false);
   readonly error = signal('');
@@ -82,6 +102,10 @@ export class BusinessDataSection {
     });
     return `${origin}/register?${params.toString()}`;
   });
+
+  ngOnDestroy(): void {
+    this.clearDeleteResendTimer();
+  }
 
   copyCode(): void {
     const code = this.shareCode();
@@ -205,5 +229,145 @@ export class BusinessDataSection {
       cityCode: account.cityCode,
       cityName: account.cityName,
     };
+  }
+
+  // --- Eliminar negocio (superadmin): contraseña + código emailado --------
+
+  readonly deleteModalOpen = signal(false);
+  readonly deleteStep = signal<DeleteBusinessStep>('password');
+  readonly deleting = signal(false);
+  readonly deleteError = signal('');
+  readonly deleteOtpStatus = signal<OtpStatus>('idle');
+  readonly deleteOtpError = signal('');
+  readonly deleteResendSeconds = signal(0);
+
+  readonly deletePasswordForm = this.fb.group({
+    password: ['', Validators.required],
+  });
+
+  private deleteResendInterval: ReturnType<typeof setInterval> | null = null;
+
+  async confirmDeleteIntent(): Promise<void> {
+    const confirmed = await this.notificationModal.confirm({
+      title: 'Eliminar negocio',
+      message: [
+        `Esta acción eliminará PERMANENTEMENTE "${this.businessName()}" y todos sus datos (transacciones, notificadores, empleados, sedes, cuentas bancarias, etc.).`,
+        'No se puede deshacer.',
+      ],
+      type: 'warning',
+      confirmText: 'Continuar',
+    });
+
+    if (confirmed) {
+      this.openDeleteModal();
+    }
+  }
+
+  openDeleteModal(): void {
+    this.deletePasswordForm.reset({ password: '' });
+    this.deleteStep.set('password');
+    this.deleteError.set('');
+    this.deleteOtpStatus.set('idle');
+    this.deleteOtpError.set('');
+    this.clearDeleteResendTimer();
+    this.deleteModalOpen.set(true);
+  }
+
+  closeDeleteModal(): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.clearDeleteResendTimer();
+    this.deleteModalOpen.set(false);
+  }
+
+  submitDeletePassword(): void {
+    const businessId = this.businessId();
+    if (!businessId || this.deletePasswordForm.invalid) {
+      this.deletePasswordForm.markAllAsTouched();
+      return;
+    }
+
+    this.deleting.set(true);
+    this.deleteError.set('');
+    const { password } = this.deletePasswordForm.getRawValue();
+
+    this.adminBusinessesApi
+      .requestDeletion(businessId, password)
+      .pipe(
+        finalize(() => this.deleting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.deleteStep.set('code');
+          this.deleteOtpStatus.set('idle');
+          this.deleteOtpError.set('');
+          this.startDeleteResendTimer(response.resendInSeconds ?? 60);
+        },
+        error: (error) => this.deleteError.set(httpErrorMessage(error)),
+      });
+  }
+
+  resendDeletionCode(): void {
+    if (this.deleteResendSeconds() > 0 || this.deleting()) {
+      return;
+    }
+    this.submitDeletePassword();
+  }
+
+  confirmDeleteCode(code: string): void {
+    const businessId = this.businessId();
+    if (!businessId || this.deleteOtpStatus() === 'validating' || this.deleteOtpStatus() === 'success') {
+      return;
+    }
+
+    this.deleteOtpError.set('');
+    this.deleteOtpStatus.set('validating');
+    this.deleting.set(true);
+
+    this.adminBusinessesApi
+      .confirmDeletion(businessId, code)
+      .pipe(
+        finalize(() => this.deleting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: () => {
+          this.deleteOtpStatus.set('success');
+          this.clearDeleteResendTimer();
+          this.session.removeMembership(businessId);
+          this.deleteModalOpen.set(false);
+          void this.router.navigate(['/businesses']);
+        },
+        error: (error) => {
+          this.deleteOtpStatus.set('error');
+          this.deleteOtpError.set(httpErrorMessage(error));
+        },
+      });
+  }
+
+  handleDeleteCodeChanged(value: string): void {
+    if (value.length < 6 && (this.deleteOtpStatus() === 'error' || this.deleteOtpStatus() === 'success')) {
+      this.deleteOtpStatus.set('idle');
+      this.deleteOtpError.set('');
+    }
+  }
+
+  private startDeleteResendTimer(seconds: number): void {
+    this.clearDeleteResendTimer();
+    this.deleteResendSeconds.set(Math.max(0, seconds));
+
+    this.deleteResendInterval = setInterval(() => {
+      const nextSeconds = Math.max(0, this.deleteResendSeconds() - 1);
+      this.deleteResendSeconds.set(nextSeconds);
+      if (nextSeconds === 0) this.clearDeleteResendTimer();
+    }, 1000);
+  }
+
+  private clearDeleteResendTimer(): void {
+    if (!this.deleteResendInterval) return;
+    clearInterval(this.deleteResendInterval);
+    this.deleteResendInterval = null;
   }
 }

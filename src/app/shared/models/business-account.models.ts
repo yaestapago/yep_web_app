@@ -75,3 +75,12 @@ export interface UpdateBusinessMemberRequest {
   role?: BusinessMembershipRole;
   locationIds?: string[];
 }
+
+export interface RequestBusinessDeletionResponse {
+  sent: boolean;
+  resendInSeconds: number;
+}
+
+export interface ConfirmBusinessDeletionResponse {
+  deleted: boolean;
+}

@@ -57,6 +57,8 @@ interface NotifierKindOption {
   badge?: string;
 }
 
+const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
+
 @Component({
   selector: 'app-business-notifiers-section',
   imports: [
@@ -221,12 +223,12 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedEmailSenderPatterns().join('\n'),
   );
 
-  readonly selectedEmailBreBKeyOptions = computed(() => {
+  readonly selectedBreBKeyOptions = computed(() => {
     const selectedIds = new Set(this.selectedBankAccountIds());
     return this.bankAccounts()
       .filter((account) => selectedIds.has(account.id))
       .flatMap((account) =>
-        (account.breBKeys ?? []).map((key) => ({
+        [this.directAccountFilterKey(account), ...(account.breBKeys ?? [])].map((key) => ({
           key,
           account,
         })),
@@ -270,6 +272,9 @@ export class BusinessNotifiersSection implements OnInit {
 
   /** Teléfono y Escritorio monitorean cuentas y se emparejan; el correo no. */
   readonly isEmailKind = computed(() => this.selectedKind() === 'email');
+  readonly supportsBreBKeySelection = computed(
+    () => this.selectedKind() === 'email' || this.selectedKind() === 'phone',
+  );
   readonly monitorsBanks = computed(() => !this.isEmailKind());
 
   readonly modalSubtitle = computed(() => {
@@ -303,6 +308,13 @@ export class BusinessNotifiersSection implements OnInit {
           control.setValue('');
         }
         control.updateValueAndValidity();
+        if (!this.editingId()) {
+          this.selectedAllowedBreBKeys.set(
+            kind === 'email' || kind === 'phone'
+              ? this.selectedBreBKeyOptions().map((option) => option.key)
+              : [],
+          );
+        }
       });
 
     // Refresco periódico: recalcula el tick y vuelve a pedir los notifiers.
@@ -395,7 +407,10 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedAllowedBreBKeys.set(
       (notifier.allowedBreBKeys ?? []).length > 0
         ? [...notifier.allowedBreBKeys]
-        : notifier.bankAccounts.flatMap((account) => account.breBKeys ?? []),
+        : notifier.bankAccounts.flatMap((account) => [
+            this.directAccountFilterKey(account),
+            ...(account.breBKeys ?? []),
+          ]),
     );
     this.form.reset({
       kind: this.typeToKind(notifier.type),
@@ -572,6 +587,14 @@ export class BusinessNotifiersSection implements OnInit {
     return this.selectedBankAccountIds().includes(accountId);
   }
 
+  directAccountFilterKey(account: BankAccount): string {
+    return `${DIRECT_ACCOUNT_FILTER_PREFIX}${account.id}`;
+  }
+
+  breBFiltersForAccount(account: BankAccount): string[] {
+    return [this.directAccountFilterKey(account), ...(account.breBKeys ?? [])];
+  }
+
   toggleBreBKey(key: string, checked: boolean): void {
     this.selectedAllowedBreBKeys.update((keys) =>
       checked ? Array.from(new Set([...keys, key])) : keys.filter((current) => current !== key),
@@ -582,16 +605,26 @@ export class BusinessNotifiersSection implements OnInit {
     return this.selectedAllowedBreBKeys().includes(key);
   }
 
-  selectAllBreBKeys(): void {
-    this.selectedAllowedBreBKeys.set(
-      this.selectedEmailBreBKeyOptions().map((option) => option.key),
-    );
+  areAllBreBFiltersSelectedForAccount(account: BankAccount): boolean {
+    const selected = new Set(this.selectedAllowedBreBKeys());
+    return this.breBFiltersForAccount(account).every((key) => selected.has(key));
+  }
+
+  toggleAllBreBFiltersForAccount(account: BankAccount): void {
+    const accountKeys = this.breBFiltersForAccount(account);
+    const selected = new Set(this.selectedAllowedBreBKeys());
+    const shouldSelectAll = accountKeys.some((key) => !selected.has(key));
+
+    this.selectedAllowedBreBKeys.update((current) => {
+      const withoutAccountKeys = current.filter((key) => !accountKeys.includes(key));
+      return shouldSelectAll ? [...withoutAccountKeys, ...accountKeys] : withoutAccountKeys;
+    });
   }
 
   private syncSelectedBreBKeysAfterAccountToggle(accountId: string, checked: boolean): void {
-    if (!this.isEmailKind()) return;
+    if (!this.supportsBreBKeySelection()) return;
     const account = this.bankAccounts().find((current) => current.id === accountId);
-    const keys = account?.breBKeys ?? [];
+    const keys = account ? this.breBFiltersForAccount(account) : [];
     if (checked) {
       this.selectedAllowedBreBKeys.update((selected) =>
         Array.from(new Set([...selected, ...keys])),
@@ -604,13 +637,18 @@ export class BusinessNotifiersSection implements OnInit {
   }
 
   private selectedBreBKeyPayload(): string[] | undefined {
-    if (!this.isEmailKind()) return undefined;
-    const available = this.selectedEmailBreBKeyOptions().map((option) => option.key);
+    if (!this.supportsBreBKeySelection()) return undefined;
+    const available = this.selectedBreBKeyOptions().map((option) => option.key);
     const selected = this.selectedAllowedBreBKeys().filter((key) => available.includes(key));
     if (available.length === 0 || selected.length === available.length) {
-      return undefined;
+      return this.editingId() && available.length > 0 ? [] : undefined;
     }
     return selected;
+  }
+
+  private hasSelectedBreBFilter(): boolean {
+    const available = new Set(this.selectedBreBKeyOptions().map((option) => option.key));
+    return this.selectedAllowedBreBKeys().some((key) => available.has(key));
   }
 
   copyEmailSenderPatterns(): void {
@@ -644,6 +682,7 @@ export class BusinessNotifiersSection implements OnInit {
   save(): void {
     const kind = this.form.controls.kind.value;
     const isEmail = kind === 'email';
+    const supportsBreBKeySelection = kind === 'email' || kind === 'phone';
     const bankAccountIds = this.selectedBankAccountIds();
 
     // Tanto monitoreo (teléfono/escritorio) como correo requieren ahora al menos
@@ -661,8 +700,12 @@ export class BusinessNotifiersSection implements OnInit {
     }
 
     const allowedBreBKeys = this.selectedBreBKeyPayload();
-    if (isEmail && this.selectedEmailBreBKeyOptions().length > 0 && allowedBreBKeys?.length === 0) {
-      this.error.set('Selecciona al menos una llave Bre-B para este notificador.');
+    if (
+      supportsBreBKeySelection &&
+      this.selectedBreBKeyOptions().length > 0 &&
+      !this.hasSelectedBreBFilter()
+    ) {
+      this.error.set('Selecciona Cuenta directa o al menos una llave Bre-B para este notificador.');
       return;
     }
 
@@ -683,7 +726,13 @@ export class BusinessNotifiersSection implements OnInit {
                 bankAccountIds,
                 ...(allowedBreBKeys !== undefined ? { allowedBreBKeys } : {}),
               }
-            : { displayName, bankAccountIds },
+            : {
+                displayName,
+                bankAccountIds,
+                ...(supportsBreBKeySelection && allowedBreBKeys !== undefined
+                  ? { allowedBreBKeys }
+                  : {}),
+              },
         )
       : this.notifiersApi.create(
           isEmail
@@ -699,6 +748,9 @@ export class BusinessNotifiersSection implements OnInit {
                 type: this.kindToType(kind),
                 displayName,
                 bankAccountIds,
+                ...(supportsBreBKeySelection && allowedBreBKeys !== undefined
+                  ? { allowedBreBKeys }
+                  : {}),
               },
         );
 
