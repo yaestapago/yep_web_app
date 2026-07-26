@@ -646,6 +646,11 @@ export class BusinessNotifiersSection implements OnInit {
     return selected;
   }
 
+  private hasSelectedBreBFilter(): boolean {
+    const available = new Set(this.selectedBreBKeyOptions().map((option) => option.key));
+    return this.selectedAllowedBreBKeys().some((key) => available.has(key));
+  }
+
   copyEmailSenderPatterns(): void {
     const value = this.selectedEmailSenderPatternsText();
     if (!value) return;
@@ -698,9 +703,9 @@ export class BusinessNotifiersSection implements OnInit {
     if (
       supportsBreBKeySelection &&
       this.selectedBreBKeyOptions().length > 0 &&
-      allowedBreBKeys?.length === 0
+      !this.hasSelectedBreBFilter()
     ) {
-      this.error.set('Selecciona al menos una llave Bre-B para este notificador.');
+      this.error.set('Selecciona Cuenta directa o al menos una llave Bre-B para este notificador.');
       return;
     }
 
