@@ -195,6 +195,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/settings/pages/settings/settings.page').then((m) => m.SettingsPage),
       },
+      {
+        path: 'subscription',
+        loadComponent: () =>
+          import('./features/subscription/pages/subscription/subscription.page').then(
+            (m) => m.SubscriptionPage,
+          ),
+      },
 
       // Redirects de rutas en español (compatibilidad con enlaces previos).
       { path: 'negocios', pathMatch: 'full', redirectTo: 'businesses' },
@@ -203,6 +210,7 @@ export const routes: Routes = [
         redirectTo: (route) => `/businesses/${route.params['businessId']}/business-data`,
       },
       { path: 'configuracion', pathMatch: 'full', redirectTo: 'settings' },
+      { path: 'suscripcion', pathMatch: 'full', redirectTo: 'subscription' },
     ],
   },
   {

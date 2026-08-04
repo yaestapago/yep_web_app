@@ -10,7 +10,12 @@
         Actualizar
       </yep-button>
       @if (canManage()) {
-        <yep-button size="sm" (clicked)="openCreate()">
+        <yep-button
+          size="sm"
+          [loading]="checkingBankAccountCreation()"
+          [disabled]="!canCreateBankAccount()"
+          (clicked)="openCreate()"
+        >
           <svg lucidePlus aria-hidden="true"></svg>
           Nueva cuenta
         </yep-button>
@@ -24,6 +29,14 @@
   @if (success()) {
     <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
   }
+  @if (planAlert()) {
+    <yep-alert variant="warning" title="Limite del plan">
+      <p>
+        {{ planAlert() }}
+        <a routerLink="/subscription">Actualizar plan</a>
+      </p>
+    </yep-alert>
+  }
 
   @if (loading()) {
     <div class="loading-row">
@@ -35,7 +48,12 @@
       <h3>Sin cuentas bancarias</h3>
       <p>Agrega una cuenta para asociar los pagos verificados de este negocio.</p>
       @if (canManage()) {
-        <yep-button size="sm" (clicked)="openCreate()">
+        <yep-button
+          size="sm"
+          [loading]="checkingBankAccountCreation()"
+          [disabled]="!canCreateBankAccount()"
+          (clicked)="openCreate()"
+        >
           <svg lucidePlus aria-hidden="true"></svg>
           Nueva cuenta
         </yep-button>

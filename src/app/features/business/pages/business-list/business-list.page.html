@@ -8,7 +8,11 @@
       </p>
     </div>
     <div class="page-header__actions">
-      <yep-button (clicked)="openCreate()">
+      <yep-button
+        [loading]="checkingBusinessCreation()"
+        [disabled]="!canCreateBusiness()"
+        (clicked)="openCreate()"
+      >
         <svg lucidePlus aria-hidden="true"></svg>
         <span>Nuevo negocio</span>
       </yep-button>
@@ -18,6 +22,15 @@
       </yep-button>
     </div>
   </header>
+
+  @if (planAlert()) {
+    <yep-alert variant="warning" title="Limite del plan">
+      <p>
+        {{ planAlert() }}
+        <a routerLink="/subscription">Actualizar plan</a>
+      </p>
+    </yep-alert>
+  }
 
   <div class="business-grid">
     @for (membership of memberships(); track membership.businessAccountId) {

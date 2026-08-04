@@ -1,0 +1,119 @@
+<section class="page subscription-page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-title">Suscripcion</h1>
+      <p class="page-subtitle">
+        Revisa el consumo de tu plan y compara las capacidades disponibles.
+      </p>
+    </div>
+    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
+
+  @if (loading() && !subscription()) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando suscripcion...
+    </div>
+  } @else {
+    <section class="subscription-summary">
+      <div class="summary-icon" aria-hidden="true">
+        <svg lucideCreditCard></svg>
+      </div>
+      <div>
+        <span class="summary-label">Plan actual</span>
+        <h2>{{ currentPlanName() }}</h2>
+        @if (subscription()?.trialEndsAt) {
+          <p>Trial activo hasta {{ subscription()?.trialEndsAt | date: 'mediumDate' }}</p>
+        } @else {
+          <p>Periodo vigente hasta {{ subscription()?.currentPeriodEnd | date: 'mediumDate' }}</p>
+        }
+      </div>
+    </section>
+
+    <section class="usage-section">
+      <h2 class="section-heading">Uso del plan</h2>
+      <div class="usage-grid">
+        @for (metric of usage(); track metric.metric) {
+          <article class="usage-card" [class.usage-card--blocked]="metric.state === 'blocked'">
+            <div class="usage-card__top">
+              <span>{{ metric.label }}</span>
+              <strong>{{ usageLabel(metric) }}</strong>
+            </div>
+            <div class="usage-bar" aria-hidden="true">
+              <span [style.width.%]="boundedPercent(metric)"></span>
+            </div>
+            <p>{{ metric.percent }}% utilizado</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="plans-section">
+      <h2 class="section-heading">Planes disponibles</h2>
+      <div class="plans-grid">
+        @for (plan of availablePlans(); track plan.code) {
+          <article class="plan-card" [class.plan-card--current]="isCurrentPlan(plan)">
+            <div class="plan-card__header">
+              <div>
+                <h3>{{ plan.name }}</h3>
+                <p>{{ priceLabel(plan) }}</p>
+              </div>
+              @if (isCurrentPlan(plan)) {
+                <span class="current-badge">
+                  <svg lucideCheckCircle2 aria-hidden="true"></svg>
+                  Actual
+                </span>
+              }
+            </div>
+
+            <dl class="plan-limits">
+              <div>
+                <dt>Negocios</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxBusinesses) }}</dd>
+              </div>
+              <div>
+                <dt>Sedes</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxLocations) }}</dd>
+              </div>
+              <div>
+                <dt>Cuentas</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxBankAccounts) }}</dd>
+              </div>
+              <div>
+                <dt>Eventos / mes</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxMonthlySourceEventsVisible) }}</dd>
+              </div>
+              <div>
+                <dt>WhatsApp / mes</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxMonthlyWhatsappNotifications) }}</dd>
+              </div>
+              <div>
+                <dt>OCR + IA / mes</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxMonthlyAiTransactionValidations) }}</dd>
+              </div>
+            </dl>
+
+            <yep-button
+              size="sm"
+              variant="secondary"
+              [disabled]="isCurrentPlan(plan)"
+              (clicked)="requestPlan(plan)"
+            >
+              {{ isCurrentPlan(plan) ? 'Plan actual' : 'Solicitar cambio' }}
+            </yep-button>
+          </article>
+        }
+      </div>
+    </section>
+  }
+</section>

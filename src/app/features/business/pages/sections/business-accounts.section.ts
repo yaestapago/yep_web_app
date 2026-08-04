@@ -6,6 +6,8 @@ import { LucideLoaderCircle, LucidePlus, LucideRefreshCw } from '@lucide/angular
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { SubscriptionCreationPermissionResponse } from '../../../../shared/models/auth.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
@@ -21,6 +23,7 @@ import type {
 import type { BankPickerEntry, SupportedAccountType } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BanksApiService } from '../../../banks/services/banks-api.service';
+import { SubscriptionsApiService } from '../../../subscription/services/subscriptions-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 @Component({
@@ -28,6 +31,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    Alert,
     Button,
     Checkbox,
     IconButton,
@@ -44,6 +48,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
 export class BusinessAccountsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
   private readonly banksApi = inject(BanksApiService);
+  private readonly subscriptionsApi = inject(SubscriptionsApiService);
   private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
@@ -61,6 +66,10 @@ export class BusinessAccountsSection implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
   readonly modalOpen = signal(false);
+  readonly checkingBankAccountCreation = signal(false);
+  readonly bankAccountCreationPermission =
+    signal<SubscriptionCreationPermissionResponse | null>(null);
+  readonly planAlert = signal('');
 
   readonly modalTitle = computed(() =>
     this.editingId() ? 'Editar cuenta bancaria' : 'Nueva cuenta bancaria',
@@ -78,6 +87,10 @@ export class BusinessAccountsSection implements OnInit {
     () =>
       this.session.activeMembership()?.role === 'account_owner' ||
       this.session.user()?.globalRole === 'account_su',
+  );
+
+  readonly canCreateBankAccount = computed(
+    () => this.bankAccountCreationPermission()?.allowed !== false,
   );
 
   readonly bankOptions = computed<SelectOption[]>(() =>
@@ -132,6 +145,7 @@ export class BusinessAccountsSection implements OnInit {
     this.loadLocations();
     this.loadBanks();
     this.load();
+    this.refreshBankAccountCreationPermission();
   }
 
   loadBanks(): void {
@@ -186,6 +200,10 @@ export class BusinessAccountsSection implements OnInit {
   }
 
   openCreate(): void {
+    this.checkBankAccountCreationPermission(true);
+  }
+
+  private openCreateModal(): void {
     this.error.set('');
     this.success.set('');
     this.editingId.set(null);
@@ -306,6 +324,7 @@ export class BusinessAccountsSection implements OnInit {
           this.bankAccounts.update((accounts) => [response.bankAccount, ...accounts]);
           this.success.set('Cuenta bancaria creada.');
           this.modalOpen.set(false);
+          this.refreshBankAccountCreationPermission();
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
@@ -417,9 +436,50 @@ export class BusinessAccountsSection implements OnInit {
             ),
           );
           this.success.set(isActive ? 'Cuenta activada.' : 'Cuenta desactivada.');
+          this.refreshBankAccountCreationPermission();
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
+  }
+
+  private refreshBankAccountCreationPermission(): void {
+    this.checkBankAccountCreationPermission(false);
+  }
+
+  private checkBankAccountCreationPermission(openWhenAllowed: boolean): void {
+    const businessId = this.businessId();
+    if (!businessId || this.checkingBankAccountCreation()) {
+      return;
+    }
+
+    this.checkingBankAccountCreation.set(true);
+    this.planAlert.set('');
+
+    this.subscriptionsApi
+      .canCreate('bankAccounts', businessId)
+      .pipe(
+        finalize(() => this.checkingBankAccountCreation.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (permission) => {
+          this.bankAccountCreationPermission.set(permission);
+
+          if (permission.allowed) {
+            if (openWhenAllowed) {
+              this.openCreateModal();
+            }
+            return;
+          }
+
+          this.planAlert.set(this.bankAccountLimitMessage(permission.planName));
+        },
+        error: (error) => this.planAlert.set(httpErrorMessage(error)),
+      });
+  }
+
+  private bankAccountLimitMessage(planName: string): string {
+    return `Con tu plan actual (${planName}) no puedes agregar mas cuentas bancarias.`;
   }
 
   private optional(value: string): string | undefined {
