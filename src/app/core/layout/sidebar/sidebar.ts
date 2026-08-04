@@ -12,6 +12,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideBuilding2,
   LucideChevronDown,
+  LucideCreditCard,
   LucideHouse,
   LucideLayoutDashboard,
   LucideLogOut,
@@ -56,6 +57,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     Select,
     LucideBuilding2,
     LucideChevronDown,
+    LucideCreditCard,
     LucideHouse,
     LucideLayoutDashboard,
     LucideLogOut,

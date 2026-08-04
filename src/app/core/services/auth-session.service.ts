@@ -7,12 +7,14 @@ import {
   AuthResponse,
   BusinessAccount,
   BusinessMembership,
+  UserSubscriptionSummary,
   User,
 } from '../../shared/models/auth.models';
 
 interface StoredSession {
   accessToken: string | null;
   user: User;
+  subscription?: UserSubscriptionSummary | null;
   memberships: BusinessMembership[];
   activeBusinessAccountId: string | null;
 }
@@ -25,6 +27,7 @@ export class AuthSessionService {
   private readonly session = signal<StoredSession | null>(this.readStoredSession());
 
   readonly user = computed(() => this.session()?.user ?? null);
+  readonly subscription = computed(() => this.session()?.subscription ?? null);
   readonly memberships = computed(() => this.session()?.memberships ?? []);
   readonly approvedMemberships = computed(() =>
     this.memberships().filter((membership) => membership.status === 'approved'),
@@ -57,6 +60,7 @@ export class AuthSessionService {
     const session: StoredSession = {
       accessToken: response.accessToken,
       user: response.user,
+      subscription: response.subscription ?? null,
       memberships,
       activeBusinessAccountId: this.resolveActiveBusinessAccountId(
         memberships,
@@ -148,6 +152,19 @@ export class AuthSessionService {
   }
 
   /** Actualiza el negocio anidado en las membresías (p. ej. tras editar sus datos). */
+  updateSubscription(subscription: UserSubscriptionSummary | null): void {
+    const current = this.session();
+
+    if (!current) {
+      return;
+    }
+
+    this.persist({
+      ...current,
+      subscription,
+    });
+  }
+
   patchBusinessAccount(account: BusinessAccount): void {
     const current = this.session();
 
@@ -299,6 +316,7 @@ export class AuthSessionService {
       return {
         accessToken: stored.accessToken ?? null,
         user: stored.user,
+        subscription: stored.subscription ?? null,
         memberships,
         activeBusinessAccountId: this.resolveActiveBusinessAccountId(
           memberships,
