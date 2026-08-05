@@ -38,16 +38,18 @@
     </main>
   </div>
 
-  <button
-    type="button"
-    class="receipt-fab"
-    (click)="openReceiptCapture()"
-    aria-label="Capturar y validar comprobante"
-    title="Capturar y validar comprobante"
-  >
-    <svg lucideFileScan aria-hidden="true"></svg>
-    <span>Validar pago</span>
-  </button>
+  @if (canShowReceiptCaptureButton()) {
+    <button
+      type="button"
+      class="receipt-fab"
+      (click)="openReceiptCapture()"
+      aria-label="Capturar y validar comprobante"
+      title="Capturar y validar comprobante"
+    >
+      <svg lucideFileScan aria-hidden="true"></svg>
+      <span>Validar pago</span>
+    </button>
+  }
 
   <app-receipt-capture-modal
     [open]="receiptCaptureOpen()"

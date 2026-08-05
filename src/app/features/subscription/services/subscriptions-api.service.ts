@@ -1,8 +1,9 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
+import { AuthSessionService } from '../../../core/services/auth-session.service';
 import type {
   SubscriptionCreationMetric,
   SubscriptionCreationPermissionResponse,
@@ -12,10 +13,22 @@ import type {
 @Injectable({ providedIn: 'root' })
 export class SubscriptionsApiService {
   private readonly http = inject(HttpClient);
+  private readonly session = inject(AuthSessionService);
   private readonly apiUrl = environment.apiUrl;
 
   overview(): Observable<SubscriptionOverviewResponse> {
-    return this.http.get<SubscriptionOverviewResponse>(`${this.apiUrl}/subscriptions/me`);
+    const businessAccountId = this.session.activeBusinessAccountId();
+    const options = businessAccountId
+      ? {
+          headers: new HttpHeaders({
+            'x-business-account-id': businessAccountId,
+          }),
+        }
+      : undefined;
+    return this.http.get<SubscriptionOverviewResponse>(
+      `${this.apiUrl}/subscriptions/me`,
+      options,
+    );
   }
 
   canCreate(

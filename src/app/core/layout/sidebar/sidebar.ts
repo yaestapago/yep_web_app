@@ -28,6 +28,8 @@ import { ThemeService } from '../../services/theme.service';
 import { Select, type SelectOption } from '../../../shared/ui/select/select';
 import {
   canAccessBusinessSection,
+  canManageBusinesses,
+  canAccessSubscription,
   type BusinessSectionKey,
 } from '../../constants/business-section-access';
 
@@ -115,6 +117,12 @@ export class Sidebar {
       canAccessBusinessSection(section.path, role, isSu),
     );
   });
+  readonly canViewSubscription = computed(() =>
+    canAccessSubscription(this.activeMembership()?.role, this.session.isSuperUser()),
+  );
+  readonly canManageBusinesses = computed(() =>
+    canManageBusinesses(this.activeMembership()?.role, this.session.isSuperUser()),
+  );
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */
   readonly dashboardLink = computed(() => {
