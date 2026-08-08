@@ -73,7 +73,6 @@ import {
   type NotifierStatusRow,
   type Semaphore,
 } from '../../components/dashboard/dashboard-status';
-import { DashboardTransactionsPanel } from '../../components/dashboard/dashboard-transactions';
 import { ApplyInvoiceModal } from '../../components/dashboard/apply-invoice-modal';
 import { SourceEventDetailModal } from '../../components/dashboard/source-event-detail-modal';
 import { TransactionDetailModal } from '../../components/dashboard/transaction-detail-modal';
@@ -169,7 +168,6 @@ type KpiKey =
     DashboardKpiDetailPanel,
     DashboardStatusPanel,
     DashboardEventsPanel,
-    DashboardTransactionsPanel,
     DateRangePicker,
     SourceEventDetailModal,
     TransactionDetailModal,
@@ -1020,6 +1018,12 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.detailTarget.set(null);
   }
 
+  /**
+   * Siempre abre el modal de evento (un solo modal para toda la fila
+   * unificada): si ya tiene transacción enlazada, el propio modal muestra el
+   * comprobante, el nivel de verificación y las acciones de verificar/aplicar
+   * a factura (vía `TransactionSupportsPanel`).
+   */
   openEventDetail(event: SourceEvent): void {
     this.markEventSeen(event.id);
     this.eventDetailTarget.set(event);

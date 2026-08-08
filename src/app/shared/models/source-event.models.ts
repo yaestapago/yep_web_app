@@ -22,6 +22,7 @@ export interface SourceEventNormalized {
   currency?: string;
   reference?: string;
   transactionDate?: string;
+  senderName?: string;
   senderAccount?: string;
   receiverAccount?: string;
   receiverBreBKey?: string;
@@ -38,6 +39,18 @@ export interface ReportedBankAccountView {
   accountNumberLast4: string;
 }
 
+/**
+ * Estado del comprobante (recibo) de la transacción enlazada a este evento.
+ * `none` cubre tanto "sin transacción enlazada" como "enlazada pero sin
+ * comprobante todavía". `duplicate` = el comprobante coincide con el de otra
+ * transacción (ver /insights/duplicates).
+ */
+export interface SourceEventReceipt {
+  status: 'none' | 'linked' | 'duplicate';
+  paymentSupportId?: string;
+  transactionId?: string;
+}
+
 export interface SourceEvent {
   id: string;
   accountId: string;
@@ -52,6 +65,7 @@ export interface SourceEvent {
   status: SourceEventStatus;
   linkedTransactionId?: string;
   linkedSupportId?: string;
+  receipt?: SourceEventReceipt;
   processedAt?: string;
   error?: string;
   expiresAt?: string | null;

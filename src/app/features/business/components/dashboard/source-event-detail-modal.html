@@ -85,31 +85,19 @@
       </dl>
     </section>
 
-    <section class="detail-section">
-      <h3>Transaccion asociada</h3>
-      @if (transaction(); as tx) {
-        <dl class="detail-grid">
-          <div>
-            <dt>Monto</dt>
-            <dd>{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
-          </div>
-          <div>
-            <dt>Estado</dt>
-            <dd>{{ tx.status }}</dd>
-          </div>
-          <div>
-            <dt>Referencia</dt>
-            <dd>{{ tx.reference || 'Sin referencia' }}</dd>
-          </div>
-          <div>
-            <dt>ID</dt>
-            <dd>{{ tx.id }}</dd>
-          </div>
-        </dl>
-      } @else {
-        <p class="muted">No hay transaccion asociada a este reporte.</p>
-      }
-    </section>
+    @if (transaction(); as tx) {
+      <app-transaction-supports-panel
+        [transaction]="tx"
+        (viewSourceEvent)="viewOtherEvent.emit($event)"
+        (verifyRequested)="verifyRequested.emit($event)"
+        (invoiceRequested)="invoiceRequested.emit($event)"
+      />
+    } @else {
+      <section class="detail-section">
+        <h3>Transacción asociada</h3>
+        <p class="muted">No hay transacción asociada a este reporte todavía.</p>
+      </section>
+    }
 
     <section class="detail-section">
       <h3>Otros reportes relacionados</h3>
@@ -144,6 +132,14 @@
   }
 
   <ng-container modalFooter>
+    @if (transaction(); as tx) {
+      @if (canVerify()) {
+        <yep-button variant="secondary" (clicked)="verifyRequested.emit(tx)">Verificar</yep-button>
+      }
+      @if (canApplyInvoice()) {
+        <yep-button variant="secondary" (clicked)="invoiceRequested.emit(tx)">Aplicar a factura</yep-button>
+      }
+    }
     <yep-button variant="secondary" (clicked)="close.emit()">Cerrar</yep-button>
   </ng-container>
 </yep-modal>

@@ -85,9 +85,6 @@
           >
             <div class="event__main">
               <div class="event__top">
-                <span class="badge badge--{{ statusTone(event.status) }}">{{
-                  statusLabel(event.status)
-                }}</span>
                 <span class="event__type" [attr.title]="sourceLabel(event.sourceType)">
                   @switch (eventIcon(event)) {
                     @case ('smartphone') {
@@ -107,10 +104,20 @@
                 @if (platformLabel(event)) {
                   <span class="event__platform">{{ platformLabel(event) }}</span>
                 }
+                <span
+                  class="event__receipt event__receipt--{{ receiptTone(event) }}"
+                  [title]="receiptTitle(event)"
+                  [attr.aria-label]="receiptTitle(event)"
+                >
+                  <svg lucideReceipt aria-hidden="true"></svg>
+                </span>
               </div>
               <p class="event__desc">{{ description(event) }}</p>
-              @if (accountName(event) || event.normalized?.reference) {
+              @if (accountName(event) || event.normalized?.reference || event.normalized?.senderName) {
                 <div class="event__source">
+                  @if (event.normalized?.senderName) {
+                    <span class="event__account">{{ event.normalized?.senderName }}</span>
+                  }
                   @if (accountName(event)) {
                     <span class="event__account">{{ accountName(event) }}</span>
                   }

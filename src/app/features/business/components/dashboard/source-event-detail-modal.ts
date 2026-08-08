@@ -21,8 +21,13 @@ import type { PaymentTransaction } from '../../../../shared/models/transaction.m
 import { Button } from '../../../../shared/ui/button/button';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import {
+  isTransactionInvoiceable,
+  isTransactionVerifiable,
+} from '../../../../shared/utils/transaction-status';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
+import { TransactionSupportsPanel } from './transaction-supports-panel';
 
 const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
 const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
@@ -34,7 +39,7 @@ const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
 
 @Component({
   selector: 'app-source-event-detail-modal',
-  imports: [CurrencyPipe, DatePipe, JsonPipe, Button, Modal],
+  imports: [CurrencyPipe, DatePipe, JsonPipe, Button, Modal, TransactionSupportsPanel],
   templateUrl: './source-event-detail-modal.html',
   styleUrl: './source-event-detail-modal.scss',
 })
@@ -45,11 +50,31 @@ export class SourceEventDetailModal {
 
   readonly event = input<SourceEvent | null>(null);
   readonly close = output<void>();
+  /** Pide a la sección padre abrir el detalle de OTRO evento (por su id) —
+   *  p. ej. un evento bancario hermano listado en la transacción enlazada. */
+  readonly viewOtherEvent = output<string>();
+  /** Pide a la sección padre abrir el modal de verificación manual. */
+  readonly verifyRequested = output<PaymentTransaction>();
+  /** Pide a la sección padre abrir el modal de "aplicar a factura". */
+  readonly invoiceRequested = output<PaymentTransaction>();
 
   readonly open = computed(() => this.event() !== null);
   readonly detail = signal<SourceEvent | null>(null);
   readonly transaction = signal<PaymentTransaction | null>(null);
   readonly relatedEvents = signal<SourceEvent[]>([]);
+
+  readonly canVerify = computed(() => {
+    const transaction = this.transaction();
+    return (
+      transaction !== null &&
+      isTransactionVerifiable(transaction.status, transaction.verification.canBeConsideredPaid)
+    );
+  });
+
+  readonly canApplyInvoice = computed(() => {
+    const transaction = this.transaction();
+    return transaction !== null && isTransactionInvoiceable(transaction.status);
+  });
   readonly loading = signal(false);
   readonly error = signal('');
 

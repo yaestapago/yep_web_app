@@ -364,7 +364,7 @@
   gap: var(--space-3);
   grid-template-areas:
     'insights insights insights insights insights insights insights insights status status status status'
-    'events events events events transactions transactions transactions transactions transactions transactions transactions transactions';
+    'events events events events events events events events events events events events';
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: clamp(320px, 36vh, 430px) minmax(0, 1fr);
   min-height: 0;
@@ -405,13 +405,16 @@
   grid-area: events;
 }
 
+/* Fase 3 (docs/refactor-mvp-yep.md): retirada del panel por defecto — el
+   detalle del evento cubre lo que mostraba. El componente sigue existiendo
+   por si hace falta reactivarlo. */
 .grid__transactions {
-  grid-area: transactions;
+  display: none;
 }
 
 .grid--summary-collapsed {
-  grid-template-areas: 'events transactions';
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+  grid-template-areas: 'events';
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
 }
 
@@ -423,14 +426,14 @@
   .grid {
     grid-template-areas:
       'insights status'
-      'events transactions';
+      'events events';
     grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.78fr);
     grid-template-rows: clamp(320px, 35vh, 400px) minmax(0, 1fr);
   }
 
   .grid--summary-collapsed {
-    grid-template-areas: 'events transactions';
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+    grid-template-areas: 'events';
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
 }
@@ -456,12 +459,10 @@
   .grid {
     grid-template-areas:
       'insights status'
-      'events events'
-      'transactions transactions';
+      'events events';
     grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.82fr);
     grid-template-rows:
       minmax(300px, 0.85fr)
-      minmax(420px, 1fr)
       minmax(460px, 1.15fr);
   }
 
@@ -470,8 +471,8 @@
   }
 
   .grid--summary-collapsed {
-    grid-template-areas: 'events transactions';
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'events';
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
 }
@@ -494,22 +495,18 @@
     grid-template-areas:
       'insights'
       'status'
-      'events'
-      'transactions';
+      'events';
     grid-template-columns: 1fr;
     grid-template-rows: none;
     grid-auto-rows: auto;
   }
 
-  .grid__events,
-  .grid__transactions {
+  .grid__events {
     min-height: 420px;
   }
 
   .grid--summary-collapsed {
-    grid-template-areas:
-      'events'
-      'transactions';
+    grid-template-areas: 'events';
     grid-template-columns: 1fr;
     grid-template-rows: none;
   }

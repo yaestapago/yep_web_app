@@ -25,6 +25,8 @@ import type {
   TransactionFilters,
 } from '../../../../shared/models/transaction.models';
 import {
+  isTransactionInvoiceable,
+  isTransactionVerifiable,
   statusesForCategory,
   transactionCategory,
   transactionStatusLabel,
@@ -172,14 +174,11 @@ export class DashboardTransactionsPanel {
   }
 
   isActionable(tx: PaymentTransaction): boolean {
-    return (
-      !tx.verification.canBeConsideredPaid &&
-      ['CREATED', 'PENDING_VERIFICATION', 'NEEDS_REVIEW', 'EVIDENCE_MATCHED'].includes(tx.status)
-    );
+    return isTransactionVerifiable(tx.status, tx.verification.canBeConsideredPaid);
   }
 
   isInvoiceActionable(tx: PaymentTransaction): boolean {
-    return this.category(tx) === 'verificada';
+    return isTransactionInvoiceable(tx.status);
   }
 
   resetFilters(): void {

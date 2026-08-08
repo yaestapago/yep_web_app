@@ -196,6 +196,31 @@
   width: 15px;
 }
 
+/* Ícono de recibo: verde solo si el evento tiene comprobante enlazado. */
+.event__receipt {
+  align-items: center;
+  border-radius: var(--radius-full, 999px);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  opacity: 0.5;
+  padding: 2px;
+}
+
+.event__receipt svg {
+  height: 14px;
+  width: 14px;
+}
+
+.event__receipt--linked {
+  color: var(--color-success-strong);
+  opacity: 1;
+}
+
+.event__receipt--duplicate {
+  color: color-mix(in srgb, var(--color-warning) 70%, var(--color-text-primary));
+  opacity: 1;
+}
+
 /* Plataforma (Nequi/Bancolombia) + nombre de la cuenta bancaria asociada. */
 .event__source {
   align-items: center;

@@ -11,61 +11,21 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  LucideBell,
-  LucideCheck,
-  LucideFileText,
-  LucideImage,
-  LucideLoaderCircle,
-  LucideMail,
-  LucideMessageSquare,
-  LucideSmartphone,
-  LucideTriangleAlert,
-  LucideUserCheck,
-  LucideX,
-} from '@lucide/angular';
+import { LucideCheck, LucideLoaderCircle, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
+import { Button } from '../../../../shared/ui/button/button';
 import { Modal } from '../../../../shared/ui/modal/modal';
-import type {
-  DataRequestEntry,
-  MissingField,
-  PaymentSupport,
-  PaymentSupportType,
-  PaymentTransaction,
-} from '../../../../shared/models/transaction.models';
+import type { MissingField, PaymentTransaction } from '../../../../shared/models/transaction.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
+  isTransactionInvoiceable,
+  isTransactionVerifiable,
   transactionStatusLabel,
   transactionTone,
-  validationMethod,
-  validationMethodLabel,
-  verificationLevelLabel,
 } from '../../../../shared/utils/transaction-status';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
-
-/** Un soporte manual sintético (confirmación humana o dato completado). */
-interface ManualEntry {
-  label: string;
-  detail: string;
-}
-
-const SUPPORT_TYPE_LABELS: Record<PaymentSupportType, string> = {
-  OCR_RECEIPT: 'Comprobante de pago',
-  BANK_SMS: 'SMS bancario',
-  BANK_WEBHOOK: 'Webhook bancario',
-  BANK_STATEMENT: 'Extracto bancario',
-  MANUAL_ENTRY: 'Registro manual',
-};
-
-const EVENT_SOURCE_LABELS: Record<string, string> = {
-  EMAIL_GMAIL: 'Correo bancario',
-  NOTIFIER_APP: 'Notificador móvil',
-  BANK_SMS: 'SMS bancario',
-  BANK_WEBHOOK: 'Webhook bancario',
-  WHATSAPP_INBOUND: 'Comprobante por WhatsApp',
-  MANUAL_ENTRY: 'Registro manual',
-};
+import { TransactionSupportsPanel } from './transaction-supports-panel';
 
 const MISSING_FIELD_LABELS: Record<MissingField, string> = {
   amount: 'Monto',
@@ -83,9 +43,10 @@ const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
 
 /**
  * Modal de detalle de una transacción: resumen (con quién la generó), cómo se
- * validó, soportes relacionados (eventos bancarios enlazados + comprobante de
- * pago + confirmaciones manuales) y auditoría. Si a la transacción le faltó un
- * dato del OCR (NEEDS_INPUT), ofrece completarlo aquí mismo.
+ * validó y soportes relacionados (delegado a `TransactionSupportsPanel`,
+ * compartido con `SourceEventDetailModal`), más auditoría y completar datos
+ * faltantes (NEEDS_INPUT). Se usa desde el drill-down de KPIs y desde el
+ * detalle de un evento ya enlazado a una transacción.
  */
 @Component({
   selector: 'app-transaction-detail-modal',
@@ -93,18 +54,12 @@ const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
     CurrencyPipe,
     DatePipe,
     FormsModule,
+    Button,
     Modal,
-    LucideBell,
+    TransactionSupportsPanel,
     LucideCheck,
-    LucideFileText,
-    LucideImage,
     LucideLoaderCircle,
-    LucideMail,
-    LucideMessageSquare,
-    LucideSmartphone,
     LucideTriangleAlert,
-    LucideUserCheck,
-    LucideX,
   ],
   templateUrl: './transaction-detail-modal.html',
   styleUrl: './transaction-detail-modal.scss',
@@ -119,17 +74,31 @@ export class TransactionDetailModal {
   readonly viewSourceEvent = output<string>();
   /** Emite la transacción actualizada tras completar datos faltantes. */
   readonly updated = output<PaymentTransaction>();
+  /** Pide a la sección padre abrir el modal de verificación manual. */
+  readonly verifyRequested = output<PaymentTransaction>();
+  /** Pide a la sección padre abrir el modal de "aplicar a factura". */
+  readonly invoiceRequested = output<PaymentTransaction>();
 
   readonly open = computed(() => this.transaction() !== null);
 
-  readonly supports = signal<PaymentSupport[]>([]);
-  readonly loadingSupports = signal(false);
-  readonly supportsError = signal('');
+  readonly canVerify = computed(() => {
+    const transaction = this.transaction();
+    return (
+      transaction !== null &&
+      isTransactionVerifiable(transaction.status, transaction.verification.canBeConsideredPaid)
+    );
+  });
 
-  // Foto del comprobante (lightbox).
-  readonly receiptUrl = signal<string | null>(null);
-  readonly loadingReceiptId = signal<string | null>(null);
-  readonly receiptError = signal('');
+  readonly canApplyInvoice = computed(() => {
+    const transaction = this.transaction();
+    return transaction !== null && isTransactionInvoiceable(transaction.status);
+  });
+
+  readonly needsInput = computed(() => this.transaction()?.status === 'NEEDS_INPUT');
+
+  readonly missingFields = computed<MissingField[]>(
+    () => this.transaction()?.dataRequest?.missingFields ?? [],
+  );
 
   // Formulario para completar datos faltantes (NEEDS_INPUT).
   readonly formValues = signal<Partial<Record<MissingField, string>>>({});
@@ -139,87 +108,19 @@ export class TransactionDetailModal {
   private loadedId: string | null = null;
 
   constructor() {
+    // Limpia el formulario de "completar datos" cuando cambia la transacción
+    // mostrada (la carga de soportes/recibo vive en TransactionSupportsPanel).
     effect(() => {
       const transaction = this.transaction();
-      if (!transaction) {
-        this.loadedId = null;
-        this.supports.set([]);
-        this.supportsError.set('');
-        this.resetReceipt();
+      const id = transaction?.id ?? null;
+      if (id === this.loadedId) {
         return;
       }
-      if (transaction.id === this.loadedId) {
-        return;
-      }
-      this.loadedId = transaction.id;
+      this.loadedId = id;
       this.formValues.set({});
       this.completeError.set('');
-      this.resetReceipt();
-      this.loadSupports(transaction.id);
     });
   }
-
-  readonly method = computed(() => {
-    const transaction = this.transaction();
-    return transaction
-      ? validationMethod(transaction.status, transaction.verification.level)
-      : 'pendiente';
-  });
-
-  readonly methodLabel = computed(() => validationMethodLabel(this.method()));
-
-  readonly needsInput = computed(() => this.transaction()?.status === 'NEEDS_INPUT');
-
-  readonly missingFields = computed<MissingField[]>(
-    () => this.transaction()?.dataRequest?.missingFields ?? [],
-  );
-
-  /** Eventos bancarios enlazados, con etiqueta amigable y clickeables. */
-  readonly relatedEvents = computed(() => {
-    const transaction = this.transaction();
-    return (transaction?.events ?? []).map((event) => ({
-      eventId: event.eventId,
-      sourceType: event.sourceType,
-      label: EVENT_SOURCE_LABELS[event.sourceType] ?? event.source,
-      linkedAt: event.linkedAt,
-    }));
-  });
-
-  /** Confirmaciones manuales y datos completados por el staff (sintéticos). */
-  readonly manualEntries = computed<ManualEntry[]>(() => {
-    const transaction = this.transaction();
-    if (!transaction) {
-      return [];
-    }
-    const entries: ManualEntry[] = [];
-    const review = transaction.manualReview;
-    if (review) {
-      const who = review.byUserName || 'Usuario';
-      const when = new Date(review.at).toLocaleString();
-      entries.push({
-        label:
-          review.decision === 'confirmed'
-            ? 'Confirmación manual'
-            : 'Rechazo manual',
-        detail: `${who} · ${when}${review.note ? ` · ${review.note}` : ''}`,
-      });
-    }
-    for (const item of transaction.dataRequest?.history ?? []) {
-      entries.push({
-        label: `Dato completado: ${MISSING_FIELD_LABELS[item.field]}`,
-        detail: this.dataEntryDetail(item),
-      });
-    }
-    return entries;
-  });
-
-  /** ¿Hay algo que mostrar en "Soportes relacionados"? */
-  readonly hasRelated = computed(
-    () =>
-      this.relatedEvents().length > 0 ||
-      this.supports().length > 0 ||
-      this.manualEntries().length > 0,
-  );
 
   statusLabel(transaction: PaymentTransaction): string {
     return transactionStatusLabel(transaction.status);
@@ -227,10 +128,6 @@ export class TransactionDetailModal {
 
   tone(transaction: PaymentTransaction): string {
     return transactionTone(transaction.status);
-  }
-
-  levelLabel(transaction: PaymentTransaction): string {
-    return verificationLevelLabel(transaction.verification.level);
   }
 
   sender(transaction: PaymentTransaction): string {
@@ -241,57 +138,12 @@ export class TransactionDetailModal {
     );
   }
 
-  supportLabel(type: PaymentSupportType): string {
-    return SUPPORT_TYPE_LABELS[type] ?? type;
-  }
-
   fieldLabel(field: MissingField): string {
     return MISSING_FIELD_LABELS[field];
   }
 
   fieldPlaceholder(field: MissingField): string {
     return MISSING_FIELD_PLACEHOLDERS[field];
-  }
-
-  /** Un soporte con imagen adjunta puede abrirse como foto. */
-  hasPhoto(support: PaymentSupport): boolean {
-    return support.type === 'OCR_RECEIPT' || Boolean(support.file);
-  }
-
-  // --- Foto del comprobante -------------------------------------------------
-
-  openReceipt(support: PaymentSupport): void {
-    if (this.loadingReceiptId()) {
-      return;
-    }
-    this.receiptError.set('');
-    this.loadingReceiptId.set(support.id);
-    this.api
-      .getSupportFileUrl(support.id)
-      .pipe(
-        finalize(() => this.loadingReceiptId.set(null)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => {
-          if (response.url) {
-            this.receiptUrl.set(response.url);
-          } else {
-            this.receiptError.set('La imagen del comprobante no está disponible.');
-          }
-        },
-        error: (error) => this.receiptError.set(httpErrorMessage(error)),
-      });
-  }
-
-  closeReceipt(): void {
-    this.receiptUrl.set(null);
-  }
-
-  private resetReceipt(): void {
-    this.receiptUrl.set(null);
-    this.loadingReceiptId.set(null);
-    this.receiptError.set('');
   }
 
   // --- Completar datos faltantes -------------------------------------------
@@ -339,34 +191,9 @@ export class TransactionDetailModal {
             );
           }
           this.formValues.set({});
-          // Refrescamos el detalle con la transacción actualizada y avisamos a
-          // la sección para que recargue la lista.
-          this.loadedId = null;
           this.updated.emit(response.transaction);
         },
         error: (error) => this.completeError.set(httpErrorMessage(error)),
       });
-  }
-
-  private loadSupports(transactionId: string): void {
-    this.loadingSupports.set(true);
-    this.supportsError.set('');
-    this.api
-      .listSupports(transactionId)
-      .pipe(
-        finalize(() => this.loadingSupports.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (response) => this.supports.set(response.paymentSupports),
-        error: (error) => this.supportsError.set(httpErrorMessage(error)),
-      });
-  }
-
-  private dataEntryDetail(item: DataRequestEntry): string {
-    const who = item.byName || 'Staff';
-    const via = item.via === 'whatsapp' ? 'WhatsApp' : 'módulo';
-    const when = new Date(item.at).toLocaleString();
-    return `${who} · ${via} · ${when}`;
   }
 }
