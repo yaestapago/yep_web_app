@@ -95,6 +95,7 @@ describe('Sidebar', () => {
       'schedules',
       'notification-routing',
       'reports',
+      'insights',
     ]);
     expect(sidebar.canViewSubscription()).toBe(true);
     expect(sidebar.canManageBusinesses()).toBe(true);
@@ -133,6 +134,7 @@ describe('Sidebar', () => {
       'schedules',
       'notification-routing',
       'reports',
+      'insights',
     ]);
     expect(sidebar.canViewSubscription()).toBe(true);
     expect(sidebar.canManageBusinesses()).toBe(true);

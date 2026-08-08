@@ -171,6 +171,15 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'insights',
+            data: { section: 'insights' },
+            canActivate: [businessSectionGuard],
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-insights.section').then(
+                (m) => m.BusinessInsightsSection,
+              ),
+          },
+          {
             path: 'business-data',
             data: { section: 'business-data' },
             canActivate: [businessSectionGuard],

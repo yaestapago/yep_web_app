@@ -48,6 +48,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
   { path: 'schedules', label: 'Horarios' },
   { path: 'notification-routing', label: 'Alertas WhatsApp' },
   { path: 'reports', label: 'Informes' },
+  { path: 'insights', label: 'Conciliación' },
 ];
 
 @Component({

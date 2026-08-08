@@ -33,6 +33,7 @@ function isBusinessScopedRequest(url: string): boolean {
     '/business-accounts/',
     '/customers',
     '/dashboard',
+    '/insights',
     '/notifiers',
     '/notifications',
     '/payment-supports',

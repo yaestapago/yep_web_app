@@ -74,6 +74,19 @@ describe('authInterceptor', () => {
     request.flush({ range: {}, kpis: {}, charts: {}, semaphore: {}, alerts: [] });
   });
 
+  it('adds active business header to insights requests', () => {
+    session.saveSession(authResponse);
+
+    const url = `${environment.apiUrl}/insights/reconciliation?from=2026-07-05T05:00:00.000Z&to=2026-08-04T04:59:59.999Z&direction=both`;
+    http.get(url).subscribe();
+    const request = httpMock.expectOne(url);
+
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.headers.get('x-business-account-id')).toBe('business-1');
+
+    request.flush({ bankWithoutReceipt: [], receiptWithoutBank: [] });
+  });
+
   it('does not add active business header to auth requests', () => {
     session.saveSession(authResponse);
 

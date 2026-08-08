@@ -16,6 +16,7 @@ export type BusinessSectionKey =
   | 'locations'
   | 'schedules'
   | 'reports'
+  | 'insights'
   | 'notification-routing';
 
 export const BUSINESS_SECTION_ACCESS: Record<BusinessSectionKey, BusinessMembershipRole[]> = {
@@ -27,6 +28,9 @@ export const BUSINESS_SECTION_ACCESS: Record<BusinessSectionKey, BusinessMembers
   locations: ['account_owner'],
   schedules: ['account_owner'],
   reports: ['account_owner', 'account_staff'],
+  // Resolver un duplicado puede rechazar una transacción y marcar un cliente
+  // sospechoso: mismo nivel de acceso que notificadores/cuentas (solo owner).
+  insights: ['account_owner'],
   'notification-routing': ['account_owner'],
 };
 
