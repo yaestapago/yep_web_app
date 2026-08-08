@@ -44,7 +44,7 @@
   } @else if (statuses().length === 0) {
     <div class="empty-state">
       <h3>Aún no hay notificadores</h3>
-      <p>Crea un notificador para emparejar un dispositivo y empezar a recibir heartbeats.</p>
+      <p>Crea un notificador de correo para reenviar los avisos de tu banco y empezar a recibir tus pagos.</p>
       @if (canManage()) {
         <yep-button size="sm" (clicked)="openCreate()">
           <svg lucidePlus aria-hidden="true"></svg>
@@ -192,7 +192,7 @@
   (closeRequested)="closeModal()"
 >
   <form [formGroup]="form" (ngSubmit)="save()" id="notifier-form" class="form-grid">
-    <!-- Tipo de notificador (solo Teléfono activo) -->
+    <!-- Tipo de notificador (MVP: solo Correo permite crear nuevos) -->
     @if (!editingId()) {
       <div class="field">
         <span class="field-label">Tipo de notificador</span>
