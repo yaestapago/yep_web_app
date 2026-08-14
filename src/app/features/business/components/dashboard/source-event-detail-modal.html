@@ -38,8 +38,16 @@
           <dd>{{ event.normalized?.bankId || 'No detectado' }}</dd>
         </div>
         <div>
-          <dt>Fecha de llegada</dt>
-          <dd>{{ event.createdAt | date: 'medium' }}</dd>
+          <dt>Fecha de banco</dt>
+          <dd>{{ bankDate(event) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de reenvío</dt>
+          <dd>{{ forwardedDate(event) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de evento</dt>
+          <dd>{{ eventDate(event) }}</dd>
         </div>
         <div>
           <dt>Referencia</dt>
@@ -69,14 +77,8 @@
           <dd>{{ event.normalized?.senderAccount || 'No detectada' }}</dd>
         </div>
         <div>
-          <dt>Fecha del movimiento</dt>
-          <dd>
-            {{
-              event.normalized?.transactionDate
-                ? (event.normalized?.transactionDate | date: 'medium')
-                : 'No detectada'
-            }}
-          </dd>
+          <dt>Fecha de transferencia</dt>
+          <dd>{{ transferDate(event) }}</dd>
         </div>
         <div>
           <dt>Soporte vinculado</dt>

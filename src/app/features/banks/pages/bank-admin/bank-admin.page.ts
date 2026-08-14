@@ -42,6 +42,7 @@ import type {
   ExpectedValues,
   ParseTestRequest,
   ParseTestResponse,
+  ParsedBankNotification,
   RecentEvent,
   SampleMessage,
   SuggestRulesResponse,
@@ -1004,6 +1005,18 @@ export class BankAdminPage {
       .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '')
       .map(([k, v]) => `${k}=${v}`)
       .join(', ');
+  }
+
+  /** Muestra la fecha que declaró el banco en el mensaje (o el fallback resuelto). */
+  formatTransferDate(value: ParsedBankNotification['transactionDate']): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return [
+      `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
+      `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+    ].join(' ');
   }
 
   /** Carga eventos reales recientes del banco para capturarlos como ejemplo. */
