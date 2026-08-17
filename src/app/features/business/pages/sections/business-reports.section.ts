@@ -23,8 +23,8 @@ import { ReportsApiService } from '../../services/reports-api.service';
 const ALL_LOCATIONS_OPTION_ID = 'all';
 
 /**
- * Informes generables por el negocio activo. Primer informe: cierre de caja
- * en PDF para un rango de fechas y una sede opcional (ver reports.controller.ts
+ * Informes generables por el negocio activo. Primer informe: movimientos
+ * del panel en PDF para un rango de fechas y una sede opcional (ver reports.controller.ts
  * en el backend). Disponible tanto para owner como para staff.
  */
 @Component({
@@ -41,7 +41,8 @@ export class BusinessReportsSection implements OnInit {
 
   readonly range = signal<DashboardDateRange>(defaultDashboardRange());
   readonly preset = signal<DateRangePreset>('today');
-  readonly generating = signal(false);
+  readonly generatingPdf = signal(false);
+  readonly generatingCsv = signal(false);
   readonly error = signal<string | null>(null);
   readonly locationId = signal<string>(ALL_LOCATIONS_OPTION_ID);
   readonly locationOptions = signal<SelectOption[]>([
@@ -82,12 +83,12 @@ export class BusinessReportsSection implements OnInit {
 
   generateCashSummary(): void {
     const businessAccountId = this.businessAccountId();
-    if (!businessAccountId || this.generating()) {
+    if (!businessAccountId || this.generatingPdf()) {
       return;
     }
 
     this.error.set(null);
-    this.generating.set(true);
+    this.generatingPdf.set(true);
 
     const locationId = this.locationId();
     this.reportsApi
@@ -96,9 +97,32 @@ export class BusinessReportsSection implements OnInit {
         this.range(),
         locationId === ALL_LOCATIONS_OPTION_ID ? undefined : locationId,
       )
-      .pipe(finalize(() => this.generating.set(false)))
+      .pipe(finalize(() => this.generatingPdf.set(false)))
       .subscribe({
         next: (pdf) => this.downloadPdf(pdf),
+        error: (err: HttpErrorResponse) => void this.handleError(err),
+      });
+  }
+
+  generateCashSummaryCsv(): void {
+    const businessAccountId = this.businessAccountId();
+    if (!businessAccountId || this.generatingCsv()) {
+      return;
+    }
+
+    this.error.set(null);
+    this.generatingCsv.set(true);
+
+    const locationId = this.locationId();
+    this.reportsApi
+      .cashSummaryCsv(
+        businessAccountId,
+        this.range(),
+        locationId === ALL_LOCATIONS_OPTION_ID ? undefined : locationId,
+      )
+      .pipe(finalize(() => this.generatingCsv.set(false)))
+      .subscribe({
+        next: (csv) => this.downloadCsv(csv),
         error: (err: HttpErrorResponse) => void this.handleError(err),
       });
   }
@@ -123,7 +147,17 @@ export class BusinessReportsSection implements OnInit {
     const link = document.createElement('a');
     const { from, to } = this.range();
     link.href = url;
-    link.download = `cierre-de-caja_${from.slice(0, 10)}_${to.slice(0, 10)}.pdf`;
+    link.download = `reporte-movimientos_${from.slice(0, 10)}_${to.slice(0, 10)}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private downloadCsv(csv: Blob): void {
+    const url = URL.createObjectURL(csv);
+    const link = document.createElement('a');
+    const { from, to } = this.range();
+    link.href = url;
+    link.download = `reporte-movimientos_${from.slice(0, 10)}_${to.slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }

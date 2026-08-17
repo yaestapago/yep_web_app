@@ -24,4 +24,19 @@ export class ReportsApiService {
       { params, responseType: 'blob' },
     );
   }
+
+  cashSummaryCsv(
+    businessAccountId: string,
+    range: DashboardDateRange,
+    locationId?: string,
+  ): Observable<Blob> {
+    let params = new HttpParams().set('from', range.from).set('to', range.to);
+    if (locationId) {
+      params = params.set('locationId', locationId);
+    }
+    return this.http.get(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/reports/cash-summary.csv`,
+      { params, responseType: 'blob' },
+    );
+  }
 }
