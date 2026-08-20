@@ -1,17 +1,10 @@
 <div class="section">
-    <div class="section-toolbar">
-      <div class="section-heading">
-        <h2 class="section-title">Informes</h2>
-      <p class="section-subtitle">Generá y descargá informes del negocio en PDF o CSV.</p>
-    </div>
-  </div>
-
   @if (error()) {
     <div class="field-error" role="alert">{{ error() }}</div>
   }
 
-  <article class="list-card">
-    <div class="list-card__main">
+  <article class="list-card reports-card">
+    <div class="list-card__main reports-card__main">
       <h3 class="list-card__title">Reporte de movimientos</h3>
       <p class="section-subtitle">
         Movimientos del panel de control para el rango de fechas y la sede seleccionados,
@@ -34,12 +27,21 @@
         />
       </div>
     </div>
-    <div class="list-card__actions">
-      <yep-button size="sm" variant="secondary" [loading]="generatingCsv()" (clicked)="generateCashSummaryCsv()">
+    <div class="list-card__actions reports-card__actions">
+      <yep-button
+        variant="secondary"
+        [fullWidth]="true"
+        [loading]="generatingCsv()"
+        (clicked)="generateCashSummaryCsv()"
+      >
         <svg lucideFileDown aria-hidden="true"></svg>
         Generar CSV
       </yep-button>
-      <yep-button size="sm" [loading]="generatingPdf()" (clicked)="generateCashSummary()">
+      <yep-button
+        [fullWidth]="true"
+        [loading]="generatingPdf()"
+        (clicked)="generateCashSummary()"
+      >
         <svg lucideFileDown aria-hidden="true"></svg>
         Generar PDF
       </yep-button>

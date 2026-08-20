@@ -64,6 +64,7 @@ export class SourceEventDetailModal {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly event = input<SourceEvent | null>(null);
+  readonly showPayload = input(false);
   readonly close = output<void>();
   /** Pide a la sección padre abrir el detalle de OTRO evento (por su id) —
    *  p. ej. un evento bancario hermano listado en la transacción enlazada. */
@@ -161,6 +162,14 @@ export class SourceEventDetailModal {
     return event.normalized?.receiverAccount || event.normalized?.receiverBreBKey || 'No detectada';
   }
 
+  senderName(event: SourceEvent): string {
+    return event.normalized?.senderName?.trim() || 'N/A';
+  }
+
+  keyName(event: SourceEvent): string {
+    return event.normalized?.receiverBreBKey?.trim() || this.extractKeyFromText(event) || 'N/A';
+  }
+
   sourceLabel(event: SourceEvent): string {
     return event.sourceType === 'EMAIL_GMAIL' ? 'Correo' : 'Notificador';
   }
@@ -209,6 +218,11 @@ export class SourceEventDetailModal {
       .map((part) => (typeof part === 'string' ? part.trim() : ''))
       .filter(Boolean)
       .join('\n\n');
+  }
+
+  private extractKeyFromText(event: SourceEvent): string {
+    const match = this.rawNotificationText(event).match(/\bllave\s+([A-Za-z0-9@._+-]*[A-Za-z0-9])/i);
+    return match?.[1]?.trim() ?? '';
   }
 
   private formatDateTime(value: unknown): string {

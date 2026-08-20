@@ -53,17 +53,14 @@
           <dt>Referencia</dt>
           <dd>{{ event.normalized?.reference || 'Sin referencia' }}</dd>
         </div>
-      </dl>
-    </section>
-
-    <section class="detail-section">
-      <h3>Notificacion recibida</h3>
-      <pre class="message">{{ notificationText() || 'Sin texto disponible' }}</pre>
-    </section>
-
-    <section class="detail-section">
-      <h3>Datos normalizados</h3>
-      <dl class="detail-grid">
+        <div>
+          <dt>Nombre del emisor</dt>
+          <dd>{{ senderName(event) }}</dd>
+        </div>
+        <div>
+          <dt>Nombre de llave</dt>
+          <dd>{{ keyName(event) }}</dd>
+        </div>
         <div>
           <dt>Cuenta destino</dt>
           <dd>{{ destinationAccount(event) }}</dd>
@@ -86,6 +83,11 @@
         </div>
       </dl>
     </section>
+
+    <details class="raw">
+      <summary>Notificacion recibida</summary>
+      <pre>{{ notificationText() || 'Sin texto disponible' }}</pre>
+    </details>
 
     @if (transaction(); as tx) {
       <app-transaction-supports-panel
@@ -127,10 +129,12 @@
       }
     </section>
 
-    <details class="raw">
-      <summary>Ver payload original</summary>
-      <pre>{{ event.rawPayload | json }}</pre>
-    </details>
+    @if (showPayload()) {
+      <details class="raw">
+        <summary>Ver payload original</summary>
+        <pre>{{ event.rawPayload | json }}</pre>
+      </details>
+    }
   }
 
   <ng-container modalFooter>

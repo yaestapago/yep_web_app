@@ -210,6 +210,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   });
 
   readonly account = computed(() => this.session.activeMembership()?.businessAccount ?? null);
+  readonly canViewEventPayload = computed(() => this.session.isSuperUser());
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
   readonly invoiceReferenceLabel = computed(

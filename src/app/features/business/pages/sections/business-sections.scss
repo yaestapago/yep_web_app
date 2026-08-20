@@ -113,11 +113,32 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-top: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .report-filters__location {
-  min-width: 200px;
+  min-width: 250px;
+}
+
+.reports-card {
+  align-items: stretch;
+  padding: var(--space-5);
+}
+
+.reports-card__main {
+  flex: 1 1 42rem;
+}
+
+.reports-card__actions {
+  align-content: center;
+  align-items: stretch;
+  flex: 0 0 12rem;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.reports-card__actions yep-button {
+  width: 100%;
 }
 
 .list-card__titlerow {
@@ -220,6 +241,15 @@
 }
 
 @media (max-width: 520px) {
+  .reports-card__actions {
+    flex-basis: 100%;
+  }
+
+  .report-filters,
+  .report-filters__location {
+    width: 100%;
+  }
+
   .form-grid--2 {
     grid-template-columns: 1fr;
   }
