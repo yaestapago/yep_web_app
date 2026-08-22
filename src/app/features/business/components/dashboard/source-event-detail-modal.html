@@ -38,24 +38,29 @@
           <dd>{{ event.normalized?.bankId || 'No detectado' }}</dd>
         </div>
         <div>
-          <dt>Fecha de llegada</dt>
-          <dd>{{ event.createdAt | date: 'medium' }}</dd>
+          <dt>Fecha de banco</dt>
+          <dd>{{ bankDate(event) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de reenvío</dt>
+          <dd>{{ forwardedDate(event) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de evento</dt>
+          <dd>{{ eventDate(event) }}</dd>
         </div>
         <div>
           <dt>Referencia</dt>
           <dd>{{ event.normalized?.reference || 'Sin referencia' }}</dd>
         </div>
-      </dl>
-    </section>
-
-    <section class="detail-section">
-      <h3>Notificacion recibida</h3>
-      <pre class="message">{{ notificationText() || 'Sin texto disponible' }}</pre>
-    </section>
-
-    <section class="detail-section">
-      <h3>Datos normalizados</h3>
-      <dl class="detail-grid">
+        <div>
+          <dt>Nombre del emisor</dt>
+          <dd>{{ senderName(event) }}</dd>
+        </div>
+        <div>
+          <dt>Nombre de llave</dt>
+          <dd>{{ keyName(event) }}</dd>
+        </div>
         <div>
           <dt>Cuenta destino</dt>
           <dd>{{ destinationAccount(event) }}</dd>
@@ -69,14 +74,8 @@
           <dd>{{ event.normalized?.senderAccount || 'No detectada' }}</dd>
         </div>
         <div>
-          <dt>Fecha del movimiento</dt>
-          <dd>
-            {{
-              event.normalized?.transactionDate
-                ? (event.normalized?.transactionDate | date: 'medium')
-                : 'No detectada'
-            }}
-          </dd>
+          <dt>Fecha de transferencia</dt>
+          <dd>{{ transferDate(event) }}</dd>
         </div>
         <div>
           <dt>Soporte vinculado</dt>
@@ -85,31 +84,24 @@
       </dl>
     </section>
 
-    <section class="detail-section">
-      <h3>Transaccion asociada</h3>
-      @if (transaction(); as tx) {
-        <dl class="detail-grid">
-          <div>
-            <dt>Monto</dt>
-            <dd>{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
-          </div>
-          <div>
-            <dt>Estado</dt>
-            <dd>{{ tx.status }}</dd>
-          </div>
-          <div>
-            <dt>Referencia</dt>
-            <dd>{{ tx.reference || 'Sin referencia' }}</dd>
-          </div>
-          <div>
-            <dt>ID</dt>
-            <dd>{{ tx.id }}</dd>
-          </div>
-        </dl>
-      } @else {
-        <p class="muted">No hay transaccion asociada a este reporte.</p>
-      }
-    </section>
+    <details class="raw">
+      <summary>Notificacion recibida</summary>
+      <pre>{{ notificationText() || 'Sin texto disponible' }}</pre>
+    </details>
+
+    @if (transaction(); as tx) {
+      <app-transaction-supports-panel
+        [transaction]="tx"
+        (viewSourceEvent)="viewOtherEvent.emit($event)"
+        (verifyRequested)="verifyRequested.emit($event)"
+        (invoiceRequested)="invoiceRequested.emit($event)"
+      />
+    } @else {
+      <section class="detail-section">
+        <h3>Transacción asociada</h3>
+        <p class="muted">No hay transacción asociada a este reporte todavía.</p>
+      </section>
+    }
 
     <section class="detail-section">
       <h3>Otros reportes relacionados</h3>
@@ -137,13 +129,23 @@
       }
     </section>
 
-    <details class="raw">
-      <summary>Ver payload original</summary>
-      <pre>{{ event.rawPayload | json }}</pre>
-    </details>
+    @if (showPayload()) {
+      <details class="raw">
+        <summary>Ver payload original</summary>
+        <pre>{{ event.rawPayload | json }}</pre>
+      </details>
+    }
   }
 
   <ng-container modalFooter>
+    @if (transaction(); as tx) {
+      @if (canVerify()) {
+        <yep-button variant="secondary" (clicked)="verifyRequested.emit(tx)">Verificar</yep-button>
+      }
+      @if (canApplyInvoice()) {
+        <yep-button variant="secondary" (clicked)="invoiceRequested.emit(tx)">Aplicar a factura</yep-button>
+      }
+    }
     <yep-button variant="secondary" (clicked)="close.emit()">Cerrar</yep-button>
   </ng-container>
 </yep-modal>

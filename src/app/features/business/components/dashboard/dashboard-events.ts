@@ -17,6 +17,7 @@ import {
   LucideLoaderCircle,
   LucideMail,
   LucideMonitor,
+  LucideReceipt,
   LucideSearch,
   LucideSmartphone,
   LucideTriangleAlert,
@@ -101,6 +102,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     LucideLoaderCircle,
     LucideMail,
     LucideMonitor,
+    LucideReceipt,
     LucideSearch,
     LucideSmartphone,
     LucideTriangleAlert,
@@ -263,6 +265,26 @@ export class DashboardEventsPanel {
     const device = event.rawPayload?.['device'] as { osVersion?: unknown } | undefined;
     const os = typeof device?.osVersion === 'string' ? device.osVersion.toLowerCase() : '';
     return os.includes('windows') || os.includes('mac') || os.includes('linux');
+  }
+
+  /**
+   * Estado visual del ícono de recibo: verde solo cuando el evento tiene una
+   * transacción enlazada con un comprobante (`OCR_RECEIPT`) válido. `duplicate`
+   * = el comprobante coincide con el de otra transacción (ver Conciliación).
+   */
+  receiptTone(event: SourceEvent): 'linked' | 'duplicate' | 'none' {
+    return event.receipt?.status ?? 'none';
+  }
+
+  receiptTitle(event: SourceEvent): string {
+    switch (this.receiptTone(event)) {
+      case 'linked':
+        return 'Tiene comprobante';
+      case 'duplicate':
+        return 'Comprobante duplicado (ver Conciliación)';
+      default:
+        return 'Sin comprobante todavía';
+    }
   }
 
   statusLabel(status: SourceEventStatus): string {

@@ -138,17 +138,19 @@
           }
         </button>
 
-        <a
-          class="sidebar-actions__item"
-          routerLink="/businesses"
-          routerLinkActive="active"
-          role="menuitem"
-          title="Gestionar negocios"
-          (click)="onNavigate()"
-        >
-          <svg lucideBuilding2 aria-hidden="true"></svg>
-          <span>Gestionar negocios</span>
-        </a>
+        @if (canManageBusinesses()) {
+          <a
+            class="sidebar-actions__item"
+            routerLink="/businesses"
+            routerLinkActive="active"
+            role="menuitem"
+            title="Gestionar negocios"
+            (click)="onNavigate()"
+          >
+            <svg lucideBuilding2 aria-hidden="true"></svg>
+            <span>Gestionar negocios</span>
+          </a>
+        }
 
         <a
           class="sidebar-actions__item"
@@ -162,17 +164,19 @@
           <span>Configuración</span>
         </a>
 
-        <a
-          class="sidebar-actions__item"
-          routerLink="/subscription"
-          routerLinkActive="active"
-          role="menuitem"
-          title="Suscripcion"
-          (click)="onNavigate()"
-        >
-          <svg lucideCreditCard aria-hidden="true"></svg>
-          <span>Suscripcion</span>
-        </a>
+        @if (canViewSubscription()) {
+          <a
+            class="sidebar-actions__item"
+            routerLink="/subscription"
+            routerLinkActive="active"
+            role="menuitem"
+            title="Suscripcion"
+            (click)="onNavigate()"
+          >
+            <svg lucideCreditCard aria-hidden="true"></svg>
+            <span>Suscripcion</span>
+          </a>
+        }
 
         <button
           class="sidebar-actions__item sidebar-actions__item--danger"

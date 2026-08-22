@@ -1,3 +1,61 @@
 :host {
   display: block;
 }
+
+.novedades {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.novedades-title {
+  font-size: var(--font-size-xl);
+  margin: 0;
+}
+
+.novedades-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.novedad-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.novedad-category {
+  color: var(--color-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.novedad-card h3 {
+  font-size: var(--font-size-md);
+  margin: 0;
+}
+
+.novedad-card p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.novedades-cta {
+  align-self: flex-start;
+  color: var(--color-secondary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.novedades-cta:hover {
+  text-decoration: underline;
+}

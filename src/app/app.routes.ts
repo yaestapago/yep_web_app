@@ -2,10 +2,12 @@ import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 
 import { authGuard } from './core/guards/auth.guard';
+import { businessManagementGuard } from './core/guards/business-management.guard';
 import { businessGuard } from './core/guards/business.guard';
 import { businessContextGuard } from './core/guards/business-context.guard';
 import { businessSectionGuard } from './core/guards/business-section.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
+import { subscriptionGuard } from './core/guards/subscription.guard';
 import { Shell } from './core/layout/shell/shell';
 import { AuthSessionService } from './core/services/auth-session.service';
 
@@ -79,6 +81,7 @@ export const routes: Routes = [
       },
       {
         path: 'businesses',
+        canActivate: [businessManagementGuard],
         loadComponent: () =>
           import('./features/business/pages/business-list/business-list.page').then(
             (m) => m.BusinessListPage,
@@ -168,6 +171,15 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'insights',
+            data: { section: 'insights' },
+            canActivate: [businessSectionGuard],
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-insights.section').then(
+                (m) => m.BusinessInsightsSection,
+              ),
+          },
+          {
             path: 'business-data',
             data: { section: 'business-data' },
             canActivate: [businessSectionGuard],
@@ -197,6 +209,7 @@ export const routes: Routes = [
       },
       {
         path: 'subscription',
+        canActivate: [subscriptionGuard],
         loadComponent: () =>
           import('./features/subscription/pages/subscription/subscription.page').then(
             (m) => m.SubscriptionPage,

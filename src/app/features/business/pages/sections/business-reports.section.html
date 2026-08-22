@@ -1,22 +1,14 @@
 <div class="section">
-  <div class="section-toolbar">
-    <div class="section-heading">
-      <h2 class="section-title">Informes</h2>
-      <p class="section-subtitle">Generá y descargá informes del negocio en PDF.</p>
-    </div>
-  </div>
-
   @if (error()) {
     <div class="field-error" role="alert">{{ error() }}</div>
   }
 
-  <article class="list-card">
-    <div class="list-card__main">
-      <h3 class="list-card__title">Cierre de caja</h3>
+  <article class="list-card reports-card">
+    <div class="list-card__main reports-card__main">
+      <h3 class="list-card__title">Reporte de movimientos</h3>
       <p class="section-subtitle">
-        Monto capturado, por banco y por estado (pagado, pendiente, en revisión, rechazado)
-        para el rango de fechas y la sede seleccionados. Incluye negocio, sede, quién lo
-        genera y fecha/hora de generación (hora local).
+        Movimientos del panel de control para el rango de fechas y la sede seleccionados,
+        con detalle de monto, origen, banco, estado, cuentas y fecha de transferencia.
       </p>
       <div class="report-filters">
         <yep-date-range-picker
@@ -35,8 +27,21 @@
         />
       </div>
     </div>
-    <div class="list-card__actions">
-      <yep-button size="sm" [loading]="generating()" (clicked)="generateCashSummary()">
+    <div class="list-card__actions reports-card__actions">
+      <yep-button
+        variant="secondary"
+        [fullWidth]="true"
+        [loading]="generatingCsv()"
+        (clicked)="generateCashSummaryCsv()"
+      >
+        <svg lucideFileDown aria-hidden="true"></svg>
+        Generar CSV
+      </yep-button>
+      <yep-button
+        [fullWidth]="true"
+        [loading]="generatingPdf()"
+        (clicked)="generateCashSummary()"
+      >
         <svg lucideFileDown aria-hidden="true"></svg>
         Generar PDF
       </yep-button>

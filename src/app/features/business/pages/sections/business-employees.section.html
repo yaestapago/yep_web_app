@@ -65,6 +65,17 @@
               </yep-button>
             </a>
             @if (canManage()) {
+              @if (member.role === 'account_staff') {
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  [attr.title]="accessSummary(member)"
+                  [disabled]="actingId() === member.id"
+                  (clicked)="openAccess(member)"
+                >
+                  <svg lucideBell aria-label="Configurar acceso al panel"></svg>
+                </yep-button>
+              }
               <yep-icon-button action="edit" (clicked)="openEdit(member)" />
               <yep-icon-button
                 action="delete"
@@ -228,5 +239,117 @@
   <ng-container modalFooter>
     <yep-button variant="ghost" [disabled]="savingEdit()" (clicked)="closeEdit()">Cancelar</yep-button>
     <yep-button type="submit" [loading]="savingEdit()" (clicked)="submitEdit()">Guardar cambios</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="accessOpen()"
+  title="Acceso del empleado"
+  subtitle="Selecciona las cuentas y llaves que este staff puede ver en el panel de control"
+  size="lg"
+  [loading]="savingAccess()"
+  (closeRequested)="closeAccess()"
+>
+  @if (accessMember(); as member) {
+    <div class="form-grid">
+      <div class="field full-field">
+        <span class="field-label">{{ employeeLabel(member) }}</span>
+        <span class="section-subtitle">
+          Por defecto el staff ve en el panel de control todas las cuentas y todas las llaves.
+        </span>
+      </div>
+
+      <div class="field full-field">
+        <span class="field-label">Cuentas bancarias</span>
+
+        @if (selectableBankAccounts().length === 0) {
+          <p class="section-subtitle">
+            No hay cuentas bancarias activas para configurar.
+          </p>
+        } @else {
+          <div class="account-picker">
+            @for (account of selectableBankAccounts(); track account.id) {
+              <div
+                class="account-option"
+                [class.account-option--selected]="isAccessAccountSelected(account.id)"
+              >
+                <yep-checkbox
+                  class="account-option__checkbox"
+                  [checked]="isAccessAccountSelected(account.id)"
+                  [disabled]="savingAccess()"
+                  (checkedChange)="toggleAccessAccount(account.id, $event)"
+                >
+                  <span class="account-option__body">
+                    <span class="account-option__title">{{ accountLabel(account) }}</span>
+                    <span class="account-option__meta">
+                      ****{{ account.accountNumberLast4 }}
+                      @if (accountTypeLabel(account)) {
+                        - {{ accountTypeLabel(account) }}
+                      }
+                    </span>
+                  </span>
+                </yep-checkbox>
+
+                @if (isAccessAccountSelected(account.id)) {
+                  <div class="account-key-list" aria-label="Llaves Bre-B visibles para este staff">
+                    <div class="account-key-list__header">
+                      <span class="account-key-hint">Llaves visibles de esta cuenta</span>
+                      <button
+                        type="button"
+                        class="inline-action"
+                        [disabled]="savingAccess()"
+                        (click)="toggleAllAccessFiltersForAccount(account)"
+                      >
+                        {{
+                          areAllAccessFiltersSelectedForAccount(account)
+                            ? 'Deseleccionar todo'
+                            : 'Seleccionar todo'
+                        }}
+                      </button>
+                    </div>
+
+                    <yep-checkbox
+                      class="account-key-option"
+                      [checked]="isAccessBreBKeySelected(directAccountFilterKey(account))"
+                      [disabled]="savingAccess()"
+                      (checkedChange)="toggleAccessBreBKey(directAccountFilterKey(account), $event)"
+                    >
+                      <span class="account-key-option__body">
+                        <span class="account-key-option__title">Cuenta directa</span>
+                        <span class="account-key-option__meta">Sin llave Bre-B</span>
+                      </span>
+                    </yep-checkbox>
+
+                    @for (key of account.breBKeys; track key) {
+                      <yep-checkbox
+                        class="account-key-option"
+                        [checked]="isAccessBreBKeySelected(key)"
+                        [disabled]="savingAccess()"
+                        (checkedChange)="toggleAccessBreBKey(key, $event)"
+                      >
+                        <code class="account-key-option__value">{{ key }}</code>
+                      </yep-checkbox>
+                    }
+
+                    @if (account.breBKeys.length === 0) {
+                      <span class="account-key-empty">Sin llaves Bre-B registradas.</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingAccess()" (clicked)="closeAccess()">
+      Cancelar
+    </yep-button>
+    <yep-button [loading]="savingAccess()" (clicked)="saveAccess()">
+      {{ savingAccess() ? 'Guardando...' : 'Guardar acceso' }}
+    </yep-button>
   </ng-container>
 </yep-modal>

@@ -168,21 +168,13 @@
       (filtersChange)="onEventFiltersChange($event)"
       (loadMore)="loadMoreEvents()"
     />
-    <app-dashboard-transactions
-      class="grid__transactions"
-      [transactions]="transactions()"
-      [loading]="loadingTransactions()"
-      [error]="transactionsError()"
-      [verifyingId]="verifyingId()"
-      [bankOptions]="bankOptions()"
-      [hasMore]="txHasMore()"
-      [loadingMore]="loadingMoreTransactions()"
-      (view)="openDetail($event)"
-      (verify)="askVerify($event)"
-      (applyInvoice)="askApplyInvoice($event)"
-      (filtersChange)="onTransactionFiltersChange($event)"
-      (loadMore)="loadMoreTransactions()"
-    />
+    <!--
+      Fase 3 (docs/refactor-mvp-yep.md): la tabla de transacciones se retira
+      del panel — el detalle del evento (arriba) ya cubre comprobante, nivel
+      de verificación y las acciones de verificar/aplicar a factura. El
+      componente sigue existiendo (dashboard-transactions.ts) para no perder
+      el trabajo si hace falta reactivarlo.
+    -->
   </div>
 </div>
 
@@ -202,8 +194,17 @@
   (close)="closeDetail()"
   (viewSourceEvent)="openEventById($event)"
   (updated)="onTransactionUpdated($event)"
+  (verifyRequested)="askVerify($event)"
+  (invoiceRequested)="askApplyInvoice($event)"
 />
-<app-source-event-detail-modal [event]="eventDetailTarget()" (close)="closeEventDetail()" />
+<app-source-event-detail-modal
+  [event]="eventDetailTarget()"
+  [showPayload]="canViewEventPayload()"
+  (close)="closeEventDetail()"
+  (viewOtherEvent)="openEventById($event)"
+  (verifyRequested)="askVerify($event)"
+  (invoiceRequested)="askApplyInvoice($event)"
+/>
 <app-verify-transaction-modal
   [transaction]="verifyTarget()"
   [loading]="verifyingId() !== null"

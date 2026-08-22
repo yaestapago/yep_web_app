@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { LucideFileScan, LucideMenu } from '@lucide/angular';
@@ -29,6 +29,9 @@ export class Shell {
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);
   readonly receiptCaptureOpen = signal(false);
+  readonly canShowReceiptCaptureButton = computed(
+    () => this.session.subscription()?.plan.code !== 'free_trial',
+  );
 
   /** Rail colapsable en escritorio; se recuerda entre sesiones. */
   readonly sidebarCollapsed = signal(this.loadSidebarCollapsed());
@@ -44,6 +47,12 @@ export class Shell {
   readonly immersive = signal(false);
 
   constructor() {
+    effect(() => {
+      if (!this.canShowReceiptCaptureButton()) {
+        this.receiptCaptureOpen.set(false);
+      }
+    });
+
     this.router.events
       .pipe(
         filter((event) => event instanceof NavigationEnd),
@@ -87,6 +96,10 @@ export class Shell {
   }
 
   openReceiptCapture(): void {
+    if (!this.canShowReceiptCaptureButton()) {
+      return;
+    }
+
     this.receiptCaptureOpen.set(true);
   }
 

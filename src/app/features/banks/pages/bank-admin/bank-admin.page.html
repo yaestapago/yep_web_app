@@ -580,6 +580,7 @@
               <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
               <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
               <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
+              <dt>Fecha de transferencia</dt><dd>{{ formatTransferDate(r.parsed.transactionDate) }}</dd>
               <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
             </dl>
           </div>

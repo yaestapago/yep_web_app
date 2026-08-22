@@ -106,6 +106,30 @@ export function statusesForCategory(
   );
 }
 
+const VERIFIABLE_STATUSES: TransactionStatus[] = [
+  'CREATED',
+  'PENDING_VERIFICATION',
+  'NEEDS_REVIEW',
+  'EVIDENCE_MATCHED',
+];
+
+/**
+ * ¿Se puede lanzar la verificación manual? Aún no se considera pagada y su
+ * estado lo admite. Comparte esta regla la tabla de transacciones y el
+ * detalle del evento (ambos ofrecen el botón "Verificar").
+ */
+export function isTransactionVerifiable(
+  status: TransactionStatus,
+  canBeConsideredPaid: boolean,
+): boolean {
+  return !canBeConsideredPaid && VERIFIABLE_STATUSES.includes(status);
+}
+
+/** ¿Se puede asociar a una factura? Solo transacciones ya verificadas. */
+export function isTransactionInvoiceable(status: TransactionStatus): boolean {
+  return transactionCategory(status) === 'verificada';
+}
+
 const LEVEL_LABELS: Record<VerificationLevel, string> = {
   NONE: 'Sin validar',
   LOW: 'Confianza baja',

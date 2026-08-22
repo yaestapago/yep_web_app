@@ -69,6 +69,11 @@ export interface BankChannelConfig {
 
 export type ParseConfidence = 'high' | 'medium' | 'low' | 'none';
 export type TransactionDirection = 'incoming' | 'outgoing';
+export type TransactionDateSource =
+  | 'text'
+  | 'post_time'
+  | 'header_date'
+  | 'captured_at';
 
 /** Resultado de parseo (espejo de ParsedBankNotification del backend). */
 export interface ParsedBankNotification {
@@ -77,6 +82,7 @@ export interface ParsedBankNotification {
   currency?: string;
   reference?: string;
   transactionDate?: string;
+  transactionDateSource?: TransactionDateSource;
   senderAccount?: string;
   senderName?: string;
   receiverAccount?: string;

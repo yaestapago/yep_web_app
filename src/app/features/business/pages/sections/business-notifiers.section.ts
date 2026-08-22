@@ -59,6 +59,14 @@ interface NotifierKindOption {
 
 const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 
+/**
+ * MVP: solo salimos con el notificador de correo. Teléfono y Escritorio se
+ * dejan visibles pero deshabilitados en el selector de creación (no se
+ * borra nada del flujo de emparejamiento: los notificadores de ese tipo ya
+ * creados siguen funcionando igual). Pon esto en `true` para reactivarlos.
+ */
+const MOBILE_DESKTOP_NOTIFIERS_ENABLED = false;
+
 @Component({
   selector: 'app-business-notifiers-section',
   imports: [
@@ -118,8 +126,11 @@ export class BusinessNotifiersSection implements OnInit {
 
   /**
    * Opciones de tipo mostradas como radio buttons al crear un notificador.
-   * "Correo" solo está disponible si el dueño tiene al menos una cuenta de un
-   * banco que lo permita (hoy, Bancolombia); en el futuro pueden ser otros.
+   * MVP: solo "Correo" permite crear notificadores nuevos. "Teléfono" y
+   * "Escritorio" quedan visibles (para no dar la impresión de que
+   * desaparecieron) pero deshabilitados — ver `MOBILE_DESKTOP_NOTIFIERS_ENABLED`.
+   * "Correo" además solo está disponible si el dueño tiene al menos una
+   * cuenta de un banco que lo permita (hoy, Bancolombia).
    */
   readonly kindOptions = computed<NotifierKindOption[]>(() => {
     const emailDisabled = !this.hasEmailEligibleAccount();
@@ -128,14 +139,20 @@ export class BusinessNotifiersSection implements OnInit {
       {
         value: 'phone',
         label: 'Teléfono',
-        description: 'Recibe pagos desde la app móvil emparejada.',
-        disabled: false,
+        description: MOBILE_DESKTOP_NOTIFIERS_ENABLED
+          ? 'Recibe pagos desde la app móvil emparejada.'
+          : 'Por ahora no está disponible para crear. Usa el notificador de correo.',
+        disabled: !MOBILE_DESKTOP_NOTIFIERS_ENABLED,
+        badge: MOBILE_DESKTOP_NOTIFIERS_ENABLED ? undefined : 'Próximamente',
       },
       {
         value: 'desktop',
         label: 'Escritorio',
-        description: 'Recibe pagos desde la app de escritorio (Vínculo con Windows).',
-        disabled: false,
+        description: MOBILE_DESKTOP_NOTIFIERS_ENABLED
+          ? 'Recibe pagos desde la app de escritorio (Vínculo con Windows).'
+          : 'Por ahora no está disponible para crear. Usa el notificador de correo.',
+        disabled: !MOBILE_DESKTOP_NOTIFIERS_ENABLED,
+        badge: MOBILE_DESKTOP_NOTIFIERS_ENABLED ? undefined : 'Próximamente',
       },
       {
         value: 'email',
@@ -257,7 +274,7 @@ export class BusinessNotifiersSection implements OnInit {
   });
 
   readonly form = this.fb.group({
-    kind: ['phone' as NotifierKind, [Validators.required]],
+    kind: [(MOBILE_DESKTOP_NOTIFIERS_ENABLED ? 'phone' : 'email') as NotifierKind, [Validators.required]],
     displayName: ['', [Validators.required, Validators.maxLength(120)]],
     // Solo para `email`: correo remitente desde el que se reenviarán las
     // notificaciones del banco. El validador `required` se activa/desactiva
@@ -393,7 +410,11 @@ export class BusinessNotifiersSection implements OnInit {
     this.editingId.set(null);
     this.selectedBankAccountIds.set([]);
     this.selectedAllowedBreBKeys.set([]);
-    this.form.reset({ kind: 'phone', displayName: '', senderEmail: '' });
+    this.form.reset({
+      kind: MOBILE_DESKTOP_NOTIFIERS_ENABLED ? 'phone' : 'email',
+      displayName: '',
+      senderEmail: '',
+    });
     this.loadBankAccounts();
     this.modalOpen.set(true);
   }
@@ -767,7 +788,11 @@ export class BusinessNotifiersSection implements OnInit {
                 current.id === response.notifier.id ? response.notifier : current,
               ),
             );
-            this.success.set('Cambios guardados. Se sincronizarán con tu app móvil.');
+            this.success.set(
+              response.notifier.type === 'email_gmail'
+                ? 'Cambios guardados.'
+                : 'Cambios guardados. Se sincronizarán con tu app móvil.',
+            );
           } else {
             this.notifiers.update((notifiers) => [response.notifier, ...notifiers]);
             if (response.notifier.type === 'email_gmail') {

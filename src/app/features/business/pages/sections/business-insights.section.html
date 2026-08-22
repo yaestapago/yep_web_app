@@ -1,0 +1,185 @@
+<div class="section">
+  <div class="section-toolbar">
+    <div class="section-heading">
+      <h2 class="section-title">Conciliación</h2>
+      <p class="section-subtitle">
+        Eventos de banco sin comprobante, comprobantes sin respaldo bancario y comprobantes
+        duplicados. Complementa la tabla de eventos: acá se ven los casos que no calzan solos.
+      </p>
+    </div>
+    <div class="list-card__actions">
+      <yep-button variant="ghost" size="sm" (clicked)="refresh()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+    </div>
+  </div>
+
+  <div class="report-filters">
+    <yep-date-range-picker [range]="range()" [preset]="preset()" (rangeChange)="onRangeChange($event)" />
+  </div>
+
+  <!-- Banco sin comprobante -->
+  <div class="section-heading">
+    <h3 class="list-card__title">Eventos de banco sin comprobante</h3>
+    <p class="section-subtitle">
+      Llegó la notificación del banco (correo, SMS o webhook), pero ningún comprobante se ha
+      enlazado todavía.
+    </p>
+  </div>
+
+  @if (reconciliationError()) {
+    <div class="field-error" role="alert">{{ reconciliationError() }}</div>
+  }
+
+  @if (loadingReconciliation()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando conciliación…
+    </div>
+  } @else if (bankWithoutReceipt().length === 0) {
+    <div class="empty-state">
+      <h3>Sin pendientes</h3>
+      <p>No hay eventos de banco sin comprobante en el rango seleccionado.</p>
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (item of bankWithoutReceipt(); track item.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">
+              {{ item.normalized?.bankId || 'Banco desconocido' }} ·
+              {{ sourceTypeLabel(item.sourceType) }}
+            </h3>
+            <span class="list-card__meta">
+              @if (item.normalized?.amount) {
+                {{ item.normalized?.amount | currency: (item.normalized?.currency || 'COP') : 'symbol-narrow' : '1.0-0' }}
+                ·
+              }
+              @if (item.normalized?.reference) {
+                Ref. {{ item.normalized?.reference }} ·
+              }
+              {{ item.createdAt | date: 'short' }}
+            </span>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <!-- Comprobante sin respaldo bancario -->
+  <div class="section-heading">
+    <h3 class="list-card__title">Comprobantes sin respaldo bancario</h3>
+    <p class="section-subtitle">
+      El cliente envió el comprobante hace más de 24h, pero el banco todavía no lo confirma.
+    </p>
+  </div>
+
+  @if (!loadingReconciliation() && receiptWithoutBank().length === 0 && !reconciliationError()) {
+    <div class="empty-state">
+      <h3>Sin pendientes</h3>
+      <p>No hay comprobantes esperando respaldo bancario en el rango seleccionado.</p>
+    </div>
+  } @else if (receiptWithoutBank().length > 0) {
+    <div class="card-list">
+      @for (item of receiptWithoutBank(); track item.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">{{ item.bankId }}</h3>
+            <span class="list-card__meta">
+              {{ item.amount | currency: item.currency : 'symbol-narrow' : '1.0-0' }}
+              @if (item.reference) {
+                · Ref. {{ item.reference }}
+              }
+              · transacción {{ item.transactionDate | date: 'short' }}
+            </span>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  <!-- Duplicados -->
+  <div class="section-heading">
+    <h3 class="list-card__title">Duplicados</h3>
+    <p class="section-subtitle">
+      Comprobantes que colisionaron con otro ya usado, y transacciones marcadas para revisión.
+    </p>
+  </div>
+
+  @if (duplicatesError()) {
+    <div class="field-error" role="alert">{{ duplicatesError() }}</div>
+  }
+
+  @if (loadingDuplicates()) {
+    <div class="loading-row">
+      <svg lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando duplicados…
+    </div>
+  } @else if (duplicates().length === 0) {
+    <div class="empty-state">
+      <h3>Sin duplicados</h3>
+      <p>No hay comprobantes duplicados ni transacciones en revisión en el rango seleccionado.</p>
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (item of duplicates(); track item.id) {
+        <article class="list-card">
+          <div class="list-card__main">
+            <h3 class="list-card__title">
+              @if (item.type === 'support') {
+                Comprobante duplicado · {{ item.summary.bankId || 'banco desconocido' }}
+              } @else {
+                Transacción en revisión · {{ item.summary.bankId || 'banco desconocido' }}
+              }
+            </h3>
+            <span class="list-card__meta">
+              @if (item.summary.amount) {
+                {{ item.summary.amount | currency: (item.summary.currency || 'COP') : 'symbol-narrow' : '1.0-0' }}
+                ·
+              }
+              @if (item.summary.reference) {
+                Ref. {{ item.summary.reference }} ·
+              }
+              {{ item.createdAt | date: 'short' }}
+            </span>
+            @if (item.conflictWith) {
+              <span class="list-card__meta">{{ item.conflictWith }}</span>
+            }
+          </div>
+
+          @if (item.type === 'support') {
+            <div class="list-card__actions">
+              <yep-button
+                variant="secondary"
+                size="sm"
+                [loading]="resolvingId() === item.id"
+                (clicked)="markNotDuplicate(item)"
+              >
+                <svg lucideShieldCheck aria-hidden="true"></svg>
+                No es duplicado
+              </yep-button>
+              <yep-button
+                variant="danger"
+                size="sm"
+                [loading]="resolvingId() === item.id"
+                (clicked)="confirmFraud(item)"
+              >
+                <svg lucideShieldAlert aria-hidden="true"></svg>
+                Confirmar fraude
+              </yep-button>
+            </div>
+          }
+        </article>
+      }
+    </div>
+
+    @if (duplicatesCursor()) {
+      <div class="list-card__actions">
+        <yep-button variant="ghost" size="sm" [loading]="loadingMoreDuplicates()" (clicked)="loadMoreDuplicates()">
+          Cargar más
+        </yep-button>
+      </div>
+    }
+  }
+</div>

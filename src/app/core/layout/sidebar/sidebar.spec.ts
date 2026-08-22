@@ -58,6 +58,12 @@ describe('Sidebar', () => {
     navigateByUrl.mockClear();
     setActiveBusinessAccountId.mockClear();
     currentUrl = '/home';
+    session.activeMembership.set({
+      businessAccountId: 'b1',
+      businessAccount: { name: 'CafÃ© Uno' },
+      role: 'account_owner',
+    });
+    session.isSuperUser.set(false);
   });
 
   it('starts with the "Negocio" group open and toggles it', () => {
@@ -87,8 +93,12 @@ describe('Sidebar', () => {
       'employees',
       'locations',
       'schedules',
+      'notification-routing',
       'reports',
+      'insights',
     ]);
+    expect(sidebar.canViewSubscription()).toBe(true);
+    expect(sidebar.canManageBusinesses()).toBe(true);
   });
 
   it('hides owner-only sections for a staff membership', () => {
@@ -100,10 +110,34 @@ describe('Sidebar', () => {
     const sidebar = create();
     expect(sidebar.businessSections().map((item) => item.path)).toEqual([
       'business-data',
-      'notifiers',
-      'schedules',
       'reports',
     ]);
+    expect(sidebar.canViewSubscription()).toBe(false);
+    expect(sidebar.canManageBusinesses()).toBe(false);
+  });
+
+  it('allows superusers to see all business sections and subscription', () => {
+    session.activeMembership.set({
+      businessAccountId: 'b1',
+      businessAccount: { name: 'CafÃ© Uno' },
+      role: 'account_staff',
+    });
+    session.isSuperUser.set(true);
+    const sidebar = create();
+    expect(sidebar.businessSections().map((item) => item.path)).toEqual([
+      'business-data',
+      'accounts',
+      'notifiers',
+      'requests',
+      'employees',
+      'locations',
+      'schedules',
+      'notification-routing',
+      'reports',
+      'insights',
+    ]);
+    expect(sidebar.canViewSubscription()).toBe(true);
+    expect(sidebar.canManageBusinesses()).toBe(true);
   });
 
   it('never shows an id as a business name fallback', () => {
