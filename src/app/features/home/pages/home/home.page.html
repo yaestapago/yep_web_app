@@ -7,14 +7,21 @@
     </p>
   </header>
 
-  <div class="placeholder">
-    <span class="placeholder-icon" aria-hidden="true">
-      <svg lucideHouse></svg>
-    </span>
-    <h2>Novedades en construcción</h2>
-    <p>
-      Pronto agregaremos banners, anuncios, actividad reciente y accesos rápidos. Estamos
-      definiendo cómo organizar esta información.
-    </p>
-  </div>
+  <section class="novedades">
+    <h2 class="novedades-title">Novedades</h2>
+
+    <div class="novedades-grid">
+      @for (novedad of novedades; track novedad.title) {
+        <article class="novedad-card">
+          <span class="novedad-category">{{ novedad.category }}</span>
+          <h3>{{ novedad.title }}</h3>
+          <p>{{ novedad.description }}</p>
+        </article>
+      }
+    </div>
+
+    <a class="novedades-cta" [href]="novedadesPostUrl" target="_blank" rel="noreferrer">
+      Leer el resumen completo en el blog <span aria-hidden="true">→</span>
+    </a>
+  </section>
 </section>
