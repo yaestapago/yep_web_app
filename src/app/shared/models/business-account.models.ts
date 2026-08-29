@@ -76,6 +76,12 @@ export interface UpdateBusinessMemberRequest {
   locationIds?: string[];
 }
 
+export interface UpdateSourceEventAccessRequest {
+  enabled?: boolean;
+  bankAccountIds?: string[];
+  allowedBreBKeys?: string[];
+}
+
 export interface RequestBusinessDeletionResponse {
   sent: boolean;
   resendInSeconds: number;
