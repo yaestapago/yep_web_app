@@ -1,23 +1,30 @@
-<label class="bank-form__switch">
-  <yep-toggle
-    appearance="switch"
-    [pressed]="!expectMatch()"
-    ariaLabel="Ejemplo negativo"
-    (toggled)="expectMatch.set(!$event)"
-  />
-  <span>Este mensaje NO debería parsearse (ejemplo negativo 🚫)</span>
-</label>
+<div class="example-kind" role="group" aria-label="Resultado esperado del mensaje">
+  <button
+    type="button"
+    [class.is-active]="expectMatch()"
+    [attr.aria-pressed]="expectMatch()"
+    (click)="expectMatch.set(true)"
+  >
+    <strong>Transacción válida</strong>
+    <span>El parser debe reconocerla y extraer datos.</span>
+  </button>
+  <button
+    type="button"
+    class="example-kind__negative"
+    [class.is-active]="!expectMatch()"
+    [attr.aria-pressed]="!expectMatch()"
+    (click)="expectMatch.set(false)"
+  >
+    <strong>No es una transacción</strong>
+    <span>El parser debe ignorarla; evita falsos positivos.</span>
+  </button>
+</div>
 
 @if (expectMatch()) {
   <div class="bank-expected">
     <p class="bank-form__hint">
-      <strong>Valores esperados (ground truth).</strong> Lo que el parser
-      DEBERÍA extraer de este mensaje. Al guardar, el ejemplo se corre
-      contra la config y pasa (✅) solo si lo extraído coincide con lo que
-      escribas aquí. Escríbelos a mano para controlar exactamente lo
-      esperado; "Sugerir con IA" solo los propone y luego los ajustas. El
-      parser del banco se afina a partir de muchos ejemplos como este.
-      <strong>Campos vacíos no se verifican.</strong>
+      <strong>Datos principales.</strong> Completa únicamente lo que aparece de forma explícita en
+      el mensaje. Los campos vacíos no se verifican.
     </p>
     <div class="bank-expected__grid">
       <label class="bank-form__field">
@@ -30,8 +37,8 @@
           placeholder="50000"
         />
         <small class="bank-form__hint">
-          Valor exacto de la transacción, solo dígitos: sin <code>$</code>
-          ni puntos de miles. Ej: <code>50000</code>.
+          Valor exacto de la transacción, solo dígitos: sin <code>$</code> ni puntos de miles. Ej:
+          <code>50000</code>.
         </small>
       </label>
       <label class="bank-form__field">
@@ -46,8 +53,8 @@
           <option value="outgoing">Saliente — dinero enviado</option>
         </select>
         <small class="bank-form__hint">
-          Si el dinero ENTRA a la cuenta del negocio (<code>incoming</code>)
-          o SALE (<code>outgoing</code>).
+          Si el dinero ENTRA a la cuenta del negocio (<code>incoming</code>) o SALE
+          (<code>outgoing</code>).
         </small>
       </label>
       <label class="bank-form__field">
@@ -59,8 +66,7 @@
           placeholder="JUAN PEREZ"
         />
         <small class="bank-form__hint">
-          Quién envió/pagó, tal como debe leerse del mensaje. Es la contraparte
-          de la transacción.
+          Quién envió/pagó, tal como debe leerse del mensaje. Es la contraparte de la transacción.
         </small>
       </label>
       <label class="bank-form__field">
@@ -72,10 +78,17 @@
           placeholder="1234"
         />
         <small class="bank-form__hint">
-          Cuenta (o últimos dígitos) de DESTINO. Es la señal clave que usa la
-          resolución de cuenta para saber a qué cuenta YEP pertenece el evento.
+          Cuenta (o últimos dígitos) de DESTINO. Es la señal clave que usa la resolución de cuenta
+          para saber a qué cuenta YEP pertenece el evento.
         </small>
       </label>
+    </div>
+  </div>
+
+  <details class="bank-expected__advanced">
+    <summary>Más datos opcionales</summary>
+    <p class="bank-form__hint">Referencia, cuenta de origen, tipo, moneda o llave Bre-B.</p>
+    <div class="bank-expected__grid">
       <label class="bank-form__field">
         <span>Cuenta del remitente</span>
         <input
@@ -84,9 +97,6 @@
           (input)="setExpectedField('senderAccount', $any($event.target).value)"
           placeholder="(si el mensaje la trae)"
         />
-        <small class="bank-form__hint">
-          Cuenta de ORIGEN si el mensaje la incluye. Opcional.
-        </small>
       </label>
       <label class="bank-form__field">
         <span>Referencia</span>
@@ -96,9 +106,6 @@
           (input)="setExpectedField('reference', $any($event.target).value)"
           placeholder="M1234567"
         />
-        <small class="bank-form__hint">
-          Código o comprobante de la transacción, si aplica.
-        </small>
       </label>
       <label class="bank-form__field">
         <span>Tipo de movimiento</span>
@@ -108,10 +115,6 @@
           (input)="setExpectedField('kind', $any($event.target).value)"
           placeholder="transfer"
         />
-        <small class="bank-form__hint">
-          Categoría del movimiento (ej. <code>transfer</code>,
-          <code>payment</code>). Opcional.
-        </small>
       </label>
       <label class="bank-form__field">
         <span>Moneda</span>
@@ -121,9 +124,6 @@
           (input)="setExpectedField('currency', $any($event.target).value)"
           placeholder="COP"
         />
-        <small class="bank-form__hint">
-          Código de moneda. Opcional (por defecto <code>COP</code>).
-        </small>
       </label>
       <label class="bank-form__field">
         <span>Llave Bre-B</span>
@@ -133,9 +133,8 @@
           (input)="setExpectedField('llave', $any($event.target).value)"
           placeholder="@LEONARDOF6907"
         />
-        <small class="bank-form__hint">
-          Llave Bre-B del receptor, si aplica. Opcional.
-          @if (detectedLlave(); as detected) {
+        @if (detectedLlave(); as detected) {
+          <small class="bank-form__hint">
             Detectada: <code>{{ detected }}</code>
             <button
               type="button"
@@ -144,19 +143,17 @@
             >
               usar detectada
             </button>
-          }
-        </small>
+          </small>
+        }
       </label>
     </div>
-  </div>
+  </details>
 
   <!-- Resolución de cuenta esperada (flujo completo) -->
-  <div class="bank-expected bank-expected--resolution">
+  <details class="bank-expected__advanced bank-expected__advanced--resolution">
+    <summary>Probar también la asignación a una cuenta YEP</summary>
     <p class="bank-form__hint">
-      <strong>Resolución de cuenta (flujo completo).</strong> Prueba a qué
-      cuenta YEP se asignaría el evento, dadas unas cuentas del notificador
-      y la política de resolución del canal. Opcional: déjalo vacío si solo
-      quieres verificar la extracción.
+      Opcional. Simula las cuentas del notificador y comprueba a cuál debería asignarse este evento.
     </p>
     <div class="bank-expected__grid">
       <label class="bank-form__field">
@@ -168,9 +165,8 @@
           placeholder="3001234567&#10;900011234"
         ></textarea>
         <small class="bank-form__hint">
-          Las cuentas que tendría asociado el notificador en este escenario.
-          Con una sola cuenta se prueba la resolución por unicidad; con
-          varias que comparten sufijo, la ambigüedad.
+          Las cuentas que tendría asociado el notificador en este escenario. Con una sola cuenta se
+          prueba la resolución por unicidad; con varias que comparten sufijo, la ambigüedad.
         </small>
       </label>
       <label class="bank-form__field">
@@ -186,8 +182,8 @@
           <option value="unresolved">Sin resolver (ninguna coincide)</option>
         </select>
         <small class="bank-form__hint">
-          Qué debe pasar con estas cuentas + la política del canal. Si eliges
-          "Resuelve a una cuenta", indica cuál abajo.
+          Qué debe pasar con estas cuentas + la política del canal. Si eliges "Resuelve a una
+          cuenta", indica cuál abajo.
         </small>
       </label>
       @if (expectedResolution() === 'account') {
@@ -200,16 +196,19 @@
             placeholder="3001234567"
           />
           <small class="bank-form__hint">
-            Cuál de las cuentas simuladas debe quedar asignada
-            (<code>reportedBankAccountId</code>). Acepta últimos dígitos.
+            Cuál de las cuentas simuladas debe quedar asignada (<code>reportedBankAccountId</code>).
+            Acepta últimos dígitos.
           </small>
         </label>
       }
     </div>
-  </div>
+  </details>
 } @else {
-  <p class="bank-form__hint">
-    Negativo: pasará (✅) solo si el parser NO lo atribuye ni extrae. Sirve
-    para acotar los patrones y que la IA evite falsos positivos.
-  </p>
+  <div class="bank-expected bank-expected--negative">
+    <strong>Este ejemplo protege contra falsos positivos.</strong>
+    <p class="bank-form__hint">
+      Pasará solo si las reglas no lo reconocen como transacción. La IA también lo tendrá en cuenta
+      al generar el parser.
+    </p>
+  </div>
 }
