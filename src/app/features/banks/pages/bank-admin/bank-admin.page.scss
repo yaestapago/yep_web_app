@@ -747,6 +747,93 @@
   }
 }
 
+.bank-parser {
+  &__intro {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3, 0.75rem);
+    padding: var(--space-3, 0.75rem);
+    border-radius: var(--radius-md, 0.5rem);
+    background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+
+    p {
+      max-width: 62ch;
+      margin: 2px 0 0;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs, 0.75rem);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+    }
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 2px;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs, 0.75rem);
+  }
+
+  &__flow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2, 0.5rem);
+    margin: var(--space-3, 0.75rem) 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: 1.5rem 1fr;
+      gap: var(--space-2, 0.5rem);
+      align-items: start;
+      padding: var(--space-2, 0.5rem);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md, 0.5rem);
+
+      > span {
+        display: inline-flex;
+        width: 1.5rem;
+        height: 1.5rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-full, 999px);
+        color: var(--color-accent);
+        background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+        font-size: var(--font-size-xs, 0.75rem);
+        font-weight: var(--font-weight-bold, 700);
+      }
+
+      small {
+        display: block;
+        margin-top: 2px;
+        color: var(--color-text-secondary);
+        line-height: 1.4;
+      }
+    }
+
+    @media (max-width: 760px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__empty {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    flex-wrap: wrap;
+    padding: var(--space-3, 0.75rem);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md, 0.5rem);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs, 0.75rem);
+  }
+}
+
 .bank-admin__headeractions {
   display: flex;
   flex-wrap: wrap;

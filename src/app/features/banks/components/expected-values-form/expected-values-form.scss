@@ -4,11 +4,47 @@
   gap: var(--space-2, 0.5rem);
 }
 
-.bank-form__switch {
-  display: flex;
-  align-items: center;
+.example-kind {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2, 0.5rem);
-  font-size: var(--font-size-sm);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+
+  button {
+    display: grid;
+    gap: 2px;
+    padding: var(--space-3, 0.75rem);
+    text-align: left;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 0.5rem);
+    color: var(--color-text-primary);
+    background: var(--color-surface);
+    cursor: pointer;
+
+    span {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs, 0.75rem);
+    }
+
+    &:hover {
+      border-color: var(--color-accent);
+    }
+
+    &.is-active {
+      border-color: var(--color-accent);
+      box-shadow: inset 0 0 0 1px var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+    }
+  }
+
+  .example-kind__negative.is-active {
+    border-color: var(--color-warning, #b45309);
+    box-shadow: inset 0 0 0 1px var(--color-warning, #b45309);
+    background: color-mix(in srgb, var(--color-warning, #b45309) 7%, var(--color-surface));
+  }
 }
 
 .bank-form__field {
@@ -70,6 +106,36 @@
   &--resolution {
     border-left-color: var(--color-success, #16a34a);
     background: color-mix(in srgb, var(--color-success, #16a34a) 4%, transparent);
+  }
+
+  &--negative {
+    border-left-color: var(--color-warning, #b45309);
+    background: color-mix(in srgb, var(--color-warning, #b45309) 5%, transparent);
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.bank-expected__advanced {
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 0.5rem);
+
+  summary {
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold, 600);
+    cursor: pointer;
+  }
+
+  > * + * {
+    margin-top: var(--space-3, 0.75rem);
+  }
+
+  &--resolution {
+    border-left: 3px solid var(--color-success, #16a34a);
   }
 }
 

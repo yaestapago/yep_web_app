@@ -70,8 +70,7 @@ export class ExampleEditorModal {
   readonly initialChannel = input<ChannelKey>('mobile');
   readonly initialSample = input<SampleMessage | null>(null);
   /** Config del canal según el EDITOR del banco (sin guardar); null = JSON inválido. */
-  readonly configProvider =
-    input.required<(ch: ChannelKey) => Partial<BankChannelConfig> | null>();
+  readonly configProvider = input.required<(ch: ChannelKey) => Partial<BankChannelConfig> | null>();
 
   readonly saved = output<AdminBank>();
   readonly deleted = output<AdminBank>();
@@ -94,7 +93,9 @@ export class ExampleEditorModal {
   readonly testing = signal(false);
   readonly testResult = signal<ParseTestResponse | null>(null);
   readonly suggesting = signal(false);
+  readonly uploadingEmailFile = signal(false);
   readonly error = signal('');
+  readonly notice = signal('');
 
   readonly isEditing = computed(() => this.example() !== null);
   readonly channelLabel = computed(
@@ -120,7 +121,19 @@ export class ExampleEditorModal {
   readonly dirty = computed(() => this.state() !== this.baseline());
 
   readonly busy = computed(
-    () => this.saving() || this.deleting() || this.testing() || this.suggesting(),
+    () =>
+      this.saving() ||
+      this.deleting() ||
+      this.testing() ||
+      this.suggesting() ||
+      this.uploadingEmailFile(),
+  );
+  readonly hasMessage = computed(() => Boolean(this.title().trim() || this.body().trim()));
+  readonly expectedFieldCount = computed(
+    () =>
+      Object.values(this.expected() ?? {}).filter(
+        (value) => value !== null && value !== undefined && String(value).trim() !== '',
+      ).length,
   );
 
   constructor() {
@@ -171,13 +184,15 @@ export class ExampleEditorModal {
     }
     this.testResult.set(null);
     this.error.set('');
+    this.notice.set('');
     this.baseline.set(this.state());
   }
 
   setChannel(channel: ChannelKey): void {
-    if (this.isEditing()) return; // el canal es inmutable al editar
+    if (this.isEditing() || this.busy()) return; // el canal es inmutable al editar
     this.channel.set(channel);
     this.testResult.set(null);
+    this.notice.set('');
   }
 
   /** Solicitud de cierre (X, ESC, Cancelar): confirma si hay cambios. */
@@ -201,8 +216,16 @@ export class ExampleEditorModal {
       : { title: this.title(), text: this.body() };
   }
 
+  private messageFingerprint(): string {
+    return JSON.stringify({ channel: this.channel(), sample: this.buildSample() });
+  }
+
   /** Prueba el mensaje contra la config del EDITOR (mismas reglas que el probador). */
   test(): void {
+    if (!this.hasMessage()) {
+      this.error.set('Ingresa al menos el asunto/título o el cuerpo del mensaje.');
+      return;
+    }
     const config = this.configProvider()(this.channel());
     if (!config) {
       this.error.set('El JSON de reglas de extracción del editor es inválido.');
@@ -210,6 +233,8 @@ export class ExampleEditorModal {
     }
     this.testing.set(true);
     this.error.set('');
+    this.notice.set('');
+    const fingerprint = this.messageFingerprint();
     this.api
       .testParse({ channel: this.channel(), sample: this.buildSample(), config })
       .pipe(
@@ -217,15 +242,23 @@ export class ExampleEditorModal {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (result) => this.testResult.set(result),
+        next: (result) => {
+          if (this.messageFingerprint() === fingerprint) this.testResult.set(result);
+        },
         error: (err) => this.error.set(httpErrorMessage(err)),
       });
   }
 
   /** La IA propone los valores esperados del mensaje (editable después). */
   suggestExpected(): void {
+    if (!this.hasMessage()) {
+      this.error.set('Primero ingresa el mensaje que quieres convertir en ejemplo.');
+      return;
+    }
     this.suggesting.set(true);
     this.error.set('');
+    this.notice.set('');
+    const fingerprint = this.messageFingerprint();
     this.api
       .suggestExpected(this.bankCode(), this.channel(), this.buildSample())
       .pipe(
@@ -233,13 +266,56 @@ export class ExampleEditorModal {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.expected.set(response.expected),
+        next: (response) => {
+          if (this.messageFingerprint() !== fingerprint) return;
+          this.expected.set(response.expected);
+          const count = Object.keys(response.expected ?? {}).length;
+          this.notice.set(
+            count
+              ? `La IA propuso ${count} valor(es). Revísalos: tú defines el resultado correcto.`
+              : 'La IA no encontró datos explícitos. Completa manualmente lo que esperas extraer.',
+          );
+        },
+        error: (err) => this.error.set(httpErrorMessage(err)),
+      });
+  }
+
+  /** Carga un correo real directamente en el ejemplo para conservar el texto que ve el parser. */
+  onEmailFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    this.uploadingEmailFile.set(true);
+    this.error.set('');
+    this.notice.set('');
+    this.api
+      .parseEmailFile(file)
+      .pipe(
+        finalize(() => this.uploadingEmailFile.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ sample }) => {
+          this.from.set(sample.from ?? '');
+          this.title.set(sample.subject ?? '');
+          this.body.set(sample.bodyText || sample.bodyHtml || '');
+          this.testResult.set(null);
+          this.notice.set(
+            'Correo cargado. Revisa el remitente, asunto y cuerpo antes de continuar.',
+          );
+        },
         error: (err) => this.error.set(httpErrorMessage(err)),
       });
   }
 
   save(): void {
     if (this.busy()) return;
+    if (!this.hasMessage()) {
+      this.error.set('Ingresa al menos el asunto/título o el cuerpo del mensaje.');
+      return;
+    }
     const channel = this.channel();
     const expectMatch = this.expectMatch();
     const expected = this.expected() ?? undefined;
@@ -269,6 +345,13 @@ export class ExampleEditorModal {
           label,
           ...messageFields,
           ...resolutionFields,
+          ...(!expectMatch
+            ? {
+                simulatedAccounts: [],
+                expectedResolution: null,
+                expectedResolvedAccount: '',
+              }
+            : {}),
           expectMatch,
           // El cuerpo se edita en un solo campo; limpia bigText para no duplicar.
           ...(channel === 'email' ? {} : { bigText: '' }),
@@ -308,7 +391,8 @@ export class ExampleEditorModal {
     if (!editingId || this.busy()) return;
     const confirmed = await this.notifications.confirm({
       title: 'Eliminar ejemplo',
-      message: 'El ejemplo se borra del banco y deja de validarse. Esta acción no se puede deshacer.',
+      message:
+        'El ejemplo se borra del banco y deja de validarse. Esta acción no se puede deshacer.',
       type: 'warning',
       confirmText: 'Eliminar',
     });

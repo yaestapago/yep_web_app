@@ -264,13 +264,82 @@
         </label>
       }
 
-      <details class="bank-form__advanced">
-        <summary>Extracción (parser) — avanzado</summary>
-        <p class="bank-form__hint">
-          Reglas de extracción en JSON (monto, remitente, dirección…). Vacío = este
-          canal NO extrae nada; genéralas con "Regenerar parser con IA" a partir de
-          los ejemplos. La base de datos es la única fuente de verdad (sin fallback).
-        </p>
+      <details
+        class="bank-form__advanced bank-parser"
+        [open]="editingCode() && activeChannelExampleStats().total > 0"
+      >
+        <summary>Parser de extracción</summary>
+        <div class="bank-parser__intro">
+          <div>
+            <strong>¿Qué hace la IA aquí?</strong>
+            <p>
+              Lee los ejemplos guardados de
+              <strong>{{
+                channels[
+                  activeChannel() === 'mobile'
+                    ? 0
+                    : activeChannel() === 'email'
+                      ? 1
+                      : 2
+                ].label
+              }}</strong>
+              y propone expresiones regulares para extraer monto, pagador, cuenta y
+              otros datos. Los mensajes reales se procesan después con esas reglas
+              determinísticas, no con IA.
+            </p>
+          </div>
+          <div class="bank-parser__stats">
+            <span
+              ><strong>{{ activeChannelExampleStats().total }}</strong> ejemplos</span
+            >
+            <span>{{ activeChannelExampleStats().positive }} positivos</span>
+            <span>{{ activeChannelExampleStats().negative }} negativos</span>
+          </div>
+        </div>
+
+        <ol class="bank-parser__flow">
+          <li>
+            <span>1</span>
+            <div>
+              <strong>Preparar ejemplos</strong
+              ><small>Define en cada mensaje qué debe extraerse o ignorarse.</small>
+            </div>
+          </li>
+          <li>
+            <span>2</span>
+            <div>
+              <strong>Generar propuesta</strong
+              ><small
+                >La IA crea reglas y las prueba contra todos los ejemplos.</small
+              >
+            </div>
+          </li>
+          <li>
+            <span>3</span>
+            <div>
+              <strong>Revisar y publicar</strong
+              ><small
+                >Acepta la propuesta y usa “Guardar cambios” para activarla.</small
+              >
+            </div>
+          </li>
+        </ol>
+
+        @if (editingCode() && activeChannelExampleStats().total === 0) {
+          <div class="bank-parser__empty">
+            Agrega al menos un ejemplo de este canal antes de pedir una propuesta.
+            Para obtener reglas confiables conviene incluir distintos formatos y
+            mensajes que deban ignorarse.
+            <yep-button
+              variant="secondary"
+              size="sm"
+              type="button"
+              (clicked)="openNewExample()"
+            >
+              Agregar primer ejemplo
+            </yep-button>
+          </div>
+        }
         <div class="bank-form__ruleactions">
           @if (editingCode()) {
             <yep-button
@@ -278,9 +347,10 @@
               size="sm"
               type="button"
               [loading]="suggestingRules() && proposalChannel() === activeChannel()"
+              [disabled]="suggestingRules() || activeChannelExampleStats().total === 0"
               (clicked)="suggestRules(activeChannel())"
             >
-              Regenerar parser con IA
+              Generar propuesta con IA
             </yep-button>
             <button
               type="button"
@@ -300,12 +370,15 @@
             <div class="bank-copilot__head">
               <strong>Prompt del copiloto (global)</strong>
               <span class="bank-form__hint">
-                {{ promptIsDefault() ? 'Usando el prompt por defecto' : 'Personalizado' }}
+                {{
+                  promptIsDefault() ? 'Usando el prompt por defecto' : 'Personalizado'
+                }}
               </span>
             </div>
             <p class="bank-form__hint">
-              Instrucciones de sistema para generar las <code>parseRules</code>. Marcadores
-              que se rellenan solos: <code>{{ '{{channel}}' }}</code> (canal) y
+              Instrucciones de sistema para generar las <code>parseRules</code>.
+              Marcadores que se rellenan solos:
+              <code>{{ '{{channel}}' }}</code> (canal) y
               <code>{{ '{{fewShot}}' }}</code> (reglas de ejemplo). Los ejemplos del
               banco se añaden aparte automáticamente. Aplica a TODOS los bancos.
             </p>
@@ -329,10 +402,20 @@
                 >
                   Guardar prompt
                 </yep-button>
-                <yep-button variant="ghost" size="sm" type="button" (clicked)="resetPromptToDefault()">
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  (clicked)="resetPromptToDefault()"
+                >
                   Restaurar por defecto
                 </yep-button>
-                <yep-button variant="ghost" size="sm" type="button" (clicked)="togglePromptEditor()">
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  (clicked)="togglePromptEditor()"
+                >
                   Cerrar
                 </yep-button>
               </div>
@@ -340,12 +423,26 @@
           </div>
         }
 
-        <textarea
-          class="bank-form__code"
-          formControlName="parseRules"
-          rows="8"
-          spellcheck="false"
-        ></textarea>
+        <label class="bank-form__field">
+          <span
+            >Reglas JSON
+            {{
+              form.controls[activeChannel()].controls.parseRules.value
+                ? '(en el editor)'
+                : '(sin configurar)'
+            }}</span
+          >
+          <small class="bank-form__hint">
+            Solo edítalas a mano si conoces el formato. Aceptar una propuesta
+            reemplaza este contenido; nada se publica hasta usar “Guardar cambios”.
+          </small>
+          <textarea
+            class="bank-form__code"
+            formControlName="parseRules"
+            rows="8"
+            spellcheck="false"
+          ></textarea>
+        </label>
         @if (parseRulesInvalid(activeChannel())) {
           <small class="bank-form__error">JSON inválido.</small>
         }
@@ -360,7 +457,11 @@
             <div class="bank-copilot" [class.bank-copilot--ok]="p.allPass">
               <div class="bank-copilot__head">
                 <strong>
-                  {{ p.allPass ? '✅ Propuesta: todos los ejemplos pasan' : '⚠️ Propuesta: algunos ejemplos fallan' }}
+                  {{
+                    p.allPass
+                      ? 'Propuesta lista: todos los ejemplos pasan'
+                      : 'Propuesta rechazada: algunos ejemplos fallan'
+                  }}
                 </strong>
                 <span class="bank-form__hint">
                   {{ p.iterations }} iteración(es) · ~${{ p.costUsd }} USD
@@ -371,12 +472,17 @@
                   <li>
                     <span>{{ r.ok ? '✅' : '❌' }}</span>
                     <span class="bank-tester__recent-snippet">
-                      {{ r.example.snippet }}{{ r.expectMatch === false ? ' 🚫' : '' }}
+                      {{ r.example.snippet
+                      }}{{ r.expectMatch === false ? ' 🚫' : '' }}
                     </span>
                     @if (r.expectMatch === false) {
-                      <span class="bank-copilot__expected">negativo: no debe parsear</span>
+                      <span class="bank-copilot__expected"
+                        >negativo: no debe parsear</span
+                      >
                     } @else if (r.expected) {
-                      <span class="bank-copilot__expected">esperado: {{ expectedSummary(r.expected) }}</span>
+                      <span class="bank-copilot__expected"
+                        >esperado: {{ expectedSummary(r.expected) }}</span
+                      >
                     }
                     <span class="bank-copilot__got">
                       obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
@@ -392,13 +498,18 @@
               </details>
               @if (!p.allPass) {
                 <p class="bank-form__hint">
-                  No se puede aceptar: aún hay ejemplos que no pasan. Vuelve a generar,
-                  revisa los ejemplos que fallan (o sus valores esperados), y acepta solo
-                  cuando <strong>todos pasen ✅</strong>.
+                  No se puede aceptar: aún hay ejemplos que no pasan. Vuelve a
+                  generar, revisa los ejemplos que fallan (o sus valores esperados), y
+                  acepta solo cuando <strong>todos pasen ✅</strong>.
                 </p>
               }
               <div class="bank-form__ruleactions">
-                <yep-button variant="ghost" size="sm" type="button" (clicked)="dismissProposal()">
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  (clicked)="dismissProposal()"
+                >
                   Descartar
                 </yep-button>
                 <yep-button
@@ -406,10 +517,14 @@
                   size="sm"
                   type="button"
                   [disabled]="!p.allPass"
-                  [title]="p.allPass ? '' : 'Solo se puede aceptar cuando todos los ejemplos pasan'"
+                  [title]="
+                    p.allPass
+                      ? ''
+                      : 'Solo se puede aceptar cuando todos los ejemplos pasan'
+                  "
                   (clicked)="acceptProposal()"
                 >
-                  Aceptar y cargar al editor
+                  Usar esta propuesta
                 </yep-button>
               </div>
             </div>
