@@ -3,12 +3,7 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  LucideArrowLeft,
-  LucideInfo,
-  LucideLoaderCircle,
-  LucidePlus,
-} from '@lucide/angular';
+import { LucideArrowLeft, LucideInfo, LucideLoaderCircle, LucidePlus } from '@lucide/angular';
 import {
   Subject,
   catchError,
@@ -60,11 +55,7 @@ interface ChannelClarity {
 
 /** Estado de preparación del canal móvil de un banco (para el listado). */
 interface MobileReadiness {
-  key:
-    | 'mobile_disabled'
-    | 'mobile_origin_only'
-    | 'mobile_parses'
-    | 'mobile_resolves_account';
+  key: 'mobile_disabled' | 'mobile_origin_only' | 'mobile_parses' | 'mobile_resolves_account';
   label: string;
   tone: 'muted' | 'warn' | 'info' | 'ok';
 }
@@ -78,12 +69,18 @@ const CHANNELS: { key: ChannelKey; label: string }[] = [
 /** Opciones de estrategia de resolución de cuenta (`''` = sin política). */
 const RESOLUTION_STRATEGIES: { value: '' | AccountResolutionStrategy; label: string }[] = [
   { value: '', label: 'Sin política — comportamiento por defecto (sufijo o unicidad)' },
-  { value: 'single_account_per_notifier', label: 'Una sola cuenta por notificador (Nequi, billeteras)' },
+  {
+    value: 'single_account_per_notifier',
+    label: 'Una sola cuenta por notificador (Nequi, billeteras)',
+  },
   { value: 'single_account_for_bank', label: 'Una cuenta del banco → resolver por unicidad' },
   { value: 'receiver_account_exact', label: 'Solo por número de cuenta completo' },
   { value: 'receiver_account_suffix', label: 'Por sufijo / últimos dígitos' },
   { value: 'single_or_suffix', label: 'Sufijo si viene; si no, por unicidad' },
-  { value: 'required_dynamic_account_match', label: 'Exige coincidencia dinámica (sufijo obligatorio)' },
+  {
+    value: 'required_dynamic_account_match',
+    label: 'Exige coincidencia dinámica (sufijo obligatorio)',
+  },
 ];
 
 /** Tipos de cuenta soportados por el banco (coinciden con `BankAccountType`). */
@@ -197,9 +194,8 @@ export class BankAdminPage {
   readonly exampleModalChannel = signal<ChannelKey>('mobile');
   readonly exampleModalSeed = signal<SampleMessage | null>(null);
   /** Config del canal según el EDITOR (sin guardar), para probar en el modal. */
-  readonly exampleConfigProvider = (
-    channel: ChannelKey,
-  ): Partial<BankChannelConfig> | null => this.buildChannelConfig(channel);
+  readonly exampleConfigProvider = (channel: ChannelKey): Partial<BankChannelConfig> | null =>
+    this.buildChannelConfig(channel);
 
   // --- Navegación de secciones del editor (nav sticky con anchors) ---
   readonly activeSection = signal('sec-base');
@@ -229,6 +225,16 @@ export class BankAdminPage {
         total: items.length,
       };
     }).filter((g) => g.total > 0);
+  });
+
+  readonly activeChannelExampleStats = computed(() => {
+    const channel = this.activeChannel();
+    const items = this.exampleResults().filter((result) => result.example.channel === channel);
+    return {
+      total: items.length,
+      positive: items.filter((result) => result.expectMatch !== false).length,
+      negative: items.filter((result) => result.expectMatch === false).length,
+    };
   });
 
   // --- Copiloto de IA (autoría de reglas, on-demand) ---
@@ -381,13 +387,10 @@ export class BankAdminPage {
       parseRules: cfg.parseRules ? JSON.stringify(cfg.parseRules, null, 2) : '',
       accountResolutionPolicy: {
         strategy: policy?.strategy ?? '',
-        minSuffixDigits:
-          policy?.minSuffixDigits != null ? String(policy.minSuffixDigits) : '',
+        minSuffixDigits: policy?.minSuffixDigits != null ? String(policy.minSuffixDigits) : '',
         requireResolvedAccount: policy?.requireResolvedAccount ?? false,
         maxAccountsPerNotifier:
-          policy?.maxAccountsPerNotifier != null
-            ? String(policy.maxAccountsPerNotifier)
-            : '',
+          policy?.maxAccountsPerNotifier != null ? String(policy.maxAccountsPerNotifier) : '',
       },
     };
   }
@@ -476,9 +479,7 @@ export class BankAdminPage {
   /** ¿El banco en edición está activo? (para mostrar "Desactivar"). */
   currentBankActive(): boolean {
     const code = this.editingCode();
-    return code
-      ? (this.banks().find((b) => b.code === code)?.isActive ?? false)
-      : false;
+    return code ? (this.banks().find((b) => b.code === code)?.isActive ?? false) : false;
   }
 
   /** Desactiva el banco que se está editando (reusa `remove`). */
@@ -502,9 +503,7 @@ export class BankAdminPage {
       displayNames: this.toList(g.displayNames),
       senderPatterns: this.toList(g.senderPatterns),
       parseRules: rules ?? null,
-      accountResolutionPolicy: this.buildResolutionPolicy(
-        g.accountResolutionPolicy,
-      ),
+      accountResolutionPolicy: this.buildResolutionPolicy(g.accountResolutionPolicy),
     };
   }
 
@@ -575,9 +574,7 @@ export class BankAdminPage {
         next: (response) => {
           const bank = response.bank;
           this.banks.update((banks) =>
-            editingCode
-              ? banks.map((b) => (b.code === bank.code ? bank : b))
-              : [bank, ...banks],
+            editingCode ? banks.map((b) => (b.code === bank.code ? bank : b)) : [bank, ...banks],
           );
           this.success.set(
             editingCode
@@ -650,9 +647,7 @@ export class BankAdminPage {
   /** Desplaza el editor a una sección (nav sticky y saltos automáticos). */
   scrollToSection(id: string): void {
     this.activeSection.set(id);
-    document
-      .getElementById(id)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // --- Probador -----------------------------------------------------------
@@ -770,21 +765,17 @@ export class BankAdminPage {
 
   /** El modal guardó (POST/PATCH): refresca el banco SIN tocar el form sucio. */
   onExampleSaved(bank: AdminBank): void {
-    this.banks.update((banks) =>
-      banks.map((b) => (b.code === bank.code ? bank : b)),
-    );
-    this.success.set(
-      this.exampleModalExample() ? 'Ejemplo actualizado.' : 'Ejemplo agregado.',
-    );
+    this.banks.update((banks) => banks.map((b) => (b.code === bank.code ? bank : b)));
+    this.dismissProposal();
+    this.success.set(this.exampleModalExample() ? 'Ejemplo actualizado.' : 'Ejemplo agregado.');
     this.closeExampleModal();
     this.runExamples();
   }
 
   /** El modal borró el ejemplo (con confirmación). */
   onExampleDeleted(bank: AdminBank): void {
-    this.banks.update((banks) =>
-      banks.map((b) => (b.code === bank.code ? bank : b)),
-    );
+    this.banks.update((banks) => banks.map((b) => (b.code === bank.code ? bank : b)));
+    this.dismissProposal();
     this.success.set('Ejemplo eliminado.');
     this.closeExampleModal();
     this.runExamples();
@@ -900,6 +891,7 @@ export class BankAdminPage {
    * solo se MUESTRA la propuesta + el reporte. Se aplica con `acceptProposal()`.
    */
   suggestRules(channel: ChannelKey): void {
+    if (this.suggestingRules()) return;
     const code = this.editingCode();
     if (!code) {
       this.suggestError.set('Guarda el banco antes de generar reglas con IA.');
@@ -933,15 +925,16 @@ export class BankAdminPage {
       )
       .subscribe({
         next: (response) => {
+          if (this.editingCode() !== code) return;
           this.proposal.set(response);
-          this.loadProposalIntoEditor(response, channel);
           this.success.set(
             response.allPass
-              ? 'Parser generado y cargado en el editor. Usa "Guardar cambios" para aplicarlo.'
-              : 'Parser generado y cargado en el editor, pero algunos ejemplos fallan. Revísalo antes de guardar.',
+              ? 'Propuesta lista. Revisa el resultado y acéptala para cargarla en el editor.'
+              : 'La propuesta no pasó todos los ejemplos y no se cargó en el editor.',
           );
         },
         error: (err) => {
+          if (this.editingCode() !== code) return;
           this.proposalChannel.set(null);
           this.suggestError.set(err instanceof Error ? err.message : httpErrorMessage(err));
         },
@@ -965,7 +958,7 @@ export class BankAdminPage {
     this.proposal.set(null);
     this.proposalChannel.set(null);
     this.success.set(
-      'Reglas propuestas cargadas en el editor. Revisa y usa "Guardar cambios" para aplicarlas.',
+      'Propuesta cargada en el editor, pero aún no está activa. Usa "Guardar cambios" para publicarla.',
     );
   }
 
@@ -1093,7 +1086,6 @@ export class BankAdminPage {
     return control.invalid && (control.dirty || control.touched);
   }
 
-
   /**
    * Estado de preparación del canal móvil (ver estrategia, capa 4): desde
    * "deshabilitado" hasta "resuelve cuenta" (listo para producción). Heurística
@@ -1104,9 +1096,7 @@ export class BankAdminPage {
     if (!m?.enabled) {
       return { key: 'mobile_disabled', label: 'Móvil off', tone: 'muted' };
     }
-    const hasParse = Boolean(
-      m.parseRules && Object.keys(m.parseRules).length > 0,
-    );
+    const hasParse = Boolean(m.parseRules && Object.keys(m.parseRules).length > 0);
     const hasPolicy = Boolean(m.accountResolutionPolicy?.strategy);
     if (hasParse && hasPolicy) {
       return { key: 'mobile_resolves_account', label: 'Resuelve cuenta', tone: 'ok' };

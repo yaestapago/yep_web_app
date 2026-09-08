@@ -1,10 +1,6 @@
 import { Component, input, model } from '@angular/core';
 
-import { Toggle } from '../../../../shared/ui/toggle/toggle';
-import type {
-  ExpectedResolution,
-  ExpectedValues,
-} from '../../../../shared/models/bank.models';
+import type { ExpectedResolution, ExpectedValues } from '../../../../shared/models/bank.models';
 
 /**
  * Sub-formulario del ground truth de un ejemplo: valores esperados de la
@@ -14,7 +10,7 @@ import type {
  */
 @Component({
   selector: 'app-expected-values-form',
-  imports: [Toggle],
+  imports: [],
   templateUrl: './expected-values-form.html',
   styleUrl: './expected-values-form.scss',
 })
@@ -46,9 +42,7 @@ export class ExpectedValuesForm {
     } else {
       current[key] = value;
     }
-    this.expected.set(
-      Object.keys(current).length ? (current as ExpectedValues) : null,
-    );
+    this.expected.set(Object.keys(current).length ? (current as ExpectedValues) : null);
   }
 
   onResolutionChange(value: string): void {
