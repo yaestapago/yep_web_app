@@ -47,17 +47,6 @@
     <div class="empty-state">
       <h3>Sin cuentas bancarias</h3>
       <p>Agrega una cuenta para asociar los pagos verificados de este negocio.</p>
-      @if (canManage()) {
-        <yep-button
-          size="sm"
-          [loading]="checkingBankAccountCreation()"
-          [disabled]="!canCreateBankAccount()"
-          (clicked)="openCreate()"
-        >
-          <svg lucidePlus aria-hidden="true"></svg>
-          Nueva cuenta
-        </yep-button>
-      }
     </div>
   } @else {
     <div class="card-list">

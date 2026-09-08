@@ -7,20 +7,6 @@
     </div>
 
     <div class="hero-actions">
-      <button
-        class="secondary-action"
-        type="button"
-        (click)="loadMemberships()"
-        [disabled]="loadingMemberships()"
-      >
-        @if (loadingMemberships()) {
-          <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-        } @else {
-          <svg lucideRefreshCw aria-hidden="true"></svg>
-        }
-        <span>Actualizar</span>
-      </button>
-
       <button class="secondary-action" type="button" (click)="openLogout()">
         <svg lucideLogOut aria-hidden="true"></svg>
         <span>Cerrar sesión</span>
@@ -39,153 +25,58 @@
     <p class="form-alert success">{{ success() }}</p>
   }
 
-  <section class="membership-panel">
-    <div class="panel-heading">
-      <div>
-        <p>Negocio activo</p>
-        <h2>Membresias aprobadas</h2>
-      </div>
-    </div>
-
-    @if (loadingMemberships()) {
-      <div class="state-message">
-        <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-        <span>Cargando membresias</span>
-      </div>
-    } @else if (waitingForApproval()) {
-      <div class="state-message">
-        <svg lucideCircleDot aria-hidden="true"></svg>
-        <span>Tu solicitud fue enviada. Espera la aprobaciÃ³n del propietario del negocio.</span>
-      </div>
-      <div class="pending-list">
-        <h3>Solicitudes pendientes</h3>
-        @for (membership of pendingMemberships(); track membership.id) {
-          <p>
-            {{ businessName(membership) }} Â· {{ membership.businessAccountId }} Â·
-            {{ membership.role }}
-          </p>
-        }
-      </div>
-    } @else if (approvedMemberships().length === 0) {
-      <div class="state-message">
-        <svg lucideBuilding2 aria-hidden="true"></svg>
-        <span>Crea un negocio o solicita acceso para continuar.</span>
-      </div>
-    } @else {
-      <div class="membership-list">
-        @for (membership of approvedMemberships(); track membership.id) {
-          <article class="membership-item">
-            <div>
-              <h3>{{ businessName(membership) }}</h3>
-              <code>{{ membership.businessAccountId }}</code>
-              <p>{{ membership.role }}</p>
-            </div>
-
-            <button type="button" (click)="selectBusiness(membership)">
-              @if (activeBusinessAccountId() === membership.businessAccountId) {
-                <svg lucideCheckCircle2 aria-hidden="true"></svg>
-                <span>Activo</span>
-              } @else {
-                <svg lucideCircleDot aria-hidden="true"></svg>
-                <span>Usar</span>
-              }
-            </button>
-          </article>
-        }
-      </div>
-    }
-  </section>
-
-  @if (!waitingForApproval()) {
-    <section class="onboarding-grid">
-      <article class="action-panel">
-        <div class="panel-heading">
-          <div>
-            <p>Nuevo negocio</p>
-            <h2>Crear negocio</h2>
-          </div>
+  <section class="onboarding-grid">
+    <article class="action-panel">
+      <div class="panel-heading">
+        <div>
+          <p>Nuevo negocio</p>
+          <h2>Crear negocio</h2>
         </div>
+      </div>
 
-        <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
-          <label>
-            <span>Nombre</span>
-            <input type="text" formControlName="name" autocomplete="organization" />
-            @if (isBusinessInvalid('name')) {
-              <small>Ingresa el nombre del negocio.</small>
-            }
-          </label>
+      <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
+        <label>
+          <span>Nombre</span>
+          <input type="text" formControlName="name" autocomplete="organization" />
+          @if (isBusinessInvalid('name')) {
+            <small>Ingresa el nombre del negocio.</small>
+          }
+        </label>
 
-          <yep-address-location-select
-            formControlName="location"
-            [required]="true"
-            [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad.' : ''"
-            dataCy="onboarding-business-location"
-          />
+        <yep-address-location-select
+          formControlName="location"
+          [required]="true"
+          [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad.' : ''"
+          dataCy="onboarding-business-location"
+        />
 
-          <label>
-            <span>Direccion</span>
-            <input type="text" formControlName="address" autocomplete="street-address" />
-            @if (isBusinessInvalid('address')) {
-              <small>Ingresa la direccion.</small>
-            }
-          </label>
+        <label>
+          <span>Direccion</span>
+          <input type="text" formControlName="address" autocomplete="street-address" />
+          @if (isBusinessInvalid('address')) {
+            <small>Ingresa la direccion.</small>
+          }
+        </label>
 
-          <yep-phone-input
-            label="Teléfono"
-            placeholder="300 123 4567"
-            formControlName="phone"
-            [required]="true"
-            [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
-          ></yep-phone-input>
+        <yep-phone-input
+          label="Teléfono"
+          placeholder="300 123 4567"
+          formControlName="phone"
+          [required]="true"
+          [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
+        ></yep-phone-input>
 
-          <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
-            @if (creatingBusiness()) {
-              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-            } @else {
-              <svg lucideBuilding2 aria-hidden="true"></svg>
-            }
-            <span>Crear y usar</span>
-          </button>
-        </form>
-      </article>
-
-      <article class="action-panel">
-        <div class="panel-heading">
-          <div>
-            <p>Negocio existente</p>
-            <h2>Solicitar acceso</h2>
-          </div>
-        </div>
-
-        <p class="panel-hint">
-          Únete con el código corto, el link o el QR que te compartió el propietario del negocio.
-        </p>
-
-        <button class="primary-action" type="button" (click)="openRequest()">
-          <svg lucideUserPlus aria-hidden="true"></svg>
-          <span>Unirme a un negocio</span>
+        <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
+          @if (creatingBusiness()) {
+            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+          } @else {
+            <svg lucideBuilding2 aria-hidden="true"></svg>
+          }
+          <span>Crear y usar</span>
         </button>
-
-        @if (pendingMemberships().length > 0) {
-          <div class="pending-list">
-            <h3>Solicitudes pendientes</h3>
-            @for (membership of pendingMemberships(); track membership.id) {
-              <p>
-                {{ businessName(membership) }} · {{ membership.businessAccountId }} ·
-                {{ membership.role }}
-              </p>
-            }
-          </div>
-        }
-      </article>
-    </section>
-  }
-
-  <app-request-membership-modal
-    [open]="requestOpen()"
-    (closeRequested)="closeRequest()"
-    (requested)="onRequested()"
-  />
+      </form>
+    </article>
+  </section>
 
   <yep-modal
     [open]="logoutModalOpen()"

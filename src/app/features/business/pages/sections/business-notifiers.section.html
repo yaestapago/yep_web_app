@@ -44,13 +44,10 @@
   } @else if (statuses().length === 0) {
     <div class="empty-state">
       <h3>Aún no hay notificadores</h3>
-      <p>Crea un notificador de correo para reenviar los avisos de tu banco y empezar a recibir tus pagos.</p>
-      @if (canManage()) {
-        <yep-button size="sm" (clicked)="openCreate()">
-          <svg lucidePlus aria-hidden="true"></svg>
-          Nuevo notificador
-        </yep-button>
-      }
+      <p>
+        Crea un notificador de correo para reenviar los avisos de tu banco y empezar a recibir tus
+        pagos.
+      </p>
     </div>
   } @else {
     <div class="card-list">
@@ -93,11 +90,76 @@
               </span>
             } @else {
               <span class="list-card__meta">
-                {{ row.notifier.identifier }} ·
                 {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
               </span>
+              @let bankSenderPatterns = notifierEmailSenderPatterns(row.notifier);
+              @if (bankSenderPatterns.length > 0) {
+                <span class="list-card__meta notifier-email-row">
+                  <span class="notifier-email-row__label">De:</span>
+                  <span class="notifier-email-row__copy-group">
+                    <span class="notifier-email-row__values">
+                      @for (sender of bankSenderPatterns; track sender) {
+                        <code class="notifier-email-row__value">{{ sender }}</code>
+                      }
+                    </span>
+                    <button
+                      type="button"
+                      class="code-copy"
+                      (click)="
+                        copyNotifierEmail(
+                          notifierEmailSenderPatternsText(row.notifier),
+                          row.notifier.id,
+                          'from'
+                        )
+                      "
+                      [attr.aria-label]="
+                        isNotifierEmailCopied(row.notifier.id, 'from')
+                          ? 'Remitentes De copiados'
+                          : 'Copiar remitentes De'
+                      "
+                      [title]="
+                        isNotifierEmailCopied(row.notifier.id, 'from')
+                          ? 'Remitentes De copiados'
+                          : 'Copiar remitentes De'
+                      "
+                    >
+                      @if (isNotifierEmailCopied(row.notifier.id, 'from')) {
+                        <svg lucideClipboardCheck aria-hidden="true"></svg>
+                      } @else {
+                        <svg lucideClipboardCopy aria-hidden="true"></svg>
+                      }
+                    </button>
+                  </span>
+                </span>
+              }
               @if (row.notifier.inboundAlias) {
-                <span class="list-card__meta"> Reenviar a: {{ row.notifier.inboundAlias }} </span>
+                <span class="list-card__meta notifier-email-row">
+                  <span class="notifier-email-row__label">Reenviar a:</span>
+                  <code class="notifier-email-row__value">{{ row.notifier.inboundAlias }}</code>
+                  <button
+                    type="button"
+                    class="code-copy"
+                    (click)="
+                      copyNotifierEmail(row.notifier.inboundAlias, row.notifier.id, 'forwardTo')
+                    "
+                    [attr.aria-label]="
+                      isNotifierEmailCopied(row.notifier.id, 'forwardTo')
+                        ? 'Correo Reenviar a copiado'
+                        : 'Copiar correo Reenviar a'
+                    "
+                    [title]="
+                      isNotifierEmailCopied(row.notifier.id, 'forwardTo')
+                        ? 'Correo Reenviar a copiado'
+                        : 'Copiar correo Reenviar a'
+                    "
+                  >
+                    @if (isNotifierEmailCopied(row.notifier.id, 'forwardTo')) {
+                      <svg lucideClipboardCheck aria-hidden="true"></svg>
+                    } @else {
+                      <svg lucideClipboardCopy aria-hidden="true"></svg>
+                    }
+                  </button>
+                </span>
               }
             }
           </div>
@@ -216,7 +278,7 @@
         type="email"
         [error]="isInvalid('senderEmail') ? 'Ingresa un correo válido' : ''"
       />
-      <p class="section-subtitle full-field">
+      <p class="notifier-warning full-field" role="note">
         Registra el correo desde el que reenviarás las notificaciones de tu banco. Tras crearlo te
         daremos un alias al que debes reenviarlas.
       </p>

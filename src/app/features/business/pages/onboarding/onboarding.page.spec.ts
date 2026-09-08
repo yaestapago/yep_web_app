@@ -9,19 +9,14 @@ import { OnboardingPage } from './onboarding.page';
 
 /**
  * El onboarding es la pantalla donde cae un usuario recién registrado sin
- * negocio aprobado. Antes exigía pegar el ID completo de Mongo (24
- * caracteres) para "Solicitar acceso", algo que ningún owner comparte — el
- * código corto de invitación (6 caracteres) siempre fallaba la validación.
- * Ahora delega en el mismo modal de código/link/QR que usa el resto de la
- * app. También vivía fuera del Shell sin ninguna salida: se agrega cerrar
- * sesión para no dejar al usuario atrapado aquí.
+ * negocio aprobado. En este flujo solo debe crear un negocio nuevo; la salida
+ * de sesión sigue disponible porque la página vive fuera del Shell.
  */
-describe('OnboardingPage — unirse a un negocio y salir sin quedar atrapado', () => {
+describe('OnboardingPage — crear negocio y salir sin quedar atrapado', () => {
   let httpMock: HttpTestingController;
   const navigate = vi.fn();
   const navigateByUrl = vi.fn();
   const clearSession = vi.fn();
-  const updateMemberships = vi.fn();
 
   const session = {
     user: () => ({ firstName: 'Staff', lastName: 'Prueba' }),
@@ -29,7 +24,7 @@ describe('OnboardingPage — unirse a un negocio y salir sin quedar atrapado', (
     approvedMemberships: () => [],
     pendingMemberships: () => [],
     activeBusinessAccountId: () => null,
-    updateMemberships,
+    updateMemberships: vi.fn(),
     setActiveBusinessAccountId: vi.fn(),
     clearSession,
   };
@@ -46,8 +41,6 @@ describe('OnboardingPage — unirse a un negocio y salir sin quedar atrapado', (
     });
     httpMock = TestBed.inject(HttpTestingController);
     const page = TestBed.runInInjectionContext(() => new OnboardingPage());
-    page.ngOnInit();
-    httpMock.expectOne(`${environment.apiUrl}/business-accounts/memberships`).flush({ memberships: [] });
     return page;
   }
 
@@ -56,26 +49,40 @@ describe('OnboardingPage — unirse a un negocio y salir sin quedar atrapado', (
     navigate.mockClear();
     navigateByUrl.mockClear();
     clearSession.mockClear();
-    updateMemberships.mockClear();
+    session.updateMemberships.mockClear();
+    session.setActiveBusinessAccountId.mockClear();
   });
 
-  it('ya no expone un campo que exija el ID completo de Mongo: abre el modal de código/link/QR', () => {
+  it('crea un negocio y navega a sus datos', () => {
     const page = create();
 
-    expect(page.requestOpen()).toBe(false);
-    page.openRequest();
-    expect(page.requestOpen()).toBe(true);
-    page.closeRequest();
-    expect(page.requestOpen()).toBe(false);
-  });
+    page.businessForm.setValue({
+      name: 'Cafeteria Centro',
+      location: {
+        departmentCode: '11',
+        departmentName: 'Bogota D.C.',
+        cityCode: '11001',
+        cityName: 'Bogota',
+      },
+      address: 'Calle 1 # 2-3',
+      phone: { countryCode: '57', nationalNumber: '3001234567', e164: '+573001234567' },
+    });
 
-  it('al recibir la solicitud del modal, refresca las membresías', () => {
-    const page = create();
+    page.createBusiness();
 
-    page.onRequested();
+    httpMock.expectOne(`${environment.apiUrl}/business-accounts`).flush({
+      businessAccount: { id: 'business-1', name: 'Cafeteria Centro' },
+      membership: {
+        id: 'membership-1',
+        businessAccountId: 'business-1',
+        role: 'owner',
+        status: 'approved',
+      },
+    });
 
-    httpMock.expectOne(`${environment.apiUrl}/business-accounts/memberships`).flush({ memberships: [] });
-    expect(updateMemberships).toHaveBeenCalledTimes(2);
+    expect(session.updateMemberships).toHaveBeenCalled();
+    expect(session.setActiveBusinessAccountId).toHaveBeenCalledWith('business-1');
+    expect(navigate).toHaveBeenCalledWith(['/businesses', 'business-1', 'business-data']);
   });
 
   it('permite cerrar sesión y vuelve al login sin quedar atrapado en onboarding', () => {
@@ -86,6 +93,7 @@ describe('OnboardingPage — unirse a un negocio y salir sin quedar atrapado', (
     expect(page.logoutModalOpen()).toBe(true);
 
     page.confirmLogout();
+    httpMock.expectOne(`${environment.apiUrl}/auth/logout`).flush({});
 
     expect(clearSession).toHaveBeenCalled();
     expect(navigateByUrl).toHaveBeenCalledWith('/login');

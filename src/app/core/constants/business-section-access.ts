@@ -28,9 +28,8 @@ export const BUSINESS_SECTION_ACCESS: Record<BusinessSectionKey, BusinessMembers
   locations: ['account_owner'],
   schedules: ['account_owner'],
   reports: ['account_owner', 'account_staff'],
-  // Resolver un duplicado puede rechazar una transacción y marcar un cliente
-  // sospechoso: mismo nivel de acceso que notificadores/cuentas (solo owner).
-  insights: ['account_owner'],
+  // Conciliación queda reservada al superusuario por la excepción `isSu`.
+  insights: [],
   'notification-routing': ['account_owner'],
 };
 

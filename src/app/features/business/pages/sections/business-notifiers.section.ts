@@ -119,6 +119,7 @@ export class BusinessNotifiersSection implements OnInit {
   readonly success = signal('');
   readonly modalOpen = signal(false);
   readonly senderPatternsCopied = signal(false);
+  readonly copiedNotifierEmailField = signal<string | null>(null);
 
   /** Notificador cuyo modal de cadencias está abierto (null = cerrado). */
   readonly configNotifier = signal<Notifier | null>(null);
@@ -274,7 +275,10 @@ export class BusinessNotifiersSection implements OnInit {
   });
 
   readonly form = this.fb.group({
-    kind: [(MOBILE_DESKTOP_NOTIFIERS_ENABLED ? 'phone' : 'email') as NotifierKind, [Validators.required]],
+    kind: [
+      (MOBILE_DESKTOP_NOTIFIERS_ENABLED ? 'phone' : 'email') as NotifierKind,
+      [Validators.required],
+    ],
     displayName: ['', [Validators.required, Validators.maxLength(120)]],
     // Solo para `email`: correo remitente desde el que se reenviarán las
     // notificaciones del banco. El validador `required` se activa/desactiva
@@ -679,6 +683,49 @@ export class BusinessNotifiersSection implements OnInit {
       this.senderPatternsCopied.set(true);
       setTimeout(() => this.senderPatternsCopied.set(false), 1500);
     });
+  }
+
+  notifierEmailSenderPatterns(notifier: Notifier): string[] {
+    const bankIds = new Set([
+      ...(notifier.bankAccounts ?? []).map((account) => account.bankId),
+      ...this.bankAccounts()
+        .filter((account) => (notifier.bankAccountIds ?? []).includes(account.id))
+        .map((account) => account.bankId),
+      ...(notifier.bankIds ?? []),
+    ]);
+
+    return Array.from(
+      new Set(
+        Array.from(bankIds).flatMap(
+          (bankId) => this.banksByCode().get(bankId)?.email?.senderPatterns ?? [],
+        ),
+      ),
+    );
+  }
+
+  notifierEmailSenderPatternsText(notifier: Notifier): string {
+    return this.notifierEmailSenderPatterns(notifier).join('\n');
+  }
+
+  copyNotifierEmail(
+    value: string | undefined,
+    notifierId: string,
+    field: 'from' | 'forwardTo',
+  ): void {
+    if (!value) return;
+    const key = `${notifierId}:${field}`;
+    void navigator.clipboard?.writeText(value).then(() => {
+      this.copiedNotifierEmailField.set(key);
+      setTimeout(() => {
+        if (this.copiedNotifierEmailField() === key) {
+          this.copiedNotifierEmailField.set(null);
+        }
+      }, 1500);
+    });
+  }
+
+  isNotifierEmailCopied(notifierId: string, field: 'from' | 'forwardTo'): boolean {
+    return this.copiedNotifierEmailField() === `${notifierId}:${field}`;
   }
 
   accountTypeLabel(account: BankAccount): string {

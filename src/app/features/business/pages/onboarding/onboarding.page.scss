@@ -7,7 +7,7 @@
 }
 
 .onboarding-hero {
-  align-items: end;
+  align-items: center;
   display: flex;
   gap: 18px;
   justify-content: space-between;
@@ -38,13 +38,6 @@
   gap: 10px;
 }
 
-.panel-hint {
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  margin: 0 0 14px;
-}
-
-.membership-panel,
 .action-panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -56,7 +49,8 @@
 .onboarding-grid {
   display: grid;
   gap: 18px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 640px);
+  justify-content: center;
 }
 
 .panel-heading {
@@ -76,43 +70,6 @@
   h2 {
     color: var(--color-text-primary);
     font-size: 1.2rem;
-    margin: 0;
-  }
-}
-
-.membership-list {
-  display: grid;
-  gap: 12px;
-}
-
-.membership-item {
-  align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  min-height: 82px;
-  padding: 16px;
-
-  h3 {
-    color: var(--color-text-primary);
-    font-size: 1rem;
-    margin: 0 0 6px;
-  }
-
-  code {
-    color: var(--color-text-muted);
-    display: block;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.78rem;
-    margin-bottom: 6px;
-    overflow-wrap: anywhere;
-  }
-
-  p {
-    color: var(--color-text-secondary);
-    font-size: 0.88rem;
     margin: 0;
   }
 }
@@ -184,8 +141,7 @@ button:disabled {
   min-height: 50px;
 }
 
-.secondary-action,
-.membership-item button {
+.secondary-action {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   color: var(--color-text-primary);
@@ -209,39 +165,6 @@ button:disabled {
 .form-alert.success {
   background: color-mix(in srgb, var(--color-success) 14%, transparent);
   color: var(--color-success-strong);
-}
-
-.state-message {
-  align-items: center;
-  border: 1px dashed var(--color-border);
-  border-radius: 8px;
-  color: var(--color-text-secondary);
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  min-height: 128px;
-  padding: 20px;
-  text-align: center;
-}
-
-.pending-list {
-  border-top: 1px solid var(--color-border);
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-  padding-top: 18px;
-
-  h3 {
-    color: var(--color-text-primary);
-    font-size: 1rem;
-    margin: 0;
-  }
-
-  p {
-    color: var(--color-text-secondary);
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
 }
 
 .spin {
@@ -268,8 +191,4 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .membership-item {
-    align-items: stretch;
-    flex-direction: column;
-  }
 }
