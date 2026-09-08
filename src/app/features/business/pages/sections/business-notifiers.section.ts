@@ -59,13 +59,8 @@ interface NotifierKindOption {
 
 const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 
-/**
- * MVP: solo salimos con el notificador de correo. Teléfono y Escritorio se
- * dejan visibles pero deshabilitados en el selector de creación (no se
- * borra nada del flujo de emparejamiento: los notificadores de ese tipo ya
- * creados siguen funcionando igual). Pon esto en `true` para reactivarlos.
- */
-const MOBILE_DESKTOP_NOTIFIERS_ENABLED = false;
+const MOBILE_NOTIFIERS_ENABLED = true;
+const DESKTOP_NOTIFIERS_ENABLED = false;
 
 @Component({
   selector: 'app-business-notifiers-section',
@@ -127,33 +122,32 @@ export class BusinessNotifiersSection implements OnInit {
 
   /**
    * Opciones de tipo mostradas como radio buttons al crear un notificador.
-   * MVP: solo "Correo" permite crear notificadores nuevos. "Teléfono" y
-   * "Escritorio" quedan visibles (para no dar la impresión de que
-   * desaparecieron) pero deshabilitados — ver `MOBILE_DESKTOP_NOTIFIERS_ENABLED`.
-   * "Correo" además solo está disponible si el dueño tiene al menos una
-   * cuenta de un banco que lo permita (hoy, Bancolombia).
+   * MVP: "Telefono" queda habilitado para crear notificadores nuevos.
+   * "Escritorio" queda visible pero deshabilitado. "Correo" ademas solo esta
+   * disponible si el dueno tiene al menos una cuenta de un banco que lo permita.
    */
   readonly kindOptions = computed<NotifierKindOption[]>(() => {
     const emailDisabled = !this.hasEmailEligibleAccount();
     const eligibleNames = this.emailEligibleBankNames();
+    const mobileEnabled = MOBILE_NOTIFIERS_ENABLED;
     return [
       {
         value: 'phone',
         label: 'Teléfono',
-        description: MOBILE_DESKTOP_NOTIFIERS_ENABLED
+        description: mobileEnabled
           ? 'Recibe pagos desde la app móvil emparejada.'
-          : 'Por ahora no está disponible para crear. Usa el notificador de correo.',
-        disabled: !MOBILE_DESKTOP_NOTIFIERS_ENABLED,
-        badge: MOBILE_DESKTOP_NOTIFIERS_ENABLED ? undefined : 'Próximamente',
+          : 'Por ahora no está disponible para este usuario. Usa el notificador de correo.',
+        disabled: !mobileEnabled,
+        badge: mobileEnabled ? undefined : 'Próximamente',
       },
       {
         value: 'desktop',
         label: 'Escritorio',
-        description: MOBILE_DESKTOP_NOTIFIERS_ENABLED
+        description: DESKTOP_NOTIFIERS_ENABLED
           ? 'Recibe pagos desde la app de escritorio (Vínculo con Windows).'
           : 'Por ahora no está disponible para crear. Usa el notificador de correo.',
-        disabled: !MOBILE_DESKTOP_NOTIFIERS_ENABLED,
-        badge: MOBILE_DESKTOP_NOTIFIERS_ENABLED ? undefined : 'Próximamente',
+        disabled: !DESKTOP_NOTIFIERS_ENABLED,
+        badge: DESKTOP_NOTIFIERS_ENABLED ? undefined : 'Próximamente',
       },
       {
         value: 'email',
@@ -275,10 +269,7 @@ export class BusinessNotifiersSection implements OnInit {
   });
 
   readonly form = this.fb.group({
-    kind: [
-      (MOBILE_DESKTOP_NOTIFIERS_ENABLED ? 'phone' : 'email') as NotifierKind,
-      [Validators.required],
-    ],
+    kind: [(MOBILE_NOTIFIERS_ENABLED ? 'phone' : 'email') as NotifierKind, [Validators.required]],
     displayName: ['', [Validators.required, Validators.maxLength(120)]],
     // Solo para `email`: correo remitente desde el que se reenviarán las
     // notificaciones del banco. El validador `required` se activa/desactiva
@@ -415,7 +406,7 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedBankAccountIds.set([]);
     this.selectedAllowedBreBKeys.set([]);
     this.form.reset({
-      kind: MOBILE_DESKTOP_NOTIFIERS_ENABLED ? 'phone' : 'email',
+      kind: MOBILE_NOTIFIERS_ENABLED ? 'phone' : 'email',
       displayName: '',
       senderEmail: '',
     });

@@ -254,7 +254,7 @@
   (closeRequested)="closeModal()"
 >
   <form [formGroup]="form" (ngSubmit)="save()" id="notifier-form" class="form-grid">
-    <!-- Tipo de notificador (MVP: solo Correo permite crear nuevos) -->
+    <!-- Tipo de notificador -->
     @if (!editingId()) {
       <div class="field">
         <span class="field-label">Tipo de notificador</span>
