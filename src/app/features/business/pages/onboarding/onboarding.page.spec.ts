@@ -5,25 +5,30 @@ import { Router } from '@angular/router';
 
 import { environment } from '../../../../../environments/environment';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import { OnboardingPage } from './onboarding.page';
 
 /**
- * El onboarding es la pantalla donde cae un usuario recién registrado sin
- * negocio aprobado. En este flujo solo debe crear un negocio nuevo; la salida
- * de sesión sigue disponible porque la página vive fuera del Shell.
+ * El onboarding es la pantalla donde cae un usuario sin negocio aprobado. Puede
+ * crear un negocio nuevo o esperar la aprobacion de una solicitud staff.
  */
-describe('OnboardingPage — crear negocio y salir sin quedar atrapado', () => {
+describe('OnboardingPage - crear negocio, esperar aprobacion y salir sin quedar atrapado', () => {
   let httpMock: HttpTestingController;
   const navigate = vi.fn();
   const navigateByUrl = vi.fn();
   const clearSession = vi.fn();
+  let memberships: BusinessMembership[] = [];
+  let approvedMemberships: BusinessMembership[] = [];
+  let pendingMemberships: BusinessMembership[] = [];
 
   const session = {
     user: () => ({ firstName: 'Staff', lastName: 'Prueba' }),
-    memberships: () => [],
-    approvedMemberships: () => [],
-    pendingMemberships: () => [],
+    memberships: () => memberships,
+    approvedMemberships: () => approvedMemberships,
+    pendingMemberships: () => pendingMemberships,
     activeBusinessAccountId: () => null,
+    updateUser: vi.fn(),
+    updateSubscription: vi.fn(),
     updateMemberships: vi.fn(),
     setActiveBusinessAccountId: vi.fn(),
     clearSession,
@@ -40,15 +45,22 @@ describe('OnboardingPage — crear negocio y salir sin quedar atrapado', () => {
       ],
     });
     httpMock = TestBed.inject(HttpTestingController);
-    const page = TestBed.runInInjectionContext(() => new OnboardingPage());
-    return page;
+    return TestBed.runInInjectionContext(() => new OnboardingPage());
   }
+
+  beforeEach(() => {
+    memberships = [];
+    approvedMemberships = [];
+    pendingMemberships = [];
+  });
 
   afterEach(() => {
     httpMock.verify();
     navigate.mockClear();
     navigateByUrl.mockClear();
     clearSession.mockClear();
+    session.updateUser.mockClear();
+    session.updateSubscription.mockClear();
     session.updateMemberships.mockClear();
     session.setActiveBusinessAccountId.mockClear();
   });
@@ -75,8 +87,9 @@ describe('OnboardingPage — crear negocio y salir sin quedar atrapado', () => {
       membership: {
         id: 'membership-1',
         businessAccountId: 'business-1',
-        role: 'owner',
+        role: 'account_owner',
         status: 'approved',
+        locationIds: [],
       },
     });
 
@@ -85,7 +98,86 @@ describe('OnboardingPage — crear negocio y salir sin quedar atrapado', () => {
     expect(navigate).toHaveBeenCalledWith(['/businesses', 'business-1', 'business-data']);
   });
 
-  it('permite cerrar sesión y vuelve al login sin quedar atrapado en onboarding', () => {
+  it('detecta solicitudes staff pendientes para mostrar la espera de aprobacion', () => {
+    pendingMemberships = [
+      {
+        id: 'membership-pending',
+        businessAccountId: 'business-1',
+        role: 'account_staff',
+        status: 'pending',
+        locationIds: [],
+        businessAccount: {
+          id: 'business-1',
+          name: 'Cafe Central',
+          departmentCode: '11',
+          departmentName: 'Bogota D.C.',
+          cityCode: '11001',
+          cityName: 'Bogota',
+          address: 'Calle 1 # 2-3',
+          phone: '+573001234567',
+        },
+      },
+    ];
+    memberships = pendingMemberships;
+    const page = create();
+
+    expect(page.hasPendingStaffAccess()).toBe(true);
+    expect(page.pendingBusinessName(pendingMemberships[0])).toBe('Cafe Central');
+    expect(page.pendingBusinessLocation(pendingMemberships[0])).toBe('Bogota, Bogota D.C.');
+  });
+
+  it('actualiza el estado y mantiene al usuario en espera si la solicitud sigue pendiente', () => {
+    pendingMemberships = [
+      {
+        id: 'membership-pending',
+        businessAccountId: 'business-1',
+        role: 'account_staff',
+        status: 'pending',
+        locationIds: [],
+      },
+    ];
+    memberships = pendingMemberships;
+    const page = create();
+
+    page.refreshAccessStatus();
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/me`).flush({
+      user: { id: 'user-1', firstName: 'Staff', lastName: 'Prueba' },
+      subscription: null,
+      memberships: pendingMemberships,
+    });
+
+    expect(session.updateUser).toHaveBeenCalled();
+    expect(session.updateSubscription).toHaveBeenCalledWith(null);
+    expect(session.updateMemberships).toHaveBeenCalledWith(pendingMemberships);
+    expect(page.success()).toBe('Tu solicitud sigue pendiente de aprobación.');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('actualiza el estado y entra al dashboard cuando el owner aprueba la solicitud', () => {
+    const approved: BusinessMembership = {
+      id: 'membership-approved',
+      businessAccountId: 'business-1',
+      role: 'account_staff',
+      status: 'approved',
+      locationIds: [],
+    };
+    approvedMemberships = [approved];
+    const page = create();
+
+    page.refreshAccessStatus();
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/me`).flush({
+      user: { id: 'user-1', firstName: 'Staff', lastName: 'Prueba' },
+      subscription: null,
+      memberships: [approved],
+    });
+
+    expect(session.setActiveBusinessAccountId).toHaveBeenCalledWith('business-1');
+    expect(navigate).toHaveBeenCalledWith(['/businesses', 'business-1', 'dashboard']);
+  });
+
+  it('permite cerrar sesion y vuelve al login sin quedar atrapado en onboarding', () => {
     const page = create();
 
     expect(page.logoutModalOpen()).toBe(false);
@@ -100,7 +192,7 @@ describe('OnboardingPage — crear negocio y salir sin quedar atrapado', () => {
     expect(page.logoutModalOpen()).toBe(false);
   });
 
-  it('cancelar el cierre de sesión no toca la sesión ni navega', () => {
+  it('cancelar el cierre de sesion no toca la sesion ni navega', () => {
     const page = create();
 
     page.openLogout();

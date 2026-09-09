@@ -74,6 +74,71 @@
   }
 }
 
+.panel-heading--center {
+  justify-content: center;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.pending-panel {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  padding: 28px 22px;
+  text-align: center;
+}
+
+.pending-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 28%, transparent);
+  border-radius: 999px;
+  color: var(--color-success-strong);
+  display: inline-flex;
+  height: 58px;
+  justify-content: center;
+  width: 58px;
+}
+
+.pending-icon svg {
+  height: 30px;
+  width: 30px;
+}
+
+.pending-copy {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 560px;
+}
+
+.pending-list {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.pending-business {
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.pending-business strong {
+  color: var(--color-text-primary);
+}
+
+.pending-business span {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
 form {
   display: grid;
   gap: 14px;
@@ -190,5 +255,4 @@ button:disabled {
   .onboarding-grid {
     grid-template-columns: 1fr;
   }
-
 }

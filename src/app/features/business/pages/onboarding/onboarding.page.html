@@ -25,58 +25,105 @@
     <p class="form-alert success">{{ success() }}</p>
   }
 
-  <section class="onboarding-grid">
-    <article class="action-panel">
-      <div class="panel-heading">
-        <div>
-          <p>Nuevo negocio</p>
-          <h2>Crear negocio</h2>
+  @if (hasPendingStaffAccess()) {
+    <section class="onboarding-grid">
+      <article class="action-panel pending-panel">
+        <div class="pending-icon" aria-hidden="true">
+          <svg lucideCircleCheck></svg>
         </div>
-      </div>
 
-      <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
-        <label>
-          <span>Nombre</span>
-          <input type="text" formControlName="name" autocomplete="organization" />
-          @if (isBusinessInvalid('name')) {
-            <small>Ingresa el nombre del negocio.</small>
+        <div class="panel-heading panel-heading--center">
+          <div>
+            <p>Registro exitoso</p>
+            <h2>Tu solicitud de acceso está pendiente</h2>
+          </div>
+        </div>
+
+        <p class="pending-copy">
+          Tu cuenta ya fue creada. Pídele al dueño del negocio que apruebe tu acceso como empleado
+          desde la sección de solicitudes.
+        </p>
+
+        <div class="pending-list" aria-label="Solicitudes pendientes">
+          @for (membership of pendingStaffMemberships(); track membership.id) {
+            <div class="pending-business">
+              <strong>{{ pendingBusinessName(membership) }}</strong>
+              @if (pendingBusinessLocation(membership)) {
+                <span>{{ pendingBusinessLocation(membership) }}</span>
+              }
+            </div>
           }
-        </label>
+        </div>
 
-        <yep-address-location-select
-          formControlName="location"
-          [required]="true"
-          [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad.' : ''"
-          dataCy="onboarding-business-location"
-        />
-
-        <label>
-          <span>Direccion</span>
-          <input type="text" formControlName="address" autocomplete="street-address" />
-          @if (isBusinessInvalid('address')) {
-            <small>Ingresa la direccion.</small>
-          }
-        </label>
-
-        <yep-phone-input
-          label="Teléfono"
-          placeholder="300 123 4567"
-          formControlName="phone"
-          [required]="true"
-          [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
-        ></yep-phone-input>
-
-        <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
-          @if (creatingBusiness()) {
+        <button
+          class="primary-action"
+          type="button"
+          [disabled]="refreshingAccess()"
+          (click)="refreshAccessStatus()"
+        >
+          @if (refreshingAccess()) {
             <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
           } @else {
-            <svg lucideBuilding2 aria-hidden="true"></svg>
+            <svg lucideRefreshCw aria-hidden="true"></svg>
           }
-          <span>Crear y usar</span>
+          <span>Actualizar estado</span>
         </button>
-      </form>
-    </article>
-  </section>
+      </article>
+    </section>
+  } @else {
+    <section class="onboarding-grid">
+      <article class="action-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Nuevo negocio</p>
+            <h2>Crear negocio</h2>
+          </div>
+        </div>
+
+        <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
+          <label>
+            <span>Nombre</span>
+            <input type="text" formControlName="name" autocomplete="organization" />
+            @if (isBusinessInvalid('name')) {
+              <small>Ingresa el nombre del negocio.</small>
+            }
+          </label>
+
+          <yep-address-location-select
+            formControlName="location"
+            [required]="true"
+            [error]="isBusinessInvalid('location') ? 'Selecciona departamento y ciudad.' : ''"
+            dataCy="onboarding-business-location"
+          />
+
+          <label>
+            <span>Dirección</span>
+            <input type="text" formControlName="address" autocomplete="street-address" />
+            @if (isBusinessInvalid('address')) {
+              <small>Ingresa la dirección.</small>
+            }
+          </label>
+
+          <yep-phone-input
+            label="Teléfono"
+            placeholder="300 123 4567"
+            formControlName="phone"
+            [required]="true"
+            [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
+          ></yep-phone-input>
+
+          <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
+            @if (creatingBusiness()) {
+              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+            } @else {
+              <svg lucideBuilding2 aria-hidden="true"></svg>
+            }
+            <span>Crear y usar</span>
+          </button>
+        </form>
+      </article>
+    </section>
+  }
 
   <yep-modal
     [open]="logoutModalOpen()"

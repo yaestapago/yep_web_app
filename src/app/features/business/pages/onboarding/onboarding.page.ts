@@ -1,12 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   LucideBuilding2,
+  LucideCircleCheck,
   LucideLoaderCircle,
   LucideLogOut,
+  LucideRefreshCw,
   LucideTriangleAlert,
 } from '@lucide/angular';
 import { finalize } from 'rxjs';
@@ -28,8 +30,10 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     CommonModule,
     ReactiveFormsModule,
     LucideBuilding2,
+    LucideCircleCheck,
     LucideLoaderCircle,
     LucideLogOut,
+    LucideRefreshCw,
     LucideTriangleAlert,
     AddressLocationSelect,
     Button,
@@ -48,7 +52,12 @@ export class OnboardingPage {
   private readonly fb = inject(FormBuilder).nonNullable;
 
   readonly user = this.session.user;
+  readonly pendingStaffMemberships = computed(() =>
+    this.session.pendingMemberships().filter((membership) => membership.role === 'account_staff'),
+  );
+  readonly hasPendingStaffAccess = computed(() => this.pendingStaffMemberships().length > 0);
   readonly creatingBusiness = signal(false);
+  readonly refreshingAccess = signal(false);
   readonly error = signal('');
   readonly success = signal('');
 
@@ -104,6 +113,40 @@ export class OnboardingPage {
       });
   }
 
+  refreshAccessStatus(): void {
+    this.error.set('');
+    this.success.set('');
+    this.refreshingAccess.set(true);
+
+    this.authApi
+      .me()
+      .pipe(
+        finalize(() => this.refreshingAccess.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          this.session.updateUser(response.user);
+          this.session.updateSubscription(response.subscription ?? null);
+          this.session.updateMemberships(response.memberships);
+
+          const approvedMembership = this.session.approvedMemberships()[0];
+          if (approvedMembership) {
+            this.session.setActiveBusinessAccountId(approvedMembership.businessAccountId);
+            void this.router.navigate([
+              '/businesses',
+              approvedMembership.businessAccountId,
+              'dashboard',
+            ]);
+            return;
+          }
+
+          this.success.set('Tu solicitud sigue pendiente de aprobación.');
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
   // --- Cerrar sesión ---------------------------------------------------------
   // Esta página vive fuera del Shell (un usuario sin negocio aprobado no tiene
   // sidebar), así que necesita su propia salida para no quedar atrapado aquí.
@@ -135,6 +178,15 @@ export class OnboardingPage {
   isBusinessInvalid(controlName: keyof typeof this.businessForm.controls): boolean {
     const control = this.businessForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  pendingBusinessName(membership: BusinessMembership): string {
+    return membership.businessAccount?.name?.trim() || 'este negocio';
+  }
+
+  pendingBusinessLocation(membership: BusinessMembership): string {
+    const account = membership.businessAccount;
+    return [account?.cityName, account?.departmentName].filter(Boolean).join(', ');
   }
 
   private mergeMembership(membership: BusinessMembership): BusinessMembership[] {
