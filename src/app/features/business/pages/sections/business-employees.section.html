@@ -9,11 +9,7 @@
     </div>
     @if (canManage()) {
       <div class="list-card__actions">
-        <yep-button variant="ghost" size="sm" (clicked)="openInvite()">
-          <svg lucideClipboardCopy aria-hidden="true"></svg>
-          Invitar con código
-        </yep-button>
-        <yep-button size="sm" (clicked)="openAdd()">
+        <yep-button size="sm" (clicked)="openInvite()">
           <svg lucideUserPlus aria-hidden="true"></svg>
           Agregar usuario
         </yep-button>
@@ -93,35 +89,14 @@
 
 <yep-modal
   [open]="inviteOpen()"
-  title="Agregar o invitar usuario"
-  subtitle="Comparte el código, el link o el QR para que el usuario se registre como staff."
+  title="Agregar o invitar empleado"
+  subtitle="Comparte el link o el QR para que el usuario se registre como empleado."
   size="lg"
   (closeRequested)="closeInvite()"
 >
-  <div class="invite-grid">
+  <div class="invite-grid invite-grid--single">
     <div class="info-cell">
-      <span class="info-label">Código para compartir</span>
-      <span class="info-value code-value">
-        <code class="code-chip">{{ shareCode() }}</code>
-        <button
-          type="button"
-          class="code-copy"
-          (click)="copyCode()"
-          [attr.aria-label]="copied() ? 'Código copiado' : 'Copiar código'"
-          [title]="copied() ? 'Copiado' : 'Copiar'"
-        >
-          @if (copied()) {
-            <svg lucideClipboardCheck aria-hidden="true"></svg>
-          } @else {
-            <svg lucideClipboardCopy aria-hidden="true"></svg>
-          }
-        </button>
-      </span>
-      <span class="info-hint">Compártelo con quien quiera unirse a este negocio.</span>
-    </div>
-
-    <div class="info-cell">
-      <span class="info-label">Link de registro staff</span>
+      <span class="info-label">Link de registro de empleado</span>
       <span class="info-value code-value code-value--link">
         <code class="code-chip code-chip--link">{{ registrationPath() }}</code>
         <button
@@ -140,18 +115,21 @@
           }
         </button>
       </span>
-      <span class="info-hint">Envíalo a quien deba registrarse como staff.</span>
+      <span class="info-hint">Envíalo a quien deba registrarse como empleado.</span>
     </div>
   </div>
 
   <div class="qr-panel">
     <div class="qr-panel__body">
-      <span class="info-label">QR dinámico</span>
-      <span class="info-hint">Escanearlo abre el link de registro actual para {{ businessName() }}.</span>
+      <span class="info-label">Código QR de registro</span>
+      <span class="info-hint">
+        Pídele a tu empleado que escanee este código QR y complete el proceso de registro para
+        pertenecer al negocio {{ businessName() }}.
+      </span>
     </div>
     <div class="qr-panel__code" aria-live="polite">
       @if (qrDataUrl()) {
-        <img [src]="qrDataUrl()" alt="QR para registrar staff" width="220" height="220" />
+        <img [src]="qrDataUrl()" alt="QR para registrar empleado" width="220" height="220" />
       } @else if (qrError()) {
         <span class="field-error">{{ qrError() }}</span>
       } @else {
@@ -165,41 +143,6 @@
 
   <ng-container modalFooter>
     <yep-button variant="ghost" (clicked)="closeInvite()">Cerrar</yep-button>
-  </ng-container>
-</yep-modal>
-
-<yep-modal
-  [open]="addOpen()"
-  title="Agregar usuario"
-  subtitle="Si el usuario ya existe queda aprobado; si no, se crea una invitación pendiente."
-  [loading]="savingAdd()"
-  (closeRequested)="closeAdd()"
->
-  <form [formGroup]="addForm" (ngSubmit)="submitAdd()" class="form-grid">
-    <yep-input
-      formControlName="email"
-      label="Correo (opcional si das la cédula)"
-      type="email"
-      placeholder="persona@correo.com"
-      [error]="isAddInvalid('email') ? 'Correo inválido' : ''"
-    />
-    <yep-input
-      formControlName="identificationNumber"
-      label="Número de identificación (opcional si das el correo)"
-      placeholder="Cédula"
-    />
-    <yep-select
-      formControlName="role"
-      label="Rol"
-      placeholder="Selecciona un rol"
-      [options]="roleOptions"
-      [required]="true"
-    />
-  </form>
-
-  <ng-container modalFooter>
-    <yep-button variant="ghost" [disabled]="savingAdd()" (clicked)="closeAdd()">Cancelar</yep-button>
-    <yep-button type="submit" [loading]="savingAdd()" (clicked)="submitAdd()">Agregar</yep-button>
   </ng-container>
 </yep-modal>
 

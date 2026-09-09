@@ -21,7 +21,6 @@ import type { ApprovedMember } from '../../../../shared/models/schedule.models';
 import { Button } from '../../../../shared/ui/button/button';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
-import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
@@ -42,7 +41,6 @@ const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
     Button,
     Checkbox,
     IconButton,
-    Input,
     Modal,
     Select,
     LucideBell,
@@ -74,14 +72,9 @@ export class BusinessEmployeesSection implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
   readonly inviteOpen = signal(false);
-  readonly copied = signal(false);
   readonly linkCopied = signal(false);
   readonly qrDataUrl = signal('');
   readonly qrError = signal('');
-
-  // Alta directa de un miembro (por correo o cédula).
-  readonly addOpen = signal(false);
-  readonly savingAdd = signal(false);
 
   // Edición de rol y sedes de un miembro existente.
   readonly editOpen = signal(false);
@@ -105,12 +98,6 @@ export class BusinessEmployeesSection implements OnInit {
       this.session.activeMembership()?.role === 'account_owner' ||
       this.session.user()?.globalRole === 'account_su',
   );
-
-  readonly addForm = this.fb.group({
-    email: ['', [Validators.email]],
-    identificationNumber: [''],
-    role: ['account_staff' as BusinessMembershipRole, [Validators.required]],
-  });
 
   readonly editForm = this.fb.group({
     role: ['account_staff' as BusinessMembershipRole, [Validators.required]],
@@ -334,76 +321,6 @@ export class BusinessEmployeesSection implements OnInit {
   scheduleLink(): unknown[] {
     const id = this.businessId();
     return id ? ['/businesses', id, 'schedules'] : ['/businesses'];
-  }
-
-  // --- Alta directa ---------------------------------------------------------
-
-  openAdd(): void {
-    this.error.set('');
-    this.success.set('');
-    this.addForm.reset({ email: '', identificationNumber: '', role: 'account_staff' });
-    this.addOpen.set(true);
-  }
-
-  async closeAdd(): Promise<void> {
-    if (this.savingAdd()) {
-      return;
-    }
-    if (this.addForm.dirty) {
-      const confirmed = await this.notifications.confirm({
-        title: 'Descartar cambios',
-        message: 'Tienes datos sin guardar del nuevo usuario.',
-        type: 'warning',
-        confirmText: 'Descartar',
-      });
-      if (!confirmed) {
-        return;
-      }
-    }
-    this.addOpen.set(false);
-  }
-
-  submitAdd(): void {
-    const businessId = this.businessId();
-    if (!businessId) {
-      return;
-    }
-
-    const raw = this.addForm.getRawValue();
-    const email = raw.email.trim();
-    const identificationNumber = raw.identificationNumber.trim();
-
-    if (this.addForm.invalid || (!email && !identificationNumber)) {
-      this.addForm.markAllAsTouched();
-      if (!email && !identificationNumber) {
-        this.error.set('Ingresa el correo o el número de identificación.');
-      }
-      return;
-    }
-
-    this.savingAdd.set(true);
-    this.error.set('');
-
-    this.businessApi
-      .addMember(businessId, {
-        email: email || undefined,
-        identificationNumber: identificationNumber || undefined,
-        role: raw.role,
-      })
-      .pipe(
-        finalize(() => this.savingAdd.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => {
-          this.success.set('Usuario agregado o invitado.');
-          this.addOpen.set(false);
-          // Recargamos porque un usuario ya registrado queda aprobado y debe
-          // aparecer en la lista; una invitación pendiente no aparece aún.
-          this.load();
-        },
-        error: (error) => this.error.set(httpErrorMessage(error)),
-      });
   }
 
   // --- Edición de rol y sedes ----------------------------------------------
@@ -636,11 +553,6 @@ export class BusinessEmployeesSection implements OnInit {
       });
   }
 
-  isAddInvalid(controlName: keyof typeof this.addForm.controls): boolean {
-    const control = this.addForm.controls[controlName];
-    return control.invalid && (control.dirty || control.touched);
-  }
-
   // --- Compartir código / QR ------------------------------------------------
 
   openInvite(): void {
@@ -649,17 +561,6 @@ export class BusinessEmployeesSection implements OnInit {
 
   closeInvite(): void {
     this.inviteOpen.set(false);
-  }
-
-  copyCode(): void {
-    const code = this.shareCode();
-    if (!code) {
-      return;
-    }
-    void navigator.clipboard?.writeText(code).then(() => {
-      this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 1500);
-    });
   }
 
   copyRegistrationLink(): void {
