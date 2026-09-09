@@ -10,12 +10,11 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
 import { BusinessEmployeesSection } from './business-employees.section';
 
 /**
- * Cubre cómo el owner comparte la invitación al negocio: el código corto
- * (últimos 6 caracteres del id), el link de registro que lo empaqueta, y el
- * QR que codifica ese mismo link — deben ser consistentes entre sí, porque
- * son las tres puertas de entrada que resuelve `lookupByCode` en el backend.
+ * Cubre cómo el owner comparte la invitación al negocio: el link de registro
+ * empaqueta el código corto (últimos 6 caracteres del id), y el QR codifica
+ * ese mismo link.
  */
-describe('BusinessEmployeesSection — compartir invitación (código/link/QR)', () => {
+describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
   const businessId = '66f0a1b2c3d4e5f607181920';
 
   const session = {
@@ -78,18 +77,6 @@ describe('BusinessEmployeesSection — compartir invitación (código/link/QR)',
 
     expect(section.qrDataUrl().startsWith('data:image/png;base64,')).toBe(true);
     expect(section.qrError()).toBe('');
-  });
-
-  it('copyCode copia el código corto al portapapeles', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
-    const section = create();
-
-    section.copyCode();
-    await Promise.resolve();
-
-    expect(writeText).toHaveBeenCalledWith(businessId.slice(-6).toUpperCase());
-    expect(section.copied()).toBe(true);
   });
 
   it('copyRegistrationLink copia el link completo al portapapeles', async () => {
