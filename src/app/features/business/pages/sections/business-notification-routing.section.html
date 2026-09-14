@@ -91,7 +91,7 @@
                           <yep-checkbox
                             [checked]="isBreBKeyEnabled(view.member, entry[0], key)"
                             [disabled]="!canManage()"
-                            [label]="formatPhone(key)"
+                            [label]="breBKeyLabel(account, key)"
                             (checkedChange)="toggleBreBKey(view.member, entry[0], key)"
                           />
                         </div>

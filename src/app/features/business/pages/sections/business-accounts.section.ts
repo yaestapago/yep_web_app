@@ -231,7 +231,7 @@ export class BusinessAccountsSection implements OnInit {
     this.form.reset({
       bankId: bankAccount.bankId,
       accountNumber: '',
-      breBKeys: bankAccount.breBKeys.join('\n'),
+      breBKeys: bankAccount.breBKeysDisplay.join('\n'),
       displayName: bankAccount.displayName ?? '',
       holderName: bankAccount.holderName ?? '',
       accountType: bankAccount.accountType ?? 'wallet',

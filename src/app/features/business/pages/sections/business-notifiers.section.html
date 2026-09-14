@@ -364,13 +364,13 @@
                     </span>
                   </yep-checkbox>
 
-                  @for (key of account.breBKeys; track key) {
+                  @for (key of account.breBKeys; track key; let i = $index) {
                     <yep-checkbox
                       class="account-key-option"
                       [checked]="isBreBKeySelected(key)"
                       (checkedChange)="toggleBreBKey(key, $event)"
                     >
-                      <code class="account-key-option__value">{{ key }}</code>
+                      <code class="account-key-option__value">{{ account.breBKeysDisplay[i] || key }}</code>
                     </yep-checkbox>
                   }
 

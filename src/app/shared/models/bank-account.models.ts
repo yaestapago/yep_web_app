@@ -17,6 +17,8 @@ export interface BankAccount {
   bankId: string;
   accountNumberLast4: string;
   breBKeys: string[];
+  /** `breBKeys` tal como se ingresaron (con `@`/mayúsculas originales); usar esta para mostrar al usuario. */
+  breBKeysDisplay: string[];
   displayName?: string;
   holderName?: string;
   accountType?: BankAccountType;
