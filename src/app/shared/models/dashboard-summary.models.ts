@@ -30,11 +30,11 @@ export interface DashboardTodayVsLastWeek {
   lastWeekDate: string;
 }
 
-/** Una celda del mapa de calor: cuántos eventos de pago notificados cayeron en ese día/bloque de hora (patrón de las últimas semanas). */
+/** Una celda del mapa de calor: cuántos eventos de pago notificados cayeron en ese día/hora (patrón de las últimas semanas). */
 export interface DashboardHeatmapCell {
   /** 0 = lunes .. 6 = domingo. */
   dayOfWeek: number;
-  /** Hora local Bogotá en que empieza el bloque de 3 horas (0, 3, 6... 21). */
+  /** 0-23, hora local Bogotá. */
   hour: number;
   count: number;
 }

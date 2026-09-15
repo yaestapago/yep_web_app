@@ -207,14 +207,14 @@
   width: 100%;
   // Escala con el ancho real del contenedor (miniatura vs. modal ampliado)
   // en vez de con el viewport: nunca desborda, solo achica el texto.
-  font-size: clamp(7px, 4cqw, 13px);
+  font-size: clamp(6px, 3cqw, 11px);
 }
 
 .heatmap__hours,
 .heatmap__row {
   display: grid;
   gap: 1px;
-  grid-template-columns: 1.6em repeat(8, minmax(0, 1fr));
+  grid-template-columns: 1.6em repeat(24, minmax(0, 1fr));
   min-height: 0;
   min-width: 0;
 }

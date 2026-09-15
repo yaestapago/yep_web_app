@@ -51,10 +51,10 @@ interface CatalogItem {
 }
 
 const WEEKDAY_LABELS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
-// Bloques de 3 horas (12, 3, 6, 9...) en vez de hora a hora: coincide con lo
-// que ya agrupa el backend y deja más espacio por columna en el mapa.
-const HOUR_BUCKET_SIZE = 3;
-const HOURS = Array.from({ length: 24 / HOUR_BUCKET_SIZE }, (_, i) => i * HOUR_BUCKET_SIZE);
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+// Con 24 columnas no cabe una etiqueta en cada una: solo se rotula cada 3
+// horas (12, 3, 6, 9...), pero las 24 celdas de datos siguen ahí.
+const HOUR_LABEL_STEP = 3;
 
 const CATALOG: CatalogItem[] = [
   {
@@ -270,7 +270,7 @@ export class DashboardChartsPanel {
       label,
       cells: HOURS.map((hour) => {
         const count = cells.find((c) => c.dayOfWeek === dayOfWeek && c.hour === hour)?.count ?? 0;
-        return { hour, count, colorPct: maxCount > 0 ? Math.round((count / maxCount) * 100) : 0 };
+        return { hour, count, colorPct: this.heatmapIntensity(count, maxCount) };
       }),
     }));
 
@@ -385,6 +385,19 @@ export class DashboardChartsPanel {
     return options as ChartOptions;
   }
 
+  /**
+   * % de mezcla para una celda: 0 si está realmente vacía, si no un piso de
+   * 30% (para que "hubo actividad" ya se note contra el fondo, en vez de un
+   * tinte casi imperceptible) escalado hasta 100% en la celda más activa.
+   */
+  private heatmapIntensity(count: number, maxCount: number): number {
+    if (count === 0 || maxCount === 0) {
+      return 0;
+    }
+    const HEATMAP_MIN_PCT = 30;
+    return Math.round(HEATMAP_MIN_PCT + (count / maxCount) * (100 - HEATMAP_MIN_PCT));
+  }
+
   /** Color de celda del mapa de calor: mezcla `--color-primary` sobre la superficie según intensidad. */
   heatmapCellColor(colorPct: number): string {
     return `color-mix(in srgb, ${this.cssVar('--color-primary')} ${colorPct}%, ${this.cssVar('--color-surface')})`;
@@ -397,9 +410,9 @@ export class DashboardChartsPanel {
     return `${twelveHour}${period}`;
   }
 
-  /** Rango del bloque para el tooltip de una celda (ej. "3p–6p"). */
-  hourRangeLabel(hour: number): string {
-    return `${this.hourLabel(hour)}–${this.hourLabel((hour + HOUR_BUCKET_SIZE) % 24)}`;
+  /** Etiqueta del encabezado: vacía salvo cada HOUR_LABEL_STEP horas, para no saturar 24 columnas. */
+  hourHeaderLabel(hour: number): string {
+    return hour % HOUR_LABEL_STEP === 0 ? this.hourLabel(hour) : '';
   }
 
   private cssVar(name: string): string {

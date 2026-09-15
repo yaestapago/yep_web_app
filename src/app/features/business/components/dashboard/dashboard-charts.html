@@ -63,7 +63,7 @@
       <div class="heatmap__hours">
         <span class="heatmap__corner"></span>
         @for (hour of view.heatmap.hours; track hour) {
-          <span class="heatmap__hour-label">{{ hourLabel(hour) }}</span>
+          <span class="heatmap__hour-label">{{ hourHeaderLabel(hour) }}</span>
         }
       </div>
       @for (row of view.heatmap.rows; track row.label) {
@@ -73,7 +73,7 @@
             <span
               class="heatmap__cell"
               [style.background]="heatmapCellColor(cell.colorPct)"
-              [attr.title]="row.label + ' ' + hourRangeLabel(cell.hour) + ' — ' + cell.count + ' evento(s)'"
+              [attr.title]="row.label + ' ' + hourLabel(cell.hour) + ' — ' + cell.count + ' evento(s)'"
             ></span>
           }
         </div>
