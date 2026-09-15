@@ -447,6 +447,35 @@
           <small class="bank-form__error">JSON inválido.</small>
         }
 
+        @if (activeChannel() !== 'desk') {
+          <div class="bank-form__section">
+            <label class="bank-form__switch">
+              <yep-toggle
+                appearance="switch"
+                [pressed]="channelDateFromText(activeChannel())"
+                ariaLabel="Extraer fecha del texto"
+                (toggled)="setChannelDateFromText(activeChannel(), $event)"
+              />
+              <span>Extraer fecha del texto (<code>dateFromText</code>)</span>
+            </label>
+            <small class="bank-form__hint">
+              Si está activo, el parser intenta leer la fecha/hora directamente del texto de
+              la notificación/correo (formato dd/mm/aa[aa] + HH:MM). Es la señal más confiable
+              porque es la que el banco mismo declara; si no matchea, cae al respaldo
+              ({{ activeChannel() === 'email' ? 'header Date del correo' : 'postTime del notificador' }}).
+            </small>
+            @if (channelDateFromText(activeChannel())) {
+              <label class="bank-form__field">
+                <span>Offset horario (<code>dateOffset</code>)</span>
+                <input type="text" formControlName="dateOffset" placeholder="-05:00" />
+                <small class="bank-form__hint">
+                  Offset de la fecha extraída del texto, ej. <code>-05:00</code> para Colombia.
+                </small>
+              </label>
+            }
+          </div>
+        }
+
         @if (suggestError()) {
           <small class="bank-form__error">{{ suggestError() }}</small>
         }
@@ -488,6 +517,9 @@
                       obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
                       {{ r.parsed.senderName ? ' · ' + r.parsed.senderName : '' }}
                       · {{ r.parsed.confidence }}
+                      @if (r.parsed.transactionDate) {
+                        · {{ formatTransactionDate(r.parsed.transactionDate) }}{{ r.parsed.transactionDateSource ? ' (' + transactionDateSourceLabel(r.parsed.transactionDateSource) + ')' : '' }}
+                      }
                     </span>
                   </li>
                 }
@@ -695,7 +727,7 @@
               <dt>Tipo</dt><dd>{{ r.parsed.kind ?? '—' }}</dd>
               <dt>Referencia</dt><dd>{{ r.parsed.reference ?? '—' }}</dd>
               <dt>Cuenta destino</dt><dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
-              <dt>Fecha de transferencia</dt><dd>{{ formatTransferDate(r.parsed.transactionDate) }}</dd>
+              <dt>Fecha de transferencia</dt><dd>{{ formatTransactionDate(r.parsed.transactionDate) }}</dd>
               <dt>Confianza</dt><dd>{{ r.parsed.confidence }}</dd>
             </dl>
           </div>
@@ -779,6 +811,9 @@
                       obtenido: {{ r.parsed.amount ? '$' + r.parsed.amount : '—' }}
                       {{ r.parsed.senderName ? ' · ' + r.parsed.senderName : '' }}
                       · {{ r.parsed.confidence }}
+                      @if (r.parsed.transactionDate) {
+                        · {{ formatTransactionDate(r.parsed.transactionDate) }}{{ r.parsed.transactionDateSource ? ' (' + transactionDateSourceLabel(r.parsed.transactionDateSource) + ')' : '' }}
+                      }
                     </span>
                     @if (r.diagnosis?.fix; as fix) {
                       <yep-button variant="secondary" size="sm" type="button" (clicked)="applyFix(fix)">
@@ -830,10 +865,16 @@
                         <span class="example-card__badge">negativo</span>
                       }
                     </div>
-                    @if (r.parsed.amount || r.expected || r.resolution) {
+                    @if (r.parsed.amount || r.parsed.transactionDate || r.expected || r.resolution) {
                       <div class="example-card__chips">
                         @if (r.parsed.amount) {
                           <span class="example-card__chip">${{ r.parsed.amount }}</span>
+                        }
+                        @if (r.parsed.transactionDate) {
+                          <span
+                            class="example-card__chip"
+                            [class.is-fail]="transactionDateMismatch(r.expected, r.parsed)"
+                          >fecha: {{ formatTransactionDate(r.parsed.transactionDate) }}{{ r.parsed.transactionDateSource ? ' · ' + transactionDateSourceLabel(r.parsed.transactionDateSource) : '' }}{{ transactionDateMismatch(r.expected, r.parsed) ? ' ❌ esperaba ' + expectedDateSummary(r.expected) : '' }}</span>
                         }
                         @if (r.expected) {
                           <span class="example-card__chip">esperado: {{ expectedSummary(r.expected) }}</span>

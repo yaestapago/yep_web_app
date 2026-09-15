@@ -146,6 +146,37 @@
           </small>
         }
       </label>
+      <label class="bank-form__field">
+        <span>Fecha/hora de la transacción</span>
+        <input
+          type="text"
+          [value]="expected()?.transactionDate ?? ''"
+          (input)="setExpectedField('transactionDate', $any($event.target).value)"
+          placeholder="2026-09-14T23:50:00.000Z"
+        />
+        <small class="bank-form__hint">
+          Cualquier formato que entienda <code>new Date(...)</code>; ideal ISO 8601. Se
+          compara por instante exacto contra la fecha que extrae el parser.
+        </small>
+      </label>
+      <label class="bank-form__field">
+        <span>Origen esperado de la fecha</span>
+        <select
+          class="bank-form__select"
+          [value]="expected()?.transactionDateSource ?? ''"
+          (change)="setExpectedField('transactionDateSource', $any($event.target).value)"
+        >
+          <option value="">—</option>
+          <option value="text">Texto del mensaje (dateFromText)</option>
+          <option value="post_time">postTime del notificador</option>
+          <option value="header_date">Header Date del correo</option>
+          <option value="captured_at">Hora de captura del evento</option>
+        </select>
+        <small class="bank-form__hint">
+          De qué señal debió salir la fecha. Útil para detectar si el parser está usando el
+          respaldo equivocado.
+        </small>
+      </label>
     </div>
   </details>
 

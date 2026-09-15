@@ -130,6 +130,36 @@
           placeholder="Recibiste $50.000 de JUAN PEREZ"
         ></textarea>
       </label>
+
+      @if (channel() === 'email') {
+        <label class="bank-form__field">
+          <span>Fecha del header (Date)</span>
+          <input
+            type="text"
+            [value]="date()"
+            (input)="date.set($any($event.target).value)"
+            placeholder="Mon, 14 Sep 2026 23:51:15 +0000"
+          />
+          <small class="bank-form__hint">
+            Simula el header <code>Date</code> del correo. Es el respaldo que usa el parser
+            cuando la extracción de fecha desde el texto (<code>dateFromText</code>) no está
+            activa o no matchea.
+          </small>
+        </label>
+      } @else {
+        <label class="bank-form__field">
+          <span>postTime simulado (opcional)</span>
+          <input
+            type="datetime-local"
+            [value]="postTimeLocal()"
+            (input)="postTimeLocal.set($any($event.target).value)"
+          />
+          <small class="bank-form__hint">
+            Simula el <code>postTime</code> que envía el notificador — el equivalente móvil del
+            header de fecha del correo.
+          </small>
+        </label>
+      }
     </section>
 
     <section class="example-editor__step">
@@ -220,6 +250,13 @@
             <dd>{{ r.parsed.reference ?? '—' }}</dd>
             <dt>Cuenta destino</dt>
             <dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
+            <dt>Fecha de transferencia</dt>
+            <dd>
+              {{ formatTransactionDate(r.parsed.transactionDate) }}
+              @if (r.parsed.transactionDateSource) {
+                · {{ transactionDateSourceLabel(r.parsed.transactionDateSource) }}
+              }
+            </dd>
             <dt>Confianza</dt>
             <dd>{{ r.parsed.confidence }}</dd>
           </dl>

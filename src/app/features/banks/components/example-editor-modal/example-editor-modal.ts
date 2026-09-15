@@ -32,6 +32,10 @@ import type {
 } from '../../../../shared/models/bank.models';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
 import { ExpectedValuesForm } from '../expected-values-form/expected-values-form';
+import {
+  formatTransactionDate,
+  transactionDateSourceLabel,
+} from '../../utils/transaction-date.util';
 
 const CHANNELS: { key: ChannelKey; label: string }[] = [
   { key: 'mobile', label: 'Móvil' },
@@ -76,12 +80,20 @@ export class ExampleEditorModal {
   readonly deleted = output<AdminBank>();
   readonly closed = output<void>();
 
+  /** Formatea `parsed.transactionDate`/`transactionDateSource` (reusado en el template). */
+  readonly formatTransactionDate = formatTransactionDate;
+  readonly transactionDateSourceLabel = transactionDateSourceLabel;
+
   // --- Estado del formulario (hidratado al abrir) ---
   readonly channel = signal<ChannelKey>('mobile');
   readonly label = signal('');
   readonly title = signal('');
   readonly body = signal('');
   readonly from = signal('');
+  /** Header `Date` simulado (solo channel `email`). */
+  readonly date = signal('');
+  /** `postTime` simulado, como datetime-local (solo channel `mobile`/`desk`). */
+  readonly postTimeLocal = signal('');
   readonly expected = signal<ExpectedValues | null>(null);
   readonly expectMatch = signal(true);
   readonly simulatedAccounts = signal('');
@@ -111,6 +123,8 @@ export class ExampleEditorModal {
       title: this.title(),
       body: this.body(),
       from: this.from(),
+      date: this.date(),
+      postTimeLocal: this.postTimeLocal(),
       expected: this.expected(),
       expectMatch: this.expectMatch(),
       simulatedAccounts: this.simulatedAccounts(),
@@ -152,11 +166,15 @@ export class ExampleEditorModal {
         this.title.set(ex.subject ?? '');
         this.body.set(ex.bodyText ?? '');
         this.from.set(ex.from ?? '');
+        this.date.set(ex.date ?? '');
+        this.postTimeLocal.set('');
       } else {
         this.title.set(ex.title ?? '');
         // El cuerpo se edita en un solo campo: text + bigText unidos.
         this.body.set([ex.text, ex.bigText].filter(Boolean).join('\n'));
         this.from.set('');
+        this.date.set('');
+        this.postTimeLocal.set(ex.postTime != null ? this.epochToLocal(ex.postTime) : '');
       }
       this.expected.set(ex.expected ?? null);
       this.expectMatch.set(ex.expectMatch !== false);
@@ -171,10 +189,14 @@ export class ExampleEditorModal {
         this.title.set(seed?.subject ?? '');
         this.body.set(seed?.bodyText ?? '');
         this.from.set(seed?.from ?? '');
+        this.date.set(seed?.date ?? '');
+        this.postTimeLocal.set('');
       } else {
         this.title.set(seed?.title ?? '');
         this.body.set([seed?.text, seed?.bigText].filter(Boolean).join('\n'));
         this.from.set('');
+        this.date.set('');
+        this.postTimeLocal.set(seed?.postTime != null ? this.epochToLocal(seed.postTime) : '');
       }
       this.expected.set(null);
       this.expectMatch.set(true);
@@ -334,10 +356,21 @@ export class ExampleEditorModal {
             : {}),
         }
       : {};
+    const dateValue = this.date().trim();
+    const postTimeValue = this.parsePostTimeMs();
     const messageFields =
       channel === 'email'
-        ? { subject: this.title(), bodyText: this.body(), from: this.from() }
-        : { title: this.title(), text: this.body() };
+        ? {
+            subject: this.title(),
+            bodyText: this.body(),
+            from: this.from(),
+            ...(dateValue ? { date: dateValue } : {}),
+          }
+        : {
+            title: this.title(),
+            text: this.body(),
+            ...(postTimeValue !== undefined ? { postTime: postTimeValue } : {}),
+          };
 
     const editingId = this.example()?.id ?? null;
     const request$ = editingId
@@ -421,5 +454,21 @@ export class ExampleEditorModal {
           .filter(Boolean),
       ),
     );
+  }
+
+  /** Convierte el `postTime` (datetime-local) a epoch ms; `undefined` si está vacío/es inválido. */
+  private parsePostTimeMs(): number | undefined {
+    const raw = this.postTimeLocal().trim();
+    if (!raw) return undefined;
+    const ms = new Date(raw).getTime();
+    return Number.isFinite(ms) ? ms : undefined;
+  }
+
+  /** Convierte un epoch ms a string de `<input type="datetime-local">` en hora local. */
+  private epochToLocal(epochMs: number): string {
+    const d = new Date(epochMs);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 }
