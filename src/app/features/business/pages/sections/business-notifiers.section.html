@@ -77,10 +77,14 @@
             </div>
             <yep-status-dot
               [level]="row.status.level"
+              [label]="row.notifier.type === 'email_gmail' ? emailProviderLabel(row.notifier) : ''"
+              [labelMuted]="row.notifier.type === 'email_gmail'"
               [detail]="
-                row.status.lastSeenAt
-                  ? relative(row.status) + ' · ' + (row.status.lastSeenAt | date: 'short')
-                  : 'sin heartbeat'
+                row.notifier.type === 'email_gmail'
+                  ? ''
+                  : row.status.lastSeenAt
+                    ? relative(row.status) + ' · ' + (row.status.lastSeenAt | date: 'short')
+                    : 'sin heartbeat'
               "
             />
             @if (usesPairing(row.notifier)) {
@@ -96,39 +100,33 @@
               @if (bankSenderPatterns.length > 0) {
                 <span class="list-card__meta notifier-email-row">
                   <span class="notifier-email-row__label">De:</span>
-                  <span class="notifier-email-row__copy-group">
-                    <span class="notifier-email-row__values">
-                      @for (sender of bankSenderPatterns; track sender) {
+                  <span class="notifier-email-row__values">
+                    @for (sender of bankSenderPatterns; track sender) {
+                      <span class="notifier-email-row__item">
                         <code class="notifier-email-row__value">{{ sender }}</code>
-                      }
-                    </span>
-                    <button
-                      type="button"
-                      class="code-copy"
-                      (click)="
-                        copyNotifierEmail(
-                          notifierEmailSenderPatternsText(row.notifier),
-                          row.notifier.id,
-                          'from'
-                        )
-                      "
-                      [attr.aria-label]="
-                        isNotifierEmailCopied(row.notifier.id, 'from')
-                          ? 'Remitentes De copiados'
-                          : 'Copiar remitentes De'
-                      "
-                      [title]="
-                        isNotifierEmailCopied(row.notifier.id, 'from')
-                          ? 'Remitentes De copiados'
-                          : 'Copiar remitentes De'
-                      "
-                    >
-                      @if (isNotifierEmailCopied(row.notifier.id, 'from')) {
-                        <svg lucideClipboardCheck aria-hidden="true"></svg>
-                      } @else {
-                        <svg lucideClipboardCopy aria-hidden="true"></svg>
-                      }
-                    </button>
+                        <button
+                          type="button"
+                          class="code-copy"
+                          (click)="copyNotifierEmail(sender, row.notifier.id, 'from:' + sender)"
+                          [attr.aria-label]="
+                            isNotifierEmailCopied(row.notifier.id, 'from:' + sender)
+                              ? 'Remitente copiado'
+                              : 'Copiar remitente'
+                          "
+                          [title]="
+                            isNotifierEmailCopied(row.notifier.id, 'from:' + sender)
+                              ? 'Remitente copiado'
+                              : 'Copiar remitente'
+                          "
+                        >
+                          @if (isNotifierEmailCopied(row.notifier.id, 'from:' + sender)) {
+                            <svg lucideClipboardCheck aria-hidden="true"></svg>
+                          } @else {
+                            <svg lucideClipboardCopy aria-hidden="true"></svg>
+                          }
+                        </button>
+                      </span>
+                    }
                   </span>
                 </span>
               }

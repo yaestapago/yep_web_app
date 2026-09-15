@@ -26,6 +26,11 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.yep-status__label--muted {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
 .yep-status__detail {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);

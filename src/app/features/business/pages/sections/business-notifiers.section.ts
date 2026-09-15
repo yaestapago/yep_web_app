@@ -62,6 +62,20 @@ const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 const MOBILE_NOTIFIERS_ENABLED = true;
 const DESKTOP_NOTIFIERS_ENABLED = false;
 
+/** Dominios comunes -> nombre de proveedor mostrado en vez de "sin heartbeat". */
+const EMAIL_PROVIDER_LABELS: Record<string, string> = {
+  'gmail.com': 'Gmail',
+  'googlemail.com': 'Gmail',
+  'outlook.com': 'Outlook',
+  'outlook.es': 'Outlook',
+  'hotmail.com': 'Hotmail',
+  'hotmail.es': 'Hotmail',
+  'live.com': 'Outlook',
+  'yahoo.com': 'Yahoo',
+  'yahoo.es': 'Yahoo',
+  'icloud.com': 'iCloud',
+};
+
 @Component({
   selector: 'app-business-notifiers-section',
   imports: [
@@ -694,15 +708,7 @@ export class BusinessNotifiersSection implements OnInit {
     );
   }
 
-  notifierEmailSenderPatternsText(notifier: Notifier): string {
-    return this.notifierEmailSenderPatterns(notifier).join('\n');
-  }
-
-  copyNotifierEmail(
-    value: string | undefined,
-    notifierId: string,
-    field: 'from' | 'forwardTo',
-  ): void {
+  copyNotifierEmail(value: string | undefined, notifierId: string, field: string): void {
     if (!value) return;
     const key = `${notifierId}:${field}`;
     void navigator.clipboard?.writeText(value).then(() => {
@@ -715,7 +721,7 @@ export class BusinessNotifiersSection implements OnInit {
     });
   }
 
-  isNotifierEmailCopied(notifierId: string, field: 'from' | 'forwardTo'): boolean {
+  isNotifierEmailCopied(notifierId: string, field: string): boolean {
     return this.copiedNotifierEmailField() === `${notifierId}:${field}`;
   }
 
@@ -946,6 +952,25 @@ export class BusinessNotifiersSection implements OnInit {
 
   relative(status: NotifierStatus): string {
     return relativeFromMs(status.sinceMs);
+  }
+
+  /**
+   * Los notificadores de correo no mandan heartbeat (no aplica "sin datos" /
+   * tiempo relativo): en su lugar mostramos el proveedor de correo del
+   * remitente configurado (Gmail, Outlook, Hotmail...), detectado por dominio.
+   */
+  emailProviderLabel(notifier: Notifier): string {
+    const domain = notifier.identifier?.split('@')[1]?.toLowerCase().trim();
+    if (!domain) {
+      return 'Notificador de correo';
+    }
+    const known = EMAIL_PROVIDER_LABELS[domain];
+    const providerName = known ?? this.capitalize(domain.split('.')[0]);
+    return `Notificador ${providerName}`;
+  }
+
+  private capitalize(value: string): string {
+    return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : value;
   }
 
   deviceLabel(notifier: Notifier): string {
