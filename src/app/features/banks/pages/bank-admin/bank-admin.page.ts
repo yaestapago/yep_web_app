@@ -37,7 +37,6 @@ import type {
   ExpectedValues,
   ParseTestRequest,
   ParseTestResponse,
-  ParsedBankNotification,
   RecentEvent,
   SampleMessage,
   SuggestRulesResponse,
@@ -47,6 +46,12 @@ import type {
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
 import { ExampleEditorModal } from '../../components/example-editor-modal/example-editor-modal';
+import {
+  expectedDateSummary,
+  formatTransactionDate,
+  transactionDateMismatch,
+  transactionDateSourceLabel,
+} from '../../utils/transaction-date.util';
 
 interface ChannelClarity {
   channel: string;
@@ -129,6 +134,11 @@ export class BankAdminPage {
   readonly channels = CHANNELS;
   readonly resolutionStrategies = RESOLUTION_STRATEGIES;
   readonly accountTypes = ACCOUNT_TYPES;
+  /** Reusados en el template para mostrar la fecha/origen extraídos de un ejemplo. */
+  readonly formatTransactionDate = formatTransactionDate;
+  readonly transactionDateSourceLabel = transactionDateSourceLabel;
+  readonly transactionDateMismatch = transactionDateMismatch;
+  readonly expectedDateSummary = expectedDateSummary;
   // Modales de ayuda (documentación embebida).
   readonly readinessHelpOpen = signal(false);
   readonly policyHelpOpen = signal(false);
@@ -168,6 +178,9 @@ export class BankAdminPage {
   readonly testTitle = signal('');
   readonly testBody = signal('');
   readonly testFrom = signal('');
+  /** Fecha/postTime capturados de un evento real (`cargar evento reciente`), para llevarlos al ejemplo. */
+  readonly testDate = signal('');
+  readonly testPostTime = signal<number | null>(null);
   readonly testResult = signal<ParseTestResponse | null>(null);
   readonly testing = signal(false);
   readonly testError = signal('');
@@ -259,6 +272,8 @@ export class BankAdminPage {
       displayNames: [''],
       senderPatterns: [''],
       parseRules: [''],
+      dateFromText: [false],
+      dateOffset: [''],
       accountResolutionPolicy: this.fb.group({
         strategy: [''],
         minSuffixDigits: [''],
@@ -295,6 +310,15 @@ export class BankAdminPage {
 
   setChannelEnabled(key: ChannelKey, value: boolean): void {
     this.form.controls[key].controls.enabled.setValue(value);
+    this.form.controls[key].markAsDirty();
+  }
+
+  channelDateFromText(key: ChannelKey): boolean {
+    return Boolean(this.form.controls[key].controls.dateFromText.value);
+  }
+
+  setChannelDateFromText(key: ChannelKey, value: boolean): void {
+    this.form.controls[key].controls.dateFromText.setValue(value);
     this.form.controls[key].markAsDirty();
   }
 
@@ -367,6 +391,8 @@ export class BankAdminPage {
       displayNames: '',
       senderPatterns: '',
       parseRules: '',
+      dateFromText: false,
+      dateOffset: '',
       accountResolutionPolicy: {
         strategy: '',
         minSuffixDigits: '',
@@ -378,13 +404,16 @@ export class BankAdminPage {
 
   private channelToForm(cfg: BankChannelConfig) {
     const policy = cfg.accountResolutionPolicy ?? null;
+    const { dateFromText, dateOffset, rest: displayRules } = this.splitDateSettings(cfg.parseRules);
     return {
       enabled: cfg.enabled,
       packageNames: (cfg.packageNames ?? []).join('\n'),
       contentPatterns: (cfg.contentPatterns ?? []).join('\n'),
       displayNames: (cfg.displayNames ?? []).join('\n'),
       senderPatterns: (cfg.senderPatterns ?? []).join('\n'),
-      parseRules: cfg.parseRules ? JSON.stringify(cfg.parseRules, null, 2) : '',
+      parseRules: Object.keys(displayRules).length ? JSON.stringify(displayRules, null, 2) : '',
+      dateFromText,
+      dateOffset,
       accountResolutionPolicy: {
         strategy: policy?.strategy ?? '',
         minSuffixDigits: policy?.minSuffixDigits != null ? String(policy.minSuffixDigits) : '',
@@ -496,15 +525,37 @@ export class BankAdminPage {
     const g = this.form.controls[key].getRawValue();
     const rules = this.parseRulesJson(g.parseRules);
     if (rules === null) return null;
+    const merged: Record<string, unknown> = { ...(rules ?? {}) };
+    if (g.dateFromText) merged['dateFromText'] = true;
+    else delete merged['dateFromText'];
+    if (g.dateOffset.trim()) merged['dateOffset'] = g.dateOffset.trim();
+    else delete merged['dateOffset'];
     return {
       enabled: g.enabled,
       packageNames: this.toList(g.packageNames),
       contentPatterns: this.toList(g.contentPatterns),
       displayNames: this.toList(g.displayNames),
       senderPatterns: this.toList(g.senderPatterns),
-      parseRules: rules ?? null,
+      parseRules: Object.keys(merged).length ? merged : null,
       accountResolutionPolicy: this.buildResolutionPolicy(g.accountResolutionPolicy),
     };
+  }
+
+  /**
+   * Separa `dateFromText`/`dateOffset` de `parseRules` para editarlos con controles
+   * dedicados (toggle + input) en vez de dentro del textarea de JSON crudo.
+   */
+  private splitDateSettings(rules: Record<string, unknown> | null | undefined): {
+    dateFromText: boolean;
+    dateOffset: string;
+    rest: Record<string, unknown>;
+  } {
+    const rest = { ...(rules ?? {}) };
+    const dateFromText = Boolean(rest['dateFromText']);
+    const dateOffset = typeof rest['dateOffset'] === 'string' ? (rest['dateOffset'] as string) : '';
+    delete rest['dateFromText'];
+    delete rest['dateOffset'];
+    return { dateFromText, dateOffset, rest };
   }
 
   /** Arma la política; null si no se eligió estrategia (= sin política). */
@@ -657,6 +708,8 @@ export class BankAdminPage {
     this.testTitle.set('');
     this.testBody.set('');
     this.testFrom.set('');
+    this.testDate.set('');
+    this.testPostTime.set(null);
     this.testResult.set(null);
     this.testError.set('');
     this.testing.set(false);
@@ -669,6 +722,8 @@ export class BankAdminPage {
   setTestChannel(channel: ChannelKey): void {
     this.testChannel.set(channel);
     this.recentEvents.set([]);
+    this.testDate.set('');
+    this.testPostTime.set(null);
     this.testTrigger.next();
   }
 
@@ -754,8 +809,13 @@ export class BankAdminPage {
             subject: this.testTitle(),
             bodyText: this.testBody(),
             from: this.testFrom(),
+            date: this.testDate() || undefined,
           }
-        : { title: this.testTitle(), text: this.testBody() };
+        : {
+            title: this.testTitle(),
+            text: this.testBody(),
+            postTime: this.testPostTime() ?? undefined,
+          };
     this.exampleModalExample.set(null);
     this.exampleModalRunResult.set(null);
     this.exampleModalSeed.set(seed);
@@ -963,9 +1023,14 @@ export class BankAdminPage {
   }
 
   private loadProposalIntoEditor(proposal: SuggestRulesResponse, channel: ChannelKey): void {
-    const ctrl = this.form.controls[channel].controls.parseRules;
-    ctrl.setValue(JSON.stringify(proposal.proposedRules, null, 2));
-    ctrl.markAsDirty();
+    const group = this.form.controls[channel];
+    // La IA solo propone reglas de extracción; si por algún motivo trae
+    // dateFromText/dateOffset, se separan a sus propios controles (igual que al hidratar).
+    const { dateFromText, dateOffset, rest } = this.splitDateSettings(proposal.proposedRules);
+    group.controls.dateFromText.setValue(dateFromText);
+    group.controls.dateOffset.setValue(dateOffset);
+    group.controls.parseRules.setValue(Object.keys(rest).length ? JSON.stringify(rest, null, 2) : '');
+    group.controls.parseRules.markAsDirty();
     this.activeChannel.set(channel);
   }
 
@@ -1000,18 +1065,6 @@ export class BankAdminPage {
       .join(', ');
   }
 
-  /** Muestra la fecha que declaró el banco en el mensaje (o el fallback resuelto). */
-  formatTransferDate(value: ParsedBankNotification['transactionDate']): string {
-    if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return [
-      `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-      `${pad(date.getHours())}:${pad(date.getMinutes())}`,
-    ].join(' ');
-  }
-
   /** Carga eventos reales recientes del banco para capturarlos como ejemplo. */
   loadRecentEvents(): void {
     const code = this.editingCode();
@@ -1035,9 +1088,13 @@ export class BankAdminPage {
       this.testTitle.set(s.subject ?? '');
       this.testBody.set(s.bodyText ?? '');
       this.testFrom.set(s.from ?? '');
+      this.testDate.set(s.date ?? '');
+      this.testPostTime.set(null);
     } else {
       this.testTitle.set(s.title ?? '');
       this.testBody.set([s.text, s.bigText].filter(Boolean).join('\n'));
+      this.testDate.set('');
+      this.testPostTime.set(s.postTime ?? null);
     }
     this.recentEvents.set([]);
     this.testTrigger.next();
@@ -1068,6 +1125,8 @@ export class BankAdminPage {
           // cae al HTML crudo — que es justo lo que el parser corre en ese caso.
           this.testBody.set(sample.bodyText || sample.bodyHtml || '');
           this.testFrom.set(sample.from ?? '');
+          this.testDate.set('');
+          this.testPostTime.set(null);
           if (!sample.bodyText && !sample.bodyHtml) {
             this.suggestError.set(
               'El archivo no traía cuerpo legible (asunto/remitente sí). Prueba con el correo reenviado (suele traer texto plano).',

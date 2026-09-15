@@ -134,6 +134,10 @@ export interface ExpectedValues {
   receiverAccount?: string;
   /** Llave Bre-B del receptor (ej. `@LEONARDOF6907`). */
   llave?: string;
+  /** Fecha/hora esperada de la transacción (cualquier string parseable por `new Date`). */
+  transactionDate?: string;
+  /** De qué señal debió salir la fecha esperada. */
+  transactionDateSource?: TransactionDateSource;
 }
 
 /** Resultado de resolución esperado de un ejemplo (flujo completo). */
@@ -150,6 +154,10 @@ export interface BankExample {
   subject?: string;
   bodyText?: string;
   from?: string;
+  /** Header `Date` simulado (solo channel `email`). */
+  date?: string | null;
+  /** `postTime` simulado, epoch ms (solo channel `mobile`/`desk`). */
+  postTime?: number | null;
   expected?: ExpectedValues | null;
   /** `false` = ejemplo negativo (NO debería parsearse). Por defecto `true`. */
   expectMatch?: boolean;
@@ -282,6 +290,10 @@ export interface AddExampleRequest {
   subject?: string;
   bodyText?: string;
   from?: string;
+  /** Header `Date` simulado (solo channel `email`). */
+  date?: string;
+  /** `postTime` simulado, epoch ms (solo channel `mobile`/`desk`). */
+  postTime?: number;
   expected?: ExpectedValues;
   expectMatch?: boolean;
   simulatedAccounts?: string[];
@@ -308,6 +320,10 @@ export interface UpdateExampleRequest {
   subject?: string;
   bodyText?: string;
   from?: string;
+  /** Header `Date` simulado (solo channel `email`). */
+  date?: string;
+  /** `postTime` simulado, epoch ms (solo channel `mobile`/`desk`). */
+  postTime?: number;
   expected?: ExpectedValues | null;
   expectMatch?: boolean;
   simulatedAccounts?: string[];
