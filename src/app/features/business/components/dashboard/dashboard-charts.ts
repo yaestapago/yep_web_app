@@ -398,9 +398,35 @@ export class DashboardChartsPanel {
     return Math.round(HEATMAP_MIN_PCT + (count / maxCount) * (100 - HEATMAP_MIN_PCT));
   }
 
-  /** Color de celda del mapa de calor: mezcla `--color-primary` sobre la superficie según intensidad. */
+  /**
+   * Color de celda del mapa de calor: interpola manualmente entre
+   * `--color-surface` y `--color-primary` según la intensidad. Antes usaba
+   * `color-mix()` de CSS, que en navegadores que no lo soportan simplemente
+   * no aplica ningún color de fondo — todas las celdas se ven iguales, como
+   * si nunca cambiaran. Calculando el rgb() nosotros mismos funciona en
+   * cualquier navegador.
+   */
   heatmapCellColor(colorPct: number): string {
-    return `color-mix(in srgb, ${this.cssVar('--color-primary')} ${colorPct}%, ${this.cssVar('--color-surface')})`;
+    const primary = this.parseHexColor(this.cssVar('--color-primary'));
+    const surface = this.parseHexColor(this.cssVar('--color-surface'));
+    if (!primary || !surface) {
+      return `color-mix(in srgb, ${this.cssVar('--color-primary')} ${colorPct}%, ${this.cssVar('--color-surface')})`;
+    }
+    const ratio = colorPct / 100;
+    const mix = (from: number, to: number) => Math.round(from + (to - from) * ratio);
+    return `rgb(${mix(surface.r, primary.r)}, ${mix(surface.g, primary.g)}, ${mix(surface.b, primary.b)})`;
+  }
+
+  private parseHexColor(value: string): { r: number; g: number; b: number } | null {
+    const match = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) {
+      return null;
+    }
+    const hex = match[1].length === 3
+      ? match[1].split('').map((c) => c + c).join('')
+      : match[1];
+    const num = parseInt(hex, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
   }
 
   /** Hora en formato 12h compacto (ej. "12a", "3p") en vez de la hora militar 0-23. */

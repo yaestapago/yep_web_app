@@ -708,7 +708,15 @@ export class BusinessNotifiersSection implements OnInit {
     );
   }
 
-  copyNotifierEmail(value: string | undefined, notifierId: string, field: string): void {
+  notifierEmailSenderPatternsText(notifier: Notifier): string {
+    return this.notifierEmailSenderPatterns(notifier).join('\n');
+  }
+
+  copyNotifierEmail(
+    value: string | undefined,
+    notifierId: string,
+    field: string,
+  ): void {
     if (!value) return;
     const key = `${notifierId}:${field}`;
     void navigator.clipboard?.writeText(value).then(() => {
