@@ -197,6 +197,50 @@
   font-size: var(--font-size-xs);
 }
 
+.heatmap {
+  container-type: inline-size;
+  display: grid;
+  gap: 1px;
+  grid-template-rows: auto repeat(7, 1fr);
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+  // Escala con el ancho real del contenedor (miniatura vs. modal ampliado)
+  // en vez de con el viewport: nunca desborda, solo achica el texto.
+  font-size: clamp(6px, 3cqw, 11px);
+}
+
+.heatmap__hours,
+.heatmap__row {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1.6em repeat(24, minmax(0, 1fr));
+  min-height: 0;
+  min-width: 0;
+}
+
+.heatmap__hour-label {
+  color: var(--color-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.heatmap__day-label {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-weight: var(--font-weight-semibold);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.heatmap__cell {
+  border-radius: 1px;
+  min-height: 0;
+  min-width: 0;
+}
+
 @media (max-width: 560px) {
   .charts-grid {
     grid-template-columns: 1fr;

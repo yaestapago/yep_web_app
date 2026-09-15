@@ -27,6 +27,8 @@ export class StatusDot {
   readonly detail = defineInput<string>('');
   /** Oculta el texto y deja solo el punto (el aria-label se mantiene). */
   readonly compact = defineInput(false);
+  /** El label es informativo, no un estado real (ej. "Notificador Gmail"): se ve atenuado en vez de en negrita. */
+  readonly labelMuted = defineInput(false);
 
   readonly resolvedLabel = computed(() => this.label() || notifierStatusLabel(this.level()));
   readonly ariaLabel = computed(() => {

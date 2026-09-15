@@ -159,15 +159,30 @@ export class SourceEventDetailModal {
       const name = acc.displayName || acc.holderName || acc.bankId;
       return `${name} ····${acc.accountNumberLast4}`;
     }
-    return event.normalized?.receiverAccount || event.normalized?.receiverBreBKey || 'No detectada';
+    return (
+      event.normalized?.receiverAccount ||
+      event.normalized?.receiverBreBKeyDisplay?.trim() ||
+      event.normalized?.receiverBreBKey ||
+      'No detectada'
+    );
   }
 
   senderName(event: SourceEvent): string {
     return event.normalized?.senderName?.trim() || 'N/A';
   }
 
+  /**
+   * La llave Bre-B tal como se detectó (con `@`/mayúsculas originales, si el
+   * backend la guardó) — no la forma normalizada (`receiverBreBKey`), que
+   * pierde el `@` y por eso puede confundirse con una llave numérica distinta.
+   */
   keyName(event: SourceEvent): string {
-    return event.normalized?.receiverBreBKey?.trim() || this.extractKeyFromText(event) || 'N/A';
+    return (
+      event.normalized?.receiverBreBKeyDisplay?.trim() ||
+      event.normalized?.receiverBreBKey?.trim() ||
+      this.extractKeyFromText(event) ||
+      'N/A'
+    );
   }
 
   sourceLabel(event: SourceEvent): string {

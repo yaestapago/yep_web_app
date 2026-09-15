@@ -200,7 +200,7 @@
 }
 
 .notifier-email-row {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -208,24 +208,27 @@
 }
 
 .notifier-email-row__label {
+  // Altura igual a .code-copy: centra "De:" con el primer correo, no con
+  // todo el bloque, aunque haya varios correos apilados debajo.
+  align-items: center;
   color: var(--color-text-secondary);
+  display: flex;
   flex: 0 0 auto;
   font-weight: var(--font-weight-semibold);
-}
-
-.notifier-email-row__copy-group {
-  align-items: center;
-  display: inline-flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  min-width: 0;
+  height: 30px;
 }
 
 .notifier-email-row__values {
-  display: inline-flex;
+  display: flex;
   flex: 0 1 auto;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.notifier-email-row__item {
+  align-items: center;
+  display: inline-flex;
   gap: var(--space-1);
   min-width: 0;
 }

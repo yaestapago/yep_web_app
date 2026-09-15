@@ -1,4 +1,4 @@
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   Component,
   HostListener,
@@ -22,20 +22,27 @@ import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import type { DashboardChartsSummary } from '../../../../shared/models/dashboard-summary.models';
-import type { TransactionStatus } from '../../../../shared/models/transaction.models';
-import {
-  TRANSACTION_CATEGORIES,
-  transactionCategory,
-  transactionCategoryLabel,
-} from '../../../../shared/utils/transaction-status';
 
-interface ChartView {
-  id: string;
-  type: ChartType;
-  data: ChartData;
-  options: ChartOptions;
-  ariaLabel: string;
+interface HeatmapCellView {
+  hour: number;
+  count: number;
+  /** 0-100: qué tan intenso pintar la celda (0 = vacía, 100 = el máximo del rango). */
+  colorPct: number;
 }
+
+interface HeatmapRowView {
+  label: string;
+  cells: HeatmapCellView[];
+}
+
+interface HeatmapView {
+  hours: number[];
+  rows: HeatmapRowView[];
+}
+
+type ChartView =
+  | { id: string; kind: 'canvas'; type: ChartType; data: ChartData; options: ChartOptions; ariaLabel: string }
+  | { id: string; kind: 'heatmap'; heatmap: HeatmapView; ariaLabel: string };
 
 interface CatalogItem {
   id: string;
@@ -43,43 +50,37 @@ interface CatalogItem {
   description: string;
 }
 
+const WEEKDAY_LABELS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+// Con 24 columnas no cabe una etiqueta en cada una: solo se rotula cada 3
+// horas (12, 3, 6, 9...), pero las 24 celdas de datos siguen ahí.
+const HOUR_LABEL_STEP = 3;
+
 const CATALOG: CatalogItem[] = [
-  { id: 'bankAmounts', title: 'Montos por banco', description: 'Dona de lo recibido por banco.' },
   {
-    id: 'dailyCaptured',
-    title: 'Capturado por día',
-    description: 'Barras del monto de los últimos 7 días.',
+    id: 'todayVsLastWeek',
+    title: 'Hoy vs. hace 7 días',
+    description: 'Compara el dinero notificado hoy contra el mismo día de la semana pasada.',
   },
   {
-    id: 'statusDistribution',
-    title: 'Distribución por estado',
-    description: 'Recibida, verificada, pendiente y rechazada.',
+    id: 'hourlyHeatmap',
+    title: 'Cuándo te pagan',
+    description: 'Qué días y horas concentran más notificaciones de pago (últimas 8 semanas).',
   },
   {
-    id: 'paidVsPending',
-    title: 'Validados vs pendientes',
-    description: 'Comparativo de conteo de pagos.',
+    id: 'topCustomers',
+    title: 'Top clientes',
+    description: 'Los 5 remitentes que más dinero te han notificado en total.',
   },
   {
-    id: 'eventsBySource',
-    title: 'Eventos por fuente',
-    description: 'Dona de eventos por tipo de origen.',
+    id: 'weeklyTrend',
+    title: 'Tendencia semanal',
+    description: 'Dinero notificado por semana en las últimas 10 semanas.',
   },
 ];
 
-const DEFAULT_SELECTION = ['bankAmounts', 'dailyCaptured', 'statusDistribution'];
+const DEFAULT_SELECTION = CATALOG.map((item) => item.id);
 const STORAGE_PREFIX = 'yep:dashboard:charts:';
-
-const SOURCE_LABELS: Record<string, string> = {
-  WHATSAPP_INBOUND: 'WhatsApp',
-  OCR_UPLOAD: 'Comprobante (OCR)',
-  BANK_SMS: 'SMS bancario',
-  BANK_WEBHOOK: 'Webhook bancario',
-  BANK_API_POLL: 'API bancaria',
-  MANUAL_ENTRY: 'Manual',
-  NOTIFIER_APP: 'App notificadora',
-  EMAIL_GMAIL: 'Correo',
-};
 
 /**
  * Zona 1 (parte gráfica): módulo de gráficas predefinidas que el usuario elige
@@ -93,6 +94,7 @@ const SOURCE_LABELS: Record<string, string> = {
     ChartCanvas,
     Checkbox,
     Modal,
+    NgTemplateOutlet,
     LucideChartPie,
     LucideChevronLeft,
     LucideChevronRight,
@@ -124,21 +126,20 @@ export class DashboardChartsPanel {
   }
 
   readonly views = computed<ChartView[]>(() => {
-    const palette = this.palette();
     const charts = this.charts();
-
     return this.selected()
-      .map((id) => this.build(id, charts, palette))
+      .map((id) => this.build(id, charts))
       .filter((view): view is ChartView => view !== null);
   });
 
   readonly hasData = computed(() => {
     const charts = this.charts();
     return (
-      charts.bankAmounts.length > 0 ||
-      charts.dailyCaptured.length > 0 ||
-      charts.statusDistribution.length > 0 ||
-      charts.eventsBySource.length > 0
+      charts.todayVsLastWeek.today > 0 ||
+      charts.todayVsLastWeek.lastWeek > 0 ||
+      charts.hourlyHeatmap.length > 0 ||
+      charts.topCustomers.length > 0 ||
+      charts.weeklyTrend.length > 0
     );
   });
 
@@ -225,159 +226,107 @@ export class DashboardChartsPanel {
 
   // --- Construcción de cada gráfica -----------------------------------------
 
-  private build(
-    id: string,
-    charts: DashboardChartsSummary,
-    palette: string[],
-  ): ChartView | null {
+  private build(id: string, charts: DashboardChartsSummary): ChartView | null {
     switch (id) {
-      case 'bankAmounts':
-        return this.bankAmounts(charts, palette);
-      case 'dailyCaptured':
-        return this.dailyCaptured(charts, palette);
-      case 'statusDistribution':
-        return this.statusDistribution(charts);
-      case 'paidVsPending':
-        return this.paidVsPending(charts);
-      case 'eventsBySource':
-        return this.eventsBySource(charts, palette);
+      case 'todayVsLastWeek':
+        return this.todayVsLastWeek(charts);
+      case 'hourlyHeatmap':
+        return this.hourlyHeatmap(charts);
+      case 'topCustomers':
+        return this.topCustomers(charts);
+      case 'weeklyTrend':
+        return this.weeklyTrend(charts);
       default:
         return null;
     }
   }
 
-  private bankAmounts(charts: DashboardChartsSummary, palette: string[]): ChartView {
-    const labels = charts.bankAmounts.map((point) => point.key || 'Sin banco');
+  private todayVsLastWeek(charts: DashboardChartsSummary): ChartView {
+    const { today, lastWeek, todayDate, lastWeekDate } = charts.todayVsLastWeek;
     return {
-      id: 'bankAmounts',
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [
-          {
-            data: charts.bankAmounts.map((point) => point.amount),
-            backgroundColor: this.cycle(palette, labels.length),
-            borderWidth: 0,
-          },
-        ],
-      },
-      options: this.doughnutOptions(),
-      ariaLabel: 'Montos recibidos por banco',
-    };
-  }
-
-  private dailyCaptured(charts: DashboardChartsSummary, palette: string[]): ChartView {
-    return {
-      id: 'dailyCaptured',
+      id: 'todayVsLastWeek',
+      kind: 'canvas',
       type: 'bar',
       data: {
-        labels: charts.dailyCaptured.map((point) => this.shortDateLabel(point.key)),
+        labels: [`Hoy (${this.shortDateLabel(todayDate)})`, this.shortDateLabel(lastWeekDate)],
         datasets: [
           {
-            data: charts.dailyCaptured.map((point) => point.amount),
-            backgroundColor: palette[0],
+            data: [today, lastWeek],
+            backgroundColor: [this.cssVar('--color-primary'), this.cssVar('--color-text-muted')],
             borderRadius: 6,
           },
         ],
       },
       options: this.barOptions(),
-      ariaLabel: 'Monto capturado por día en los últimos 7 días',
+      ariaLabel: 'Dinero notificado hoy comparado con el mismo día de la semana pasada',
     };
   }
 
-  private statusDistribution(charts: DashboardChartsSummary): ChartView {
-    const counts = new Map<string, number>(TRANSACTION_CATEGORIES.map((c) => [c, 0]));
-    for (const point of charts.statusDistribution) {
-      const cat = transactionCategory(point.key);
-      counts.set(cat, (counts.get(cat) ?? 0) + point.count);
-    }
-    const toneColors: Record<string, string> = {
-      recibida: this.cssVar('--color-text-muted'),
-      verificada: this.cssVar('--color-success'),
-      pendiente: this.cssVar('--color-warning'),
-      rechazada: this.cssVar('--color-error'),
-    };
+  private hourlyHeatmap(charts: DashboardChartsSummary): ChartView {
+    const cells = charts.hourlyHeatmap;
+    const maxCount = cells.reduce((max, cell) => Math.max(max, cell.count), 0);
+
+    const rows: HeatmapRowView[] = WEEKDAY_LABELS.map((label, dayOfWeek) => ({
+      label,
+      cells: HOURS.map((hour) => {
+        const count = cells.find((c) => c.dayOfWeek === dayOfWeek && c.hour === hour)?.count ?? 0;
+        return { hour, count, colorPct: this.heatmapIntensity(count, maxCount) };
+      }),
+    }));
+
     return {
-      id: 'statusDistribution',
-      type: 'doughnut',
-      data: {
-        labels: TRANSACTION_CATEGORIES.map((c) => transactionCategoryLabel(c)),
-        datasets: [
-          {
-            data: TRANSACTION_CATEGORIES.map((c) => counts.get(c) ?? 0),
-            backgroundColor: TRANSACTION_CATEGORIES.map((c) => toneColors[c]),
-            borderWidth: 0,
-          },
-        ],
-      },
-      options: this.doughnutOptions(),
-      ariaLabel: 'Distribución de transacciones por estado',
+      id: 'hourlyHeatmap',
+      kind: 'heatmap',
+      heatmap: { hours: HOURS, rows },
+      ariaLabel: 'Mapa de calor de eventos de pago notificados por día de la semana y hora',
     };
   }
 
-  private paidVsPending(charts: DashboardChartsSummary): ChartView {
-    const paid = charts.paidVsPending.find((point) => point.key === 'paid')?.count ?? 0;
-    const pending = charts.paidVsPending.find((point) => point.key === 'pending')?.count ?? 0;
+  private topCustomers(charts: DashboardChartsSummary): ChartView {
+    const points = charts.topCustomers;
     return {
-      id: 'paidVsPending',
+      id: 'topCustomers',
+      kind: 'canvas',
       type: 'bar',
       data: {
-        labels: ['Validados', 'Pendientes'],
+        labels: points.map((point) => point.key),
         datasets: [
           {
-            data: [paid, pending],
-            backgroundColor: [this.cssVar('--color-success'), this.cssVar('--color-warning')],
+            data: points.map((point) => point.amount),
+            backgroundColor: this.cssVar('--color-primary'),
             borderRadius: 6,
           },
         ],
       },
-      options: this.barOptions(),
-      ariaLabel: 'Comparativo de pagos validados contra pendientes',
+      options: this.horizontalBarOptions(),
+      ariaLabel: 'Remitentes que más dinero te han notificado en total',
     };
   }
 
-  private eventsBySource(charts: DashboardChartsSummary, palette: string[]): ChartView {
-    const labels = charts.eventsBySource.map((point) => SOURCE_LABELS[point.key] ?? point.key);
+  private weeklyTrend(charts: DashboardChartsSummary): ChartView {
+    const points = charts.weeklyTrend;
     return {
-      id: 'eventsBySource',
-      type: 'doughnut',
+      id: 'weeklyTrend',
+      kind: 'canvas',
+      type: 'line',
       data: {
-        labels,
+        labels: points.map((point) => this.shortDateLabel(point.key)),
         datasets: [
           {
-            data: charts.eventsBySource.map((point) => point.count),
-            backgroundColor: this.cycle(palette, labels.length),
-            borderWidth: 0,
+            data: points.map((point) => point.amount),
+            borderColor: this.cssVar('--color-primary'),
+            backgroundColor: `color-mix(in srgb, ${this.cssVar('--color-primary')} 18%, transparent)`,
+            fill: true,
+            tension: 0.3,
           },
         ],
       },
-      options: this.doughnutOptions(),
-      ariaLabel: 'Eventos por tipo de fuente',
+      options: this.lineOptions(),
+      ariaLabel: 'Tendencia semanal de dinero notificado',
     };
   }
 
   // --- Opciones / colores ----------------------------------------------------
-
-  private doughnutOptions(): ChartOptions {
-    const options: ChartOptions<'doughnut'> = {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            boxWidth: 10,
-            boxHeight: 10,
-            padding: 8,
-            color: this.cssVar('--color-text-secondary'),
-            font: { size: 11 },
-          },
-        },
-      },
-    };
-    return options as ChartOptions;
-  }
 
   private barOptions(): ChartOptions {
     const grid = this.cssVar('--color-border');
@@ -397,19 +346,73 @@ export class DashboardChartsPanel {
     };
   }
 
-  private palette(): string[] {
-    return [
-      this.cssVar('--color-primary'),
-      this.cssVar('--color-secondary'),
-      this.cssVar('--color-accent'),
-      this.cssVar('--color-warning'),
-      this.cssVar('--color-error'),
-      this.cssVar('--color-success'),
-    ];
+  private horizontalBarOptions(): ChartOptions {
+    const grid = this.cssVar('--color-border');
+    const text = this.cssVar('--color-text-secondary');
+    const options: ChartOptions<'bar'> = {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: grid },
+          ticks: { color: text, font: { size: 10 }, maxTicksLimit: 4 },
+        },
+        y: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } },
+      },
+    };
+    return options as ChartOptions;
   }
 
-  private cycle(palette: string[], length: number): string[] {
-    return Array.from({ length }, (_, index) => palette[index % palette.length]);
+  private lineOptions(): ChartOptions {
+    const grid = this.cssVar('--color-border');
+    const text = this.cssVar('--color-text-secondary');
+    const options: ChartOptions<'line'> = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } },
+        y: {
+          beginAtZero: true,
+          grid: { color: grid },
+          ticks: { color: text, font: { size: 10 }, maxTicksLimit: 4 },
+        },
+      },
+    };
+    return options as ChartOptions;
+  }
+
+  /**
+   * % de mezcla para una celda: 0 si está realmente vacía, si no un piso de
+   * 30% (para que "hubo actividad" ya se note contra el fondo, en vez de un
+   * tinte casi imperceptible) escalado hasta 100% en la celda más activa.
+   */
+  private heatmapIntensity(count: number, maxCount: number): number {
+    if (count === 0 || maxCount === 0) {
+      return 0;
+    }
+    const HEATMAP_MIN_PCT = 30;
+    return Math.round(HEATMAP_MIN_PCT + (count / maxCount) * (100 - HEATMAP_MIN_PCT));
+  }
+
+  /** Color de celda del mapa de calor: mezcla `--color-primary` sobre la superficie según intensidad. */
+  heatmapCellColor(colorPct: number): string {
+    return `color-mix(in srgb, ${this.cssVar('--color-primary')} ${colorPct}%, ${this.cssVar('--color-surface')})`;
+  }
+
+  /** Hora en formato 12h compacto (ej. "12a", "3p") en vez de la hora militar 0-23. */
+  hourLabel(hour: number): string {
+    const period = hour < 12 ? 'a' : 'p';
+    const twelveHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${twelveHour}${period}`;
+  }
+
+  /** Etiqueta del encabezado: vacía salvo cada HOUR_LABEL_STEP horas, para no saturar 24 columnas. */
+  hourHeaderLabel(hour: number): string {
+    return hour % HOUR_LABEL_STEP === 0 ? this.hourLabel(hour) : '';
   }
 
   private cssVar(name: string): string {

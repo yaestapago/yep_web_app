@@ -57,7 +57,7 @@
             <span class="list-card__meta">
               {{ account.currency }} · {{ account.accountType }} · {{ locationNames(account) }}
             </span>
-            <span class="list-card__meta">Bre-B: {{ account.breBKeys.join(', ') }}</span>
+            <span class="list-card__meta">Bre-B: {{ account.breBKeysDisplay.join(', ') }}</span>
             <span class="list-card__meta">{{ account.isActive ? 'Activa' : 'Inactiva' }}</span>
           </div>
           @if (canManage()) {

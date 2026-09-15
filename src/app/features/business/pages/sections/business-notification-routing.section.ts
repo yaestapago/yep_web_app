@@ -417,6 +417,18 @@ export class BusinessNotificationRoutingSection implements OnInit {
     return account.breBKeys ?? [];
   }
 
+  /**
+   * Etiqueta de la llave para mostrar: si es puramente numérica se formatea
+   * como teléfono (comportamiento histórico); si es alfanumérica (alias, p.
+   * ej. `@negocio`) se muestra tal como se registró, sin formatear como
+   * teléfono ni perder el `@`.
+   */
+  breBKeyLabel(account: BankAccount, key: string): string {
+    const index = (account.breBKeys ?? []).indexOf(key);
+    const raw = (index >= 0 ? account.breBKeysDisplay?.[index] : undefined) || key;
+    return /^\d+$/.test(raw) ? this.formatPhone(raw) : raw;
+  }
+
   activeAccountCount(member: ApprovedMember): number {
     if (!member.cellphoneNumber) return 0;
     let count = 0;

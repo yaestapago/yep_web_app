@@ -41,12 +41,7 @@
               <svg class="chart-cell__expand" lucideMaximize2 aria-hidden="true"></svg>
             </span>
             <span class="chart-cell__canvas">
-              <yep-chart-canvas
-                [type]="view.type"
-                [data]="view.data"
-                [options]="view.options"
-                [ariaLabel]="view.ariaLabel"
-              />
+              <ng-container [ngTemplateOutlet]="chartView" [ngTemplateOutletContext]="{ $implicit: view }" />
             </span>
           </button>
         }
@@ -54,6 +49,38 @@
     }
   </div>
 </div>
+
+<ng-template #chartView let-view>
+  @if (view.kind === 'canvas') {
+    <yep-chart-canvas
+      [type]="view.type"
+      [data]="view.data"
+      [options]="view.options"
+      [ariaLabel]="view.ariaLabel"
+    />
+  } @else {
+    <div class="heatmap" role="img" [attr.aria-label]="view.ariaLabel">
+      <div class="heatmap__hours">
+        <span class="heatmap__corner"></span>
+        @for (hour of view.heatmap.hours; track hour) {
+          <span class="heatmap__hour-label">{{ hourHeaderLabel(hour) }}</span>
+        }
+      </div>
+      @for (row of view.heatmap.rows; track row.label) {
+        <div class="heatmap__row">
+          <span class="heatmap__day-label">{{ row.label }}</span>
+          @for (cell of row.cells; track cell.hour) {
+            <span
+              class="heatmap__cell"
+              [style.background]="heatmapCellColor(cell.colorPct)"
+              [attr.title]="row.label + ' ' + hourLabel(cell.hour) + ' — ' + cell.count + ' evento(s)'"
+            ></span>
+          }
+        </div>
+      }
+    </div>
+  }
+</ng-template>
 
 <yep-modal
   [open]="configOpen()"
@@ -105,12 +132,7 @@
         </button>
       }
 
-      <yep-chart-canvas
-        [type]="view.type"
-        [data]="view.data"
-        [options]="view.options"
-        [ariaLabel]="view.ariaLabel"
-      />
+      <ng-container [ngTemplateOutlet]="chartView" [ngTemplateOutletContext]="{ $implicit: view }" />
 
       @if (canNavigateExpanded()) {
         <button

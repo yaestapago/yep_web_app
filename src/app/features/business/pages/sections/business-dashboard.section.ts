@@ -23,7 +23,6 @@ import {
   LucideChevronUp,
   LucideInbox,
   LucideListChecks,
-  LucideShieldCheck,
   LucideTriangleAlert,
 } from '@lucide/angular';
 import { finalize, interval } from 'rxjs';
@@ -53,6 +52,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
 import {
   NOTIFIER_STATUS_THRESHOLDS,
   computeNotifierStatus,
+  emailNotifierStatus,
 } from '../../../../shared/utils/notifier-status';
 import { transactionCategory } from '../../../../shared/utils/transaction-status';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -71,7 +71,6 @@ import {
 import {
   DashboardStatusPanel,
   type NotifierStatusRow,
-  type Semaphore,
 } from '../../components/dashboard/dashboard-status';
 import { ApplyInvoiceModal } from '../../components/dashboard/apply-invoice-modal';
 import { SourceEventDetailModal } from '../../components/dashboard/source-event-detail-modal';
@@ -99,12 +98,10 @@ const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
 ];
 
 const EMPTY_CHARTS: DashboardChartsSummary = {
-  bankAmounts: [],
-  dailyCaptured: [],
-  statusDistribution: [],
-  paidVsPending: [],
-  eventsBySource: [],
-  eventsByStatus: [],
+  todayVsLastWeek: { today: 0, lastWeek: 0, todayDate: '', lastWeekDate: '' },
+  hourlyHeatmap: [],
+  topCustomers: [],
+  weeklyTrend: [],
 };
 
 const EMPTY_SUMMARY: DashboardSummary = {
@@ -128,14 +125,7 @@ const EMPTY_SUMMARY: DashboardSummary = {
   alerts: [],
 };
 
-type KpiKey =
-  | 'totalAmount'
-  | 'paid'
-  | 'review'
-  | 'events'
-  | 'received'
-  | 'pending'
-  | 'rejected';
+type KpiKey = 'totalAmount' | 'events' | 'received' | 'pending' | 'rejected';
 
 /**
  * Panel de control del negocio (`/businesses/:businessId/dashboard`). Pantalla
@@ -162,7 +152,6 @@ type KpiKey =
     LucideChevronUp,
     LucideInbox,
     LucideListChecks,
-    LucideShieldCheck,
     LucideTriangleAlert,
     DashboardChartsPanel,
     DashboardKpiDetailPanel,
@@ -327,10 +316,8 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.loadBankAccounts();
   });
 
-  // --- Métricas (7 KPIs) — sobre la instantánea SIN filtrar ---
+  // --- Métricas — sobre la instantánea SIN filtrar ---
   readonly totalAmount = computed(() => this.summary().kpis.totalAmount);
-  readonly paidCount = computed(() => this.summary().kpis.paidCount);
-  readonly reviewCount = computed(() => this.summary().kpis.reviewCount);
   readonly receivedCount = computed(() => this.summary().kpis.receivedCount);
   readonly pendingCount = computed(() => this.summary().kpis.pendingCount);
   readonly rejectedCount = computed(() => this.summary().kpis.rejectedCount);
@@ -338,40 +325,22 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly attentionCount = computed(() => this.summary().kpis.attentionCount);
 
   // --- Estado de notificadores ---
+  // El semáforo global viene del backend (summary().semaphore): ya sabe
+  // distinguir un notificador de correo (sin heartbeat) de uno con problemas
+  // reales de Gmail. Aquí solo derivamos el punto de cada fila individual:
+  // heartbeat para phone_app/desktop_app, salud de Gmail para email_gmail.
   readonly notifierRows = computed<NotifierStatusRow[]>(() => {
     const now = this.now();
+    const emailChannelDown = this.summary().alerts.some(
+      (alert) => alert.type === 'gmail_credentials',
+    );
     return this.notifiers().map((notifier) => ({
       notifier,
-      status: computeNotifierStatus(notifier, this.thresholds, now),
+      status:
+        notifier.type === 'email_gmail'
+          ? emailNotifierStatus(emailChannelDown)
+          : computeNotifierStatus(notifier, this.thresholds, now),
     }));
-  });
-
-  // --- Semáforo global (sobre la instantánea SIN filtrar) ---
-  readonly semaphore = computed<Semaphore>(() => {
-    const rejected = this.rejectedCount();
-    const failedEvents = this.metricsEvents().filter((e) => e.status === 'failed').length;
-    const offline = this.notifierRows().filter((r) => r.status.level === 'offline').length;
-    const pending = this.pendingCount() + this.reviewCount();
-    const delayed = this.notifierRows().filter(
-      (r) => r.status.level === 'delayed' || r.status.level === 'unknown',
-    ).length;
-
-    if (rejected > 0 || failedEvents > 0 || offline > 0) {
-      const reasons: string[] = [];
-      if (rejected > 0) reasons.push(`${rejected} rechazada(s)`);
-      if (failedEvents > 0) reasons.push(`${failedEvents} evento(s) con error`);
-      if (offline > 0) reasons.push(`${offline} notificador(es) fuera de línea`);
-      return { level: 'red', label: 'Atención requerida', detail: reasons.join(' · ') };
-    }
-
-    if (pending > 0 || delayed > 0) {
-      const reasons: string[] = [];
-      if (pending > 0) reasons.push(`${pending} pago(s) por revisar`);
-      if (delayed > 0) reasons.push(`${delayed} notificador(es) con retraso`);
-      return { level: 'yellow', label: 'Con pendientes', detail: reasons.join(' · ') };
-    }
-
-    return { level: 'green', label: 'Operación normal', detail: 'Sin pendientes ni errores.' };
   });
 
   ngOnInit(): void {
@@ -811,8 +780,6 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   private kpiTitle(key: KpiKey): string {
     const titles: Record<KpiKey, string> = {
       totalAmount: 'Detalle de total capturado',
-      paid: 'Detalle de pagos validados',
-      review: 'Detalle de pagos por revisar',
       events: 'Detalle de eventos detectados',
       received: 'Detalle de transacciones recibidas',
       pending: 'Detalle de pendientes',
@@ -823,10 +790,6 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
 
   private kpiStatuses(key: KpiKey): TransactionStatus[] | undefined {
     switch (key) {
-      case 'paid':
-        return ['EVIDENCE_MATCHED', 'BANK_VERIFIED', 'MANUALLY_VERIFIED'];
-      case 'review':
-        return ['NEEDS_REVIEW', 'EVIDENCE_MATCHED'];
       case 'pending':
         return ['CREATED', 'PENDING_VERIFICATION', 'NEEDS_INPUT'];
       case 'rejected':

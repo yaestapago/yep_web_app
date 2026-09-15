@@ -26,6 +26,8 @@ export interface SourceEventNormalized {
   senderAccount?: string;
   receiverAccount?: string;
   receiverBreBKey?: string;
+  /** Llave Bre-B tal como se detectó (con `@`/mayúsculas originales); usar esta para mostrar al usuario. */
+  receiverBreBKeyDisplay?: string;
   reportedBankAccountId?: string;
   reportedBankAccountResolution?: string;
 }
