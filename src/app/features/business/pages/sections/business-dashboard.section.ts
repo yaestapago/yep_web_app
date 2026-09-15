@@ -102,6 +102,7 @@ const EMPTY_CHARTS: DashboardChartsSummary = {
   hourlyHeatmap: [],
   topCustomers: [],
   weeklyTrend: [],
+  notificationLatency: [],
 };
 
 const EMPTY_SUMMARY: DashboardSummary = {

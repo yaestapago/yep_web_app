@@ -58,7 +58,7 @@
       [options]="view.options"
       [ariaLabel]="view.ariaLabel"
     />
-  } @else {
+  } @else if (view.kind === 'heatmap') {
     <div class="heatmap" role="img" [attr.aria-label]="view.ariaLabel">
       <div class="heatmap__hours">
         <span class="heatmap__corner"></span>
@@ -79,6 +79,37 @@
         </div>
       }
     </div>
+  } @else {
+    <table class="latency-table" [attr.aria-label]="view.ariaLabel">
+      <thead>
+        <tr>
+          <th>Banco</th>
+          <th>Notificador → evento</th>
+          <th>Transacción → reenvío correo</th>
+          <th>Transacción → evento</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of view.rows; track row.bankId) {
+          <tr>
+            <td>{{ row.bankId }}</td>
+            <td [title]="row.notifierLatency.sampleCount + ' muestra(s)'">
+              {{ row.notifierLatency.formatted }}
+            </td>
+            <td [title]="row.emailForwardDelay.sampleCount + ' muestra(s)'">
+              {{ row.emailForwardDelay.formatted }}
+            </td>
+            <td [title]="row.eventDelay.sampleCount + ' muestra(s)'">
+              {{ row.eventDelay.formatted }}
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">Sin datos en el rango seleccionado.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
   }
 </ng-template>
 
@@ -90,7 +121,7 @@
   (closeRequested)="closeConfig()"
 >
   <ul class="catalog">
-    @for (item of catalog; track item.id) {
+    @for (item of catalog(); track item.id) {
       <li class="catalog__item">
         <yep-checkbox
           class="catalog__label"

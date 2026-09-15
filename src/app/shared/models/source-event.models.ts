@@ -1,3 +1,5 @@
+import type { TransactionDateSource } from './bank.models';
+
 export type SourceEventType =
   | 'WHATSAPP_INBOUND'
   | 'OCR_UPLOAD'
@@ -22,6 +24,8 @@ export interface SourceEventNormalized {
   currency?: string;
   reference?: string;
   transactionDate?: string;
+  /** Origen de `transactionDate`; 'text' = el banco la declaró en el propio cuerpo del mensaje. */
+  transactionDateSource?: TransactionDateSource;
   senderName?: string;
   senderAccount?: string;
   receiverAccount?: string;

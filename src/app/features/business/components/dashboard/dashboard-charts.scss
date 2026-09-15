@@ -241,6 +241,32 @@
   min-width: 0;
 }
 
+.latency-table {
+  border-collapse: collapse;
+  font-size: var(--font-size-xxs);
+  height: 100%;
+  overflow: auto;
+  width: 100%;
+}
+
+.latency-table th,
+.latency-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.latency-table th {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.latency-table td:first-child {
+  font-weight: var(--font-weight-semibold);
+  text-transform: capitalize;
+}
+
 @media (max-width: 560px) {
   .charts-grid {
     grid-template-columns: 1fr;

@@ -51,11 +51,32 @@ export interface DashboardWeeklyTrendPoint {
   amount: number;
 }
 
+/**
+ * Latencia promedio de notificación de un banco (solo visible a superadmin,
+ * ver `DashboardChartsPanel`). `null` en un campo = sin muestras suficientes
+ * para calcularlo (p. ej. un banco sin `dateFromText` nunca produce
+ * `transactionDateSource: 'text'`, así que `emailForwardDelayMs`/`eventDelayMs`
+ * quedan en `null` para él).
+ */
+export interface DashboardNotificationLatencyPoint {
+  bankId: string;
+  /** Notificador → creación del evento (solo NOTIFIER_APP). */
+  notifierLatencyMs: number | null;
+  notifierSampleCount: number;
+  /** Fecha de transacción (declarada por el banco) → reenvío del correo (solo EMAIL_GMAIL). */
+  emailForwardDelayMs: number | null;
+  emailForwardSampleCount: number;
+  /** Fecha de transacción (declarada por el banco) → creación del evento (cualquier canal). */
+  eventDelayMs: number | null;
+  eventSampleCount: number;
+}
+
 export interface DashboardChartsSummary {
   todayVsLastWeek: DashboardTodayVsLastWeek;
   hourlyHeatmap: DashboardHeatmapCell[];
   topCustomers: DashboardTopCustomerPoint[];
   weeklyTrend: DashboardWeeklyTrendPoint[];
+  notificationLatency: DashboardNotificationLatencyPoint[];
 }
 
 export interface DashboardSemaphoreSummary {
