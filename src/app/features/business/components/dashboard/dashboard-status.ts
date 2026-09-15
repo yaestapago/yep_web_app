@@ -64,7 +64,10 @@ export class DashboardStatusPanel {
   }
 
   relative(status: NotifierStatus): string {
-    return status.level === 'unknown' ? 'Sin datos' : relativeFromMs(status.sinceMs);
+    // Sin `sinceMs` no hay heartbeat que medir (nunca reportó, o es un canal
+    // como el correo que no funciona por heartbeat): mostramos su label en vez
+    // de un tiempo relativo inventado.
+    return status.sinceMs === null ? status.label : relativeFromMs(status.sinceMs);
   }
 
   lightClass(level: NotifierStatusLevel): string {

@@ -87,18 +87,6 @@
                   totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
                 }}</span>
               </button>
-              <button type="button" class="kpi" (click)="openKpiDetail('paid')">
-                <span class="kpi__label"
-                  ><svg lucideShieldCheck aria-hidden="true"></svg> Pagos validados</span
-                >
-                <span class="kpi__value kpi__value--ok">{{ paidCount() }}</span>
-              </button>
-              <button type="button" class="kpi" (click)="openKpiDetail('review')">
-                <span class="kpi__label"
-                  ><svg lucideActivity aria-hidden="true"></svg> Pagos por revisar</span
-                >
-                <span class="kpi__value kpi__value--warn">{{ reviewCount() }}</span>
-              </button>
               <button type="button" class="kpi" (click)="openKpiDetail('events')">
                 <span class="kpi__label"
                   ><svg lucideBell aria-hidden="true"></svg> Eventos detectados</span

@@ -96,6 +96,22 @@ export function computeNotifierStatus(
   return { level, label: STATUS_LABELS[level], lastSeenAt, sinceMs };
 }
 
+const EMAIL_STATUS_LABELS = {
+  online: 'Recibiendo correos',
+  offline: 'Sin monitoreo de correo',
+} as const;
+
+/**
+ * Los notificadores de correo (`email_gmail`) nunca envían heartbeat, así que
+ * `computeNotifierStatus` no aplica: su salud depende de si Gmail (watch +
+ * credenciales) está disponible, algo que ya calcula el backend y expone
+ * como alerta `gmail_credentials` en el resumen del dashboard.
+ */
+export function emailNotifierStatus(channelDown: boolean): NotifierStatus {
+  const level: NotifierStatusLevel = channelDown ? 'offline' : 'online';
+  return { level, label: EMAIL_STATUS_LABELS[level], lastSeenAt: null, sinceMs: null };
+}
+
 /** Texto relativo simple y legible para el último heartbeat. */
 export function relativeFromMs(sinceMs: number | null): string {
   if (sinceMs === null) {
