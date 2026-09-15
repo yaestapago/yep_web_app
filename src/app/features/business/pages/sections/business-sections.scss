@@ -215,13 +215,26 @@
   display: flex;
   flex: 0 0 auto;
   font-weight: var(--font-weight-semibold);
+<<<<<<< Updated upstream
   height: 30px;
+=======
+}
+
+.notifier-email-row__copy-group {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  min-width: 0;
+>>>>>>> Stashed changes
 }
 
 .notifier-email-row__values {
   display: flex;
   flex: 0 1 auto;
   flex-direction: column;
+<<<<<<< Updated upstream
   gap: var(--space-1);
   min-width: 0;
 }
@@ -230,6 +243,9 @@
   align-items: center;
   display: inline-flex;
   gap: var(--space-1);
+=======
+  gap: var(--space-2);
+>>>>>>> Stashed changes
   min-width: 0;
 }
 

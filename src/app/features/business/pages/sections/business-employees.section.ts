@@ -9,7 +9,6 @@ import {
   LucideClipboardCheck,
   LucideClipboardCopy,
   LucideLoaderCircle,
-  LucideUserPlus,
 } from '@lucide/angular';
 import * as QRCode from 'qrcode';
 import { finalize } from 'rxjs';
@@ -48,7 +47,6 @@ const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLoaderCircle,
-    LucideUserPlus,
   ],
   templateUrl: './business-employees.section.html',
   styleUrl: './business-sections.scss',
