@@ -17,6 +17,7 @@ import {
   LucideSettings2,
 } from '@lucide/angular';
 
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
@@ -40,14 +41,30 @@ interface HeatmapView {
   rows: HeatmapRowView[];
 }
 
+interface LatencyMetricCell {
+  /** Duración formateada y legible (ej. "8 s", "3.2 h"), o "Sin datos" si no hay muestras. */
+  formatted: string;
+  sampleCount: number;
+}
+
+interface LatencyTableRow {
+  bankId: string;
+  notifierLatency: LatencyMetricCell;
+  emailForwardDelay: LatencyMetricCell;
+  eventDelay: LatencyMetricCell;
+}
+
 type ChartView =
   | { id: string; kind: 'canvas'; type: ChartType; data: ChartData; options: ChartOptions; ariaLabel: string }
-  | { id: string; kind: 'heatmap'; heatmap: HeatmapView; ariaLabel: string };
+  | { id: string; kind: 'heatmap'; heatmap: HeatmapView; ariaLabel: string }
+  | { id: string; kind: 'latency-table'; rows: LatencyTableRow[]; ariaLabel: string };
 
 interface CatalogItem {
   id: string;
   title: string;
   description: string;
+  /** Solo superadmin: no aparece en el catálogo (ni se renderiza) para el resto de usuarios. */
+  superAdminOnly?: boolean;
 }
 
 const WEEKDAY_LABELS = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
@@ -76,6 +93,13 @@ const CATALOG: CatalogItem[] = [
     id: 'weeklyTrend',
     title: 'Tendencia semanal',
     description: 'Dinero notificado por semana en las últimas 10 semanas.',
+  },
+  {
+    id: 'notificationLatency',
+    title: 'Latencia de notificación',
+    description:
+      'Qué tan rápido nos llega cada banco: notificador→evento, transacción→reenvío de correo y transacción→evento. Solo superadmin.',
+    superAdminOnly: true,
   },
 ];
 
@@ -106,10 +130,14 @@ const STORAGE_PREFIX = 'yep:dashboard:charts:';
 })
 export class DashboardChartsPanel {
   private readonly document = inject(DOCUMENT);
+  private readonly session = inject(AuthSessionService);
 
   readonly charts = defineInput.required<DashboardChartsSummary>();
   readonly businessId = defineInput<string | null>(null);
-  readonly catalog = CATALOG;
+  /** Catálogo visible para el usuario actual: oculta los ítems `superAdminOnly` a todos los demás. */
+  readonly catalog = computed<CatalogItem[]>(() =>
+    CATALOG.filter((item) => !item.superAdminOnly || this.session.isSuperUser()),
+  );
   readonly configOpen = signal(false);
   readonly selected = signal<string[]>(DEFAULT_SELECTION);
   /** Selección temporal mientras el modal de configuración está abierto. */
@@ -127,19 +155,30 @@ export class DashboardChartsPanel {
 
   readonly views = computed<ChartView[]>(() => {
     const charts = this.charts();
+    const allowedIds = new Set(this.catalog().map((item) => item.id));
     return this.selected()
+      .filter((id) => allowedIds.has(id))
       .map((id) => this.build(id, charts))
       .filter((view): view is ChartView => view !== null);
   });
 
   readonly hasData = computed(() => {
     const charts = this.charts();
+    const hasLatencyData =
+      this.session.isSuperUser() &&
+      charts.notificationLatency.some(
+        (point) =>
+          point.notifierLatencyMs !== null ||
+          point.emailForwardDelayMs !== null ||
+          point.eventDelayMs !== null,
+      );
     return (
       charts.todayVsLastWeek.today > 0 ||
       charts.todayVsLastWeek.lastWeek > 0 ||
       charts.hourlyHeatmap.length > 0 ||
       charts.topCustomers.length > 0 ||
-      charts.weeklyTrend.length > 0
+      charts.weeklyTrend.length > 0 ||
+      hasLatencyData
     );
   });
 
@@ -151,7 +190,7 @@ export class DashboardChartsPanel {
   readonly canNavigateExpanded = computed(() => this.views().length > 1);
 
   chartTitle(id: string): string {
-    return CATALOG.find((item) => item.id === id)?.title ?? id;
+    return this.catalog().find((item) => item.id === id)?.title ?? id;
   }
 
   expand(id: string): void {
@@ -218,7 +257,9 @@ export class DashboardChartsPanel {
 
   applyConfig(): void {
     // Conserva el orden del catálogo para una disposición estable.
-    const next = CATALOG.filter((item) => this.draft().has(item.id)).map((item) => item.id);
+    const next = this.catalog()
+      .filter((item) => this.draft().has(item.id))
+      .map((item) => item.id);
     this.selected.set(next);
     this.saveSelection(this.businessId(), next);
     this.configOpen.set(false);
@@ -236,6 +277,8 @@ export class DashboardChartsPanel {
         return this.topCustomers(charts);
       case 'weeklyTrend':
         return this.weeklyTrend(charts);
+      case 'notificationLatency':
+        return this.notificationLatency(charts);
       default:
         return null;
     }
@@ -324,6 +367,40 @@ export class DashboardChartsPanel {
       options: this.lineOptions(),
       ariaLabel: 'Tendencia semanal de dinero notificado',
     };
+  }
+
+  private notificationLatency(charts: DashboardChartsSummary): ChartView {
+    const rows: LatencyTableRow[] = charts.notificationLatency.map((point) => ({
+      bankId: point.bankId,
+      notifierLatency: this.latencyCell(point.notifierLatencyMs, point.notifierSampleCount),
+      emailForwardDelay: this.latencyCell(
+        point.emailForwardDelayMs,
+        point.emailForwardSampleCount,
+      ),
+      eventDelay: this.latencyCell(point.eventDelayMs, point.eventSampleCount),
+    }));
+    return {
+      id: 'notificationLatency',
+      kind: 'latency-table',
+      rows,
+      ariaLabel: 'Latencia promedio de notificación por banco',
+    };
+  }
+
+  private latencyCell(ms: number | null, sampleCount: number): LatencyMetricCell {
+    return { formatted: ms === null ? 'Sin datos' : this.formatDuration(ms), sampleCount };
+  }
+
+  /** Escala automáticamente la unidad (s/min/h/d) para que el número siga siendo legible en cualquier orden de magnitud. */
+  private formatDuration(ms: number): string {
+    const seconds = ms / 1000;
+    if (seconds < 90) return `${Math.round(seconds)} s`;
+    const minutes = seconds / 60;
+    if (minutes < 90) return `${Math.round(minutes)} min`;
+    const hours = minutes / 60;
+    if (hours < 48) return `${Math.round(hours)} h`;
+    const days = hours / 24;
+    return `${days.toFixed(1)} d`;
   }
 
   // --- Opciones / colores ----------------------------------------------------
