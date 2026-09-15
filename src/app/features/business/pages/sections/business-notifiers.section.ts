@@ -708,9 +708,6 @@ export class BusinessNotifiersSection implements OnInit {
     );
   }
 
-<<<<<<< Updated upstream
-  copyNotifierEmail(value: string | undefined, notifierId: string, field: string): void {
-=======
   notifierEmailSenderPatternsText(notifier: Notifier): string {
     return this.notifierEmailSenderPatterns(notifier).join('\n');
   }
@@ -720,7 +717,6 @@ export class BusinessNotifiersSection implements OnInit {
     notifierId: string,
     field: string,
   ): void {
->>>>>>> Stashed changes
     if (!value) return;
     const key = `${notifierId}:${field}`;
     void navigator.clipboard?.writeText(value).then(() => {

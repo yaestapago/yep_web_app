@@ -104,32 +104,12 @@
                 <span class="list-card__meta notifier-email-row">
                   <span class="notifier-email-row__label">De:</span>
                   <span class="notifier-email-row__values">
-<<<<<<< Updated upstream
-                    @for (sender of bankSenderPatterns; track sender) {
-                      <span class="notifier-email-row__item">
-=======
                     @for (sender of bankSenderPatterns; track sender; let senderIndex = $index) {
                       <span class="notifier-email-row__copy-group">
->>>>>>> Stashed changes
                         <code class="notifier-email-row__value">{{ sender }}</code>
                         <button
                           type="button"
                           class="code-copy"
-<<<<<<< Updated upstream
-                          (click)="copyNotifierEmail(sender, row.notifier.id, 'from:' + sender)"
-                          [attr.aria-label]="
-                            isNotifierEmailCopied(row.notifier.id, 'from:' + sender)
-                              ? 'Remitente copiado'
-                              : 'Copiar remitente'
-                          "
-                          [title]="
-                            isNotifierEmailCopied(row.notifier.id, 'from:' + sender)
-                              ? 'Remitente copiado'
-                              : 'Copiar remitente'
-                          "
-                        >
-                          @if (isNotifierEmailCopied(row.notifier.id, 'from:' + sender)) {
-=======
                           (click)="copyNotifierEmail(sender, row.notifier.id, 'from-' + senderIndex)"
                           [attr.aria-label]="
                             isNotifierEmailCopied(row.notifier.id, 'from-' + senderIndex)
@@ -143,18 +123,13 @@
                           "
                         >
                           @if (isNotifierEmailCopied(row.notifier.id, 'from-' + senderIndex)) {
->>>>>>> Stashed changes
                             <svg lucideClipboardCheck aria-hidden="true"></svg>
                           } @else {
                             <svg lucideClipboardCopy aria-hidden="true"></svg>
                           }
                         </button>
                       </span>
-<<<<<<< Updated upstream
                     }
-=======
-                      }
->>>>>>> Stashed changes
                   </span>
                 </span>
               }
