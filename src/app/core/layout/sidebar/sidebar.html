@@ -68,16 +68,18 @@
         <span>Novedades</span>
       </a>
 
-      <a
-        [routerLink]="dashboardLink()"
-        routerLinkActive="active"
-        (click)="onNavigate()"
-        title="Panel de control"
-      >
-        <svg lucideLayoutDashboard aria-hidden="true"></svg>
-        <span>Panel de control</span>
-      </a>
+      @if (canViewDashboard()) {
+        <a
+          [routerLink]="dashboardLink()"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Panel de control"
+        >
+          <svg lucideLayoutDashboard aria-hidden="true"></svg>
+          <span>Panel de control</span>
+        </a>
 
+      }
       <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
       <div class="nav-subgroup" [class.open]="businessGroupOpen()">
         <button

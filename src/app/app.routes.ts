@@ -101,10 +101,18 @@ export const routes: Routes = [
             path: 'dashboard',
             // `immersive`: el panel ocupa el viewport completo, así que la
             // cabecera del negocio se compacta (ver BusinessShellPage).
-            data: { immersive: true },
+            data: { immersive: true, section: 'dashboard' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-dashboard.section').then(
                 (m) => m.BusinessDashboardSection,
+              ),
+          },
+          {
+            path: 'no-access',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-no-access.section').then(
+                (m) => m.BusinessNoAccessSection,
               ),
           },
           {

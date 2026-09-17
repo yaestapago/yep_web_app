@@ -115,7 +115,7 @@ export class Sidebar {
     const role = this.activeMembership()?.role;
     const isSu = this.session.isSuperUser();
     return ALL_BUSINESS_SECTIONS.filter((section) =>
-      canAccessBusinessSection(section.path, role, isSu),
+      canAccessBusinessSection(section.path, role, isSu, this.activeMembership()?.sectionAccess),
     );
   });
   readonly canViewSubscription = computed(() =>
@@ -126,6 +126,15 @@ export class Sidebar {
   );
 
   /** Enlace al Panel de control del negocio activo (ruta canónica). */
+  readonly canViewDashboard = computed(() =>
+    canAccessBusinessSection(
+      'dashboard',
+      this.activeMembership()?.role,
+      this.session.isSuperUser(),
+      this.activeMembership()?.sectionAccess,
+    ),
+  );
+
   readonly dashboardLink = computed(() => {
     const id = this.activeBusinessAccountId();
     return id ? ['/businesses', id, 'dashboard'] : ['/businesses'];

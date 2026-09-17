@@ -12,10 +12,10 @@ import {
   LucideUserPlus,
 } from '@lucide/angular';
 import * as QRCode from 'qrcode';
-import { finalize } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import type { BusinessMembershipRole } from '../../../../shared/models/auth.models';
+import type { BusinessMembershipRole, SectionAccess } from '../../../../shared/models/auth.models';
 import type { BankAccount, BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type { ApprovedMember } from '../../../../shared/models/schedule.models';
 import { Button } from '../../../../shared/ui/button/button';
@@ -87,6 +87,11 @@ export class BusinessEmployeesSection implements OnInit {
   readonly accessMember = signal<ApprovedMember | null>(null);
   readonly selectedAccessBankAccountIds = signal<string[]>([]);
   readonly selectedAccessBreBKeys = signal<string[]>([]);
+  readonly selectedSectionAccess = signal<SectionAccess>({
+    dashboard: true,
+    businessData: true,
+    reports: true,
+  });
 
   readonly roleOptions: readonly SelectOption[] = [
     { id: 'account_staff', label: 'Staff' },
@@ -349,6 +354,11 @@ export class BusinessEmployeesSection implements OnInit {
     this.error.set('');
     this.success.set('');
     this.accessMember.set(member);
+    this.selectedSectionAccess.set({
+      dashboard: member.sectionAccess?.dashboard ?? true,
+      businessData: member.sectionAccess?.businessData ?? true,
+      reports: member.sectionAccess?.reports ?? true,
+    });
     this.accessOpen.set(true);
 
     if (this.bankAccounts().length === 0) {
@@ -366,6 +376,11 @@ export class BusinessEmployeesSection implements OnInit {
     this.accessMember.set(null);
     this.selectedAccessBankAccountIds.set([]);
     this.selectedAccessBreBKeys.set([]);
+    this.selectedSectionAccess.set({ dashboard: true, businessData: true, reports: true });
+  }
+
+  toggleSectionAccess(section: keyof SectionAccess, checked: boolean): void {
+    this.selectedSectionAccess.update((current) => ({ ...current, [section]: checked }));
   }
 
   toggleLocation(locationId: string, checked: boolean): void {
@@ -453,8 +468,8 @@ export class BusinessEmployeesSection implements OnInit {
       return;
     }
 
-    const request = this.accessPayload();
-    if (request === null) {
+    const sourceEventRequest = this.accessPayload();
+    if (sourceEventRequest === null) {
       return;
     }
 
@@ -473,8 +488,18 @@ export class BusinessEmployeesSection implements OnInit {
       loadingRef.close();
     };
 
-    this.businessApi
-      .updateMemberSourceEventAccess(businessId, member.id, request)
+    forkJoin({
+      sourceEvent: this.businessApi.updateMemberSourceEventAccess(
+        businessId,
+        member.id,
+        sourceEventRequest,
+      ),
+      sections: this.businessApi.updateMemberSectionAccess(
+        businessId,
+        member.id,
+        this.selectedSectionAccess(),
+      ),
+    })
       .pipe(
         finalize(() => {
           this.savingAccess.set(false);
@@ -483,14 +508,15 @@ export class BusinessEmployeesSection implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => {
+        next: ({ sourceEvent, sections }) => {
           this.members.update((members) =>
             members.map((current) =>
-              current.id === response.membership.id
+              current.id === sections.membership.id
                 ? {
                     ...current,
-                    sourceEventAccess: response.membership.sourceEventAccess,
-                    updatedAt: response.membership.updatedAt,
+                    sourceEventAccess: sourceEvent.membership.sourceEventAccess,
+                    sectionAccess: sections.membership.sectionAccess,
+                    updatedAt: sections.membership.updatedAt,
                   }
                 : current,
             ),

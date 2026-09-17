@@ -107,6 +107,12 @@ export interface SubscriptionCreationPermissionResponse {
 export type BusinessMembershipRole = 'account_owner' | 'account_staff';
 export type BusinessMembershipStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
 
+export interface SectionAccess {
+  dashboard: boolean;
+  businessData: boolean;
+  reports: boolean;
+}
+
 export interface SourceEventAccess {
   enabled?: boolean;
   bankAccountIds: string[];
@@ -148,6 +154,7 @@ export interface BusinessMembership {
   status: BusinessMembershipStatus;
   locationIds: string[];
   sourceEventAccess?: SourceEventAccess;
+  sectionAccess?: SectionAccess;
   requestedByUserId?: string;
   invitedByUserId?: string;
   createdAt?: string;

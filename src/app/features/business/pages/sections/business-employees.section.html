@@ -188,7 +188,7 @@
 <yep-modal
   [open]="accessOpen()"
   title="Acceso del empleado"
-  subtitle="Selecciona las cuentas y llaves que este staff puede ver en el panel de control"
+  subtitle="Configura los apartados, cuentas y llaves visibles para este staff"
   size="lg"
   [loading]="savingAccess()"
   (closeRequested)="closeAccess()"
@@ -200,6 +200,31 @@
         <span class="section-subtitle">
           Por defecto el staff ve en el panel de control todas las cuentas y todas las llaves.
         </span>
+      </div>
+
+      <div class="field full-field">
+        <span class="field-label">Apartados de la aplicación</span>
+        <span class="section-subtitle">
+          Define qué apartados puede abrir este empleado. El propietario y el superadministrador siempre conservan acceso completo.
+        </span>
+        <yep-checkbox
+          label="Panel de control"
+          [checked]="selectedSectionAccess().dashboard"
+          [disabled]="savingAccess()"
+          (checkedChange)="toggleSectionAccess('dashboard', $event)"
+        />
+        <yep-checkbox
+          label="Datos del negocio"
+          [checked]="selectedSectionAccess().businessData"
+          [disabled]="savingAccess()"
+          (checkedChange)="toggleSectionAccess('businessData', $event)"
+        />
+        <yep-checkbox
+          label="Informes"
+          [checked]="selectedSectionAccess().reports"
+          [disabled]="savingAccess()"
+          (checkedChange)="toggleSectionAccess('reports', $event)"
+        />
       </div>
 
       <div class="field full-field">
