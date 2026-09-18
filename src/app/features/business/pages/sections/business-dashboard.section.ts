@@ -27,6 +27,10 @@ import {
 } from '@lucide/angular';
 import { finalize, interval } from 'rxjs';
 
+import {
+  canViewDashboardIncomeTable,
+  canViewDashboardSummary,
+} from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type {
@@ -201,6 +205,20 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
 
   readonly account = computed(() => this.session.activeMembership()?.businessAccount ?? null);
   readonly canViewEventPayload = computed(() => this.session.isSuperUser());
+  readonly canViewSummary = computed(() =>
+    canViewDashboardSummary(
+      this.session.activeMembership()?.role,
+      this.session.isSuperUser(),
+      this.session.activeMembership()?.sectionAccess,
+    ),
+  );
+  readonly canViewIncomeTable = computed(() =>
+    canViewDashboardIncomeTable(
+      this.session.activeMembership()?.role,
+      this.session.isSuperUser(),
+      this.session.activeMembership()?.sectionAccess,
+    ),
+  );
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
   readonly invoiceReferenceLabel = computed(
@@ -512,8 +530,13 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     }
 
     // Lectura en voz alta (si el operador activó el toggle). No depende del
-    // filtro de la tabla: se anuncia todo ingreso, aunque no esté visible.
-    this.tts.speak(event);
+    // filtro de columnas de la tabla: se anuncia todo ingreso que encaje en el
+    // permiso. Si el empleado no tiene acceso a la tabla de ingresos, tampoco
+    // se activa la voz para estos eventos (aunque haya quedado encendida en su
+    // localStorage de una sesión anterior).
+    if (this.canViewIncomeTable()) {
+      this.tts.speak(event);
+    }
 
     this.metricsEvents.update((events) => this.upsert(events, event));
     this.loadSummary();

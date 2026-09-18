@@ -111,6 +111,8 @@ export interface SectionAccess {
   dashboard: boolean;
   businessData: boolean;
   reports: boolean;
+  dashboardSummary: boolean;
+  dashboardIncomeTable: boolean;
 }
 
 export interface SourceEventAccess {

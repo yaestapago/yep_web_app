@@ -69,7 +69,16 @@
                   [disabled]="actingId() === member.id"
                   (clicked)="openAccess(member)"
                 >
-                  <svg lucideBell aria-label="Configurar acceso al panel"></svg>
+                  <svg lucideBell aria-label="Configurar cuentas y llaves visibles"></svg>
+                </yep-button>
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  title="Configurar apartados"
+                  [disabled]="actingId() === member.id"
+                  (clicked)="openSectionAccess(member)"
+                >
+                  <svg lucideSettings aria-label="Configurar apartados"></svg>
                 </yep-button>
               }
               <yep-icon-button action="edit" (clicked)="openEdit(member)" />
@@ -187,8 +196,8 @@
 
 <yep-modal
   [open]="accessOpen()"
-  title="Acceso del empleado"
-  subtitle="Configura los apartados, cuentas y llaves visibles para este staff"
+  title="Cuentas y llaves visibles"
+  subtitle="Configura las cuentas bancarias y llaves visibles para este staff"
   size="lg"
   [loading]="savingAccess()"
   (closeRequested)="closeAccess()"
@@ -200,31 +209,6 @@
         <span class="section-subtitle">
           Por defecto el staff ve en el panel de control todas las cuentas y todas las llaves.
         </span>
-      </div>
-
-      <div class="field full-field">
-        <span class="field-label">Apartados de la aplicación</span>
-        <span class="section-subtitle">
-          Define qué apartados puede abrir este empleado. El propietario y el superadministrador siempre conservan acceso completo.
-        </span>
-        <yep-checkbox
-          label="Panel de control"
-          [checked]="selectedSectionAccess().dashboard"
-          [disabled]="savingAccess()"
-          (checkedChange)="toggleSectionAccess('dashboard', $event)"
-        />
-        <yep-checkbox
-          label="Datos del negocio"
-          [checked]="selectedSectionAccess().businessData"
-          [disabled]="savingAccess()"
-          (checkedChange)="toggleSectionAccess('businessData', $event)"
-        />
-        <yep-checkbox
-          label="Informes"
-          [checked]="selectedSectionAccess().reports"
-          [disabled]="savingAccess()"
-          (checkedChange)="toggleSectionAccess('reports', $event)"
-        />
       </div>
 
       <div class="field full-field">
@@ -318,6 +302,72 @@
     </yep-button>
     <yep-button [loading]="savingAccess()" (clicked)="saveAccess()">
       {{ savingAccess() ? 'Guardando...' : 'Guardar acceso' }}
+    </yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="sectionAccessOpen()"
+  title="Apartados de la aplicación"
+  [loading]="savingSectionAccess()"
+  (closeRequested)="closeSectionAccess()"
+>
+  @if (sectionAccessMember(); as member) {
+    <div class="form-grid">
+      <div class="field full-field">
+        <span class="field-label">{{ employeeLabel(member) }}</span>
+        <span class="section-subtitle">
+          Define qué apartados puede abrir este empleado. El propietario y el
+          superadministrador siempre conservan acceso completo.
+        </span>
+
+        <yep-checkbox
+          label="Panel de control"
+          [checked]="selectedSectionAccess().dashboard"
+          [disabled]="savingSectionAccess()"
+          (checkedChange)="toggleSectionAccess('dashboard', $event)"
+        />
+        @if (selectedSectionAccess().dashboard) {
+          <div class="account-key-list">
+            <yep-checkbox
+              class="account-key-option"
+              label="Resumen operativo"
+              [checked]="selectedSectionAccess().dashboardSummary"
+              [disabled]="savingSectionAccess()"
+              (checkedChange)="toggleSectionAccess('dashboardSummary', $event)"
+            />
+            <yep-checkbox
+              class="account-key-option"
+              label="Tabla de ingresos"
+              [checked]="selectedSectionAccess().dashboardIncomeTable"
+              [disabled]="savingSectionAccess()"
+              (checkedChange)="toggleSectionAccess('dashboardIncomeTable', $event)"
+            />
+          </div>
+        }
+
+        <yep-checkbox
+          label="Datos del negocio"
+          [checked]="selectedSectionAccess().businessData"
+          [disabled]="savingSectionAccess()"
+          (checkedChange)="toggleSectionAccess('businessData', $event)"
+        />
+        <yep-checkbox
+          label="Informes"
+          [checked]="selectedSectionAccess().reports"
+          [disabled]="savingSectionAccess()"
+          (checkedChange)="toggleSectionAccess('reports', $event)"
+        />
+      </div>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="savingSectionAccess()" (clicked)="closeSectionAccess()">
+      Cancelar
+    </yep-button>
+    <yep-button [loading]="savingSectionAccess()" (clicked)="saveSectionAccess()">
+      {{ savingSectionAccess() ? 'Guardando...' : 'Guardar apartados' }}
     </yep-button>
   </ng-container>
 </yep-modal>
