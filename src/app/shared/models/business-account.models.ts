@@ -76,6 +76,12 @@ export interface UpdateBusinessMemberRequest {
   locationIds?: string[];
 }
 
+export interface UpdateSectionAccessRequest {
+  dashboard?: boolean;
+  businessData?: boolean;
+  reports?: boolean;
+}
+
 export interface UpdateSourceEventAccessRequest {
   enabled?: boolean;
   bankAccountIds?: string[];

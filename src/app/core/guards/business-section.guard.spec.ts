@@ -58,4 +58,29 @@ describe('businessSectionGuard', () => {
 
     expect(runGuard('insights')).toBe(true);
   });
-});
+
+  it('redirects staff to the first enabled configurable section', () => {
+    configure({
+      isSuperUser: () => false,
+      activeMembership: () => ({
+        role: 'account_staff',
+        sectionAccess: { dashboard: false, businessData: true, reports: true },
+      }),
+      activeBusinessAccountId: () => 'b1',
+    });
+
+    expect(runGuard('dashboard')).toBe('/businesses/b1/business-data');
+  });
+
+  it('redirects staff with every section disabled to no-access', () => {
+    configure({
+      isSuperUser: () => false,
+      activeMembership: () => ({
+        role: 'account_staff',
+        sectionAccess: { dashboard: false, businessData: false, reports: false },
+      }),
+      activeBusinessAccountId: () => 'b1',
+    });
+
+    expect(runGuard('reports')).toBe('/businesses/b1/no-access');
+  });});
