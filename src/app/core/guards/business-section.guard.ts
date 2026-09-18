@@ -23,13 +23,19 @@ export const businessSectionGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  const role = session.activeMembership()?.role;
+  const membership = session.activeMembership();
+  const role = membership?.role;
   const isSu = session.isSuperUser();
 
-  if (canAccessBusinessSection(section, role, isSu)) {
+  if (canAccessBusinessSection(section, role, isSu, membership?.sectionAccess)) {
     return true;
   }
 
   const businessId = session.activeBusinessAccountId();
-  return router.parseUrl(businessId ? `/businesses/${businessId}/dashboard` : '/businesses');
+  if (!businessId) return router.parseUrl('/businesses');
+
+  const fallback = (['dashboard', 'business-data', 'reports'] as const).find((candidate) =>
+    canAccessBusinessSection(candidate, role, isSu, membership?.sectionAccess),
+  );
+  return router.parseUrl(`/businesses/${businessId}/${fallback ?? 'no-access'}`);
 };

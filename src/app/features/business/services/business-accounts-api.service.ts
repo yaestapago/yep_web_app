@@ -27,6 +27,7 @@ import {
   UpdateBusinessMemberRequest,
   UpdateMembershipStatusRequest,
   UpdateSourceEventAccessRequest,
+  UpdateSectionAccessRequest,
 } from '../../../shared/models/business-account.models';
 import {
   ApprovedMembersResponse,
@@ -132,6 +133,17 @@ export class BusinessAccountsApiService {
   ): Observable<MembershipResponse> {
     return this.http.patch<MembershipResponse>(
       `${this.apiUrl}/business-accounts/${businessAccountId}/memberships/${membershipId}/source-event-access`,
+      request,
+    );
+  }
+
+  updateMemberSectionAccess(
+    businessAccountId: string,
+    membershipId: string,
+    request: UpdateSectionAccessRequest,
+  ): Observable<MembershipResponse> {
+    return this.http.patch<MembershipResponse>(
+      `${this.apiUrl}/business-accounts/${businessAccountId}/memberships/${membershipId}/section-access`,
       request,
     );
   }

@@ -13,5 +13,5 @@ export const PRIVACY_URL = `${LEGAL_BASE_URL}/privacidad`;
 
 export const TERMS_VERSION = '2026-07';
 
-/** Canal de contacto con servicio al cliente (mismo número que usa el landing). */
-export const SUPPORT_WHATSAPP_URL = 'https://wa.me/573192771783';
+/** Canal de contacto con servicio al cliente. */
+export const SUPPORT_WHATSAPP_URL = 'https://wa.me/573108019222';
