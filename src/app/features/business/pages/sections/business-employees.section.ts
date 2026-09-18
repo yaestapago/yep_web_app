@@ -12,7 +12,7 @@ import {
   LucideUserPlus,
 } from '@lucide/angular';
 import * as QRCode from 'qrcode';
-import { finalize, forkJoin } from 'rxjs';
+import { concatMap, finalize, map } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessMembershipRole, SectionAccess } from '../../../../shared/models/auth.models';
@@ -488,19 +488,18 @@ export class BusinessEmployeesSection implements OnInit {
       loadingRef.close();
     };
 
-    forkJoin({
-      sourceEvent: this.businessApi.updateMemberSourceEventAccess(
-        businessId,
-        member.id,
-        sourceEventRequest,
-      ),
-      sections: this.businessApi.updateMemberSectionAccess(
-        businessId,
-        member.id,
-        this.selectedSectionAccess(),
-      ),
-    })
+    this.businessApi
+      .updateMemberSourceEventAccess(businessId, member.id, sourceEventRequest)
       .pipe(
+        concatMap((sourceEvent) =>
+          this.businessApi
+            .updateMemberSectionAccess(
+              businessId,
+              member.id,
+              this.selectedSectionAccess(),
+            )
+            .pipe(map((sections) => ({ sourceEvent, sections }))),
+        ),
         finalize(() => {
           this.savingAccess.set(false);
           closeLoading();
