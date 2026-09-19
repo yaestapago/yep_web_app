@@ -113,6 +113,13 @@ export interface SectionAccess {
   reports: boolean;
   dashboardSummary: boolean;
   dashboardIncomeTable: boolean;
+  dashboardCharts: boolean;
+  dashboardSystemStatus: boolean;
+  dashboardTotalAmount: boolean;
+  dashboardEvents: boolean;
+  dashboardReceived: boolean;
+  dashboardPending: boolean;
+  dashboardRejected: boolean;
 }
 
 export interface SourceEventAccess {

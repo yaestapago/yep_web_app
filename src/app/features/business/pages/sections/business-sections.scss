@@ -1230,3 +1230,20 @@ yep-alert {
 .routing-no-keys{color:var(--color-text-secondary);font-size:var(--font-size-xs);font-style:italic}
 
 .routing-no-accounts{color:var(--color-text-secondary);font-size:var(--font-size-sm);text-align:center}
+
+
+/* Tercer nivel del selector de apartados: opciones del resumen operativo. */
+.section-access-summary {
+  display: grid;
+  gap: var(--space-2);
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.section-access-summary__children {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  margin-left: calc(1.15rem + var(--space-2));
+  min-width: 0;
+}
