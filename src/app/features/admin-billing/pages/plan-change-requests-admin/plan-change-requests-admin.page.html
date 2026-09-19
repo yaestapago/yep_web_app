@@ -1,0 +1,116 @@
+<section class="page requests-admin-page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-title">Solicitudes de cambio de plan</h1>
+      <p class="page-subtitle">
+        Revisa, aprueba o rechaza cambios de plan, add-ons y toppings solicitados por los negocios.
+      </p>
+    </div>
+    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
+
+  <div class="filter-tabs">
+    @for (status of statusOptions; track status) {
+      <button
+        type="button"
+        [class.active]="statusFilter() === status"
+        (click)="statusFilter.set(status)"
+      >
+        {{ status === 'all' ? 'Todas' : status }}
+      </button>
+    }
+  </div>
+
+  @if (loading() && requests().length === 0) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando solicitudes...
+    </div>
+  } @else if (filteredRequests().length === 0) {
+    <p class="empty-hint">No hay solicitudes en este estado.</p>
+  } @else {
+    <ul class="requests-list">
+      @for (request of filteredRequests(); track request.id) {
+        <li class="request-row">
+          <div class="request-row__body">
+            <strong>{{ request.accountName ?? request.accountId }}</strong>
+            <span>{{ requestTypeLabel(request.requestType) }} · {{ requestSummary(request) }}</span>
+            @if (request.message) {
+              <span class="request-message">"{{ request.message }}"</span>
+            }
+            <span class="request-date">{{ request.createdAt | date: 'medium' }}</span>
+          </div>
+          <span class="request-status" [attr.data-status]="request.status">
+            {{ request.status }}
+          </span>
+          @if (request.status === 'pending') {
+            <div class="request-row__actions">
+              <yep-button
+                size="sm"
+                [loading]="actingId() === request.id"
+                (clicked)="openApprove(request)"
+              >
+                Aprobar
+              </yep-button>
+              <yep-button
+                size="sm"
+                variant="ghost"
+                [loading]="actingId() === request.id"
+                (clicked)="reject(request)"
+              >
+                Rechazar
+              </yep-button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<yep-modal
+  [open]="approvingRequest() !== null"
+  title="Aprobar solicitud"
+  [loading]="approving()"
+  (closeRequested)="closeApprove()"
+>
+  @if (approvingRequest(); as request) {
+    <div class="approve-form">
+      <p>
+        {{ request.accountName ?? request.accountId }} ·
+        {{ requestTypeLabel(request.requestType) }} · {{ requestSummary(request) }}
+      </p>
+      <yep-input
+        label="Monto a facturar (COP, opcional)"
+        type="number"
+        name="finalPrice"
+        [ngModel]="approvePrice()"
+        (ngModelChange)="approvePrice.set($event === '' ? null : +$event)"
+        hint="Si lo dejas vacio se usa el precio sugerido por la tabla de descuentos."
+      ></yep-input>
+      <yep-input
+        label="Nota (opcional)"
+        name="reviewNote"
+        [ngModel]="approveNote()"
+        (ngModelChange)="approveNote.set($event)"
+      ></yep-input>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeApprove()">Cancelar</yep-button>
+    <yep-button [loading]="approving()" (clicked)="confirmApprove()">
+      Aprobar y generar factura
+    </yep-button>
+  </ng-container>
+</yep-modal>

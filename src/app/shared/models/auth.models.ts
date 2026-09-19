@@ -40,6 +40,7 @@ export interface SubscriptionPlanSummary {
   quotas: {
     maxBusinesses: number;
     maxLocations: number;
+    maxUsers: number;
     maxMonthlySourceEventsVisible: number;
     maxMonthlyWhatsappNotifications: number;
     maxWhatsappRecipients: number;
@@ -57,6 +58,12 @@ export interface SubscriptionPlanSummary {
   isCustom: boolean;
 }
 
+export interface PendingSubscriptionChange {
+  effectiveAt: string;
+  quotaOverrides?: Partial<SubscriptionPlanSummary['quotas']>;
+  recurringAddOnsCop?: number;
+}
+
 export interface UserSubscriptionSummary {
   id: string;
   status: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
@@ -66,6 +73,9 @@ export interface UserSubscriptionSummary {
   trialEndsAt?: string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  whatsappTopUpBalance: number;
+  recurringAddOnsCop: number;
+  pendingChange: PendingSubscriptionChange | null;
 }
 
 export type SubscriptionCreationMetric = 'businesses' | 'locations' | 'bankAccounts';

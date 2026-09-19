@@ -9,6 +9,10 @@ import type {
   SubscriptionCreationPermissionResponse,
   SubscriptionOverviewResponse,
 } from '../../../shared/models/auth.models';
+import type {
+  CreatePlanChangeRequestPayload,
+  PlanChangeRequestSummary,
+} from '../../../shared/models/billing.models';
 
 @Injectable({ providedIn: 'root' })
 export class SubscriptionsApiService {
@@ -17,18 +21,38 @@ export class SubscriptionsApiService {
   private readonly apiUrl = environment.apiUrl;
 
   overview(): Observable<SubscriptionOverviewResponse> {
+    return this.http.get<SubscriptionOverviewResponse>(
+      `${this.apiUrl}/subscriptions/me`,
+      this.businessAccountOptions(),
+    );
+  }
+
+  createChangeRequest(
+    payload: CreatePlanChangeRequestPayload,
+  ): Observable<PlanChangeRequestSummary> {
+    return this.http.post<PlanChangeRequestSummary>(
+      `${this.apiUrl}/subscriptions/change-requests`,
+      payload,
+      this.businessAccountOptions(),
+    );
+  }
+
+  myChangeRequests(): Observable<PlanChangeRequestSummary[]> {
+    return this.http.get<PlanChangeRequestSummary[]>(
+      `${this.apiUrl}/subscriptions/change-requests`,
+      this.businessAccountOptions(),
+    );
+  }
+
+  private businessAccountOptions() {
     const businessAccountId = this.session.activeBusinessAccountId();
-    const options = businessAccountId
+    return businessAccountId
       ? {
           headers: new HttpHeaders({
             'x-business-account-id': businessAccountId,
           }),
         }
       : undefined;
-    return this.http.get<SubscriptionOverviewResponse>(
-      `${this.apiUrl}/subscriptions/me`,
-      options,
-    );
   }
 
   canCreate(

@@ -19,6 +19,7 @@ import {
   LucideMoon,
   LucidePanelLeftClose,
   LucidePanelLeftOpen,
+  LucideReceipt,
   LucideSettings,
   LucideSun,
 } from '@lucide/angular';
@@ -30,6 +31,7 @@ import {
   canAccessBusinessSection,
   canManageBusinesses,
   canAccessSubscription,
+  canAccessInvoices,
   type BusinessSectionKey,
 } from '../../constants/business-section-access';
 
@@ -67,6 +69,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     LucideMoon,
     LucidePanelLeftClose,
     LucidePanelLeftOpen,
+    LucideReceipt,
     LucideSettings,
     LucideSun,
   ],
@@ -120,6 +123,9 @@ export class Sidebar {
   });
   readonly canViewSubscription = computed(() =>
     canAccessSubscription(this.activeMembership()?.role, this.session.isSuperUser()),
+  );
+  readonly canViewInvoices = computed(() =>
+    canAccessInvoices(this.activeMembership()?.role, this.session.isSuperUser()),
   );
   readonly canManageBusinesses = computed(() =>
     canManageBusinesses(this.activeMembership()?.role, this.session.isSuperUser()),

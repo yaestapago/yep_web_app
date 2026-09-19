@@ -1,0 +1,113 @@
+<section class="page invoices-page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-title">Facturas</h1>
+      <p class="page-subtitle">
+        Historial de facturas de tu suscripcion y de tus toppings de notificaciones.
+      </p>
+    </div>
+    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+
+  @if (loading() && invoices().length === 0) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando facturas...
+    </div>
+  } @else if (invoices().length === 0) {
+    <p class="empty-hint">Todavia no se ha generado ninguna factura para tu negocio.</p>
+  } @else {
+    <ul class="invoices-list">
+      @for (invoice of invoices(); track invoice.id) {
+        <li class="invoice-row">
+          <div class="invoice-row__icon" aria-hidden="true">
+            <svg lucideReceipt></svg>
+          </div>
+          <div class="invoice-row__body">
+            <strong>{{ invoice.invoiceNumber }}</strong>
+            <span>{{ invoice.concept }}</span>
+            <span class="invoice-row__date">{{ invoice.issuedAt | date: 'mediumDate' }}</span>
+          </div>
+          <div class="invoice-row__end">
+            <strong>{{ formatCop(invoice.totalCop) }}</strong>
+            <span class="invoice-status" [attr.data-status]="invoice.status">
+              {{ statusLabel(invoice.status) }}
+            </span>
+          </div>
+          <yep-button size="sm" variant="ghost" (clicked)="open(invoice)">Ver</yep-button>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<yep-modal
+  [open]="selectedInvoice() !== null"
+  title="Factura {{ selectedInvoice()?.invoiceNumber }}"
+  (closeRequested)="close()"
+>
+  @if (selectedInvoice(); as invoice) {
+    <div class="invoice-detail">
+      <div class="invoice-detail__parties">
+        <div>
+          <span class="field-label">Emitido por</span>
+          <strong>{{ invoice.sellerName }}</strong>
+          <span>RUT/NIT {{ invoice.sellerRut }}</span>
+        </div>
+        <div>
+          <span class="field-label">Facturado a</span>
+          <strong>{{ invoice.buyerName }}</strong>
+          @if (invoice.buyerIdentification) {
+            <span>Documento {{ invoice.buyerIdentification }}</span>
+          }
+          @if (invoice.buyerEmail) {
+            <span>{{ invoice.buyerEmail }}</span>
+          }
+        </div>
+      </div>
+
+      <p class="invoice-detail__meta">
+        Emitida el {{ invoice.issuedAt | date: 'mediumDate' }} ·
+        {{ statusLabel(invoice.status) }}
+      </p>
+
+      <table class="invoice-items">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Cant.</th>
+            <th>Valor unitario</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of invoice.items; track item.description) {
+            <tr>
+              <td>{{ item.description }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ formatCop(item.unitPriceCop) }}</td>
+              <td>{{ formatCop(item.totalCop) }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td>{{ formatCop(invoice.totalCop) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="close()">Cerrar</yep-button>
+  </ng-container>
+</yep-modal>

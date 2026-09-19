@@ -180,6 +180,20 @@
           </a>
         }
 
+        @if (canViewInvoices()) {
+          <a
+            class="sidebar-actions__item"
+            routerLink="/invoices"
+            routerLinkActive="active"
+            role="menuitem"
+            title="Facturas"
+            (click)="onNavigate()"
+          >
+            <svg lucideReceipt aria-hidden="true"></svg>
+            <span>Facturas</span>
+          </a>
+        }
+
         <button
           class="sidebar-actions__item sidebar-actions__item--danger"
           type="button"
