@@ -96,9 +96,13 @@ export class TransactionSupportsPanel {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput.required<PaymentTransaction>();
-  /** Oculta los eventos bancarios enlazados de "Soportes relacionados" —
-   *  los usa `SourceEventDetailModal`, que ya los muestra (con más detalle,
-   *  expandibles) en su propia sección "Reportes". */
+  /** Oculta de "Soportes relacionados" lo que ya se muestra aparte como
+   *  "Reportes" (evento bancario/notificador, con más detalle y expandible):
+   *  la lista de eventos enlazados (`relatedEvents`) y sus soportes espejo
+   *  (`BANK_SMS`/`BANK_WEBHOOK`, uno por evento). Lo usa
+   *  `SourceEventDetailModal` para no duplicar la misma info dos veces;
+   *  el comprobante (foto) y las confirmaciones manuales siguen apareciendo,
+   *  son evidencia distinta. */
   readonly hideLinkedEvents = defineInput(false);
 
   /** Pide al modal contenedor abrir el detalle de un evento (por su id). */
@@ -181,11 +185,24 @@ export class TransactionSupportsPanel {
     return entries;
   });
 
+  /** `supports()` sin los soportes espejo de un evento ya listado en
+   *  "Reportes" (ver doc de `hideLinkedEvents`) — solo aplica cuando ese
+   *  input está activo; en `TransactionDetailModal` (sin sección "Reportes")
+   *  se siguen mostrando, son la única evidencia bancaria visible ahí. */
+  readonly visibleSupports = computed(() => {
+    if (!this.hideLinkedEvents()) {
+      return this.supports();
+    }
+    return this.supports().filter(
+      (support) => support.type !== 'BANK_SMS' && support.type !== 'BANK_WEBHOOK',
+    );
+  });
+
   /** ¿Hay algo que mostrar en "Soportes relacionados"? */
   readonly hasRelated = computed(
     () =>
       this.relatedEvents().length > 0 ||
-      this.supports().length > 0 ||
+      this.visibleSupports().length > 0 ||
       this.manualEntries().length > 0,
   );
 
