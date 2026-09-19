@@ -1,7 +1,7 @@
 <div class="zone">
   <div class="zone__head">
     <h3 class="zone__title"><svg lucideBell aria-hidden="true"></svg> Eventos de ingreso</h3>
-    <span class="zone__count">{{ events().length }}{{ hasMore() ? '+' : '' }}</span>
+    <span class="zone__count">{{ groupedEvents().length }}{{ hasMore() ? '+' : '' }}</span>
     <yep-toggle
       class="tts-toggle"
       appearance="button"
@@ -85,20 +85,25 @@
           >
             <div class="event__main">
               <div class="event__top">
-                <span class="event__type" [attr.title]="sourceLabel(event.sourceType)">
-                  @switch (eventIcon(event)) {
-                    @case ('smartphone') {
-                      <svg lucideSmartphone aria-hidden="true"></svg>
+                <span
+                  class="event__type"
+                  [attr.title]="groupSourceLabel(event)"
+                  [class.event__type--grouped]="groupIcons(event).length > 1"
+                >
+                  @for (icon of groupIcons(event); track icon) {
+                    @switch (icon) {
+                      @case ('smartphone') {
+                        <svg lucideSmartphone aria-hidden="true"></svg>
+                      }
+                      @case ('monitor') {
+                        <svg lucideMonitor aria-hidden="true"></svg>
+                      }
+                      @case ('mail') {
+                        <svg lucideMail aria-hidden="true"></svg>
+                      }
                     }
-                    @case ('monitor') {
-                      <svg lucideMonitor aria-hidden="true"></svg>
-                    }
-                    @case ('mail') {
-                      <svg lucideMail aria-hidden="true"></svg>
-                    }
-                    @default {
-                      {{ sourceLabel(event.sourceType) }}
-                    }
+                  } @empty {
+                    {{ sourceLabel(event.sourceType) }}
                   }
                 </span>
                 @if (platformLabel(event)) {
@@ -149,12 +154,12 @@
     }
   </div>
 
-  @if (!loading() && !error() && events().length > 0) {
+  @if (!loading() && !error() && groupedEvents().length > 0) {
     <app-dashboard-pager
       class="zone__foot"
       [page]="currentPage()"
       [totalPages]="totalPages()"
-      [total]="events().length"
+      [total]="groupedEvents().length"
       (pageChange)="page.set($event)"
     />
     @if (hasMore() && onLastPage()) {
