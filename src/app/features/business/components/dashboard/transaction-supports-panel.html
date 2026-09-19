@@ -52,7 +52,7 @@
       }
 
       <!-- Soportes (comprobante de pago y otros) -->
-      @for (support of supports(); track support.id) {
+      @for (support of visibleSupports(); track support.id) {
         <li
           class="support"
           [class.support--clickable]="hasPhoto(support)"
