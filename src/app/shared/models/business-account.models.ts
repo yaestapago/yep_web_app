@@ -80,6 +80,8 @@ export interface UpdateSectionAccessRequest {
   dashboard?: boolean;
   businessData?: boolean;
   reports?: boolean;
+  dashboardSummary?: boolean;
+  dashboardIncomeTable?: boolean;
 }
 
 export interface UpdateSourceEventAccessRequest {

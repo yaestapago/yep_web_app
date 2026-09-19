@@ -12,52 +12,58 @@
     </div>
   }
 
-  <div class="summary-bar" [class.summary-bar--collapsed]="!summaryVisible()">
-    <div class="summary-bar__main">
-      <h2 class="summary-bar__title">
-        <svg lucideActivity aria-hidden="true"></svg>
-        Resumen operativo
-      </h2>
+  @if (canViewSummary()) {
+    <div class="summary-bar" [class.summary-bar--collapsed]="!summaryVisible()">
+      <div class="summary-bar__main">
+        <h2 class="summary-bar__title">
+          <svg lucideActivity aria-hidden="true"></svg>
+          Resumen operativo
+        </h2>
 
-      @if (!summaryVisible()) {
-        <div class="summary-bar__chips" aria-label="Resumen operativo oculto">
-          <span class="summary-chip">{{
-            totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
-          }}</span>
-          <span class="summary-chip summary-chip--{{ summary().semaphore.level }}">{{
-            summary().semaphore.label
-          }}</span>
-          <span class="summary-chip">{{ attentionCount() }} por atender</span>
-        </div>
-      }
+        @if (!summaryVisible()) {
+          <div class="summary-bar__chips" aria-label="Resumen operativo oculto">
+            <span class="summary-chip">{{
+              totalAmount() | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+            }}</span>
+            <span class="summary-chip summary-chip--{{ summary().semaphore.level }}">{{
+              summary().semaphore.label
+            }}</span>
+            <span class="summary-chip">{{ attentionCount() }} por atender</span>
+          </div>
+        }
+      </div>
+
+      <yep-date-range-picker
+        [range]="summaryRange()"
+        [preset]="summaryPreset()"
+        (rangeChange)="onSummaryRangeChange($event)"
+      />
+
+      <button
+        type="button"
+        class="summary-toggle"
+        (click)="toggleSummary()"
+        [attr.aria-expanded]="summaryVisible()"
+        [attr.aria-label]="
+          summaryVisible() ? 'Ocultar resumen operativo' : 'Mostrar resumen operativo'
+        "
+        [title]="summaryVisible() ? 'Ocultar resumen' : 'Mostrar resumen'"
+      >
+        @if (summaryVisible()) {
+          <svg lucideChevronUp aria-hidden="true"></svg>
+        } @else {
+          <svg lucideChevronDown aria-hidden="true"></svg>
+        }
+      </button>
     </div>
+  }
 
-    <yep-date-range-picker
-      [range]="summaryRange()"
-      [preset]="summaryPreset()"
-      (rangeChange)="onSummaryRangeChange($event)"
-    />
-
-    <button
-      type="button"
-      class="summary-toggle"
-      (click)="toggleSummary()"
-      [attr.aria-expanded]="summaryVisible()"
-      [attr.aria-label]="
-        summaryVisible() ? 'Ocultar resumen operativo' : 'Mostrar resumen operativo'
-      "
-      [title]="summaryVisible() ? 'Ocultar resumen' : 'Mostrar resumen'"
-    >
-      @if (summaryVisible()) {
-        <svg lucideChevronUp aria-hidden="true"></svg>
-      } @else {
-        <svg lucideChevronDown aria-hidden="true"></svg>
-      }
-    </button>
-  </div>
-
-  <div class="grid" [class.grid--summary-collapsed]="!summaryVisible()">
-    @if (summaryVisible()) {
+  <div
+    class="grid"
+    [class.grid--summary-collapsed]="!canViewSummary() || !summaryVisible()"
+    [class.grid--events-hidden]="!canViewIncomeTable()"
+  >
+    @if (canViewSummary() && summaryVisible()) {
       <div class="grid__top">
         <div class="grid__insights">
           <div class="kpi-carousel grid__kpis">
@@ -142,20 +148,22 @@
         />
       </div>
     }
-    <app-dashboard-events
-      class="grid__events"
-      [events]="sourceEvents()"
-      [loading]="loadingEvents()"
-      [error]="eventsError()"
-      [unreadIds]="unreadEventIds()"
-      [bankAccounts]="bankAccountsById()"
-      [bankOptions]="bankOptions()"
-      [hasMore]="eventsHasMore()"
-      [loadingMore]="loadingMoreEvents()"
-      (view)="openEventDetail($event)"
-      (filtersChange)="onEventFiltersChange($event)"
-      (loadMore)="loadMoreEvents()"
-    />
+    @if (canViewIncomeTable()) {
+      <app-dashboard-events
+        class="grid__events"
+        [events]="sourceEvents()"
+        [loading]="loadingEvents()"
+        [error]="eventsError()"
+        [unreadIds]="unreadEventIds()"
+        [bankAccounts]="bankAccountsById()"
+        [bankOptions]="bankOptions()"
+        [hasMore]="eventsHasMore()"
+        [loadingMore]="loadingMoreEvents()"
+        (view)="openEventDetail($event)"
+        (filtersChange)="onEventFiltersChange($event)"
+        (loadMore)="loadMoreEvents()"
+      />
+    }
     <!--
       Fase 3 (docs/refactor-mvp-yep.md): la tabla de transacciones se retira
       del panel — el detalle del evento (arriba) ya cubre comprobante, nivel

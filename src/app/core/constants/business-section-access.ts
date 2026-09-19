@@ -47,6 +47,26 @@ export function canAccessBusinessSection(
   return field ? sectionAccess?.[field] ?? true : true;
 }
 
+/** Sub-permiso de "Panel de control": ver el resumen operativo (KPIs/gráficas/estado). */
+export function canViewDashboardSummary(
+  role: BusinessMembershipRole | null | undefined,
+  isSu = false,
+  sectionAccess?: SectionAccess,
+): boolean {
+  if (isSu || role !== 'account_staff') return true;
+  return sectionAccess?.dashboardSummary ?? true;
+}
+
+/** Sub-permiso de "Panel de control": ver la tabla de eventos de ingreso. */
+export function canViewDashboardIncomeTable(
+  role: BusinessMembershipRole | null | undefined,
+  isSu = false,
+  sectionAccess?: SectionAccess,
+): boolean {
+  if (isSu || role !== 'account_staff') return true;
+  return sectionAccess?.dashboardIncomeTable ?? true;
+}
+
 export function canAccessSubscription(
   role: BusinessMembershipRole | null | undefined,
   isSu = false,
