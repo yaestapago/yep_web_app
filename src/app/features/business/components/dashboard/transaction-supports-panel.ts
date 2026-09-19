@@ -96,6 +96,10 @@ export class TransactionSupportsPanel {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput.required<PaymentTransaction>();
+  /** Oculta los eventos bancarios enlazados de "Soportes relacionados" —
+   *  los usa `SourceEventDetailModal`, que ya los muestra (con más detalle,
+   *  expandibles) en su propia sección "Reportes". */
+  readonly hideLinkedEvents = defineInput(false);
 
   /** Pide al modal contenedor abrir el detalle de un evento (por su id). */
   readonly viewSourceEvent = output<string>();
@@ -143,14 +147,17 @@ export class TransactionSupportsPanel {
   readonly canApplyInvoice = computed(() => isTransactionInvoiceable(this.transaction().status));
 
   /** Eventos bancarios enlazados, con etiqueta amigable y clickeables. */
-  readonly relatedEvents = computed(() =>
-    (this.transaction().events ?? []).map((event) => ({
+  readonly relatedEvents = computed(() => {
+    if (this.hideLinkedEvents()) {
+      return [];
+    }
+    return (this.transaction().events ?? []).map((event) => ({
       eventId: event.eventId,
       sourceType: event.sourceType,
       label: EVENT_SOURCE_LABELS[event.sourceType] ?? event.source,
       linkedAt: event.linkedAt,
-    })),
-  );
+    }));
+  });
 
   /** Confirmaciones manuales y datos completados por el staff (sintéticos). */
   readonly manualEntries = computed<ManualEntry[]>(() => {

@@ -10,7 +10,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import {
+  LucideChevronDown,
+  LucideChevronUp,
+  LucideMail,
+  LucideMonitor,
+  LucideSmartphone,
+} from '@lucide/angular';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 
 import type {
   SourceEvent,
@@ -24,6 +31,9 @@ import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   isTransactionInvoiceable,
   isTransactionVerifiable,
+  transactionStatusLabel,
+  transactionTone,
+  type TransactionTone,
 } from '../../../../shared/utils/transaction-status';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
@@ -38,9 +48,30 @@ const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
 ];
 const BOGOTA_TIME_ZONE = 'America/Bogota';
 
+/**
+ * Zona 3 (dashboard-events) ahora agrupa por `linkedTransactionId`: al abrir
+ * este modal desde una fila agrupada, el evento que llegó puede ser
+ * cualquiera de los "hermanos" (correo, app, sms…) que confirman el mismo
+ * pago. Este modal muestra TODOS los reportes de esa operación en la misma
+ * pantalla — cada uno expandible con sus propios datos — en vez de
+ * reemplazar la vista al navegar a un evento relacionado (lo que antes
+ * cambiaba la parte superior del modal de forma confusa).
+ */
 @Component({
   selector: 'app-source-event-detail-modal',
-  imports: [CurrencyPipe, DatePipe, JsonPipe, Button, Modal, TransactionSupportsPanel],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    JsonPipe,
+    Button,
+    Modal,
+    TransactionSupportsPanel,
+    LucideChevronDown,
+    LucideChevronUp,
+    LucideMail,
+    LucideMonitor,
+    LucideSmartphone,
+  ],
   templateUrl: './source-event-detail-modal.html',
   styleUrl: './source-event-detail-modal.scss',
 })
@@ -52,18 +83,24 @@ export class SourceEventDetailModal {
   readonly event = input<SourceEvent | null>(null);
   readonly showPayload = input(false);
   readonly close = output<void>();
-  /** Pide a la sección padre abrir el detalle de OTRO evento (por su id) —
-   *  p. ej. un evento bancario hermano listado en la transacción enlazada. */
-  readonly viewOtherEvent = output<string>();
   /** Pide a la sección padre abrir el modal de verificación manual. */
   readonly verifyRequested = output<PaymentTransaction>();
   /** Pide a la sección padre abrir el modal de "aplicar a factura". */
   readonly invoiceRequested = output<PaymentTransaction>();
 
   readonly open = computed(() => this.event() !== null);
+  /** El evento sobre el que se abrió el modal (el que el usuario clickeó). */
   readonly detail = signal<SourceEvent | null>(null);
   readonly transaction = signal<PaymentTransaction | null>(null);
-  readonly relatedEvents = signal<SourceEvent[]>([]);
+  /** Otros source_events con la misma referencia, SIN transacción enlazada
+   *  todavía — pista débil (texto), no confirmada; se muestra aparte de los
+   *  reportes confirmados. */
+  private readonly referenceMatches = signal<SourceEvent[]>([]);
+  /** Reportes hermanos ya enlazados a la MISMA transacción que `detail()`. */
+  private readonly siblingEvents = signal<SourceEvent[]>([]);
+  readonly loadingSiblings = signal(false);
+  /** Ids de reporte con la tarjeta expandida (varios a la vez). */
+  private readonly expandedIds = signal<Set<string>>(new Set());
 
   readonly canVerify = computed(() => {
     const transaction = this.transaction();
@@ -89,7 +126,9 @@ export class SourceEventDetailModal {
         this.loadedId = null;
         this.detail.set(null);
         this.transaction.set(null);
-        this.relatedEvents.set([]);
+        this.referenceMatches.set([]);
+        this.siblingEvents.set([]);
+        this.expandedIds.set(new Set());
         this.error.set('');
         return;
       }
@@ -99,23 +138,95 @@ export class SourceEventDetailModal {
       this.loadedId = event.id;
       this.detail.set(event);
       this.transaction.set(null);
-      this.relatedEvents.set([]);
+      this.referenceMatches.set([]);
+      this.siblingEvents.set([]);
+      // El reporte que abrió el modal arranca expandido; el resto se abre a
+      // demanda, sin perder lo ya abierto ("conforme se abra, se ve").
+      this.expandedIds.set(new Set([event.id]));
       this.loadDetail(event.id);
     });
   }
 
   readonly title = computed(() => {
-    const event = this.detail() ?? this.event();
-    return event?.sourceType === 'EMAIL_GMAIL'
-      ? 'Detalle del correo'
-      : 'Detalle de la notificacion';
+    const count = this.reports().length;
+    return count > 1 ? `Detalle del pago (${count} reportes)` : 'Detalle del pago';
   });
 
-  readonly notificationText = computed(() =>
-    this.rawNotificationText(this.detail() ?? this.event()),
+  /**
+   * Todos los reportes (source_events) confirmados de esta operación: el
+   * evento sobre el que se abrió el modal + sus hermanos enlazados a la
+   * misma transacción. Ordenados por llegada (el primero que creó el
+   * registro, primero), así la lista cuenta la historia en orden.
+   */
+  readonly reports = computed<SourceEvent[]>(() => {
+    const anchor = this.detail();
+    if (!anchor) return [];
+    const byId = new Map<string, SourceEvent>([[anchor.id, anchor]]);
+    for (const sibling of this.siblingEvents()) {
+      byId.set(sibling.id, sibling);
+    }
+    return [...byId.values()].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+  });
+
+  /** `referenceMatches` menos lo que ya está confirmado en `reports()` —
+   *  reactivo: si un "posible relacionado" termina confirmándose como
+   *  hermano (p. ej. cuando terminan de cargar), desaparece de aquí solo. */
+  readonly relatedEvents = computed(() => {
+    const confirmedIds = new Set(this.reports().map((report) => report.id));
+    return this.referenceMatches().filter((item) => !confirmedIds.has(item.id));
+  });
+
+  /** Monto a destacar arriba: el de la transacción si ya hay una (fuente
+   *  autoritativa, la misma para todos los reportes); si no, el del evento. */
+  readonly amount = computed(
+    () => this.transaction()?.amount ?? this.detail()?.normalized?.amount ?? null,
   );
 
-  readonly amount = computed(() => this.detail()?.normalized?.amount ?? null);
+  readonly amountCurrency = computed(
+    () => this.transaction()?.currency ?? this.detail()?.normalized?.currency ?? 'COP',
+  );
+
+  /** Estado a destacar arriba: el de la transacción (más significativo para
+   *  el negocio) si ya está enlazada; si no, "sin confirmar todavía". */
+  readonly statusLabelTop = computed(() => {
+    const tx = this.transaction();
+    return tx ? transactionStatusLabel(tx.status) : 'Sin confirmar todavía';
+  });
+
+  readonly statusToneTop = computed<TransactionTone>(() => {
+    const tx = this.transaction();
+    return tx ? transactionTone(tx.status) : 'neutral';
+  });
+
+  isExpanded(report: SourceEvent): boolean {
+    return this.expandedIds().has(report.id);
+  }
+
+  /** Es el reporte con el que se abrió el modal (no el "primero" cronológico). */
+  isAnchor(report: SourceEvent): boolean {
+    return report.id === this.detail()?.id;
+  }
+
+  toggleReport(report: SourceEvent): void {
+    this.expandedIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(report.id)) {
+        next.delete(report.id);
+      } else {
+        next.add(report.id);
+      }
+      return next;
+    });
+  }
+
+  reportIcon(report: SourceEvent): 'mail' | 'smartphone' | 'monitor' {
+    if (report.sourceType === 'EMAIL_GMAIL') {
+      return 'mail';
+    }
+    return this.deviceLabel(report) === 'Desktop' ? 'monitor' : 'smartphone';
+  }
 
   /**
    * Solo se muestra cuando el banco declaró la fecha en el propio texto del
@@ -285,8 +396,45 @@ export class SourceEventDetailModal {
       .get(event.linkedTransactionId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ transaction }) => this.transaction.set(transaction),
+        next: ({ transaction }) => {
+          this.transaction.set(transaction);
+          this.loadSiblingEvents(event.id, transaction);
+        },
         error: () => this.transaction.set(null),
+      });
+  }
+
+  /**
+   * Trae el detalle completo de los demás reportes ya enlazados a la misma
+   * transacción (`transaction.events`), para poder mostrarlos todos en la
+   * misma pantalla en vez de navegar a cada uno por separado.
+   */
+  private loadSiblingEvents(anchorId: string, transaction: PaymentTransaction): void {
+    const ids = [...new Set((transaction.events ?? []).map((linked) => linked.eventId))].filter(
+      (id) => id !== anchorId,
+    );
+    if (ids.length === 0) {
+      this.siblingEvents.set([]);
+      return;
+    }
+    this.loadingSiblings.set(true);
+    forkJoin(
+      ids.map((id) =>
+        // Best-effort por hermano: si uno falla al cargar, no tumba a los
+        // demás — simplemente no aparece (el usuario todavía ve los que sí).
+        this.sourceEventsApi.get(id).pipe(catchError(() => of(null))),
+      ),
+    )
+      .pipe(
+        finalize(() => this.loadingSiblings.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((responses) => {
+        this.siblingEvents.set(
+          responses
+            .filter((response): response is { sourceEvent: SourceEvent } => response !== null)
+            .map((response) => response.sourceEvent),
+        );
       });
   }
 
@@ -304,9 +452,8 @@ export class SourceEventDetailModal {
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ sourceEvents }) =>
-          this.relatedEvents.set(sourceEvents.filter((item) => item.id !== event.id)),
-        error: () => this.relatedEvents.set([]),
+        next: ({ sourceEvents }) => this.referenceMatches.set(sourceEvents),
+        error: () => this.referenceMatches.set([]),
       });
   }
 }
