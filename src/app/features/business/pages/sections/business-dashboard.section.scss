@@ -418,6 +418,13 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* Simétrico a .grid--summary-collapsed: sin tabla de ingresos (por permiso),
+   el resumen ocupa todo el alto disponible en vez de dejar la 2da fila vacía. */
+.grid--events-hidden {
+  grid-template-areas: 'insights insights insights insights insights insights insights insights status status status status';
+  grid-template-rows: minmax(0, 1fr);
+}
+
 /* Size 1: wide desktop. This is the default above. */
 
 /* Size 2: medium desktop / horizontal tablet. Keep two columns, but soften the
@@ -434,6 +441,11 @@
   .grid--summary-collapsed {
     grid-template-areas: 'events';
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .grid--events-hidden {
+    grid-template-areas: 'insights status';
     grid-template-rows: minmax(0, 1fr);
   }
 }
@@ -475,6 +487,11 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
+
+  .grid--events-hidden {
+    grid-template-areas: 'insights status';
+    grid-template-rows: minmax(0, 1fr);
+  }
 }
 
 /* Size 3b: mobile. The shell already becomes scrollable, so the dashboard stops
@@ -509,6 +526,10 @@
     grid-template-areas: 'events';
     grid-template-columns: 1fr;
     grid-template-rows: none;
+  }
+
+  .grid--events-hidden {
+    grid-template-areas: 'insights' 'status';
   }
 }
 

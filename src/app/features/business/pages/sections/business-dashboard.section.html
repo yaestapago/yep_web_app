@@ -58,7 +58,11 @@
     </div>
   }
 
-  <div class="grid" [class.grid--summary-collapsed]="!summaryVisible()">
+  <div
+    class="grid"
+    [class.grid--summary-collapsed]="!canViewSummary() || !summaryVisible()"
+    [class.grid--events-hidden]="!canViewIncomeTable()"
+  >
     @if (canViewSummary() && summaryVisible()) {
       <div class="grid__top">
         <div class="grid__insights">
