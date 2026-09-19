@@ -11,8 +11,8 @@ import { TtsPlaybackService } from './tts-playback.service';
 
 const STORAGE_KEY = 'yep_web.tts.enabled';
 
-function event(id: string): SourceEvent {
-  return { id } as SourceEvent;
+function event(id: string, linkedTransactionId?: string): SourceEvent {
+  return { id, linkedTransactionId } as SourceEvent;
 }
 
 describe('TtsPlaybackService', () => {
@@ -63,6 +63,31 @@ describe('TtsPlaybackService', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.responseType).toBe('blob');
     req.flush(new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/wav' }));
+  });
+
+  it('no vuelve a leer el mismo evento si se re-emite (p. ej. al pasar a processed)', () => {
+    service.setEnabled(true);
+    service.speak(event('evt-3'));
+    service.speak(event('evt-3', 'tx-1')); // mismo evento, ahora enlazado
+
+    const requests = httpMock.match(() => true);
+    expect(requests.length).toBe(1);
+    requests.forEach((req) =>
+      req.flush(new Blob([new Uint8Array([1])], { type: 'audio/wav' })),
+    );
+  });
+
+  it('no lee dos veces el mismo pago aunque lo reporten dos notificadores distintos', () => {
+    service.setEnabled(true);
+    service.speak(event('evt-app', 'tx-2'));
+    service.speak(event('evt-email', 'tx-2')); // otro evento, misma transacción
+
+    const requests = httpMock.match(() => true);
+    expect(requests.length).toBe(1);
+    expect(requests[0].request.url).toBe(`${environment.apiUrl}/source-events/evt-app/tts`);
+    requests.forEach((req) =>
+      req.flush(new Blob([new Uint8Array([1])], { type: 'audio/wav' })),
+    );
   });
 
   it('descarta eventos cuando la cola está llena', () => {

@@ -21,6 +21,11 @@ const SILENT_WAV =
  * - `enabled` se persiste por navegador (localStorage), como `ThemeService`.
  * - La reproducción es **secuencial**: los eventos entran en cola y suenan uno
  *   tras otro, sin solaparse; si la cola se llena, se descartan los nuevos.
+ * - **Un pago, una sola vez:** un mismo pago real puede llegar por SSE varias
+ *   veces (el propio evento se reemite al pasar de `received` a `processed`,
+ *   y un segundo notificador del mismo depósito emite SU PROPIO evento). Se
+ *   anuncia solo la primera vez por operación (`linkedTransactionId`, o el id
+ *   del evento si todavía no hay transacción enlazada) — ver `speak()`.
  * - **Desbloqueo de autoplay:** el navegador exige un gesto del usuario antes de
  *   reproducir audio. `setEnabled(true)` (el click del toggle) ceba el elemento
  *   con un WAV silencioso. Pero si la voz quedó activada de una sesión previa
@@ -41,6 +46,9 @@ export class TtsPlaybackService {
       : null;
 
   private readonly queue: SourceEvent[] = [];
+  /** Claves (transacción u evento) ya anunciadas en esta sesión — evita releer
+   *  el mismo pago cuando se re-emite (cambio de estado, segundo notificador). */
+  private readonly announced = new Set<string>();
   private playing = false;
   /** El navegador ya permite reproducir audio (hubo un gesto del usuario). */
   private unlocked = false;
@@ -77,13 +85,32 @@ export class TtsPlaybackService {
     }
   }
 
-  /** Encola el evento para leerlo si la voz está activa. */
+  /**
+   * Encola el evento para leerlo si la voz está activa — pero solo la
+   * primera vez que se ve esta operación (mismo `linkedTransactionId`, o el
+   * propio evento si aún no hay transacción). Los reintentos/reemisiones del
+   * mismo pago (otro notificador, o el cambio de estado al enlazarse) no
+   * vuelven a sonar.
+   */
   speak(event: SourceEvent): void {
     if (!this.enabled() || !this.audio) {
       return;
     }
+    // Se chequean AMBAS claves: el propio id (cubre que este mismo evento se
+    // re-emita al cambiar de estado) y la transacción enlazada si ya la tiene
+    // (cubre que OTRO evento/notificador ya haya anunciado este mismo pago).
+    if (
+      this.announced.has(event.id) ||
+      (event.linkedTransactionId && this.announced.has(event.linkedTransactionId))
+    ) {
+      return;
+    }
     if (this.queue.length >= MAX_QUEUE) {
       return; // ráfaga: descartamos para no acumular retraso de audio
+    }
+    this.announced.add(event.id);
+    if (event.linkedTransactionId) {
+      this.announced.add(event.linkedTransactionId);
     }
     this.queue.push(event);
     void this.drain();
