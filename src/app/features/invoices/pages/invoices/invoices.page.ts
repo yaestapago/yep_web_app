@@ -58,6 +58,8 @@ export class InvoicesPage implements OnInit {
     switch (status) {
       case 'paid':
         return 'Pagada';
+      case 'reported':
+        return 'Pago reportado (en revision)';
       case 'cancelled':
         return 'Cancelada';
       default:

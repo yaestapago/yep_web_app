@@ -34,6 +34,7 @@ export interface SubscriptionPlanSummary {
   code: string;
   name: string;
   priceCop: number;
+  annualPriceCop?: number | null;
   currency: string;
   billingPeriod: 'monthly';
   trialDays?: number;
@@ -62,17 +63,21 @@ export interface PendingSubscriptionChange {
   effectiveAt: string;
   quotaOverrides?: Partial<SubscriptionPlanSummary['quotas']>;
   recurringAddOnsCop?: number;
+  pendingPlanCode?: string | null;
 }
 
 export interface UserSubscriptionSummary {
   id: string;
-  status: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
+  status: 'trialing' | 'active' | 'past_due' | 'suspended' | 'cancelled' | 'expired';
   plan: SubscriptionPlanSummary;
   startsAt: string;
   endsAt?: string;
   trialEndsAt?: string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  billingPeriod: 'monthly' | 'annual';
+  contractedPriceCop: number;
+  currentPeriodInvoiceId: string | null;
   whatsappTopUpBalance: number;
   recurringAddOnsCop: number;
   pendingChange: PendingSubscriptionChange | null;

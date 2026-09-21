@@ -2,7 +2,7 @@
   display: block;
 }
 
-.requests-admin-page {
+.invoices-admin-page {
   display: grid;
   gap: var(--space-5);
 }
@@ -67,7 +67,7 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.requests-list {
+.invoices-list {
   display: grid;
   gap: var(--space-3);
   list-style: none;
@@ -75,7 +75,7 @@
   padding: 0;
 }
 
-.request-row {
+.invoice-row {
   align-items: center;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -87,34 +87,31 @@
   padding: var(--space-4);
 }
 
-.request-row__body {
+.invoice-row__body {
   display: grid;
   flex: 1 1 260px;
   gap: 2px;
   min-width: 0;
 }
 
-.request-row__body span {
+.invoice-row__body span {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
-.request-message {
+.invoice-note {
   font-style: italic;
 }
 
-.request-date {
+.invoice-date {
   font-size: var(--font-size-xs) !important;
 }
 
-.request-hint {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  margin: 0;
-  max-width: 220px;
+.invoice-amount {
+  white-space: nowrap;
 }
 
-.request-status {
+.invoice-status {
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
@@ -123,33 +120,27 @@
   white-space: nowrap;
 }
 
-.request-status[data-status='pending'] {
+.invoice-status[data-status='issued'] {
   background: color-mix(in srgb, var(--color-warning) 18%, transparent);
   color: var(--color-warning);
 }
 
-.request-status[data-status='applied'] {
+.invoice-status[data-status='reported'] {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-primary);
+}
+
+.invoice-status[data-status='paid'] {
   background: color-mix(in srgb, var(--color-success) 16%, transparent);
   color: var(--color-success-strong);
 }
 
-.request-status[data-status='rejected'] {
+.invoice-status[data-status='cancelled'] {
   background: color-mix(in srgb, var(--color-error) 16%, transparent);
   color: var(--color-error);
 }
 
-.request-row__actions {
+.invoice-row__actions {
   display: flex;
   gap: var(--space-2);
-}
-
-.approve-form {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.approve-form p {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  margin: 0;
 }

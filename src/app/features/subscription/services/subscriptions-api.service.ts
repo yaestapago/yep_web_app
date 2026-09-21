@@ -10,6 +10,9 @@ import type {
   SubscriptionOverviewResponse,
 } from '../../../shared/models/auth.models';
 import type {
+  AddOnPricingResponse,
+  BillingInvoiceSummary,
+  ChangePlanResponse,
   CreatePlanChangeRequestPayload,
   PlanChangeRequestSummary,
 } from '../../../shared/models/billing.models';
@@ -23,6 +26,25 @@ export class SubscriptionsApiService {
   overview(): Observable<SubscriptionOverviewResponse> {
     return this.http.get<SubscriptionOverviewResponse>(
       `${this.apiUrl}/subscriptions/me`,
+      this.businessAccountOptions(),
+    );
+  }
+
+  changePlan(
+    planCode: string,
+    billingPeriod?: 'monthly' | 'annual',
+  ): Observable<ChangePlanResponse> {
+    return this.http.post<ChangePlanResponse>(
+      `${this.apiUrl}/subscriptions/change-plan`,
+      { planCode, billingPeriod },
+      this.businessAccountOptions(),
+    );
+  }
+
+  reportPayment(note?: string): Observable<BillingInvoiceSummary> {
+    return this.http.post<BillingInvoiceSummary>(
+      `${this.apiUrl}/subscriptions/report-payment`,
+      { note },
       this.businessAccountOptions(),
     );
   }
@@ -42,6 +64,10 @@ export class SubscriptionsApiService {
       `${this.apiUrl}/subscriptions/change-requests`,
       this.businessAccountOptions(),
     );
+  }
+
+  addonPricing(): Observable<AddOnPricingResponse> {
+    return this.http.get<AddOnPricingResponse>(`${this.apiUrl}/subscriptions/addon-pricing`);
   }
 
   private businessAccountOptions() {
