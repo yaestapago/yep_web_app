@@ -78,6 +78,15 @@ export const routes: Routes = [
       ).then((m) => m.PlanChangeRequestsAdminPage),
   },
   {
+    // Idem — confirmar pagos reportados/marcar facturas pagadas o canceladas.
+    path: '__ops/subscriptions/invoices',
+    canActivate: [authGuard, superAdminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin-billing/pages/invoices-admin/invoices-admin.page'
+      ).then((m) => m.InvoicesAdminPage),
+  },
+  {
     path: '',
     component: Shell,
     canActivate: [businessGuard],

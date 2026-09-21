@@ -93,6 +93,12 @@ export class PlanChangeRequestsAdminPage implements OnInit {
       const label = request.recurringAddOn.metric === 'locations' ? 'sede(s)' : 'usuario(s)';
       return `+${request.recurringAddOn.quantity} ${label} (sugerido: ${this.formatCop(request.recurringAddOn.totalPriceCop)})`;
     }
+    if (request.requestedPlanCode && request.proration) {
+      const change = `${request.fromPlanCode ?? '?'} -> ${request.requestedPlanCode}`;
+      return request.proration.proratedAmountCop > 0
+        ? `${change} (${this.formatCop(request.proration.proratedAmountCop)} prorrateado — se cobra via factura)`
+        : `${change} (sin cobro)`;
+    }
     if (request.requestedPlanCode) {
       return `Plan ${request.requestedPlanCode}`;
     }

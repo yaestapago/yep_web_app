@@ -334,6 +334,16 @@ yep-alert {
   justify-content: space-between;
 }
 
+.plan-card__annual {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs) !important;
+  margin-top: 2px !important;
+}
+
+.alert-actions {
+  margin-top: var(--space-2);
+}
+
 .current-badge {
   align-items: center;
   background: color-mix(in srgb, var(--color-success) 16%, transparent);

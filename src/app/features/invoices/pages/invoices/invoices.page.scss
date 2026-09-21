@@ -120,6 +120,11 @@
   color: var(--color-warning);
 }
 
+.invoice-status[data-status='reported'] {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-primary);
+}
+
 .invoice-status[data-status='paid'] {
   background: color-mix(in srgb, var(--color-success) 16%, transparent);
   color: var(--color-success-strong);

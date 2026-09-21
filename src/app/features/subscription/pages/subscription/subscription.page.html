@@ -45,6 +45,23 @@
       </div>
     </section>
 
+    @if (isPastDueOrSuspended()) {
+      <yep-alert variant="error">
+        @if (subscription()?.status === 'suspended') {
+          Tu cuenta esta suspendida por falta de pago: no se enviaran nuevas notificaciones de
+          WhatsApp hasta que confirmemos tu pago.
+        } @else {
+          Tu pago esta pendiente. Tienes unos dias de gracia antes de que se suspenda el envio
+          de notificaciones de WhatsApp.
+        }
+        <div class="alert-actions">
+          <yep-button size="sm" variant="secondary" (clicked)="openReportModal()">
+            Ya pague / Reportar pago
+          </yep-button>
+        </div>
+      </yep-alert>
+    }
+
     @if (subscription(); as sub) {
       @if (sub.whatsappTopUpBalance > 0 || sub.recurringAddOnsCop > 0 || sub.pendingChange) {
         <section class="addons-section">
@@ -52,22 +69,27 @@
           <div class="addons-grid">
             @if (sub.whatsappTopUpBalance > 0) {
               <article class="addon-card">
-                <span>Saldo de notificaciones WhatsApp</span>
+                <span>Saldo de notificaciones WhatsApp (pago unico)</span>
                 <strong>{{ formatPlanLimit(sub.whatsappTopUpBalance) }}</strong>
-                <p>No vence ni se reinicia cada mes; se usa cuando la cuota del plan llega a 0.</p>
+                <p>No vence ni se reinicia cada mes; se usa cuando la cuota del plan llega a 0. No es un cargo recurrente.</p>
               </article>
             }
             @if (sub.recurringAddOnsCop > 0) {
               <article class="addon-card">
-                <span>Recargo mensual por add-ons</span>
+                <span>Recargo mensual por add-ons (sedes/usuarios)</span>
                 <strong>{{ formatCop(sub.recurringAddOnsCop) }}</strong>
-                <p>Ya incluido en tu mensualidad fija.</p>
+                <p>Se suma todos los meses a tu factura junto con el precio del plan.</p>
               </article>
             }
           </div>
           @if (sub.pendingChange; as pending) {
             <yep-alert variant="info">
-              Cambio agendado: entra en vigor el {{ pending.effectiveAt | date: 'mediumDate' }}.
+              @if (pending.pendingPlanCode) {
+                Cambio agendado: pasaras al plan {{ planNameByCode(pending.pendingPlanCode) }} el
+                {{ pending.effectiveAt | date: 'mediumDate' }}.
+              } @else {
+                Cambio agendado: entra en vigor el {{ pending.effectiveAt | date: 'mediumDate' }}.
+              }
             </yep-alert>
           }
         </section>
@@ -101,6 +123,9 @@
               <div>
                 <h3>{{ plan.name }}</h3>
                 <p>{{ priceLabel(plan) }}</p>
+                @if (annualPriceLabel(plan); as annualLabel) {
+                  <p class="plan-card__annual">o {{ annualLabel }} (2 meses gratis)</p>
+                }
               </div>
               @if (isCurrentPlan(plan)) {
                 <span class="current-badge">
@@ -120,12 +145,12 @@
                 <dd>{{ formatPlanLimit(plan.quotas.maxLocations) }}</dd>
               </div>
               <div>
-                <dt>Cuentas</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxBankAccounts) }}</dd>
+                <dt>Usuarios</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxUsers) }}</dd>
               </div>
               <div>
-                <dt>Eventos / mes</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxMonthlySourceEventsVisible) }}</dd>
+                <dt>Cuentas</dt>
+                <dd>{{ formatPlanLimit(plan.quotas.maxBankAccounts) }}</dd>
               </div>
               <div>
                 <dt>WhatsApp / mes</dt>
@@ -206,6 +231,11 @@
     </div>
 
     @if (requestType() === 'upgrade' || requestType() === 'downgrade') {
+      <yep-alert variant="info">
+        Si subes de plan, el cambio aplica de inmediato y solo pagas lo proporcional a los
+        dias restantes de tu periodo actual — tu fecha de renovacion no cambia. Si bajas de
+        plan, el cambio queda agendado para tu proxima renovacion, sin cobro ahora.
+      </yep-alert>
       <label class="field-label" for="plan-select">Plan</label>
       <select
         id="plan-select"
@@ -218,44 +248,73 @@
           <option [value]="plan.code">{{ plan.name }} - {{ priceLabel(plan) }}</option>
         }
       </select>
+
+      @if (isReactivating()) {
+        <label class="field-label" for="billing-period">Ciclo de pago</label>
+        <select
+          id="billing-period"
+          class="native-select"
+          name="billingPeriod"
+          [ngModel]="selectedBillingPeriod()"
+          (ngModelChange)="selectedBillingPeriod.set($event)"
+        >
+          <option value="monthly">Mensual</option>
+          <option value="annual">Anual (2 meses gratis)</option>
+        </select>
+      }
     }
 
     @if (requestType() === 'add_on') {
+      <yep-alert variant="info">
+        Esto es un cargo recurrente: se suma a tu mensualidad todos los meses a partir del
+        siguiente ciclo de facturacion.
+      </yep-alert>
       <label class="field-label" for="addon-metric">Que quieres agregar</label>
       <select
         id="addon-metric"
         class="native-select"
         name="addOnMetric"
         [ngModel]="addOnMetric()"
-        (ngModelChange)="addOnMetric.set($event)"
+        (ngModelChange)="selectAddOnMetric($event)"
       >
         <option value="locations">Sedes adicionales</option>
         <option value="users">Usuarios adicionales</option>
       </select>
-      <yep-input
-        label="Cantidad"
-        type="number"
+      <label class="field-label" for="addon-quantity">Cantidad</label>
+      <select
+        id="addon-quantity"
+        class="native-select"
         name="addOnQuantity"
         [ngModel]="addOnQuantity()"
-        (ngModelChange)="addOnQuantity.set($event)"
-      ></yep-input>
+        (ngModelChange)="addOnQuantity.set(+$event)"
+      >
+        @for (tier of addOnTiers(); track tier.quantity) {
+          <option [value]="tier.quantity">{{ addOnTierLabel(tier) }}</option>
+        }
+      </select>
       <p class="field-hint">
-        Se cobra a partir de tu proximo ciclo de facturacion; tu mensualidad actual no cambia.
+        Se cobra a partir de tu proximo ciclo de facturacion; tu mensualidad actual no cambia
+        hasta entonces.
       </p>
     }
 
     @if (requestType() === 'top_up') {
-      <yep-input
-        label="Cantidad de notificaciones WhatsApp"
-        type="number"
+      <yep-alert variant="info">
+        Esto es un pago unico: no se repite cada mes. El saldo comprado no vence y se consume
+        solo cuando la cuota de notificaciones de tu plan llega a 0.
+      </yep-alert>
+      <label class="field-label" for="topup-quantity">Cantidad de notificaciones WhatsApp</label>
+      <select
+        id="topup-quantity"
+        class="native-select"
         name="topUpQuantity"
         [ngModel]="topUpQuantity()"
-        (ngModelChange)="topUpQuantity.set($event)"
-      ></yep-input>
-      <p class="field-hint">
-        Se acredita de inmediato al aprobarse y no vence: se consume solo cuando la cuota de tu
-        plan del mes llega a 0.
-      </p>
+        (ngModelChange)="topUpQuantity.set(+$event)"
+      >
+        @for (tier of topUpTiers(); track tier.quantity) {
+          <option [value]="tier.quantity">{{ topUpTierLabel(tier) }}</option>
+        }
+      </select>
     }
 
     <yep-input
@@ -272,6 +331,31 @@
     </yep-button>
     <yep-button type="button" [loading]="submitting()" (clicked)="submitRequest()">
       Enviar solicitud
+    </yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="reportModalOpen()"
+  title="Reportar pago"
+  subtitle="Cuentanos como pagaste para que podamos confirmarlo mas rapido."
+  [loading]="reporting()"
+  (closeRequested)="closeReportModal()"
+>
+  <yep-input
+    label="Referencia o comentario (opcional)"
+    name="reportNote"
+    [ngModel]="reportNote()"
+    (ngModelChange)="reportNote.set($event)"
+    hint="Ej: transferencia Bancolombia, comprobante #12345."
+  ></yep-input>
+
+  <ng-container modalFooter>
+    <yep-button type="button" variant="ghost" (clicked)="closeReportModal()">
+      Cancelar
+    </yep-button>
+    <yep-button type="button" [loading]="reporting()" (clicked)="submitReportPayment()">
+      Reportar pago
     </yep-button>
   </ng-container>
 </yep-modal>

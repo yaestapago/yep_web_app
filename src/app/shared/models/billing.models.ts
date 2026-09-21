@@ -24,14 +24,38 @@ export interface RecurringAddOnSummary {
   totalPriceCop: number;
 }
 
+export interface AddOnPricingTier {
+  quantity: number;
+  unitPriceCop: number;
+  totalPriceCop: number;
+}
+
+export interface AddOnPricingResponse {
+  whatsapp: AddOnPricingTier[];
+  locations: AddOnPricingTier[];
+  users: AddOnPricingTier[];
+}
+
+export interface PlanChangeProrationSummary {
+  fromPriceCop: number;
+  toPriceCop: number;
+  periodStart: string;
+  periodEnd: string;
+  remainingFraction: number;
+  proratedAmountCop: number;
+}
+
 export interface PlanChangeRequestSummary {
   id: string;
   accountId: string;
   accountName?: string | null;
   requestType: PlanChangeRequestType;
+  fromPlanCode?: string;
   requestedPlanCode?: string;
   topUp?: PlanTopUpSummary;
   recurringAddOn?: RecurringAddOnSummary;
+  proration?: PlanChangeProrationSummary;
+  billingPeriod?: 'monthly' | 'annual';
   status: PlanChangeRequestStatus;
   message?: string;
   reviewNote?: string;
@@ -39,6 +63,27 @@ export interface PlanChangeRequestSummary {
   effectiveAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ChangePlanPayload {
+  planCode: string;
+  billingPeriod?: 'monthly' | 'annual';
+}
+
+export interface ChangePlanResponse {
+  type: 'same_plan' | 'upgrade' | 'downgrade';
+  currentPlan: { code: string; name: string; priceCop: number };
+  newPlan: { code: string; name: string; priceCop: number };
+  currentPeriodEnd: string | null;
+  proratedAmountCop: number;
+  currency: 'COP';
+  paymentRequired: boolean;
+  changeRequestId: string | null;
+  invoiceId: string | null;
+}
+
+export interface ReportPaymentPayload {
+  note?: string;
 }
 
 export interface CreatePlanChangeRequestPayload {
@@ -55,7 +100,7 @@ export interface ReviewPlanChangeRequestPayload {
   finalPriceCop?: number;
 }
 
-export type BillingInvoiceStatus = 'issued' | 'paid' | 'cancelled';
+export type BillingInvoiceStatus = 'issued' | 'reported' | 'paid' | 'cancelled';
 
 export interface BillingInvoiceItemSummary {
   description: string;
@@ -79,5 +124,7 @@ export interface BillingInvoiceSummary {
   status: BillingInvoiceStatus;
   issuedAt: string;
   paidAt?: string;
+  reportedAt?: string;
+  customerNote?: string;
   notes?: string;
 }
