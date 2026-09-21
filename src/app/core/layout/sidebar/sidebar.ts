@@ -1,12 +1,4 @@
-import {
-  Component,
-  HostListener,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
@@ -15,6 +7,7 @@ import {
   LucideCreditCard,
   LucideHouse,
   LucideLayoutDashboard,
+  LucideLifeBuoy,
   LucideLogOut,
   LucideMoon,
   LucidePanelLeftClose,
@@ -63,6 +56,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     LucideCreditCard,
     LucideHouse,
     LucideLayoutDashboard,
+    LucideLifeBuoy,
     LucideLogOut,
     LucideMoon,
     LucidePanelLeftClose,
@@ -95,6 +89,8 @@ export class Sidebar {
   readonly memberships = this.session.approvedMemberships;
   readonly activeMembership = this.session.activeMembership;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
+  readonly isSupportUser = this.session.isSupportUser;
+  readonly isInternalOpsUser = this.session.isInternalOpsUser;
   readonly businessOptions = computed<SelectOption[]>(() =>
     this.memberships().map((membership) => ({
       id: membership.businessAccountId,

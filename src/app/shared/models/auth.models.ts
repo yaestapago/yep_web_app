@@ -25,7 +25,7 @@ export interface User {
   email: string;
   identificationNumber: string;
   cellphoneNumber: string;
-  globalRole?: 'account_su';
+  globalRole?: 'account_su' | 'support';
   preferences?: UserPreferences;
 }
 

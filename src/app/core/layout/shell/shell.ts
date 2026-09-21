@@ -30,7 +30,7 @@ export class Shell {
   readonly drawerOpen = signal(false);
   readonly receiptCaptureOpen = signal(false);
   readonly canShowReceiptCaptureButton = computed(
-    () => this.session.subscription()?.plan.code !== 'free_trial',
+    () => !this.session.isSupportUser() && this.session.subscription()?.plan.code !== 'free_trial',
   );
 
   /** Rail colapsable en escritorio; se recuerda entre sesiones. */

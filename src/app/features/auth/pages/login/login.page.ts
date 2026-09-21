@@ -109,7 +109,11 @@ export class LoginPage {
           setTimeout(
             () =>
               void this.router.navigateByUrl(
-                this.session.onboardingRequired() ? '/onboarding' : '/dashboard',
+                this.session.isInternalOpsUser()
+                  ? '/__ops/support'
+                  : this.session.onboardingRequired()
+                    ? '/onboarding'
+                    : '/dashboard',
               ),
             350,
           );

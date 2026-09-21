@@ -20,7 +20,10 @@ describe('businessGuard', () => {
   it('redirects unauthenticated users to login', () => {
     TestBed.configureTestingModule({
       providers: [
-        { provide: AuthSessionService, useValue: { isAuthenticated: () => false } },
+        {
+          provide: AuthSessionService,
+          useValue: { isAuthenticated: () => false, isInternalOpsUser: () => false },
+        },
         { provide: Router, useValue: router },
       ],
     });
@@ -34,7 +37,11 @@ describe('businessGuard', () => {
       providers: [
         {
           provide: AuthSessionService,
-          useValue: { isAuthenticated: () => true, ensureActiveBusiness: () => false },
+          useValue: {
+            isAuthenticated: () => true,
+            isInternalOpsUser: () => false,
+            ensureActiveBusiness: () => false,
+          },
         },
         { provide: Router, useValue: router },
       ],
@@ -49,7 +56,25 @@ describe('businessGuard', () => {
       providers: [
         {
           provide: AuthSessionService,
-          useValue: { isAuthenticated: () => true, ensureActiveBusiness: () => true },
+          useValue: {
+            isAuthenticated: () => true,
+            isInternalOpsUser: () => false,
+            ensureActiveBusiness: () => true,
+          },
+        },
+        { provide: Router, useValue: router },
+      ],
+    });
+
+    expect(runGuard()).toBe(true);
+  });
+
+  it('allows internal operations users without an active business', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AuthSessionService,
+          useValue: { isAuthenticated: () => true, isInternalOpsUser: () => true },
         },
         { provide: Router, useValue: router },
       ],

@@ -60,7 +60,7 @@ describe('Sidebar', () => {
     currentUrl = '/home';
     session.activeMembership.set({
       businessAccountId: 'b1',
-      businessAccount: { name: 'CafÃ© Uno' },
+      businessAccount: { name: 'Café Uno' },
       role: 'account_owner',
     });
     session.isSuperUser.set(false);
@@ -118,7 +118,7 @@ describe('Sidebar', () => {
   it('allows superusers to see all business sections and subscription', () => {
     session.activeMembership.set({
       businessAccountId: 'b1',
-      businessAccount: { name: 'CafÃ© Uno' },
+      businessAccount: { name: 'Café Uno' },
       role: 'account_staff',
     });
     session.isSuperUser.set(true);
