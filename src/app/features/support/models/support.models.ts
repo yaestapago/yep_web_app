@@ -40,7 +40,7 @@ export interface SupportBusinessDetail {
 }
 
 export interface SupportBusinessSubscription {
-  state: 'available' | 'missing_owner' | 'not_found';
+  state: 'available' | 'not_found';
   owner?: {
     id: string;
     firstName: string;
@@ -50,7 +50,6 @@ export interface SupportBusinessSubscription {
     isActive: boolean;
   };
   ownerCount?: number;
-  sharedBusinessCount?: number;
   subscription?: UserSubscriptionSummary | null;
   warnings: string[];
 }

@@ -37,7 +37,7 @@
       <section class="subscription-panel" aria-labelledby="subscription-title">
         <div class="subscription-panel__heading">
           <div>
-            <span class="eyebrow">Suscripción del titular</span>
+            <span class="eyebrow">Suscripción del negocio</span>
             <h2 id="subscription-title">
               {{ detail.subscription.subscription?.plan?.name || 'Sin suscripción activa' }}
             </h2>
@@ -47,32 +47,28 @@
           }
         </div>
 
-        @if (detail.subscription.owner; as owner) {
-          <dl class="subscription-data">
+        <dl class="subscription-data">
+          @if (detail.subscription.owner; as owner) {
             <div>
-              <dt>Titular</dt>
+              <dt>Contacto propietario</dt>
               <dd>{{ owner.firstName }} {{ owner.lastName }}</dd>
             </div>
             <div>
               <dt>Correo</dt>
               <dd>{{ owner.email }}</dd>
             </div>
-            <div>
-              <dt>Plan</dt>
-              <dd>{{ detail.subscription.subscription?.plan?.code || '-' }}</dd>
-            </div>
-            <div>
-              <dt>Fin del periodo</dt>
-              <dd>
-                {{ detail.subscription.subscription?.currentPeriodEnd | date: 'mediumDate' }}
-              </dd>
-            </div>
-            <div>
-              <dt>Negocios cubiertos</dt>
-              <dd>{{ detail.subscription.sharedBusinessCount || 1 }}</dd>
-            </div>
-          </dl>
-        }
+          }
+          <div>
+            <dt>Plan</dt>
+            <dd>{{ detail.subscription.subscription?.plan?.code || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Fin del periodo</dt>
+            <dd>
+              {{ detail.subscription.subscription?.currentPeriodEnd | date: 'mediumDate' }}
+            </dd>
+          </div>
+        </dl>
 
         @for (warning of detail.subscription.warnings; track warning) {
           <p class="subscription-warning">{{ warning }}</p>
