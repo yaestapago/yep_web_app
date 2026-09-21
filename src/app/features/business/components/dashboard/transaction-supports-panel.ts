@@ -96,6 +96,14 @@ export class TransactionSupportsPanel {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput.required<PaymentTransaction>();
+  /** Oculta de "Soportes relacionados" lo que ya se muestra aparte como
+   *  "Reportes" (evento bancario/notificador, con más detalle y expandible):
+   *  la lista de eventos enlazados (`relatedEvents`) y sus soportes espejo
+   *  (`BANK_SMS`/`BANK_WEBHOOK`, uno por evento). Lo usa
+   *  `SourceEventDetailModal` para no duplicar la misma info dos veces;
+   *  el comprobante (foto) y las confirmaciones manuales siguen apareciendo,
+   *  son evidencia distinta. */
+  readonly hideLinkedEvents = defineInput(false);
 
   /** Pide al modal contenedor abrir el detalle de un evento (por su id). */
   readonly viewSourceEvent = output<string>();
@@ -143,14 +151,17 @@ export class TransactionSupportsPanel {
   readonly canApplyInvoice = computed(() => isTransactionInvoiceable(this.transaction().status));
 
   /** Eventos bancarios enlazados, con etiqueta amigable y clickeables. */
-  readonly relatedEvents = computed(() =>
-    (this.transaction().events ?? []).map((event) => ({
+  readonly relatedEvents = computed(() => {
+    if (this.hideLinkedEvents()) {
+      return [];
+    }
+    return (this.transaction().events ?? []).map((event) => ({
       eventId: event.eventId,
       sourceType: event.sourceType,
       label: EVENT_SOURCE_LABELS[event.sourceType] ?? event.source,
       linkedAt: event.linkedAt,
-    })),
-  );
+    }));
+  });
 
   /** Confirmaciones manuales y datos completados por el staff (sintéticos). */
   readonly manualEntries = computed<ManualEntry[]>(() => {
@@ -174,11 +185,24 @@ export class TransactionSupportsPanel {
     return entries;
   });
 
+  /** `supports()` sin los soportes espejo de un evento ya listado en
+   *  "Reportes" (ver doc de `hideLinkedEvents`) — solo aplica cuando ese
+   *  input está activo; en `TransactionDetailModal` (sin sección "Reportes")
+   *  se siguen mostrando, son la única evidencia bancaria visible ahí. */
+  readonly visibleSupports = computed(() => {
+    if (!this.hideLinkedEvents()) {
+      return this.supports();
+    }
+    return this.supports().filter(
+      (support) => support.type !== 'BANK_SMS' && support.type !== 'BANK_WEBHOOK',
+    );
+  });
+
   /** ¿Hay algo que mostrar en "Soportes relacionados"? */
   readonly hasRelated = computed(
     () =>
       this.relatedEvents().length > 0 ||
-      this.supports().length > 0 ||
+      this.visibleSupports().length > 0 ||
       this.manualEntries().length > 0,
   );
 

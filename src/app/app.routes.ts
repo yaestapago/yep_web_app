@@ -9,6 +9,7 @@ import { businessSectionGuard } from './core/guards/business-section.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { opsGuard } from './core/guards/ops.guard';
 import { subscriptionGuard } from './core/guards/subscription.guard';
+import { invoicesGuard } from './core/guards/invoices.guard';
 import { Shell } from './core/layout/shell/shell';
 import { AuthSessionService } from './core/services/auth-session.service';
 
@@ -69,6 +70,26 @@ export const routes: Routes = [
       import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
   },
   {
+    // Vista de superadmin (path obscuro, NO enlazado en el sidebar): revisar y
+    // aprobar/rechazar solicitudes de cambio de plan/add-ons/toppings. Mismo
+    // criterio de seguridad que __ops/notifier-rules.
+    path: '__ops/subscriptions/change-requests',
+    canActivate: [authGuard, superAdminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin-billing/pages/plan-change-requests-admin/plan-change-requests-admin.page'
+      ).then((m) => m.PlanChangeRequestsAdminPage),
+  },
+  {
+    // Idem — confirmar pagos reportados/marcar facturas pagadas o canceladas.
+    path: '__ops/subscriptions/invoices',
+    canActivate: [authGuard, superAdminGuard],
+    loadComponent: () =>
+      import(
+        './features/admin-billing/pages/invoices-admin/invoices-admin.page'
+      ).then((m) => m.InvoicesAdminPage),
+  },
+  {
     path: '',
     component: Shell,
     canActivate: [businessGuard],
@@ -112,10 +133,18 @@ export const routes: Routes = [
             path: 'dashboard',
             // `immersive`: el panel ocupa el viewport completo, así que la
             // cabecera del negocio se compacta (ver BusinessShellPage).
-            data: { immersive: true },
+            data: { immersive: true, section: 'dashboard' },
+            canActivate: [businessSectionGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-dashboard.section').then(
                 (m) => m.BusinessDashboardSection,
+              ),
+          },
+          {
+            path: 'no-access',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-no-access.section').then(
+                (m) => m.BusinessNoAccessSection,
               ),
           },
           {
@@ -224,6 +253,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/subscription/pages/subscription/subscription.page').then(
             (m) => m.SubscriptionPage,
+          ),
+      },
+      {
+        path: 'invoices',
+        canActivate: [invoicesGuard],
+        loadComponent: () =>
+          import('./features/invoices/pages/invoices/invoices.page').then(
+            (m) => m.InvoicesPage,
           ),
       },
 

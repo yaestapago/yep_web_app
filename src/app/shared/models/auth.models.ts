@@ -34,12 +34,14 @@ export interface SubscriptionPlanSummary {
   code: string;
   name: string;
   priceCop: number;
+  annualPriceCop?: number | null;
   currency: string;
   billingPeriod: 'monthly';
   trialDays?: number;
   quotas: {
     maxBusinesses: number;
     maxLocations: number;
+    maxUsers: number;
     maxMonthlySourceEventsVisible: number;
     maxMonthlyWhatsappNotifications: number;
     maxWhatsappRecipients: number;
@@ -57,15 +59,28 @@ export interface SubscriptionPlanSummary {
   isCustom: boolean;
 }
 
+export interface PendingSubscriptionChange {
+  effectiveAt: string;
+  quotaOverrides?: Partial<SubscriptionPlanSummary['quotas']>;
+  recurringAddOnsCop?: number;
+  pendingPlanCode?: string | null;
+}
+
 export interface UserSubscriptionSummary {
   id: string;
-  status: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'expired';
+  status: 'trialing' | 'active' | 'past_due' | 'suspended' | 'cancelled' | 'expired';
   plan: SubscriptionPlanSummary;
   startsAt: string;
   endsAt?: string;
   trialEndsAt?: string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  billingPeriod: 'monthly' | 'annual';
+  contractedPriceCop: number;
+  currentPeriodInvoiceId: string | null;
+  whatsappTopUpBalance: number;
+  recurringAddOnsCop: number;
+  pendingChange: PendingSubscriptionChange | null;
 }
 
 export type SubscriptionCreationMetric = 'businesses' | 'locations' | 'bankAccounts';
@@ -106,6 +121,21 @@ export interface SubscriptionCreationPermissionResponse {
 
 export type BusinessMembershipRole = 'account_owner' | 'account_staff';
 export type BusinessMembershipStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
+
+export interface SectionAccess {
+  dashboard: boolean;
+  businessData: boolean;
+  reports: boolean;
+  dashboardSummary: boolean;
+  dashboardIncomeTable: boolean;
+  dashboardCharts: boolean;
+  dashboardSystemStatus: boolean;
+  dashboardTotalAmount: boolean;
+  dashboardEvents: boolean;
+  dashboardReceived: boolean;
+  dashboardPending: boolean;
+  dashboardRejected: boolean;
+}
 
 export interface SourceEventAccess {
   enabled?: boolean;
@@ -148,6 +178,7 @@ export interface BusinessMembership {
   status: BusinessMembershipStatus;
   locationIds: string[];
   sourceEventAccess?: SourceEventAccess;
+  sectionAccess?: SectionAccess;
   requestedByUserId?: string;
   invitedByUserId?: string;
   createdAt?: string;

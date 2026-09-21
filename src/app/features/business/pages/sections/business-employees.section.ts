@@ -9,13 +9,14 @@ import {
   LucideClipboardCheck,
   LucideClipboardCopy,
   LucideLoaderCircle,
+  LucideSettings,
   LucideUserPlus,
 } from '@lucide/angular';
 import * as QRCode from 'qrcode';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import type { BusinessMembershipRole } from '../../../../shared/models/auth.models';
+import type { BusinessMembershipRole, SectionAccess } from '../../../../shared/models/auth.models';
 import type { BankAccount, BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type { ApprovedMember } from '../../../../shared/models/schedule.models';
 import { Button } from '../../../../shared/ui/button/button';
@@ -28,6 +29,21 @@ import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
+
+const DEFAULT_SECTION_ACCESS: SectionAccess = {
+  dashboard: true,
+  businessData: false,
+  reports: false,
+  dashboardSummary: true,
+  dashboardIncomeTable: false,
+  dashboardCharts: false,
+  dashboardSystemStatus: true,
+  dashboardTotalAmount: false,
+  dashboardEvents: true,
+  dashboardReceived: true,
+  dashboardPending: true,
+  dashboardRejected: true,
+};
 
 /**
  * Empleados del negocio: lista de miembros aprobados con altas, edición de rol
@@ -48,6 +64,7 @@ const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLoaderCircle,
+    LucideSettings,
     LucideUserPlus,
   ],
   templateUrl: './business-employees.section.html',
@@ -87,6 +104,12 @@ export class BusinessEmployeesSection implements OnInit {
   readonly accessMember = signal<ApprovedMember | null>(null);
   readonly selectedAccessBankAccountIds = signal<string[]>([]);
   readonly selectedAccessBreBKeys = signal<string[]>([]);
+
+  // Apartados de la aplicación (modal separado, ícono de engranaje).
+  readonly sectionAccessOpen = signal(false);
+  readonly savingSectionAccess = signal(false);
+  readonly sectionAccessMember = signal<ApprovedMember | null>(null);
+  readonly selectedSectionAccess = signal<SectionAccess>(DEFAULT_SECTION_ACCESS);
 
   readonly roleOptions: readonly SelectOption[] = [
     { id: 'account_staff', label: 'Staff' },
@@ -368,6 +391,128 @@ export class BusinessEmployeesSection implements OnInit {
     this.selectedAccessBreBKeys.set([]);
   }
 
+  // --- Apartados de la aplicación --------------------------------------------
+
+  openSectionAccess(member: ApprovedMember): void {
+    if (member.role !== 'account_staff') {
+      return;
+    }
+    this.error.set('');
+    this.success.set('');
+    this.sectionAccessMember.set(member);
+    this.selectedSectionAccess.set({
+      dashboard: member.sectionAccess?.dashboard ?? true,
+      businessData: member.sectionAccess?.businessData ?? true,
+      reports: member.sectionAccess?.reports ?? true,
+      dashboardSummary: member.sectionAccess?.dashboardSummary ?? true,
+      dashboardIncomeTable: member.sectionAccess?.dashboardIncomeTable ?? true,
+      dashboardCharts: member.sectionAccess?.dashboardCharts ?? true,
+      dashboardSystemStatus: member.sectionAccess?.dashboardSystemStatus ?? true,
+      dashboardTotalAmount: member.sectionAccess?.dashboardTotalAmount ?? true,
+      dashboardEvents: member.sectionAccess?.dashboardEvents ?? true,
+      dashboardReceived: member.sectionAccess?.dashboardReceived ?? true,
+      dashboardPending: member.sectionAccess?.dashboardPending ?? true,
+      dashboardRejected: member.sectionAccess?.dashboardRejected ?? true,
+    });
+    this.sectionAccessOpen.set(true);
+  }
+
+  closeSectionAccess(): void {
+    if (this.savingSectionAccess()) {
+      return;
+    }
+    this.sectionAccessOpen.set(false);
+    this.sectionAccessMember.set(null);
+    this.selectedSectionAccess.set(DEFAULT_SECTION_ACCESS);
+  }
+
+  toggleSectionAccess(section: keyof SectionAccess, checked: boolean): void {
+    this.selectedSectionAccess.update((current) => ({ ...current, [section]: checked }));
+  }
+
+  saveSectionAccess(): void {
+    const businessId = this.businessId();
+    const member = this.sectionAccessMember();
+    if (!businessId || !member) {
+      return;
+    }
+
+    this.savingSectionAccess.set(true);
+    this.error.set('');
+    const loadingRef = this.notifications.loading({
+      title: 'Guardando apartados',
+      message: 'Estamos actualizando los apartados visibles para el empleado.',
+    });
+    let loadingClosed = false;
+    const closeLoading = () => {
+      if (loadingClosed) {
+        return;
+      }
+      loadingClosed = true;
+      loadingRef.close();
+    };
+
+    const requestedAccess = this.selectedSectionAccess();
+    this.businessApi
+      .updateMemberSectionAccess(businessId, member.id, requestedAccess)
+      .pipe(
+        finalize(() => {
+          this.savingSectionAccess.set(false);
+          closeLoading();
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ membership }) => {
+          const savedAccess = membership.sectionAccess;
+          const confirmed =
+            savedAccess &&
+            (Object.keys(requestedAccess) as (keyof SectionAccess)[]).every(
+              (key) => savedAccess[key] === requestedAccess[key],
+            );
+          if (!confirmed) {
+            const message = 'No se guardaron todos los apartados. Vuelve a intentarlo.';
+            this.error.set(message);
+            closeLoading();
+            void this.notifications.error({
+              title: 'No se pudo confirmar el acceso',
+              message,
+            });
+            return;
+          }
+
+          this.members.update((members) =>
+            members.map((current) =>
+              current.id === membership.id
+                ? {
+                    ...current,
+                    sectionAccess: membership.sectionAccess,
+                    updatedAt: membership.updatedAt,
+                  }
+                : current,
+            ),
+          );
+          this.success.set('Apartados del empleado actualizados.');
+          closeLoading();
+          void this.notifications.success({
+            title: 'Apartados actualizados',
+            message: 'Los apartados visibles para el empleado se guardaron correctamente.',
+          });
+          this.savingSectionAccess.set(false);
+          this.closeSectionAccess();
+        },
+        error: (error) => {
+          const message = httpErrorMessage(error);
+          this.error.set(message);
+          closeLoading();
+          void this.notifications.error({
+            title: 'No se pudo guardar',
+            message,
+          });
+        },
+      });
+  }
+
   toggleLocation(locationId: string, checked: boolean): void {
     this.selectedLocationIds.update((ids) =>
       checked ? Array.from(new Set([...ids, locationId])) : ids.filter((id) => id !== locationId),
@@ -453,8 +598,8 @@ export class BusinessEmployeesSection implements OnInit {
       return;
     }
 
-    const request = this.accessPayload();
-    if (request === null) {
+    const sourceEventRequest = this.accessPayload();
+    if (sourceEventRequest === null) {
       return;
     }
 
@@ -474,7 +619,7 @@ export class BusinessEmployeesSection implements OnInit {
     };
 
     this.businessApi
-      .updateMemberSourceEventAccess(businessId, member.id, request)
+      .updateMemberSourceEventAccess(businessId, member.id, sourceEventRequest)
       .pipe(
         finalize(() => {
           this.savingAccess.set(false);
@@ -483,19 +628,19 @@ export class BusinessEmployeesSection implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => {
+        next: ({ membership }) => {
           this.members.update((members) =>
             members.map((current) =>
-              current.id === response.membership.id
+              current.id === membership.id
                 ? {
                     ...current,
-                    sourceEventAccess: response.membership.sourceEventAccess,
-                    updatedAt: response.membership.updatedAt,
+                    sourceEventAccess: membership.sourceEventAccess,
+                    updatedAt: membership.updatedAt,
                   }
                 : current,
             ),
           );
-          this.success.set('Acceso al panel de control actualizado.');
+          this.success.set('Cuentas y llaves visibles actualizadas.');
           this.accessOpen.set(false);
           this.accessMember.set(null);
           this.selectedAccessBankAccountIds.set([]);

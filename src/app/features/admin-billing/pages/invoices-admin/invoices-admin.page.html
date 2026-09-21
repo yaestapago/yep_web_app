@@ -1,0 +1,80 @@
+<section class="page invoices-admin-page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-title">Facturas</h1>
+      <p class="page-subtitle">
+        Confirma pagos reportados por los clientes o marca facturas como pagadas/canceladas.
+      </p>
+    </div>
+    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
+
+  <div class="filter-tabs">
+    @for (status of statusOptions; track status) {
+      <button
+        type="button"
+        [class.active]="statusFilter() === status"
+        (click)="statusFilter.set(status)"
+      >
+        {{ status === 'all' ? 'Todas' : status }}
+      </button>
+    }
+  </div>
+
+  @if (loading() && invoices().length === 0) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando facturas...
+    </div>
+  } @else if (filteredInvoices().length === 0) {
+    <p class="empty-hint">No hay facturas en este estado.</p>
+  } @else {
+    <ul class="invoices-list">
+      @for (invoice of filteredInvoices(); track invoice.id) {
+        <li class="invoice-row">
+          <div class="invoice-row__body">
+            <strong>{{ invoice.invoiceNumber }} — {{ invoice.buyerName }}</strong>
+            <span>{{ invoice.concept }}</span>
+            @if (invoice.customerNote) {
+              <span class="invoice-note">Nota del cliente: "{{ invoice.customerNote }}"</span>
+            }
+            <span class="invoice-date">{{ invoice.issuedAt | date: 'medium' }}</span>
+          </div>
+          <strong class="invoice-amount">{{ formatCop(invoice.totalCop) }}</strong>
+          <span class="invoice-status" [attr.data-status]="invoice.status">
+            {{ invoice.status }}
+          </span>
+          @if (invoice.status === 'issued' || invoice.status === 'reported') {
+            <div class="invoice-row__actions">
+              <yep-button
+                size="sm"
+                [loading]="actingId() === invoice.id"
+                (clicked)="markPaid(invoice)"
+              >
+                Marcar pagada
+              </yep-button>
+              <yep-button
+                size="sm"
+                variant="ghost"
+                [loading]="actingId() === invoice.id"
+                (clicked)="markCancelled(invoice)"
+              >
+                Cancelar
+              </yep-button>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>

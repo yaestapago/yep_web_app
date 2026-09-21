@@ -189,6 +189,15 @@
   display: inline-flex;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
+  gap: 4px;
+}
+
+/* Dos o más orígenes distintos confirmaron el mismo pago: además del espacio
+   entre íconos, un fondo sutil deja claro que es un grupo, no un solo aviso. */
+.event__type--grouped {
+  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+  border-radius: var(--radius-full);
+  padding: 2px 6px;
 }
 
 .event__type svg {

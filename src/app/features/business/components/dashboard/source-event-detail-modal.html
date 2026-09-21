@@ -10,89 +10,152 @@
     <p class="detail-error">{{ error() }}</p>
   }
 
-  @if (detail(); as event) {
+  @if (detail()) {
+    <!-- Resumen: NO cambia al expandir/contraer reportes, siempre el mismo lugar. -->
     <section class="event-summary">
       <div class="event-summary__amount">
         <span>Monto reportado</span>
         @if (amount() !== null) {
-          <strong>
-            {{
-              amount() | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
-            }}
-          </strong>
+          <strong>{{ amount() | currency: amountCurrency() : 'symbol-narrow' : '1.0-0' }}</strong>
         } @else {
           <strong>Sin monto</strong>
         }
       </div>
-      <dl class="detail-grid">
-        <div>
-          <dt>Origen</dt>
-          <dd>{{ sourceLabel(event) }} · {{ deviceLabel(event) }}</dd>
-        </div>
-        <div>
-          <dt>Estado</dt>
-          <dd>{{ statusLabel(event.status) }}</dd>
-        </div>
-        <div>
-          <dt>Banco</dt>
-          <dd>{{ event.normalized?.bankId || 'No detectado' }}</dd>
-        </div>
-        <div>
-          <dt>Fecha de banco</dt>
-          <dd>{{ bankDate(event) }}</dd>
-        </div>
-        <div>
-          <dt>Fecha de reenvío</dt>
-          <dd>{{ forwardedDate(event) }}</dd>
-        </div>
-        <div>
-          <dt>Fecha de evento</dt>
-          <dd>{{ eventDate(event) }}</dd>
-        </div>
-        <div>
-          <dt>Referencia</dt>
-          <dd>{{ event.normalized?.reference || 'Sin referencia' }}</dd>
-        </div>
-        <div>
-          <dt>Nombre del emisor</dt>
-          <dd>{{ senderName(event) }}</dd>
-        </div>
-        <div>
-          <dt>Nombre de llave</dt>
-          <dd>{{ keyName(event) }}</dd>
-        </div>
-        <div>
-          <dt>Cuenta destino</dt>
-          <dd>{{ destinationAccount(event) }}</dd>
-        </div>
-        <div>
-          <dt>Resolucion</dt>
-          <dd>{{ event.normalized?.reportedBankAccountResolution || 'Sin resolver' }}</dd>
-        </div>
-        <div>
-          <dt>Cuenta origen</dt>
-          <dd>{{ event.normalized?.senderAccount || 'No detectada' }}</dd>
-        </div>
-        <div>
-          <dt>Fecha de transferencia</dt>
-          <dd>{{ transferDate(event) }}</dd>
-        </div>
-        <div>
-          <dt>Soporte vinculado</dt>
-          <dd>{{ event.linkedSupportId || 'Sin soporte vinculado' }}</dd>
-        </div>
-      </dl>
+      <div class="event-summary__meta">
+        <span class="badge badge--{{ statusToneTop() }}">{{ statusLabelTop() }}</span>
+        @if (reports().length > 1) {
+          <span class="event-summary__count">
+            {{ reports().length }} reportes confirmaron este pago
+          </span>
+        }
+      </div>
     </section>
 
-    <details class="raw">
-      <summary>Notificacion recibida</summary>
-      <pre>{{ notificationText() || 'Sin texto disponible' }}</pre>
-    </details>
+    <!-- Reportes: uno por origen que confirmó este pago, en orden de llegada.
+         Se expanden/contraen en el lugar, sin reemplazar esta pantalla. -->
+    <section class="detail-section">
+      <h3>Reportes{{ loadingSiblings() ? ' · cargando…' : '' }}</h3>
+      <ul class="reports">
+        @for (report of reports(); track report.id) {
+          <li class="report" [class.report--expanded]="isExpanded(report)">
+            <button
+              type="button"
+              class="report__header"
+              (click)="toggleReport(report)"
+              [attr.aria-expanded]="isExpanded(report)"
+            >
+              @switch (reportIcon(report)) {
+                @case ('mail') {
+                  <svg lucideMail aria-hidden="true"></svg>
+                }
+                @case ('monitor') {
+                  <svg lucideMonitor aria-hidden="true"></svg>
+                }
+                @case ('smartphone') {
+                  <svg lucideSmartphone aria-hidden="true"></svg>
+                }
+              }
+              <span class="report__main">
+                <span class="report__type">
+                  {{ sourceLabel(report) }} · {{ deviceLabel(report) }}
+                  @if (isAnchor(report)) {
+                    <span class="report__you">este reporte</span>
+                  }
+                </span>
+                <span class="report__sub">
+                  Recibido {{ report.createdAt | date: 'short' }} · {{ statusLabel(report.status) }}
+                </span>
+              </span>
+              @if (report.normalized?.amount) {
+                <span class="report__amount">
+                  {{
+                    report.normalized?.amount
+                      | currency: report.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
+                  }}
+                </span>
+              }
+              @if (isExpanded(report)) {
+                <svg lucideChevronUp aria-hidden="true"></svg>
+              } @else {
+                <svg lucideChevronDown aria-hidden="true"></svg>
+              }
+            </button>
+
+            @if (isExpanded(report)) {
+              <div class="report__body">
+                <dl class="detail-grid">
+                  <div>
+                    <dt>Banco</dt>
+                    <dd>{{ report.normalized?.bankId || 'No detectado' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Fecha de banco</dt>
+                    <dd>{{ bankDate(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Fecha de reenvío</dt>
+                    <dd>{{ forwardedDate(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Fecha de evento</dt>
+                    <dd>{{ eventDate(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Referencia</dt>
+                    <dd>{{ report.normalized?.reference || 'Sin referencia' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Nombre del emisor</dt>
+                    <dd>{{ senderName(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Nombre de llave</dt>
+                    <dd>{{ keyName(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Cuenta destino</dt>
+                    <dd>{{ destinationAccount(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Resolucion</dt>
+                    <dd>{{ report.normalized?.reportedBankAccountResolution || 'Sin resolver' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Cuenta origen</dt>
+                    <dd>{{ report.normalized?.senderAccount || 'No detectada' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Fecha de transferencia</dt>
+                    <dd>{{ transferDate(report) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Soporte vinculado</dt>
+                    <dd>{{ report.linkedSupportId || 'Sin soporte vinculado' }}</dd>
+                  </div>
+                </dl>
+
+                <details class="raw">
+                  <summary>Notificación recibida</summary>
+                  <pre>{{ rawNotificationText(report) || 'Sin texto disponible' }}</pre>
+                </details>
+
+                @if (showPayload()) {
+                  <details class="raw">
+                    <summary>Ver payload original</summary>
+                    <pre>{{ report.rawPayload | json }}</pre>
+                  </details>
+                }
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
 
     @if (transaction(); as tx) {
       <app-transaction-supports-panel
         [transaction]="tx"
-        (viewSourceEvent)="viewOtherEvent.emit($event)"
+        [hideLinkedEvents]="true"
         (verifyRequested)="verifyRequested.emit($event)"
         (invoiceRequested)="invoiceRequested.emit($event)"
       />
@@ -103,9 +166,9 @@
       </section>
     }
 
-    <section class="detail-section">
-      <h3>Otros reportes relacionados</h3>
-      @if (relatedEvents().length > 0) {
+    @if (relatedEvents().length > 0) {
+      <section class="detail-section">
+        <h3>Otros reportes con la misma referencia (sin confirmar)</h3>
         <ul class="related-list">
           @for (related of relatedEvents(); track related.id) {
             <li>
@@ -124,16 +187,7 @@
             </li>
           }
         </ul>
-      } @else {
-        <p class="muted">No se encontraron otros reportes con la misma referencia.</p>
-      }
-    </section>
-
-    @if (showPayload()) {
-      <details class="raw">
-        <summary>Ver payload original</summary>
-        <pre>{{ event.rawPayload | json }}</pre>
-      </details>
+      </section>
     }
   }
 

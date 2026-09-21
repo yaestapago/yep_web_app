@@ -26,6 +26,147 @@
   line-height: 1;
 }
 
+.event-summary__meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.event-summary__count {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Badges (copia local: los estilos de Angular son encapsulados por componente) */
+.badge {
+  align-items: center;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.15rem var(--space-3);
+  text-transform: uppercase;
+}
+
+.badge--neutral {
+  background: color-mix(in srgb, var(--color-text-muted) 16%, transparent);
+  color: var(--color-text-secondary);
+}
+.badge--success {
+  background: color-mix(in srgb, var(--color-success) 18%, transparent);
+  color: var(--color-success-strong);
+}
+.badge--warning {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: color-mix(in srgb, var(--color-warning) 70%, var(--color-text-primary));
+}
+.badge--error {
+  background: color-mix(in srgb, var(--color-error) 16%, transparent);
+  color: var(--color-error);
+}
+
+/* Reportes: un origen (correo/app/sms) por tarjeta, expandible en el lugar —
+   varias pueden estar abiertas a la vez, sin reemplazar el resto de la
+   pantalla (a diferencia de la navegación anterior). */
+.reports {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.report {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.report--expanded {
+  border-color: color-mix(in srgb, var(--color-secondary) 40%, var(--color-border));
+}
+
+.report__header {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  text-align: left;
+  width: 100%;
+}
+
+.report__header:hover {
+  background: color-mix(in srgb, var(--color-secondary) 6%, transparent);
+}
+
+.report__header > svg:first-child {
+  color: var(--color-secondary);
+  flex: 0 0 auto;
+  height: 18px;
+  width: 18px;
+}
+
+.report__header > svg:last-child {
+  color: var(--color-text-secondary);
+  flex: 0 0 auto;
+  height: 16px;
+  width: 16px;
+}
+
+.report__main {
+  display: grid;
+  flex: 1;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.report__type {
+  align-items: center;
+  display: flex;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-2);
+}
+
+.report__you {
+  background: color-mix(in srgb, var(--color-secondary) 14%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-secondary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.05rem var(--space-2);
+  text-transform: uppercase;
+}
+
+.report__sub {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.report__amount {
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.report__body {
+  background: color-mix(in srgb, var(--color-secondary) 4%, transparent);
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.report__body .raw pre {
+  margin-top: 0;
+}
+
 .detail-grid {
   display: grid;
   gap: var(--space-3) var(--space-4);

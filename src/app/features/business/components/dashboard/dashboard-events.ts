@@ -158,23 +158,69 @@ export class DashboardEventsPanel {
     q: this.search().trim() || undefined,
   }));
 
+  /**
+   * Agrupa los eventos cargados por transacción enlazada (o por sí mismos,
+   * como grupo de 1, si todavía están sueltos): dos o más avisos del mismo
+   * pago real (p. ej. correo + app notificadora) comparten `linkedTransactionId`
+   * una vez que el backend los enlaza a la misma Transaction, y deben verse
+   * como UNA sola fila con varios íconos de origen, no como filas duplicadas.
+   */
+  private readonly groups = computed(() => {
+    const map = new Map<string, SourceEvent[]>();
+    for (const event of this.events()) {
+      const key = this.groupKey(event);
+      const list = map.get(key);
+      if (list) list.push(event);
+      else map.set(key, [event]);
+    }
+    return map;
+  });
+
+  private groupKey(event: SourceEvent): string {
+    return event.linkedTransactionId ?? `event:${event.id}`;
+  }
+
+  /**
+   * Un representante por grupo — el primero en llegar ("el primero que llega
+   * crea el registro") — en el mismo orden en que trae el servidor.
+   */
+  readonly groupedEvents = computed<SourceEvent[]>(() => {
+    const groups = this.groups();
+    const seen = new Set<string>();
+    const result: SourceEvent[] = [];
+    for (const event of this.events()) {
+      const key = this.groupKey(event);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const group = groups.get(key) ?? [event];
+      result.push(
+        group.reduce((earliest, current) =>
+          new Date(current.createdAt).getTime() < new Date(earliest.createdAt).getTime()
+            ? current
+            : earliest,
+        ),
+      );
+    }
+    return result;
+  });
+
   // --- Paginado client-side sobre la ventana cargada --------------------------
   readonly pageSize = signal(10);
   readonly page = signal(1);
 
   readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.events().length / this.pageSize())),
+    Math.max(1, Math.ceil(this.groupedEvents().length / this.pageSize())),
   );
 
   /** Página efectiva acotada a [1, totalPages] (autocorrige si los datos
    *  encogen sin esperar interacción del usuario). */
   readonly currentPage = computed(() => Math.min(Math.max(1, this.page()), this.totalPages()));
 
-  /** Página actual recortada. */
+  /** Página actual recortada (una fila por grupo). */
   readonly paged = computed(() => {
     const size = this.pageSize();
     const start = (this.currentPage() - 1) * size;
-    return this.events().slice(start, start + size);
+    return this.groupedEvents().slice(start, start + size);
   });
 
   /** Estamos en la última página cargada (donde ofrecemos "cargar más"). */
@@ -207,8 +253,10 @@ export class DashboardEventsPanel {
     this.tts.setEnabled(on);
   }
 
+  /** true si el propio evento o alguno de sus hermanos de grupo llegó en vivo y no se ha visto. */
   isUnread(event: SourceEvent): boolean {
-    return this.unreadIds().has(event.id);
+    const group = this.groups().get(this.groupKey(event)) ?? [event];
+    return group.some((sibling) => this.unreadIds().has(sibling.id));
   }
 
   openDetail(event: SourceEvent): void {
@@ -265,6 +313,29 @@ export class DashboardEventsPanel {
     const device = event.rawPayload?.['device'] as { osVersion?: unknown } | undefined;
     const os = typeof device?.osVersion === 'string' ? device.osVersion.toLowerCase() : '';
     return os.includes('windows') || os.includes('mac') || os.includes('linux');
+  }
+
+  /**
+   * Íconos a mostrar en la fila: uno por cada variante de origen presente en
+   * el grupo (correo, app móvil, escritorio…), sin repetir. Cuando el pago
+   * quedó confirmado por más de un notificador, la fila muestra ambos íconos
+   * en vez de aparecer como dos filas separadas.
+   */
+  groupIcons(event: SourceEvent): Array<'smartphone' | 'monitor' | 'mail'> {
+    const group = this.groups().get(this.groupKey(event)) ?? [event];
+    const icons = new Set<'smartphone' | 'monitor' | 'mail'>();
+    for (const sibling of group) {
+      const icon = this.eventIcon(sibling);
+      if (icon) icons.add(icon);
+    }
+    return [...icons];
+  }
+
+  /** Título del grupo de íconos: los orígenes distintos que reportaron este pago. */
+  groupSourceLabel(event: SourceEvent): string {
+    const group = this.groups().get(this.groupKey(event)) ?? [event];
+    const labels = new Set(group.map((sibling) => this.sourceLabel(sibling.sourceType)));
+    return [...labels].join(' + ');
   }
 
   /**

@@ -418,6 +418,13 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* Simétrico a .grid--summary-collapsed: sin tabla de ingresos (por permiso),
+   el resumen ocupa todo el alto disponible en vez de dejar la 2da fila vacía. */
+.grid--events-hidden {
+  grid-template-areas: 'insights insights insights insights insights insights insights insights status status status status';
+  grid-template-rows: minmax(0, 1fr);
+}
+
 /* Size 1: wide desktop. This is the default above. */
 
 /* Size 2: medium desktop / horizontal tablet. Keep two columns, but soften the
@@ -434,6 +441,11 @@
   .grid--summary-collapsed {
     grid-template-areas: 'events';
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .grid--events-hidden {
+    grid-template-areas: 'insights status';
     grid-template-rows: minmax(0, 1fr);
   }
 }
@@ -475,6 +487,11 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
   }
+
+  .grid--events-hidden {
+    grid-template-areas: 'insights status';
+    grid-template-rows: minmax(0, 1fr);
+  }
 }
 
 /* Size 3b: mobile. The shell already becomes scrollable, so the dashboard stops
@@ -510,10 +527,111 @@
     grid-template-columns: 1fr;
     grid-template-rows: none;
   }
+
+  .grid--events-hidden {
+    grid-template-areas: 'insights' 'status';
+  }
 }
 
 @media (max-width: 560px) {
   .grid {
     gap: var(--space-2);
+  }
+}
+
+.grid__insights--no-kpis {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.grid__insights--no-charts {
+  grid-template-rows: auto;
+}
+
+.grid--status-hidden {
+  grid-template-areas: 'insights' 'events';
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.grid--insights-hidden {
+  grid-template-areas: 'status' 'events';
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.grid--summary-empty,
+.grid--summary-collapsed {
+  grid-template-areas: 'events';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.grid--status-hidden.grid--events-hidden {
+  grid-template-areas: 'insights';
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.grid--insights-hidden.grid--events-hidden {
+  grid-template-areas: 'status';
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* Sin graficas, los KPI usan solo su alto natural. Estado queda compacto
+   y la tabla de eventos conserva una fila de ancho completo. */
+.grid--charts-hidden {
+  grid-template-areas: 'insights' 'status' 'events';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto clamp(190px, 22vh, 260px) minmax(0, 1fr);
+}
+
+.grid--charts-hidden.grid--status-hidden {
+  grid-template-areas: 'insights' 'events';
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.grid--charts-hidden.grid--events-hidden {
+  grid-template-areas: 'insights' 'status';
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.grid--charts-hidden.grid--status-hidden.grid--events-hidden {
+  align-content: start;
+  grid-template-areas: 'insights';
+  grid-template-rows: max-content;
+}
+
+@media (max-width: 1024px), (max-height: 700px) {
+  .grid--charts-hidden:not(.grid--events-hidden):not(.grid--status-hidden) {
+    grid-template-rows: auto clamp(190px, 22vh, 260px) minmax(460px, 1fr);
+  }
+
+  .grid--charts-hidden.grid--status-hidden:not(.grid--events-hidden) {
+    grid-template-rows: auto minmax(460px, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .grid--charts-hidden {
+    grid-template-areas: 'insights' 'status' 'events';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+  }
+
+  .grid--charts-hidden:not(.grid--events-hidden):not(.grid--status-hidden) {
+    grid-template-rows: none;
+  }
+
+  .grid--charts-hidden.grid--status-hidden {
+    grid-template-areas: 'insights' 'events';
+    grid-template-rows: none;
+  }
+
+  .grid--charts-hidden.grid--events-hidden {
+    grid-template-areas: 'insights' 'status';
+    grid-template-rows: none;
+  }
+
+  .grid--charts-hidden.grid--status-hidden.grid--events-hidden {
+    grid-template-areas: 'insights';
+    grid-template-rows: none;
   }
 }
