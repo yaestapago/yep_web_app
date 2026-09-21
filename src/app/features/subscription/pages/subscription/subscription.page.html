@@ -6,10 +6,15 @@
         Revisa el consumo de tu plan y compara las capacidades disponibles.
       </p>
     </div>
-    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
-      <svg lucideRefreshCw aria-hidden="true"></svg>
-      Actualizar
-    </yep-button>
+    <div class="page-header__actions">
+      <yep-button size="sm" (clicked)="openRequestModal()">
+        Solicitudes de cambio de plan
+      </yep-button>
+      <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+    </div>
   </header>
 
   @if (error()) {
@@ -39,6 +44,35 @@
         }
       </div>
     </section>
+
+    @if (subscription(); as sub) {
+      @if (sub.whatsappTopUpBalance > 0 || sub.recurringAddOnsCop > 0 || sub.pendingChange) {
+        <section class="addons-section">
+          <h2 class="section-heading">Add-ons activos</h2>
+          <div class="addons-grid">
+            @if (sub.whatsappTopUpBalance > 0) {
+              <article class="addon-card">
+                <span>Saldo de notificaciones WhatsApp</span>
+                <strong>{{ formatPlanLimit(sub.whatsappTopUpBalance) }}</strong>
+                <p>No vence ni se reinicia cada mes; se usa cuando la cuota del plan llega a 0.</p>
+              </article>
+            }
+            @if (sub.recurringAddOnsCop > 0) {
+              <article class="addon-card">
+                <span>Recargo mensual por add-ons</span>
+                <strong>{{ formatCop(sub.recurringAddOnsCop) }}</strong>
+                <p>Ya incluido en tu mensualidad fija.</p>
+              </article>
+            }
+          </div>
+          @if (sub.pendingChange; as pending) {
+            <yep-alert variant="info">
+              Cambio agendado: entra en vigor el {{ pending.effectiveAt | date: 'mediumDate' }}.
+            </yep-alert>
+          }
+        </section>
+      }
+    }
 
     <section class="usage-section">
       <h2 class="section-heading">Uso del plan</h2>
@@ -107,7 +141,7 @@
               size="sm"
               variant="secondary"
               [disabled]="isCurrentPlan(plan)"
-              (clicked)="requestPlan(plan)"
+              (clicked)="openPlanChangeModal(plan)"
             >
               {{ isCurrentPlan(plan) ? 'Plan actual' : 'Solicitar cambio' }}
             </yep-button>
@@ -115,5 +149,129 @@
         }
       </div>
     </section>
+
+    <section class="requests-section">
+      <h2 class="section-heading">Mis solicitudes</h2>
+      @if (changeRequests().length === 0) {
+        <p class="empty-hint">Todavia no has enviado solicitudes de cambio de plan.</p>
+      } @else {
+        <ul class="requests-list">
+          @for (request of changeRequests(); track request.id) {
+            <li class="request-row">
+              <div>
+                <strong>{{ requestTypeLabel(request.requestType) }}</strong>
+                <span>{{ requestSummary(request) }}</span>
+              </div>
+              <span class="request-status" [attr.data-status]="request.status">
+                {{ requestStatusLabel(request.status) }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
   }
 </section>
+
+<yep-modal
+  [open]="requestModalOpen()"
+  title="Solicitud de cambio de plan"
+  subtitle="Nuestro equipo revisara tu solicitud y activara el cambio."
+  [loading]="submitting()"
+  (closeRequested)="closeRequestModal()"
+>
+  <div class="request-form">
+    <div class="request-type-tabs">
+      <button
+        type="button"
+        [class.active]="requestType() === 'upgrade' || requestType() === 'downgrade'"
+        (click)="requestType.set('upgrade')"
+      >
+        Cambiar de plan
+      </button>
+      <button
+        type="button"
+        [class.active]="requestType() === 'add_on'"
+        (click)="requestType.set('add_on')"
+      >
+        Agregar sedes/usuarios
+      </button>
+      <button
+        type="button"
+        [class.active]="requestType() === 'top_up'"
+        (click)="requestType.set('top_up')"
+      >
+        Comprar notificaciones WhatsApp
+      </button>
+    </div>
+
+    @if (requestType() === 'upgrade' || requestType() === 'downgrade') {
+      <label class="field-label" for="plan-select">Plan</label>
+      <select
+        id="plan-select"
+        class="native-select"
+        name="planCode"
+        [ngModel]="selectedPlanCode()"
+        (ngModelChange)="selectedPlanCode.set($event)"
+      >
+        @for (plan of availablePlans(); track plan.code) {
+          <option [value]="plan.code">{{ plan.name }} - {{ priceLabel(plan) }}</option>
+        }
+      </select>
+    }
+
+    @if (requestType() === 'add_on') {
+      <label class="field-label" for="addon-metric">Que quieres agregar</label>
+      <select
+        id="addon-metric"
+        class="native-select"
+        name="addOnMetric"
+        [ngModel]="addOnMetric()"
+        (ngModelChange)="addOnMetric.set($event)"
+      >
+        <option value="locations">Sedes adicionales</option>
+        <option value="users">Usuarios adicionales</option>
+      </select>
+      <yep-input
+        label="Cantidad"
+        type="number"
+        name="addOnQuantity"
+        [ngModel]="addOnQuantity()"
+        (ngModelChange)="addOnQuantity.set($event)"
+      ></yep-input>
+      <p class="field-hint">
+        Se cobra a partir de tu proximo ciclo de facturacion; tu mensualidad actual no cambia.
+      </p>
+    }
+
+    @if (requestType() === 'top_up') {
+      <yep-input
+        label="Cantidad de notificaciones WhatsApp"
+        type="number"
+        name="topUpQuantity"
+        [ngModel]="topUpQuantity()"
+        (ngModelChange)="topUpQuantity.set($event)"
+      ></yep-input>
+      <p class="field-hint">
+        Se acredita de inmediato al aprobarse y no vence: se consume solo cuando la cuota de tu
+        plan del mes llega a 0.
+      </p>
+    }
+
+    <yep-input
+      label="Comentario (opcional)"
+      name="message"
+      [ngModel]="requestMessage()"
+      (ngModelChange)="requestMessage.set($event)"
+    ></yep-input>
+  </div>
+
+  <ng-container modalFooter>
+    <yep-button type="button" variant="ghost" (clicked)="closeRequestModal()">
+      Cancelar
+    </yep-button>
+    <yep-button type="button" [loading]="submitting()" (clicked)="submitRequest()">
+      Enviar solicitud
+    </yep-button>
+  </ng-container>
+</yep-modal>

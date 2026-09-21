@@ -74,6 +74,13 @@ export function canAccessSubscription(
   return isSu || role === 'account_owner';
 }
 
+export function canAccessInvoices(
+  role: BusinessMembershipRole | null | undefined,
+  isSu = false,
+): boolean {
+  return isSu || role === 'account_owner';
+}
+
 export function canManageBusinesses(
   role: BusinessMembershipRole | null | undefined,
   isSu = false,
