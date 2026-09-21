@@ -29,6 +29,7 @@ describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
   const businessApi = {
     listApprovedMembers: vi.fn().mockReturnValue(of({ memberships: [] })),
     listLocations: vi.fn().mockReturnValue(of({ locations: [] })),
+    updateMemberSectionAccess: vi.fn(),
   };
 
   function create(): BusinessEmployeesSection {
@@ -39,7 +40,15 @@ describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
         provideHttpClientTesting(),
         { provide: AuthSessionService, useValue: session },
         { provide: BusinessAccountsApiService, useValue: businessApi },
-        { provide: NotificationModalService, useValue: { confirm: vi.fn() } },
+        {
+          provide: NotificationModalService,
+          useValue: {
+            confirm: vi.fn(),
+            loading: vi.fn().mockReturnValue({ close: vi.fn() }),
+            success: vi.fn().mockResolvedValue(undefined),
+            error: vi.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     });
     return TestBed.runInInjectionContext(() => new BusinessEmployeesSection());
@@ -68,6 +77,73 @@ describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
     expect(section.registrationPath()).toBe(
       `/register?${new URL(section.registrationLink()).search.slice(1)}`,
     );
+  });
+
+  it('conserva las casillas apagadas despues de guardar y reabrir el modal', () => {
+    const section = create();
+    const member = {
+      id: 'staff-1',
+      role: 'account_staff',
+      sectionAccess: {
+        dashboard: true,
+        dashboardSummary: true,
+        dashboardIncomeTable: true,
+        businessData: true,
+        reports: true,
+        dashboardCharts: true,
+        dashboardSystemStatus: true,
+        dashboardTotalAmount: true,
+        dashboardEvents: true,
+        dashboardReceived: true,
+        dashboardPending: true,
+        dashboardRejected: true,
+      },
+    } as any;
+    section.members.set([member]);
+    section.openSectionAccess(member);
+    section.toggleSectionAccess('dashboardEvents', false);
+    section.toggleSectionAccess('dashboardPending', false);
+    businessApi.updateMemberSectionAccess.mockImplementation(
+      (_businessId, _memberId, requested) =>
+        of({ membership: { ...member, sectionAccess: requested } }),
+    );
+
+    section.saveSectionAccess();
+
+    expect(businessApi.updateMemberSectionAccess).toHaveBeenCalledWith(
+      businessId,
+      member.id,
+      expect.objectContaining({ dashboardEvents: false, dashboardPending: false }),
+    );
+    expect(section.sectionAccessOpen()).toBe(false);
+    section.openSectionAccess(section.members()[0]);
+    expect(section.selectedSectionAccess().dashboardEvents).toBe(false);
+    expect(section.selectedSectionAccess().dashboardPending).toBe(false);
+  });
+
+  it('no confirma el guardado si la API ignora las casillas nuevas', () => {
+    const section = create();
+    const member = {
+      id: 'staff-2',
+      role: 'account_staff',
+      sectionAccess: {
+        dashboard: true,
+        dashboardSummary: true,
+        dashboardIncomeTable: true,
+        businessData: true,
+        reports: true,
+      },
+    } as any;
+    section.members.set([member]);
+    section.openSectionAccess(member);
+    section.toggleSectionAccess('dashboardEvents', false);
+    businessApi.updateMemberSectionAccess.mockReturnValue(of({ membership: member }));
+
+    section.saveSectionAccess();
+
+    expect(section.sectionAccessOpen()).toBe(true);
+    expect(section.error()).toContain('No se guardaron');
+    expect(section.members()[0].sectionAccess?.dashboardEvents).toBeUndefined();
   });
 
   it('genera un QR que codifica exactamente el link de registro', async () => {

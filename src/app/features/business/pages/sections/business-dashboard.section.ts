@@ -30,6 +30,8 @@ import { finalize, interval } from 'rxjs';
 import {
   canViewDashboardIncomeTable,
   canViewDashboardSummary,
+  canViewDashboardSummaryPart,
+  type DashboardSummaryPart,
 } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
@@ -212,6 +214,32 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       this.session.activeMembership()?.sectionAccess,
     ),
   );
+  private canViewSummaryPart(part: DashboardSummaryPart): boolean {
+    return canViewDashboardSummaryPart(
+      part,
+      this.session.activeMembership()?.role,
+      this.session.isSuperUser(),
+      this.session.activeMembership()?.sectionAccess,
+    );
+  }
+
+  readonly canViewCharts = computed(() => this.canViewSummaryPart('dashboardCharts'));
+  readonly canViewSystemStatus = computed(() => this.canViewSummaryPart('dashboardSystemStatus'));
+  readonly canViewTotalAmount = computed(() => this.canViewSummaryPart('dashboardTotalAmount'));
+  readonly canViewEventsKpi = computed(() => this.canViewSummaryPart('dashboardEvents'));
+  readonly canViewReceivedKpi = computed(() => this.canViewSummaryPart('dashboardReceived'));
+  readonly canViewPendingKpi = computed(() => this.canViewSummaryPart('dashboardPending'));
+  readonly canViewRejectedKpi = computed(() => this.canViewSummaryPart('dashboardRejected'));
+  readonly canViewAnyKpi = computed(
+    () =>
+      this.canViewTotalAmount() ||
+      this.canViewEventsKpi() ||
+      this.canViewReceivedKpi() ||
+      this.canViewPendingKpi() ||
+      this.canViewRejectedKpi(),
+  );
+  readonly canViewInsights = computed(() => this.canViewAnyKpi() || this.canViewCharts());
+
   readonly canViewIncomeTable = computed(() =>
     canViewDashboardIncomeTable(
       this.session.activeMembership()?.role,
@@ -750,6 +778,14 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   }
 
   openKpiDetail(key: KpiKey): void {
+    const visible: Record<KpiKey, boolean> = {
+      totalAmount: this.canViewTotalAmount(),
+      events: this.canViewEventsKpi(),
+      received: this.canViewReceivedKpi(),
+      pending: this.canViewPendingKpi(),
+      rejected: this.canViewRejectedKpi(),
+    };
+    if (!this.canViewSummary() || !visible[key]) return;
     this.activeKpi.set(key);
     this.kpiDetailTitle.set(this.kpiTitle(key));
     this.loadingKpiDetail.set(true);

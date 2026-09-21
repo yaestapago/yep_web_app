@@ -309,6 +309,8 @@
 <yep-modal
   [open]="sectionAccessOpen()"
   title="Apartados de la aplicación"
+  subtitle="Configura los apartados visibles para este staff"
+  size="lg"
   [loading]="savingSectionAccess()"
   (closeRequested)="closeSectionAccess()"
 >
@@ -320,44 +322,139 @@
           Define qué apartados puede abrir este empleado. El propietario y el
           superadministrador siempre conservan acceso completo.
         </span>
+      </div>
 
-        <yep-checkbox
-          label="Panel de control"
-          [checked]="selectedSectionAccess().dashboard"
-          [disabled]="savingSectionAccess()"
-          (checkedChange)="toggleSectionAccess('dashboard', $event)"
-        />
-        @if (selectedSectionAccess().dashboard) {
-          <div class="account-key-list">
+      <div class="field full-field">
+        <span class="field-label">Apartados</span>
+        <div class="account-picker">
+          <div
+            class="account-option"
+            [class.account-option--selected]="selectedSectionAccess().dashboard"
+          >
             <yep-checkbox
-              class="account-key-option"
-              label="Resumen operativo"
-              [checked]="selectedSectionAccess().dashboardSummary"
+              class="account-option__checkbox"
+              [checked]="selectedSectionAccess().dashboard"
               [disabled]="savingSectionAccess()"
-              (checkedChange)="toggleSectionAccess('dashboardSummary', $event)"
-            />
-            <yep-checkbox
-              class="account-key-option"
-              label="Tabla de ingresos"
-              [checked]="selectedSectionAccess().dashboardIncomeTable"
-              [disabled]="savingSectionAccess()"
-              (checkedChange)="toggleSectionAccess('dashboardIncomeTable', $event)"
-            />
+              (checkedChange)="toggleSectionAccess('dashboard', $event)"
+            >
+              <span class="account-option__body">
+                <span class="account-option__title">Panel de control</span>
+              </span>
+            </yep-checkbox>
+
+            @if (selectedSectionAccess().dashboard) {
+              <div class="account-key-list" aria-label="Apartados del panel de control">
+                <div class="section-access-summary">
+                  <yep-checkbox
+                    class="account-key-option"
+                    [checked]="selectedSectionAccess().dashboardSummary"
+                    [disabled]="savingSectionAccess()"
+                    (checkedChange)="toggleSectionAccess('dashboardSummary', $event)"
+                  >
+                    <span class="account-key-option__body">
+                      <span class="account-key-option__title">Resumen operativo</span>
+                    </span>
+                  </yep-checkbox>
+                  @if (selectedSectionAccess().dashboardSummary) {
+                    <div class="section-access-summary__children" aria-label="Elementos del resumen operativo">
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Gráficas"
+                        [checked]="selectedSectionAccess().dashboardCharts"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardCharts', $event)"
+                      />
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Estado del sistema"
+                        [checked]="selectedSectionAccess().dashboardSystemStatus"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardSystemStatus', $event)"
+                      />
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Total capturado"
+                        [checked]="selectedSectionAccess().dashboardTotalAmount"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardTotalAmount', $event)"
+                      />
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Eventos detectados"
+                        [checked]="selectedSectionAccess().dashboardEvents"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardEvents', $event)"
+                      />
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Transacciones recibidas"
+                        [checked]="selectedSectionAccess().dashboardReceived"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardReceived', $event)"
+                      />
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Pendientes"
+                        [checked]="selectedSectionAccess().dashboardPending"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardPending', $event)"
+                      />
+                      <yep-checkbox
+                        class="account-key-option"
+                        label="Rechazadas"
+                        [checked]="selectedSectionAccess().dashboardRejected"
+                        [disabled]="savingSectionAccess()"
+                        (checkedChange)="toggleSectionAccess('dashboardRejected', $event)"
+                      />
+                    </div>
+                  }
+                </div>
+                <yep-checkbox
+                  class="account-key-option"
+                  [checked]="selectedSectionAccess().dashboardIncomeTable"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardIncomeTable', $event)"
+                >
+                  <span class="account-key-option__body">
+                    <span class="account-key-option__title">Tabla de ingresos</span>
+                  </span>
+                </yep-checkbox>
+              </div>
+            }
           </div>
-        }
 
-        <yep-checkbox
-          label="Datos del negocio"
-          [checked]="selectedSectionAccess().businessData"
-          [disabled]="savingSectionAccess()"
-          (checkedChange)="toggleSectionAccess('businessData', $event)"
-        />
-        <yep-checkbox
-          label="Informes"
-          [checked]="selectedSectionAccess().reports"
-          [disabled]="savingSectionAccess()"
-          (checkedChange)="toggleSectionAccess('reports', $event)"
-        />
+          <div
+            class="account-option"
+            [class.account-option--selected]="selectedSectionAccess().businessData"
+          >
+            <yep-checkbox
+              class="account-option__checkbox"
+              [checked]="selectedSectionAccess().businessData"
+              [disabled]="savingSectionAccess()"
+              (checkedChange)="toggleSectionAccess('businessData', $event)"
+            >
+              <span class="account-option__body">
+                <span class="account-option__title">Datos del negocio</span>
+              </span>
+            </yep-checkbox>
+          </div>
+
+          <div
+            class="account-option"
+            [class.account-option--selected]="selectedSectionAccess().reports"
+          >
+            <yep-checkbox
+              class="account-option__checkbox"
+              [checked]="selectedSectionAccess().reports"
+              [disabled]="savingSectionAccess()"
+              (checkedChange)="toggleSectionAccess('reports', $event)"
+            >
+              <span class="account-option__body">
+                <span class="account-option__title">Informes</span>
+              </span>
+            </yep-checkbox>
+          </div>
+        </div>
       </div>
     </div>
   }
