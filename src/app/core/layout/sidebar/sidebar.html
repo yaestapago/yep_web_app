@@ -47,20 +47,22 @@
     </a>
 
     <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
-    <div class="business-select">
-      <span class="business-select__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
-      <yep-select
-        class="business-select__control"
-        label="Negocio"
-        placeholder="Selecciona un negocio"
-        size="sm"
-        [options]="businessOptions()"
-        [ngModel]="activeBusinessAccountId()"
-        [ngModelOptions]="{ standalone: true }"
-        [searchable]="memberships().length > 5"
-        (ngModelChange)="switchBusinessId($event)"
-      />
-    </div>
+    @if (!isSupportUser()) {
+      <div class="business-select">
+        <span class="business-select__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
+        <yep-select
+          class="business-select__control"
+          label="Negocio"
+          placeholder="Selecciona un negocio"
+          size="sm"
+          [options]="businessOptions()"
+          [ngModel]="activeBusinessAccountId()"
+          [ngModelOptions]="{ standalone: true }"
+          [searchable]="memberships().length > 5"
+          (ngModelChange)="switchBusinessId($event)"
+        />
+      </div>
+    }
 
     <nav class="nav-group" aria-label="Navegación principal">
       <a routerLink="/home" routerLinkActive="active" (click)="onNavigate()" title="Novedades">
@@ -68,56 +70,100 @@
         <span>Novedades</span>
       </a>
 
-      @if (canViewDashboard()) {
+      @if (isInternalOpsUser()) {
         <a
-          [routerLink]="dashboardLink()"
+          routerLink="/__ops/support"
           routerLinkActive="active"
           (click)="onNavigate()"
-          title="Panel de control"
+          title="Soporte operativo"
         >
-          <svg lucideLayoutDashboard aria-hidden="true"></svg>
-          <span>Panel de control</span>
+          <svg lucideLifeBuoy aria-hidden="true"></svg>
+          <span>Soporte operativo</span>
         </a>
-
-      }
-      <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
-      <div class="nav-subgroup" [class.open]="businessGroupOpen()">
-        <button
-          type="button"
-          class="nav-subgroup__header"
-          [attr.aria-expanded]="businessGroupOpen()"
-          aria-controls="business-subnav"
-          title="Negocio"
-          (click)="toggleBusinessGroup()"
+        <a
+          routerLink="/__ops/subscriptions/invoices"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Gestión de facturas"
         >
-          <svg lucideBuilding2 aria-hidden="true"></svg>
-          <span>Negocio</span>
-          <svg
-            class="nav-subgroup__chevron"
-            [class.open]="businessGroupOpen()"
-            lucideChevronDown
-            aria-hidden="true"
-          ></svg>
-        </button>
+          <svg lucideReceipt aria-hidden="true"></svg>
+          <span>Gestión de facturas</span>
+        </a>
+        <a
+          routerLink="/__ops/subscriptions/change-requests"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Solicitudes de planes"
+        >
+          <svg lucideClipboardList aria-hidden="true"></svg>
+          <span>Solicitudes de planes</span>
+        </a>
+      }
 
-        @if (businessGroupOpen()) {
-          <div class="nav-subgroup__items" id="business-subnav">
-            @if (activeBusinessAccountId()) {
-              @for (item of businessSections(); track item.path) {
-                <a
-                  [routerLink]="businessLink(item.path)"
-                  routerLinkActive="active"
-                  (click)="onNavigate()"
-                >
-                  <span>{{ item.label }}</span>
-                </a>
-              }
-            } @else {
-              <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
-            }
-          </div>
+      @if (isSuperUser()) {
+        <a
+          routerLink="/__ops/notifier-rules"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Gestión de bancos"
+        >
+          <svg lucideLandmark aria-hidden="true"></svg>
+          <span>Gestión de bancos</span>
+        </a>
+      }
+
+      @if (!isSupportUser()) {
+        @if (canViewDashboard()) {
+          <a
+            [routerLink]="dashboardLink()"
+            routerLinkActive="active"
+            (click)="onNavigate()"
+            title="Panel de control"
+          >
+            <svg lucideLayoutDashboard aria-hidden="true"></svg>
+            <span>Panel de control</span>
+          </a>
         }
-      </div>
+
+        <!-- Grupo Negocio: expandible; sus opciones dependen del negocio activo -->
+        <div class="nav-subgroup" [class.open]="businessGroupOpen()">
+          <button
+            type="button"
+            class="nav-subgroup__header"
+            [attr.aria-expanded]="businessGroupOpen()"
+            aria-controls="business-subnav"
+            title="Negocio"
+            (click)="toggleBusinessGroup()"
+          >
+            <svg lucideBuilding2 aria-hidden="true"></svg>
+            <span>Negocio</span>
+            <svg
+              class="nav-subgroup__chevron"
+              [class.open]="businessGroupOpen()"
+              lucideChevronDown
+              aria-hidden="true"
+            ></svg>
+          </button>
+
+          @if (businessGroupOpen()) {
+            <div class="nav-subgroup__items" id="business-subnav">
+              @if (activeBusinessAccountId()) {
+                @for (item of businessSections(); track item.path) {
+                  <a
+                    [routerLink]="businessLink(item.path)"
+                    routerLinkActive="active"
+                    (click)="onNavigate()"
+                  >
+                    <span>{{ item.label }}</span>
+                  </a>
+                }
+              } @else {
+                <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
+              }
+            </div>
+          }
+        </div>
+      }
     </nav>
   </div>
 
@@ -177,6 +223,20 @@
           >
             <svg lucideCreditCard aria-hidden="true"></svg>
             <span>Suscripcion</span>
+          </a>
+        }
+
+        @if (canViewInvoices() && !isInternalOpsUser()) {
+          <a
+            class="sidebar-actions__item"
+            routerLink="/invoices"
+            routerLinkActive="active"
+            role="menuitem"
+            title="Mis facturas"
+            (click)="onNavigate()"
+          >
+            <svg lucideReceipt aria-hidden="true"></svg>
+            <span>Mis facturas</span>
           </a>
         }
 

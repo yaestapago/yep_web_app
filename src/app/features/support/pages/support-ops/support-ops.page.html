@@ -1,0 +1,367 @@
+<div class="ops-shell">
+  <main class="ops-main">
+    @if (selectedBusiness(); as detail) {
+      <section class="business-heading">
+        <button
+          class="icon-button"
+          type="button"
+          title="Volver a negocios"
+          aria-label="Volver a negocios"
+          (click)="closeBusiness()"
+        >
+          <svg lucideArrowLeft aria-hidden="true"></svg>
+        </button>
+        <div>
+          <h1>{{ detail.business.name }}</h1>
+          <p>
+            {{ detail.business.cityName }}, {{ detail.business.departmentName }} ·
+            {{ detail.business.phone }}
+          </p>
+        </div>
+        <dl class="business-counts">
+          <div>
+            <dt>Miembros</dt>
+            <dd>{{ detail.counts.members }}</dd>
+          </div>
+          <div>
+            <dt>Clientes</dt>
+            <dd>{{ detail.counts.customers }}</dd>
+          </div>
+          <div>
+            <dt>Eventos</dt>
+            <dd>{{ detail.counts.events }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="subscription-panel" aria-labelledby="subscription-title">
+        <div class="subscription-panel__heading">
+          <div>
+            <span class="eyebrow">Suscripción del negocio</span>
+            <h2 id="subscription-title">
+              {{ detail.subscription.subscription?.plan?.name || 'Sin suscripción activa' }}
+            </h2>
+          </div>
+          @if (detail.subscription.subscription; as subscription) {
+            <span class="status-badge">{{ subscription.status }}</span>
+          }
+        </div>
+
+        <dl class="subscription-data">
+          @if (detail.subscription.owner; as owner) {
+            <div>
+              <dt>Contacto propietario</dt>
+              <dd>{{ owner.firstName }} {{ owner.lastName }}</dd>
+            </div>
+            <div>
+              <dt>Correo</dt>
+              <dd>{{ owner.email }}</dd>
+            </div>
+          }
+          <div>
+            <dt>Plan</dt>
+            <dd>{{ detail.subscription.subscription?.plan?.code || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Fin del periodo</dt>
+            <dd>
+              {{ detail.subscription.subscription?.currentPeriodEnd | date: 'mediumDate' }}
+            </dd>
+          </div>
+        </dl>
+
+        @for (warning of detail.subscription.warnings; track warning) {
+          <p class="subscription-warning">{{ warning }}</p>
+        }
+      </section>
+
+      <nav class="tabs" aria-label="Información del negocio">
+        @for (item of resources; track item) {
+          <button type="button" [class.active]="resource() === item" (click)="setResource(item)">
+            {{ resourceLabels[item] }}
+          </button>
+        }
+      </nav>
+    } @else {
+      <section class="page-heading">
+        <div>
+          <h1>Control operativo</h1>
+          <p>Consulta centralizada de usuarios y negocios de YEP.</p>
+        </div>
+        <nav class="view-switch" aria-label="Vista principal">
+          <button
+            type="button"
+            [class.active]="view() === 'businesses'"
+            (click)="setView('businesses')"
+          >
+            <svg lucideBuilding2 aria-hidden="true"></svg> Negocios
+          </button>
+          <button type="button" [class.active]="view() === 'users'" (click)="setView('users')">
+            <svg lucideUsers aria-hidden="true"></svg> Usuarios
+          </button>
+        </nav>
+      </section>
+    }
+
+    <form class="search-bar" (ngSubmit)="submitSearch()">
+      <svg lucideSearch aria-hidden="true"></svg>
+      <input
+        type="search"
+        name="search"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+        [placeholder]="
+          selectedBusiness()
+            ? 'Buscar en esta sección'
+            : 'Buscar por nombre, correo, identificación o teléfono'
+        "
+      />
+      <button type="submit">Buscar</button>
+    </form>
+
+    @if (error()) {
+      <p class="state state--error">{{ error() }}</p>
+    }
+    @if (loading()) {
+      <p class="state">Cargando información...</p>
+    }
+
+    @if (!loading() && !error()) {
+      <div class="table-wrap">
+        @if (!selectedBusiness() && view() === 'users') {
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Correo</th>
+                <th>Identificación</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+                <th>Rol global</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of users(); track user.id) {
+                <tr>
+                  <td>
+                    <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+                  </td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.identificationNumber }}</td>
+                  <td>{{ user.cellphoneNumber }}</td>
+                  <td>{{ user.isActive ? 'Activo' : 'Inactivo' }}</td>
+                  <td>{{ user.globalRole || 'Usuario' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6" class="empty">No encontramos usuarios.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else if (!selectedBusiness()) {
+          <table>
+            <thead>
+              <tr>
+                <th>Negocio</th>
+                <th>Ubicación</th>
+                <th>Dirección</th>
+                <th>Teléfono</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (business of businesses(); track business.id) {
+                <tr>
+                  <td>
+                    <strong>{{ business.name }}</strong
+                    ><small>{{ business.slug || business.id }}</small>
+                  </td>
+                  <td>{{ business.cityName }}, {{ business.departmentName }}</td>
+                  <td>{{ business.address }}</td>
+                  <td>{{ business.phone }}</td>
+                  <td>
+                    <button class="text-button" type="button" (click)="openBusiness(business)">
+                      Ver detalle
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty">No encontramos negocios.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <table>
+            @switch (resource()) {
+              @case ('members') {
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                  </tr>
+                </thead>
+              }
+              @case ('bank-accounts') {
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Banco</th>
+                    <th>Tipo</th>
+                    <th>Moneda</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+              }
+              @case ('customers') {
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Banco</th>
+                    <th>Cuenta</th>
+                    <th>Transacciones</th>
+                    <th>Total pagado</th>
+                  </tr>
+                </thead>
+              }
+              @case ('source-events') {
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Origen</th>
+                    <th>Estado</th>
+                    <th>Banco</th>
+                    <th>Referencia</th>
+                  </tr>
+                </thead>
+              }
+              @case ('invoices') {
+                <thead>
+                  <tr>
+                    <th>Factura</th>
+                    <th>Concepto</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+              }
+            }
+            <tbody>
+              @for (record of records(); track record.id) {
+                @switch (resource()) {
+                  @case ('members') {
+                    <tr>
+                      <td>
+                        <strong
+                          >{{ display(record, 'userId.firstName') }}
+                          {{ display(record, 'userId.lastName') }}</strong
+                        >
+                      </td>
+                      <td>{{ display(record, 'userId.email') }}</td>
+                      <td>{{ display(record, 'role') }}</td>
+                      <td>{{ display(record, 'status') }}</td>
+                      <td>{{ display(record, 'createdAt') | date: 'medium' }}</td>
+                    </tr>
+                  }
+                  @case ('bank-accounts') {
+                    <tr>
+                      <td>
+                        <strong>{{ display(record, 'displayName') }}</strong
+                        ><small>Terminada en {{ display(record, 'accountNumberLast4') }}</small>
+                      </td>
+                      <td>{{ display(record, 'bankId') }}</td>
+                      <td>{{ display(record, 'accountType') }}</td>
+                      <td>{{ display(record, 'currency') }}</td>
+                      <td>{{ display(record, 'isActive') === 'true' ? 'Activa' : 'Inactiva' }}</td>
+                    </tr>
+                  }
+                  @case ('customers') {
+                    <tr>
+                      <td>
+                        <strong>{{ display(record, 'displayName') }}</strong>
+                      </td>
+                      <td>{{ display(record, 'bankId') }}</td>
+                      <td>{{ display(record, 'account') }}</td>
+                      <td>{{ display(record, 'transactionCount') }}</td>
+                      <td>
+                        {{
+                          display(record, 'totalPaidAmount')
+                            | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+                        }}
+                      </td>
+                    </tr>
+                  }
+                  @case ('source-events') {
+                    <tr>
+                      <td>{{ display(record, 'createdAt') | date: 'medium' }}</td>
+                      <td>{{ display(record, 'sourceType') }}</td>
+                      <td>{{ display(record, 'status') }}</td>
+                      <td>{{ display(record, 'normalized.bankId') }}</td>
+                      <td>{{ display(record, 'normalized.reference') }}</td>
+                    </tr>
+                  }
+                  @case ('invoices') {
+                    <tr>
+                      <td>
+                        <button class="text-button" type="button" (click)="openInvoiceManagement()">
+                          {{ display(record, 'invoiceNumber') }}
+                        </button>
+                      </td>
+                      <td>{{ display(record, 'concept') }}</td>
+                      <td>
+                        {{
+                          display(record, 'totalCop') | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+                        }}
+                      </td>
+                      <td>{{ display(record, 'status') }}</td>
+                      <td>{{ display(record, 'issuedAt') | date: 'medium' }}</td>
+                    </tr>
+                  }
+                }
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty">No hay información para mostrar.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+
+      <footer class="pagination">
+        <span
+          >{{ pagination().total }} resultados · Página {{ pagination().page }} de
+          {{ pagination().pages || 1 }}</span
+        >
+        <div>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página anterior"
+            title="Página anterior"
+            [disabled]="pagination().page <= 1"
+            (click)="previous()"
+          >
+            <svg lucideChevronLeft aria-hidden="true"></svg>
+          </button>
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Página siguiente"
+            title="Página siguiente"
+            [disabled]="pagination().page >= pagination().pages"
+            (click)="next()"
+          >
+            <svg lucideChevronRight aria-hidden="true"></svg>
+          </button>
+        </div>
+      </footer>
+    }
+  </main>
+</div>

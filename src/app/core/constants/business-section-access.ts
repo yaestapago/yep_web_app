@@ -74,9 +74,35 @@ export function canAccessSubscription(
   return isSu || role === 'account_owner';
 }
 
+export function canAccessInvoices(
+  role: BusinessMembershipRole | null | undefined,
+  isSu = false,
+): boolean {
+  return isSu || role === 'account_owner';
+}
+
 export function canManageBusinesses(
   role: BusinessMembershipRole | null | undefined,
   isSu = false,
 ): boolean {
   return isSu || role === 'account_owner';
+}
+export type DashboardSummaryPart =
+  | 'dashboardCharts'
+  | 'dashboardSystemStatus'
+  | 'dashboardTotalAmount'
+  | 'dashboardEvents'
+  | 'dashboardReceived'
+  | 'dashboardPending'
+  | 'dashboardRejected';
+
+/** Campos ausentes pertenecen a membres?as anteriores y conservan su visibilidad. */
+export function canViewDashboardSummaryPart(
+  part: DashboardSummaryPart,
+  role: BusinessMembershipRole | null | undefined,
+  isSu = false,
+  sectionAccess?: SectionAccess,
+): boolean {
+  if (isSu || role !== 'account_staff') return true;
+  return sectionAccess?.[part] ?? true;
 }

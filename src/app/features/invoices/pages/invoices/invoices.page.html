@@ -1,0 +1,177 @@
+<section class="page invoices-page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-title">Facturas</h1>
+      <p class="page-subtitle">
+        Historial de facturas de tu suscripcion y de tus toppings de notificaciones.
+      </p>
+    </div>
+    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
+
+  @if (loading() && invoices().length === 0) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando facturas...
+    </div>
+  } @else if (invoices().length === 0) {
+    <p class="empty-hint">Todavia no se ha generado ninguna factura para tu negocio.</p>
+  } @else {
+    <ul class="invoices-list">
+      @for (invoice of invoices(); track invoice.id) {
+        <li class="invoice-row">
+          <div class="invoice-row__icon" aria-hidden="true">
+            <svg lucideReceipt></svg>
+          </div>
+          <div class="invoice-row__body">
+            <strong>{{ invoice.invoiceNumber }}</strong>
+            <span>{{ invoice.concept }}</span>
+            <span class="invoice-row__date">{{ invoice.issuedAt | date: 'mediumDate' }}</span>
+          </div>
+          <div class="invoice-row__end">
+            <strong>{{ formatCop(invoice.totalCop) }}</strong>
+            <span class="invoice-status" [attr.data-status]="invoice.status">
+              {{ statusLabel(invoice.status) }}
+            </span>
+          </div>
+          <div class="invoice-row__actions">
+            @if (invoice.status === 'issued') {
+              <yep-button size="sm" variant="secondary" (clicked)="openReportPayment(invoice)">
+                Reportar pago
+              </yep-button>
+            }
+            <yep-button size="sm" variant="ghost" (clicked)="open(invoice)">Ver</yep-button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<yep-modal
+  [open]="selectedInvoice() !== null"
+  title="Factura {{ selectedInvoice()?.invoiceNumber }}"
+  (closeRequested)="close()"
+>
+  @if (selectedInvoice(); as invoice) {
+    <div class="invoice-detail">
+      <div class="invoice-detail__parties">
+        <div>
+          <span class="field-label">Emitido por</span>
+          <strong>{{ invoice.sellerName }}</strong>
+          <span>RUT/NIT {{ invoice.sellerRut }}</span>
+        </div>
+        <div>
+          <span class="field-label">Facturado a</span>
+          <strong>{{ invoice.buyerName }}</strong>
+          @if (invoice.buyerIdentification) {
+            <span>Documento {{ invoice.buyerIdentification }}</span>
+          }
+          @if (invoice.buyerEmail) {
+            <span>{{ invoice.buyerEmail }}</span>
+          }
+        </div>
+      </div>
+
+      <p class="invoice-detail__meta">
+        Emitida el {{ invoice.issuedAt | date: 'mediumDate' }} ·
+        {{ statusLabel(invoice.status) }}
+      </p>
+
+      @if (invoice.hasVoucher) {
+        <yep-button size="sm" variant="secondary" (clicked)="openVoucher(invoice)">
+          Ver comprobante
+        </yep-button>
+      }
+
+      <table class="invoice-items">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Cant.</th>
+            <th>Valor unitario</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of invoice.items; track item.description) {
+            <tr>
+              <td>{{ item.description }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ formatCop(item.unitPriceCop) }}</td>
+              <td>{{ formatCop(item.totalCop) }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td>{{ formatCop(invoice.totalCop) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    @if (selectedInvoice()?.status === 'issued') {
+      <yep-button variant="secondary" (clicked)="openReportPayment(selectedInvoice()!)">
+        Reportar pago
+      </yep-button>
+    }
+    <yep-button variant="ghost" (clicked)="close()">Cerrar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="reportInvoice() !== null"
+  title="Reportar pago"
+  subtitle="Indica la referencia o los datos del pago para que nuestro equipo pueda revisarlo."
+  [loading]="reporting()"
+  (closeRequested)="closeReportPayment()"
+>
+  @if (reportInvoice(); as invoice) {
+    <p>
+      Factura <strong>{{ invoice.invoiceNumber }}</strong> por
+      <strong>{{ formatCop(invoice.totalCop) }}</strong>
+    </p>
+  }
+  <yep-input
+    label="Referencia o comentario (opcional)"
+    name="reportNote"
+    [ngModel]="reportNote()"
+    (ngModelChange)="reportNote.set($event)"
+    hint="Ej: transferencia Bancolombia, comprobante #12345."
+  ></yep-input>
+  <label class="voucher-field">
+    <span>Comprobante de pago</span>
+    <input
+      type="file"
+      accept="image/jpeg,image/png,application/pdf"
+      required
+      (change)="onVoucherSelected($event)"
+    />
+    <small>JPG, PNG o PDF. Tamano maximo: 10 MB.</small>
+  </label>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeReportPayment()">Cancelar</yep-button>
+    <yep-button
+      [loading]="reporting()"
+      [disabled]="reportFile() === null"
+      (clicked)="submitReportPayment()"
+    >
+      Enviar a revision
+    </yep-button>
+  </ng-container>
+</yep-modal>

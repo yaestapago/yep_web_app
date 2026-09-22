@@ -538,3 +538,100 @@
     gap: var(--space-2);
   }
 }
+
+.grid__insights--no-kpis {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.grid__insights--no-charts {
+  grid-template-rows: auto;
+}
+
+.grid--status-hidden {
+  grid-template-areas: 'insights' 'events';
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.grid--insights-hidden {
+  grid-template-areas: 'status' 'events';
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.grid--summary-empty,
+.grid--summary-collapsed {
+  grid-template-areas: 'events';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.grid--status-hidden.grid--events-hidden {
+  grid-template-areas: 'insights';
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.grid--insights-hidden.grid--events-hidden {
+  grid-template-areas: 'status';
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* Sin graficas, los KPI usan solo su alto natural. Estado queda compacto
+   y la tabla de eventos conserva una fila de ancho completo. */
+.grid--charts-hidden {
+  grid-template-areas: 'insights' 'status' 'events';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto clamp(190px, 22vh, 260px) minmax(0, 1fr);
+}
+
+.grid--charts-hidden.grid--status-hidden {
+  grid-template-areas: 'insights' 'events';
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.grid--charts-hidden.grid--events-hidden {
+  grid-template-areas: 'insights' 'status';
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.grid--charts-hidden.grid--status-hidden.grid--events-hidden {
+  align-content: start;
+  grid-template-areas: 'insights';
+  grid-template-rows: max-content;
+}
+
+@media (max-width: 1024px), (max-height: 700px) {
+  .grid--charts-hidden:not(.grid--events-hidden):not(.grid--status-hidden) {
+    grid-template-rows: auto clamp(190px, 22vh, 260px) minmax(460px, 1fr);
+  }
+
+  .grid--charts-hidden.grid--status-hidden:not(.grid--events-hidden) {
+    grid-template-rows: auto minmax(460px, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .grid--charts-hidden {
+    grid-template-areas: 'insights' 'status' 'events';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: auto;
+  }
+
+  .grid--charts-hidden:not(.grid--events-hidden):not(.grid--status-hidden) {
+    grid-template-rows: none;
+  }
+
+  .grid--charts-hidden.grid--status-hidden {
+    grid-template-areas: 'insights' 'events';
+    grid-template-rows: none;
+  }
+
+  .grid--charts-hidden.grid--events-hidden {
+    grid-template-areas: 'insights' 'status';
+    grid-template-rows: none;
+  }
+
+  .grid--charts-hidden.grid--status-hidden.grid--events-hidden {
+    grid-template-areas: 'insights';
+    grid-template-rows: none;
+  }
+}

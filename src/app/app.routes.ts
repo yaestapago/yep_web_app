@@ -7,7 +7,9 @@ import { businessGuard } from './core/guards/business.guard';
 import { businessContextGuard } from './core/guards/business-context.guard';
 import { businessSectionGuard } from './core/guards/business-section.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
+import { opsGuard } from './core/guards/ops.guard';
 import { subscriptionGuard } from './core/guards/subscription.guard';
+import { invoicesGuard } from './core/guards/invoices.guard';
 import { Shell } from './core/layout/shell/shell';
 import { AuthSessionService } from './core/services/auth-session.service';
 
@@ -34,7 +36,8 @@ export const routes: Routes = [
   },
   {
     path: 'register',
-    loadComponent: () => import('./features/auth/pages/register/register.page').then((m) => m.RegisterPage),
+    loadComponent: () =>
+      import('./features/auth/pages/register/register.page').then((m) => m.RegisterPage),
   },
   {
     path: 'forgot-password',
@@ -46,30 +49,51 @@ export const routes: Routes = [
   {
     path: 'reset-password',
     loadComponent: () =>
-      import('./features/auth/pages/reset-password/reset-password.page').then((m) => m.ResetPasswordPage),
+      import('./features/auth/pages/reset-password/reset-password.page').then(
+        (m) => m.ResetPasswordPage,
+      ),
   },
   {
     path: 'onboarding',
     canActivate: [authGuard],
-    loadComponent: () => import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
-  },
-  {
-    // Vista de superadmin (path obscuro, NO enlazado en el sidebar): CRUD del
-    // catálogo global de reglas de notificadores. Fuera del Shell porque un
-    // superadmin puede no tener negocio activo. La seguridad real la impone el
-    // AccountSuGuard del backend; el path solo evita descubrimiento casual.
-    path: '__ops/notifier-rules',
-    canActivate: [authGuard, superAdminGuard],
     loadComponent: () =>
-      import('./features/banks/pages/bank-admin/bank-admin.page').then(
-        (m) => m.BankAdminPage,
-      ),
+      import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
   },
   {
     path: '',
     component: Shell,
     canActivate: [businessGuard],
     children: [
+      {
+        path: '__ops/notifier-rules',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
+      },
+      {
+        path: '__ops/subscriptions/change-requests',
+        canActivate: [opsGuard],
+        loadComponent: () =>
+          import('./features/admin-billing/pages/plan-change-requests-admin/plan-change-requests-admin.page').then(
+            (m) => m.PlanChangeRequestsAdminPage,
+          ),
+      },
+      {
+        path: '__ops/subscriptions/invoices',
+        canActivate: [opsGuard],
+        loadComponent: () =>
+          import('./features/admin-billing/pages/invoices-admin/invoices-admin.page').then(
+            (m) => m.InvoicesAdminPage,
+          ),
+      },
+      {
+        path: '__ops/support',
+        canActivate: [opsGuard],
+        loadComponent: () =>
+          import('./features/support/pages/support-ops/support-ops.page').then(
+            (m) => m.SupportOpsPage,
+          ),
+      },
       {
         path: 'home',
         loadComponent: () => import('./features/home/pages/home/home.page').then((m) => m.HomePage),
@@ -222,6 +246,12 @@ export const routes: Routes = [
           import('./features/subscription/pages/subscription/subscription.page').then(
             (m) => m.SubscriptionPage,
           ),
+      },
+      {
+        path: 'invoices',
+        canActivate: [invoicesGuard],
+        loadComponent: () =>
+          import('./features/invoices/pages/invoices/invoices.page').then((m) => m.InvoicesPage),
       },
 
       // Redirects de rutas en español (compatibilidad con enlaces previos).

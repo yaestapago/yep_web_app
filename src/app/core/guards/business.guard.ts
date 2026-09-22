@@ -11,5 +11,9 @@ export const businessGuard: CanActivateFn = () => {
     return router.parseUrl('/login');
   }
 
+  if (session.isInternalOpsUser()) {
+    return true;
+  }
+
   return session.ensureActiveBusiness() ? true : router.parseUrl('/onboarding');
 };

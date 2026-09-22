@@ -1,24 +1,20 @@
-import {
-  Component,
-  HostListener,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideBuilding2,
+  LucideClipboardList,
   LucideChevronDown,
   LucideCreditCard,
   LucideHouse,
   LucideLayoutDashboard,
+  LucideLandmark,
+  LucideLifeBuoy,
   LucideLogOut,
   LucideMoon,
   LucidePanelLeftClose,
   LucidePanelLeftOpen,
+  LucideReceipt,
   LucideSettings,
   LucideSun,
 } from '@lucide/angular';
@@ -30,6 +26,7 @@ import {
   canAccessBusinessSection,
   canManageBusinesses,
   canAccessSubscription,
+  canAccessInvoices,
   type BusinessSectionKey,
 } from '../../constants/business-section-access';
 
@@ -59,14 +56,18 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     RouterLinkActive,
     Select,
     LucideBuilding2,
+    LucideClipboardList,
     LucideChevronDown,
     LucideCreditCard,
     LucideHouse,
     LucideLayoutDashboard,
+    LucideLandmark,
+    LucideLifeBuoy,
     LucideLogOut,
     LucideMoon,
     LucidePanelLeftClose,
     LucidePanelLeftOpen,
+    LucideReceipt,
     LucideSettings,
     LucideSun,
   ],
@@ -95,6 +96,9 @@ export class Sidebar {
   readonly memberships = this.session.approvedMemberships;
   readonly activeMembership = this.session.activeMembership;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
+  readonly isSupportUser = this.session.isSupportUser;
+  readonly isSuperUser = this.session.isSuperUser;
+  readonly isInternalOpsUser = this.session.isInternalOpsUser;
   readonly businessOptions = computed<SelectOption[]>(() =>
     this.memberships().map((membership) => ({
       id: membership.businessAccountId,
@@ -120,6 +124,9 @@ export class Sidebar {
   });
   readonly canViewSubscription = computed(() =>
     canAccessSubscription(this.activeMembership()?.role, this.session.isSuperUser()),
+  );
+  readonly canViewInvoices = computed(() =>
+    canAccessInvoices(this.activeMembership()?.role, this.session.isSuperUser()),
   );
   readonly canManageBusinesses = computed(() =>
     canManageBusinesses(this.activeMembership()?.role, this.session.isSuperUser()),

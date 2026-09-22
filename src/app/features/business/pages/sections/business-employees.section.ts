@@ -32,10 +32,17 @@ const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 
 const DEFAULT_SECTION_ACCESS: SectionAccess = {
   dashboard: true,
-  businessData: true,
-  reports: true,
+  businessData: false,
+  reports: false,
   dashboardSummary: true,
-  dashboardIncomeTable: true,
+  dashboardIncomeTable: false,
+  dashboardCharts: false,
+  dashboardSystemStatus: true,
+  dashboardTotalAmount: false,
+  dashboardEvents: true,
+  dashboardReceived: true,
+  dashboardPending: true,
+  dashboardRejected: true,
 };
 
 /**
@@ -399,6 +406,13 @@ export class BusinessEmployeesSection implements OnInit {
       reports: member.sectionAccess?.reports ?? true,
       dashboardSummary: member.sectionAccess?.dashboardSummary ?? true,
       dashboardIncomeTable: member.sectionAccess?.dashboardIncomeTable ?? true,
+      dashboardCharts: member.sectionAccess?.dashboardCharts ?? true,
+      dashboardSystemStatus: member.sectionAccess?.dashboardSystemStatus ?? true,
+      dashboardTotalAmount: member.sectionAccess?.dashboardTotalAmount ?? true,
+      dashboardEvents: member.sectionAccess?.dashboardEvents ?? true,
+      dashboardReceived: member.sectionAccess?.dashboardReceived ?? true,
+      dashboardPending: member.sectionAccess?.dashboardPending ?? true,
+      dashboardRejected: member.sectionAccess?.dashboardRejected ?? true,
     });
     this.sectionAccessOpen.set(true);
   }
@@ -438,8 +452,9 @@ export class BusinessEmployeesSection implements OnInit {
       loadingRef.close();
     };
 
+    const requestedAccess = this.selectedSectionAccess();
     this.businessApi
-      .updateMemberSectionAccess(businessId, member.id, this.selectedSectionAccess())
+      .updateMemberSectionAccess(businessId, member.id, requestedAccess)
       .pipe(
         finalize(() => {
           this.savingSectionAccess.set(false);
@@ -449,6 +464,23 @@ export class BusinessEmployeesSection implements OnInit {
       )
       .subscribe({
         next: ({ membership }) => {
+          const savedAccess = membership.sectionAccess;
+          const confirmed =
+            savedAccess &&
+            (Object.keys(requestedAccess) as (keyof SectionAccess)[]).every(
+              (key) => savedAccess[key] === requestedAccess[key],
+            );
+          if (!confirmed) {
+            const message = 'No se guardaron todos los apartados. Vuelve a intentarlo.';
+            this.error.set(message);
+            closeLoading();
+            void this.notifications.error({
+              title: 'No se pudo confirmar el acceso',
+              message,
+            });
+            return;
+          }
+
           this.members.update((members) =>
             members.map((current) =>
               current.id === membership.id
@@ -466,6 +498,7 @@ export class BusinessEmployeesSection implements OnInit {
             title: 'Apartados actualizados',
             message: 'Los apartados visibles para el empleado se guardaron correctamente.',
           });
+          this.savingSectionAccess.set(false);
           this.closeSectionAccess();
         },
         error: (error) => {
