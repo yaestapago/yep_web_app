@@ -128,6 +128,24 @@ export class InvoicesAdminPage implements OnInit {
     this.updateStatus(invoice, 'cancelled');
   }
 
+  openVoucher(invoice: BillingInvoiceSummary): void {
+    this.error.set('');
+    const target = window.open('', '_blank');
+    this.api
+      .getVoucherUrl(invoice.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ url }) => {
+          if (target) target.location.href = url;
+          else window.open(url, '_blank', 'noopener');
+        },
+        error: (error) => {
+          target?.close();
+          this.error.set(httpErrorMessage(error));
+        },
+      });
+  }
+
   formatCop(value: number): string {
     return `${new Intl.NumberFormat('es-CO').format(value)} COP`;
   }

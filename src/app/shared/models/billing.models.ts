@@ -127,5 +127,14 @@ export interface BillingInvoiceSummary {
   paidAt?: string;
   reportedAt?: string;
   customerNote?: string;
+  hasVoucher: boolean;
+  voucherMimeType?: string;
+  voucherSizeBytes?: number;
+  voucherOriginalName?: string;
   notes?: string;
+}
+
+export interface InvoiceVoucherUrl {
+  url: string;
+  expiresInSeconds: number;
 }

@@ -88,6 +88,12 @@
         {{ statusLabel(invoice.status) }}
       </p>
 
+      @if (invoice.hasVoucher) {
+        <yep-button size="sm" variant="secondary" (clicked)="openVoucher(invoice)">
+          Ver comprobante
+        </yep-button>
+      }
+
       <table class="invoice-items">
         <thead>
           <tr>
@@ -147,10 +153,24 @@
     (ngModelChange)="reportNote.set($event)"
     hint="Ej: transferencia Bancolombia, comprobante #12345."
   ></yep-input>
+  <label class="voucher-field">
+    <span>Comprobante de pago</span>
+    <input
+      type="file"
+      accept="image/jpeg,image/png,application/pdf"
+      required
+      (change)="onVoucherSelected($event)"
+    />
+    <small>JPG, PNG o PDF. Tamano maximo: 10 MB.</small>
+  </label>
 
   <ng-container modalFooter>
     <yep-button variant="ghost" (clicked)="closeReportPayment()">Cancelar</yep-button>
-    <yep-button [loading]="reporting()" (clicked)="submitReportPayment()">
+    <yep-button
+      [loading]="reporting()"
+      [disabled]="reportFile() === null"
+      (clicked)="submitReportPayment()"
+    >
       Enviar a revision
     </yep-button>
   </ng-container>

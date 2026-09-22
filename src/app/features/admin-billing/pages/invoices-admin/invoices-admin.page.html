@@ -69,6 +69,11 @@
             @if (invoice.customerNote) {
               <span class="invoice-note">Nota del cliente: "{{ invoice.customerNote }}"</span>
             }
+            @if (invoice.hasVoucher) {
+              <yep-button size="sm" variant="secondary" (clicked)="openVoucher(invoice)">
+                Ver comprobante
+              </yep-button>
+            }
             <span class="invoice-date">{{ invoice.issuedAt | date: 'medium' }}</span>
           </div>
           <strong class="invoice-amount">{{ formatCop(invoice.totalCop) }}</strong>

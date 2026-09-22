@@ -4,7 +4,10 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { AuthSessionService } from '../../../core/services/auth-session.service';
-import type { BillingInvoiceSummary } from '../../../shared/models/billing.models';
+import type {
+  BillingInvoiceSummary,
+  InvoiceVoucherUrl,
+} from '../../../shared/models/billing.models';
 
 @Injectable({ providedIn: 'root' })
 export class InvoicesApiService {
@@ -26,10 +29,20 @@ export class InvoicesApiService {
     );
   }
 
-  reportPayment(id: string, note?: string): Observable<BillingInvoiceSummary> {
+  reportPayment(id: string, voucher: File, note?: string): Observable<BillingInvoiceSummary> {
+    const form = new FormData();
+    form.append('voucher', voucher);
+    if (note) form.append('note', note);
     return this.http.post<BillingInvoiceSummary>(
       `${this.apiUrl}/invoices/${id}/report-payment`,
-      { note },
+      form,
+      this.businessAccountOptions(),
+    );
+  }
+
+  getVoucherUrl(id: string): Observable<InvoiceVoucherUrl> {
+    return this.http.get<InvoiceVoucherUrl>(
+      `${this.apiUrl}/invoices/${id}/voucher`,
       this.businessAccountOptions(),
     );
   }

@@ -40,6 +40,7 @@ export class InvoicesPage implements OnInit {
   readonly selectedInvoice = signal<BillingInvoiceSummary | null>(null);
   readonly reportInvoice = signal<BillingInvoiceSummary | null>(null);
   readonly reportNote = signal('');
+  readonly reportFile = signal<File | null>(null);
   readonly reporting = signal(false);
 
   ngOnInit(): void {
@@ -73,6 +74,7 @@ export class InvoicesPage implements OnInit {
   openReportPayment(invoice: BillingInvoiceSummary): void {
     this.error.set('');
     this.reportNote.set('');
+    this.reportFile.set(null);
     this.reportInvoice.set(invoice);
   }
 
@@ -84,13 +86,17 @@ export class InvoicesPage implements OnInit {
 
   submitReportPayment(): void {
     const invoice = this.reportInvoice();
-    if (!invoice) return;
+    const file = this.reportFile();
+    if (!invoice || !file) {
+      this.error.set('Adjunta el comprobante de pago.');
+      return;
+    }
 
     this.reporting.set(true);
     this.error.set('');
     this.success.set('');
     this.invoicesApi
-      .reportPayment(invoice.id, this.reportNote().trim() || undefined)
+      .reportPayment(invoice.id, file, this.reportNote().trim() || undefined)
       .pipe(
         finalize(() => this.reporting.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -107,6 +113,29 @@ export class InvoicesPage implements OnInit {
           this.success.set('Pago reportado. Nuestro equipo revisara la informacion.');
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
+      });
+  }
+
+  onVoucherSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.reportFile.set(input.files?.[0] ?? null);
+  }
+
+  openVoucher(invoice: BillingInvoiceSummary): void {
+    this.error.set('');
+    const target = window.open('', '_blank');
+    this.invoicesApi
+      .getVoucherUrl(invoice.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ url }) => {
+          if (target) target.location.href = url;
+          else window.open(url, '_blank', 'noopener');
+        },
+        error: (error) => {
+          target?.close();
+          this.error.set(httpErrorMessage(error));
+        },
       });
   }
 
