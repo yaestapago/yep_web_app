@@ -15,6 +15,9 @@
   @if (error()) {
     <yep-alert variant="error">{{ error() }}</yep-alert>
   }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
 
   @if (loading() && invoices().length === 0) {
     <div class="loading-row">
@@ -41,7 +44,14 @@
               {{ statusLabel(invoice.status) }}
             </span>
           </div>
-          <yep-button size="sm" variant="ghost" (clicked)="open(invoice)">Ver</yep-button>
+          <div class="invoice-row__actions">
+            @if (invoice.status === 'issued') {
+              <yep-button size="sm" variant="secondary" (clicked)="openReportPayment(invoice)">
+                Reportar pago
+              </yep-button>
+            }
+            <yep-button size="sm" variant="ghost" (clicked)="open(invoice)">Ver</yep-button>
+          </div>
         </li>
       }
     </ul>
@@ -108,6 +118,40 @@
   }
 
   <ng-container modalFooter>
+    @if (selectedInvoice()?.status === 'issued') {
+      <yep-button variant="secondary" (clicked)="openReportPayment(selectedInvoice()!)">
+        Reportar pago
+      </yep-button>
+    }
     <yep-button variant="ghost" (clicked)="close()">Cerrar</yep-button>
+  </ng-container>
+</yep-modal>
+
+<yep-modal
+  [open]="reportInvoice() !== null"
+  title="Reportar pago"
+  subtitle="Indica la referencia o los datos del pago para que nuestro equipo pueda revisarlo."
+  [loading]="reporting()"
+  (closeRequested)="closeReportPayment()"
+>
+  @if (reportInvoice(); as invoice) {
+    <p>
+      Factura <strong>{{ invoice.invoiceNumber }}</strong> por
+      <strong>{{ formatCop(invoice.totalCop) }}</strong>
+    </p>
+  }
+  <yep-input
+    label="Referencia o comentario (opcional)"
+    name="reportNote"
+    [ngModel]="reportNote()"
+    (ngModelChange)="reportNote.set($event)"
+    hint="Ej: transferencia Bancolombia, comprobante #12345."
+  ></yep-input>
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeReportPayment()">Cancelar</yep-button>
+    <yep-button [loading]="reporting()" (clicked)="submitReportPayment()">
+      Enviar a revision
+    </yep-button>
   </ng-container>
 </yep-modal>

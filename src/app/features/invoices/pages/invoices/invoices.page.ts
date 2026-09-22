@@ -1,19 +1,31 @@
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { LucideLoaderCircle, LucideReceipt, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type { BillingInvoiceSummary } from '../../../../shared/models/billing.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { InvoicesApiService } from '../../services/invoices-api.service';
 
 @Component({
   selector: 'app-invoices-page',
-  imports: [DatePipe, Alert, Button, Modal, LucideLoaderCircle, LucideReceipt, LucideRefreshCw],
+  imports: [
+    DatePipe,
+    FormsModule,
+    Alert,
+    Button,
+    Input,
+    Modal,
+    LucideLoaderCircle,
+    LucideReceipt,
+    LucideRefreshCw,
+  ],
   templateUrl: './invoices.page.html',
   styleUrl: './invoices.page.scss',
 })
@@ -24,7 +36,11 @@ export class InvoicesPage implements OnInit {
   readonly invoices = signal<BillingInvoiceSummary[]>([]);
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly success = signal('');
   readonly selectedInvoice = signal<BillingInvoiceSummary | null>(null);
+  readonly reportInvoice = signal<BillingInvoiceSummary | null>(null);
+  readonly reportNote = signal('');
+  readonly reporting = signal(false);
 
   ngOnInit(): void {
     this.load();
@@ -52,6 +68,46 @@ export class InvoicesPage implements OnInit {
 
   close(): void {
     this.selectedInvoice.set(null);
+  }
+
+  openReportPayment(invoice: BillingInvoiceSummary): void {
+    this.error.set('');
+    this.reportNote.set('');
+    this.reportInvoice.set(invoice);
+  }
+
+  closeReportPayment(): void {
+    if (!this.reporting()) {
+      this.reportInvoice.set(null);
+    }
+  }
+
+  submitReportPayment(): void {
+    const invoice = this.reportInvoice();
+    if (!invoice) return;
+
+    this.reporting.set(true);
+    this.error.set('');
+    this.success.set('');
+    this.invoicesApi
+      .reportPayment(invoice.id, this.reportNote().trim() || undefined)
+      .pipe(
+        finalize(() => this.reporting.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (updated) => {
+          this.invoices.update((invoices) =>
+            invoices.map((current) => (current.id === updated.id ? updated : current)),
+          );
+          if (this.selectedInvoice()?.id === updated.id) {
+            this.selectedInvoice.set(updated);
+          }
+          this.reportInvoice.set(null);
+          this.success.set('Pago reportado. Nuestro equipo revisara la informacion.');
+        },
+        error: (error) => this.error.set(httpErrorMessage(error)),
+      });
   }
 
   statusLabel(status: BillingInvoiceSummary['status']): string {

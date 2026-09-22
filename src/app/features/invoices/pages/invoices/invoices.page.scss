@@ -107,6 +107,14 @@
   text-align: right;
 }
 
+.invoice-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .invoice-status {
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);

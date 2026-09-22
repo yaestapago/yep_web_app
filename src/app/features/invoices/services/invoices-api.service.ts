@@ -26,6 +26,14 @@ export class InvoicesApiService {
     );
   }
 
+  reportPayment(id: string, note?: string): Observable<BillingInvoiceSummary> {
+    return this.http.post<BillingInvoiceSummary>(
+      `${this.apiUrl}/invoices/${id}/report-payment`,
+      { note },
+      this.businessAccountOptions(),
+    );
+  }
+
   private businessAccountOptions() {
     const businessAccountId = this.session.activeBusinessAccountId();
     return businessAccountId
