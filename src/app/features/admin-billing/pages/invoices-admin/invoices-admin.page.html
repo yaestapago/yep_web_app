@@ -47,7 +47,7 @@
         [class.active]="statusFilter() === status"
         (click)="statusFilter.set(status)"
       >
-        {{ status === 'all' ? 'Todas' : status }}
+        {{ statusLabel(status) }}
       </button>
     }
   </div>
@@ -76,7 +76,7 @@
           </div>
           <strong class="invoice-amount">{{ formatCop(invoice.totalCop) }}</strong>
           <span class="invoice-status" [attr.data-status]="invoice.status">
-            {{ invoice.status }}
+            {{ statusLabel(invoice.status) }}
           </span>
           @if (invoice.status === 'issued' || invoice.status === 'reported') {
             <div class="invoice-row__actions">

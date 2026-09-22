@@ -15,6 +15,14 @@ import { Button } from '../../../../shared/ui/button/button';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminInvoicesApiService } from '../../services/admin-invoices-api.service';
 
+const STATUS_LABELS: Record<BillingInvoiceStatus | 'all', string> = {
+  reported: 'Pago reportado',
+  issued: 'Pendiente de pago',
+  paid: 'Pagada',
+  cancelled: 'Cancelada',
+  all: 'Todas',
+};
+
 @Component({
   selector: 'app-invoices-admin-page',
   imports: [DatePipe, FormsModule, Alert, Button, LucideLoaderCircle, LucideRefreshCw],
@@ -104,6 +112,10 @@ export class InvoicesAdminPage implements OnInit {
 
   formatCop(value: number): string {
     return `${new Intl.NumberFormat('es-CO').format(value)} COP`;
+  }
+
+  statusLabel(status: BillingInvoiceStatus | 'all'): string {
+    return STATUS_LABELS[status];
   }
 
   private initialStatus(value: string | null): BillingInvoiceStatus | 'all' {
