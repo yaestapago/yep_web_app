@@ -18,6 +18,7 @@ import {
   rangeForPreset,
   type DateRangePreset,
 } from '../../../../shared/ui/date-range-picker/date-range-picker';
+import { Modal } from '../../../../shared/ui/modal/modal';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminInvoicesApiService } from '../../services/admin-invoices-api.service';
 
@@ -37,6 +38,7 @@ const STATUS_LABELS: Record<BillingInvoiceStatus | 'all', string> = {
     Alert,
     Button,
     DateRangePicker,
+    Modal,
     LucideLoaderCircle,
     LucideRefreshCw,
   ],
@@ -53,6 +55,7 @@ export class InvoicesAdminPage implements OnInit {
   readonly actingId = signal<string | null>(null);
   readonly error = signal('');
   readonly success = signal('');
+  readonly selectedInvoice = signal<BillingInvoiceSummary | null>(null);
   readonly search = signal(this.route.snapshot.queryParamMap.get('business') ?? '');
   readonly range = signal<DashboardDateRange>(rangeForPreset('30d'));
   readonly rangePreset = signal<DateRangePreset>('30d');
@@ -128,6 +131,16 @@ export class InvoicesAdminPage implements OnInit {
     this.updateStatus(invoice, 'cancelled');
   }
 
+  openInvoice(invoice: BillingInvoiceSummary): void {
+    this.selectedInvoice.set(invoice);
+  }
+
+  closeInvoice(): void {
+    if (!this.actingId()) {
+      this.selectedInvoice.set(null);
+    }
+  }
+
   openVoucher(invoice: BillingInvoiceSummary): void {
     this.error.set('');
     const target = window.open('', '_blank');
@@ -179,6 +192,9 @@ export class InvoicesAdminPage implements OnInit {
           this.invoices.update((items) =>
             items.map((item) => (item.id === updated.id ? updated : item)),
           );
+          if (this.selectedInvoice()?.id === updated.id) {
+            this.selectedInvoice.set(updated);
+          }
           this.success.set(
             status === 'paid'
               ? 'Factura marcada como pagada. Si venia de un upgrade o reactivacion, el plan ya se aplico.'

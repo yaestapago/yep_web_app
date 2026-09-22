@@ -66,41 +66,133 @@
             >
             <span>{{ invoice.buyerName }} · {{ invoice.buyerEmail || 'Sin correo' }}</span>
             <span>{{ invoice.concept }}</span>
-            @if (invoice.customerNote) {
-              <span class="invoice-note">Nota del cliente: "{{ invoice.customerNote }}"</span>
-            }
-            @if (invoice.hasVoucher) {
-              <yep-button size="sm" variant="secondary" (clicked)="openVoucher(invoice)">
-                Ver comprobante
-              </yep-button>
-            }
             <span class="invoice-date">{{ invoice.issuedAt | date: 'medium' }}</span>
           </div>
           <strong class="invoice-amount">{{ formatCop(invoice.totalCop) }}</strong>
           <span class="invoice-status" [attr.data-status]="invoice.status">
             {{ statusLabel(invoice.status) }}
           </span>
-          @if (invoice.status === 'issued' || invoice.status === 'reported') {
-            <div class="invoice-row__actions">
-              <yep-button
-                size="sm"
-                [loading]="actingId() === invoice.id"
-                (clicked)="markPaid(invoice)"
-              >
-                Marcar pagada
-              </yep-button>
-              <yep-button
-                size="sm"
-                variant="ghost"
-                [loading]="actingId() === invoice.id"
-                (clicked)="markCancelled(invoice)"
-              >
-                Cancelar
-              </yep-button>
-            </div>
-          }
+          <yep-button size="sm" variant="secondary" (clicked)="openInvoice(invoice)">
+            Ver detalle
+          </yep-button>
         </li>
       }
     </ul>
   }
 </section>
+
+<yep-modal
+  [open]="selectedInvoice() !== null"
+  title="Detalle de factura"
+  [subtitle]="selectedInvoice()?.invoiceNumber || ''"
+  size="lg"
+  [loading]="actingId() === selectedInvoice()?.id"
+  (closeRequested)="closeInvoice()"
+>
+  @if (selectedInvoice(); as invoice) {
+    <div class="invoice-detail">
+      <div class="invoice-detail__summary">
+        <div>
+          <span class="field-label">Negocio</span>
+          <strong>{{ invoice.accountName || invoice.buyerName }}</strong>
+        </div>
+        <div>
+          <span class="field-label">Estado</span>
+          <span class="invoice-status" [attr.data-status]="invoice.status">
+            {{ statusLabel(invoice.status) }}
+          </span>
+        </div>
+        <div>
+          <span class="field-label">Fecha de emision</span>
+          <strong>{{ invoice.issuedAt | date: 'medium' }}</strong>
+        </div>
+        <div>
+          <span class="field-label">Total</span>
+          <strong>{{ formatCop(invoice.totalCop) }}</strong>
+        </div>
+      </div>
+
+      <div class="invoice-detail__parties">
+        <div>
+          <span class="field-label">Emitido por</span>
+          <strong>{{ invoice.sellerName }}</strong>
+          <span>RUT/NIT {{ invoice.sellerRut }}</span>
+        </div>
+        <div>
+          <span class="field-label">Facturado a</span>
+          <strong>{{ invoice.buyerName }}</strong>
+          <span>{{ invoice.buyerIdentification || 'Sin identificacion' }}</span>
+          <span>{{ invoice.buyerEmail || 'Sin correo' }}</span>
+        </div>
+      </div>
+
+      <div>
+        <span class="field-label">Concepto</span>
+        <p>{{ invoice.concept }}</p>
+      </div>
+
+      <table class="invoice-items">
+        <thead>
+          <tr>
+            <th>Descripcion</th>
+            <th>Cantidad</th>
+            <th>Valor unitario</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of invoice.items; track item.description) {
+            <tr>
+              <td>{{ item.description }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ formatCop(item.unitPriceCop) }}</td>
+              <td>{{ formatCop(item.totalCop) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (invoice.customerNote) {
+        <div class="invoice-detail__note">
+          <span class="field-label">Nota del cliente</span>
+          <p>{{ invoice.customerNote }}</p>
+        </div>
+      }
+
+      @if (invoice.reportedAt) {
+        <p class="invoice-detail__date">
+          Pago reportado el {{ invoice.reportedAt | date: 'medium' }}
+        </p>
+      }
+      @if (invoice.paidAt) {
+        <p class="invoice-detail__date">Pago confirmado el {{ invoice.paidAt | date: 'medium' }}</p>
+      }
+
+      @if (invoice.hasVoucher) {
+        <yep-button variant="secondary" (clicked)="openVoucher(invoice)">
+          Ver comprobante de pago
+        </yep-button>
+      } @else if (invoice.status === 'reported') {
+        <yep-alert variant="warning">Esta factura no tiene un comprobante adjunto.</yep-alert>
+      }
+    </div>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeInvoice()">Cerrar</yep-button>
+    @if (selectedInvoice(); as invoice) {
+      @if (invoice.status === 'issued' || invoice.status === 'reported') {
+        <yep-button
+          variant="ghost"
+          [loading]="actingId() === invoice.id"
+          (clicked)="markCancelled(invoice)"
+        >
+          Cancelar factura
+        </yep-button>
+        <yep-button [loading]="actingId() === invoice.id" (clicked)="markPaid(invoice)">
+          Confirmar pago
+        </yep-button>
+      }
+    }
+  </ng-container>
+</yep-modal>
