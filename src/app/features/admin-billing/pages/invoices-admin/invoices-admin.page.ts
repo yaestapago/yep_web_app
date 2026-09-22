@@ -1,10 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { LucideLoaderCircle, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
-import type { BillingInvoiceStatus, BillingInvoiceSummary } from '../../../../shared/models/billing.models';
+import type {
+  BillingInvoiceStatus,
+  BillingInvoiceSummary,
+} from '../../../../shared/models/billing.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -12,20 +17,23 @@ import { AdminInvoicesApiService } from '../../services/admin-invoices-api.servi
 
 @Component({
   selector: 'app-invoices-admin-page',
-  imports: [DatePipe, Alert, Button, LucideLoaderCircle, LucideRefreshCw],
+  imports: [DatePipe, FormsModule, Alert, Button, LucideLoaderCircle, LucideRefreshCw],
   templateUrl: './invoices-admin.page.html',
   styleUrl: './invoices-admin.page.scss',
 })
 export class InvoicesAdminPage implements OnInit {
   private readonly api = inject(AdminInvoicesApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
 
   readonly invoices = signal<BillingInvoiceSummary[]>([]);
   readonly loading = signal(false);
   readonly actingId = signal<string | null>(null);
   readonly error = signal('');
   readonly success = signal('');
-  readonly statusFilter = signal<BillingInvoiceStatus | 'all'>('reported');
+  readonly search = signal(this.route.snapshot.queryParamMap.get('business') ?? '');
+  readonly dateFrom = signal('');
+  readonly dateTo = signal('');
   readonly statusOptions: Array<BillingInvoiceStatus | 'all'> = [
     'reported',
     'issued',
@@ -33,12 +41,38 @@ export class InvoicesAdminPage implements OnInit {
     'cancelled',
     'all',
   ];
+  readonly statusFilter = signal<BillingInvoiceStatus | 'all'>(
+    this.initialStatus(this.route.snapshot.queryParamMap.get('status')),
+  );
 
   readonly filteredInvoices = computed(() => {
     const filter = this.statusFilter();
-    const items = this.invoices();
-    return filter === 'all' ? items : items.filter((inv) => inv.status === filter);
+    const query = this.search().trim().toLocaleLowerCase();
+    const from = this.dateFrom() ? new Date(`${this.dateFrom()}T00:00:00`).getTime() : null;
+    const to = this.dateTo() ? new Date(`${this.dateTo()}T23:59:59.999`).getTime() : null;
+    return this.invoices().filter((invoice) => {
+      if (filter !== 'all' && invoice.status !== filter) return false;
+      const issuedAt = new Date(invoice.issuedAt).getTime();
+      if (from !== null && issuedAt < from) return false;
+      if (to !== null && issuedAt > to) return false;
+      if (!query) return true;
+      return [
+        invoice.invoiceNumber,
+        invoice.accountName,
+        invoice.buyerName,
+        invoice.buyerEmail,
+        invoice.buyerIdentification,
+        invoice.concept,
+      ].some((value) => value?.toLocaleLowerCase().includes(query));
+    });
   });
+
+  clearFilters(): void {
+    this.search.set('');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+    this.statusFilter.set('all');
+  }
 
   ngOnInit(): void {
     this.load();
@@ -70,6 +104,12 @@ export class InvoicesAdminPage implements OnInit {
 
   formatCop(value: number): string {
     return `${new Intl.NumberFormat('es-CO').format(value)} COP`;
+  }
+
+  private initialStatus(value: string | null): BillingInvoiceStatus | 'all' {
+    return value && this.statusOptions.includes(value as BillingInvoiceStatus)
+      ? (value as BillingInvoiceStatus)
+      : 'reported';
   }
 
   private updateStatus(

@@ -240,6 +240,17 @@
                   </tr>
                 </thead>
               }
+              @case ('invoices') {
+                <thead>
+                  <tr>
+                    <th>Factura</th>
+                    <th>Concepto</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+              }
             }
             <tbody>
               @for (record of records(); track record.id) {
@@ -293,6 +304,23 @@
                       <td>{{ display(record, 'status') }}</td>
                       <td>{{ display(record, 'normalized.bankId') }}</td>
                       <td>{{ display(record, 'normalized.reference') }}</td>
+                    </tr>
+                  }
+                  @case ('invoices') {
+                    <tr>
+                      <td>
+                        <button class="text-button" type="button" (click)="openInvoiceManagement()">
+                          {{ display(record, 'invoiceNumber') }}
+                        </button>
+                      </td>
+                      <td>{{ display(record, 'concept') }}</td>
+                      <td>
+                        {{
+                          display(record, 'totalCop') | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+                        }}
+                      </td>
+                      <td>{{ display(record, 'status') }}</td>
+                      <td>{{ display(record, 'issuedAt') | date: 'medium' }}</td>
                     </tr>
                   }
                 }

@@ -112,6 +112,7 @@ export interface BillingInvoiceItemSummary {
 export interface BillingInvoiceSummary {
   id: string;
   accountId: string;
+  accountName?: string | null;
   invoiceNumber: string;
   sellerName: string;
   sellerRut: string;

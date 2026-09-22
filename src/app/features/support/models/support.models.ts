@@ -54,6 +54,11 @@ export interface SupportBusinessSubscription {
   warnings: string[];
 }
 
-export type SupportResource = 'members' | 'bank-accounts' | 'customers' | 'source-events';
+export type SupportResource =
+  | 'members'
+  | 'bank-accounts'
+  | 'customers'
+  | 'source-events'
+  | 'invoices';
 export type SupportRecord = Record<string, unknown> & { id: string; createdAt?: string };
 import type { UserSubscriptionSummary } from '../../../shared/models/auth.models';

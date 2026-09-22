@@ -19,6 +19,27 @@
     <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
+  <div class="invoice-filters">
+    <label class="filter-field filter-field--search">
+      <span>Buscar</span>
+      <input
+        type="search"
+        placeholder="Factura, negocio, comprador o correo"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </label>
+    <label class="filter-field">
+      <span>Desde</span>
+      <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+    </label>
+    <label class="filter-field">
+      <span>Hasta</span>
+      <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+    </label>
+    <button type="button" class="clear-filters" (click)="clearFilters()">Limpiar</button>
+  </div>
+
   <div class="filter-tabs">
     @for (status of statusOptions; track status) {
       <button
@@ -43,7 +64,10 @@
       @for (invoice of filteredInvoices(); track invoice.id) {
         <li class="invoice-row">
           <div class="invoice-row__body">
-            <strong>{{ invoice.invoiceNumber }} — {{ invoice.buyerName }}</strong>
+            <strong
+              >{{ invoice.invoiceNumber }} — {{ invoice.accountName || invoice.buyerName }}</strong
+            >
+            <span>{{ invoice.buyerName }} · {{ invoice.buyerEmail || 'Sin correo' }}</span>
             <span>{{ invoice.concept }}</span>
             @if (invoice.customerNote) {
               <span class="invoice-note">Nota del cliente: "{{ invoice.customerNote }}"</span>

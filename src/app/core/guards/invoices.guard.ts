@@ -12,8 +12,12 @@ export const invoicesGuard: CanActivateFn = () => {
     return router.parseUrl('/login');
   }
 
+  if (session.isInternalOpsUser()) {
+    return router.parseUrl('/__ops/subscriptions/invoices');
+  }
+
   const role = session.activeMembership()?.role;
-  if (canAccessInvoices(role, session.isSuperUser())) {
+  if (canAccessInvoices(role)) {
     return true;
   }
 

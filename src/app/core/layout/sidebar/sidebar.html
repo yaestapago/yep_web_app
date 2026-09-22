@@ -226,17 +226,17 @@
           </a>
         }
 
-        @if (canViewInvoices()) {
+        @if (canViewInvoices() && !isInternalOpsUser()) {
           <a
             class="sidebar-actions__item"
             routerLink="/invoices"
             routerLinkActive="active"
             role="menuitem"
-            title="Facturas"
+            title="Mis facturas"
             (click)="onNavigate()"
           >
             <svg lucideReceipt aria-hidden="true"></svg>
-            <span>Facturas</span>
+            <span>Mis facturas</span>
           </a>
         }
 

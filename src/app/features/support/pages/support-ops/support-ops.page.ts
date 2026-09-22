@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   LucideArrowLeft,
   LucideBuilding2,
@@ -29,6 +30,7 @@ const RESOURCE_LABELS: Record<SupportResource, string> = {
   'bank-accounts': 'Cuentas bancarias',
   customers: 'Clientes',
   'source-events': 'Eventos',
+  invoices: 'Facturas',
 };
 
 @Component({
@@ -49,6 +51,7 @@ const RESOURCE_LABELS: Record<SupportResource, string> = {
 export class SupportOpsPage {
   private readonly api = inject(SupportApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly resourceLabels = RESOURCE_LABELS;
   readonly resources = Object.keys(RESOURCE_LABELS) as SupportResource[];
@@ -144,6 +147,14 @@ export class SupportOpsPage {
     if (value === null || value === undefined || value === '') return '-';
     if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
+  }
+
+  openInvoiceManagement(): void {
+    const business = this.selectedBusiness()?.business;
+    if (!business) return;
+    void this.router.navigate(['/__ops/subscriptions/invoices'], {
+      queryParams: { business: business.name, status: 'all' },
+    });
   }
 
   private loadResource(page: number): void {
