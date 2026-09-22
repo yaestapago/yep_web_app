@@ -29,14 +29,11 @@
         (ngModelChange)="search.set($event)"
       />
     </label>
-    <label class="filter-field">
-      <span>Desde</span>
-      <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
-    </label>
-    <label class="filter-field">
-      <span>Hasta</span>
-      <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
-    </label>
+    <yep-date-range-picker
+      [range]="range()"
+      [preset]="rangePreset()"
+      (rangeChange)="onRangeChange($event)"
+    />
     <button type="button" class="clear-filters" (click)="clearFilters()">Limpiar</button>
   </div>
 

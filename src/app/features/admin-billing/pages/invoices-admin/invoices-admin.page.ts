@@ -10,8 +10,14 @@ import type {
   BillingInvoiceStatus,
   BillingInvoiceSummary,
 } from '../../../../shared/models/billing.models';
+import type { DashboardDateRange } from '../../../../shared/models/dashboard-summary.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import {
+  DateRangePicker,
+  rangeForPreset,
+  type DateRangePreset,
+} from '../../../../shared/ui/date-range-picker/date-range-picker';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminInvoicesApiService } from '../../services/admin-invoices-api.service';
 
@@ -25,7 +31,15 @@ const STATUS_LABELS: Record<BillingInvoiceStatus | 'all', string> = {
 
 @Component({
   selector: 'app-invoices-admin-page',
-  imports: [DatePipe, FormsModule, Alert, Button, LucideLoaderCircle, LucideRefreshCw],
+  imports: [
+    DatePipe,
+    FormsModule,
+    Alert,
+    Button,
+    DateRangePicker,
+    LucideLoaderCircle,
+    LucideRefreshCw,
+  ],
   templateUrl: './invoices-admin.page.html',
   styleUrl: './invoices-admin.page.scss',
 })
@@ -40,8 +54,8 @@ export class InvoicesAdminPage implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
   readonly search = signal(this.route.snapshot.queryParamMap.get('business') ?? '');
-  readonly dateFrom = signal('');
-  readonly dateTo = signal('');
+  readonly range = signal<DashboardDateRange>(rangeForPreset('30d'));
+  readonly rangePreset = signal<DateRangePreset>('30d');
   readonly statusOptions: Array<BillingInvoiceStatus | 'all'> = [
     'reported',
     'issued',
@@ -56,13 +70,12 @@ export class InvoicesAdminPage implements OnInit {
   readonly filteredInvoices = computed(() => {
     const filter = this.statusFilter();
     const query = this.search().trim().toLocaleLowerCase();
-    const from = this.dateFrom() ? new Date(`${this.dateFrom()}T00:00:00`).getTime() : null;
-    const to = this.dateTo() ? new Date(`${this.dateTo()}T23:59:59.999`).getTime() : null;
+    const from = new Date(this.range().from).getTime();
+    const to = new Date(this.range().to).getTime();
     return this.invoices().filter((invoice) => {
       if (filter !== 'all' && invoice.status !== filter) return false;
       const issuedAt = new Date(invoice.issuedAt).getTime();
-      if (from !== null && issuedAt < from) return false;
-      if (to !== null && issuedAt > to) return false;
+      if (issuedAt < from || issuedAt > to) return false;
       if (!query) return true;
       return [
         invoice.invoiceNumber,
@@ -77,9 +90,14 @@ export class InvoicesAdminPage implements OnInit {
 
   clearFilters(): void {
     this.search.set('');
-    this.dateFrom.set('');
-    this.dateTo.set('');
+    this.range.set(rangeForPreset('30d'));
+    this.rangePreset.set('30d');
     this.statusFilter.set('all');
+  }
+
+  onRangeChange(value: { range: DashboardDateRange; preset: DateRangePreset }): void {
+    this.range.set(value.range);
+    this.rangePreset.set(value.preset);
   }
 
   ngOnInit(): void {
