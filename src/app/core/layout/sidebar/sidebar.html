@@ -80,6 +80,36 @@
           <svg lucideLifeBuoy aria-hidden="true"></svg>
           <span>Soporte operativo</span>
         </a>
+        <a
+          routerLink="/__ops/subscriptions/invoices"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Gestión de facturas"
+        >
+          <svg lucideReceipt aria-hidden="true"></svg>
+          <span>Gestión de facturas</span>
+        </a>
+        <a
+          routerLink="/__ops/subscriptions/change-requests"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Solicitudes de planes"
+        >
+          <svg lucideClipboardList aria-hidden="true"></svg>
+          <span>Solicitudes de planes</span>
+        </a>
+      }
+
+      @if (isSuperUser()) {
+        <a
+          routerLink="/__ops/notifier-rules"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Gestión de bancos"
+        >
+          <svg lucideLandmark aria-hidden="true"></svg>
+          <span>Gestión de bancos</span>
+        </a>
       }
 
       @if (!isSupportUser()) {

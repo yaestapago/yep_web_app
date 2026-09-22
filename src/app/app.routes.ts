@@ -60,40 +60,32 @@ export const routes: Routes = [
       import('./features/business/pages/onboarding/onboarding.page').then((m) => m.OnboardingPage),
   },
   {
-    // Vista de superadmin (path obscuro, NO enlazado en el sidebar): CRUD del
-    // catálogo global de reglas de notificadores. Fuera del Shell porque un
-    // superadmin puede no tener negocio activo. La seguridad real la impone el
-    // AccountSuGuard del backend; el path solo evita descubrimiento casual.
-    path: '__ops/notifier-rules',
-    canActivate: [authGuard, superAdminGuard],
-    loadComponent: () =>
-      import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
-  },
-  {
-    // Vista de superadmin (path obscuro, NO enlazado en el sidebar): revisar y
-    // aprobar/rechazar solicitudes de cambio de plan/add-ons/toppings. Mismo
-    // criterio de seguridad que __ops/notifier-rules.
-    path: '__ops/subscriptions/change-requests',
-    canActivate: [authGuard, superAdminGuard],
-    loadComponent: () =>
-      import(
-        './features/admin-billing/pages/plan-change-requests-admin/plan-change-requests-admin.page'
-      ).then((m) => m.PlanChangeRequestsAdminPage),
-  },
-  {
-    // Idem — confirmar pagos reportados/marcar facturas pagadas o canceladas.
-    path: '__ops/subscriptions/invoices',
-    canActivate: [authGuard, superAdminGuard],
-    loadComponent: () =>
-      import(
-        './features/admin-billing/pages/invoices-admin/invoices-admin.page'
-      ).then((m) => m.InvoicesAdminPage),
-  },
-  {
     path: '',
     component: Shell,
     canActivate: [businessGuard],
     children: [
+      {
+        path: '__ops/notifier-rules',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
+      },
+      {
+        path: '__ops/subscriptions/change-requests',
+        canActivate: [opsGuard],
+        loadComponent: () =>
+          import('./features/admin-billing/pages/plan-change-requests-admin/plan-change-requests-admin.page').then(
+            (m) => m.PlanChangeRequestsAdminPage,
+          ),
+      },
+      {
+        path: '__ops/subscriptions/invoices',
+        canActivate: [opsGuard],
+        loadComponent: () =>
+          import('./features/admin-billing/pages/invoices-admin/invoices-admin.page').then(
+            (m) => m.InvoicesAdminPage,
+          ),
+      },
       {
         path: '__ops/support',
         canActivate: [opsGuard],
@@ -259,9 +251,7 @@ export const routes: Routes = [
         path: 'invoices',
         canActivate: [invoicesGuard],
         loadComponent: () =>
-          import('./features/invoices/pages/invoices/invoices.page').then(
-            (m) => m.InvoicesPage,
-          ),
+          import('./features/invoices/pages/invoices/invoices.page').then((m) => m.InvoicesPage),
       },
 
       // Redirects de rutas en español (compatibilidad con enlaces previos).

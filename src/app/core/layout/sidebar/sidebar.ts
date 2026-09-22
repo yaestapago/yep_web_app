@@ -3,10 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideBuilding2,
+  LucideClipboardList,
   LucideChevronDown,
   LucideCreditCard,
   LucideHouse,
   LucideLayoutDashboard,
+  LucideLandmark,
   LucideLifeBuoy,
   LucideLogOut,
   LucideMoon,
@@ -54,10 +56,12 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     RouterLinkActive,
     Select,
     LucideBuilding2,
+    LucideClipboardList,
     LucideChevronDown,
     LucideCreditCard,
     LucideHouse,
     LucideLayoutDashboard,
+    LucideLandmark,
     LucideLifeBuoy,
     LucideLogOut,
     LucideMoon,
@@ -93,6 +97,7 @@ export class Sidebar {
   readonly activeMembership = this.session.activeMembership;
   readonly activeBusinessAccountId = this.session.activeBusinessAccountId;
   readonly isSupportUser = this.session.isSupportUser;
+  readonly isSuperUser = this.session.isSuperUser;
   readonly isInternalOpsUser = this.session.isInternalOpsUser;
   readonly businessOptions = computed<SelectOption[]>(() =>
     this.memberships().map((membership) => ({

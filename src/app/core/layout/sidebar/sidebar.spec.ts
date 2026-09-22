@@ -33,6 +33,8 @@ describe('Sidebar', () => {
     }),
     activeBusinessAccountId: signal('b1'),
     isSuperUser: signal(false),
+    isSupportUser: signal(false),
+    isInternalOpsUser: signal(false),
     setActiveBusinessAccountId,
     clearSession: vi.fn(),
   };
