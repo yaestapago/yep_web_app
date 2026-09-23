@@ -266,3 +266,13 @@
     font-size: var(--font-size-xs);
   }
 }
+
+.invoice-detail__pdf {
+  justify-self: end;
+  width: 180px;
+}
+@media (max-width: 620px) {
+  .invoice-detail__pdf {
+    width: 100%;
+  }
+}
