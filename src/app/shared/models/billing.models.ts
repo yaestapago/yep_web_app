@@ -127,6 +127,8 @@ export interface BillingInvoiceSummary {
   paidAt?: string;
   reportedAt?: string;
   customerNote?: string;
+  canGeneratePdf?: boolean;
+  hasPdf?: boolean;
   hasVoucher: boolean;
   voucherMimeType?: string;
   voucherSizeBytes?: number;

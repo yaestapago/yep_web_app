@@ -3,7 +3,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { LucideLoaderCircle, LucideRefreshCw } from '@lucide/angular';
+import { LucideFileDown, LucideLoaderCircle, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type {
@@ -41,6 +41,7 @@ const STATUS_LABELS: Record<BillingInvoiceStatus | 'all', string> = {
     Modal,
     LucideLoaderCircle,
     LucideRefreshCw,
+    LucideFileDown,
   ],
   templateUrl: './invoices-admin.page.html',
   styleUrl: './invoices-admin.page.scss',
@@ -54,6 +55,8 @@ export class InvoicesAdminPage implements OnInit {
   readonly loading = signal(false);
   readonly actingId = signal<string | null>(null);
   readonly error = signal('');
+  readonly generatingPdf = signal(false);
+  readonly pdfError = signal('');
   readonly success = signal('');
   readonly selectedInvoice = signal<BillingInvoiceSummary | null>(null);
   readonly search = signal(this.route.snapshot.queryParamMap.get('business') ?? '');
@@ -132,13 +135,38 @@ export class InvoicesAdminPage implements OnInit {
   }
 
   openInvoice(invoice: BillingInvoiceSummary): void {
+    this.pdfError.set('');
     this.selectedInvoice.set(invoice);
   }
 
   closeInvoice(): void {
-    if (!this.actingId()) {
+    if (!this.actingId() && !this.generatingPdf()) {
       this.selectedInvoice.set(null);
     }
+  }
+
+  generatePdf(invoice: BillingInvoiceSummary): void {
+    if (this.generatingPdf() || !invoice.canGeneratePdf) return;
+    this.pdfError.set('');
+    this.generatingPdf.set(true);
+    this.api
+      .generatePdf(invoice.id)
+      .pipe(
+        finalize(() => this.generatingPdf.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ({ url, filename }) => {
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.rel = 'noopener';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        },
+        error: (error) => this.pdfError.set(httpErrorMessage(error)),
+      });
   }
 
   openVoucher(invoice: BillingInvoiceSummary): void {
