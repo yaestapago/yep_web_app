@@ -11,7 +11,12 @@ import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
-import type { BusinessMembership } from '../../../../shared/models/auth.models';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import type {
+  BusinessMembership,
+  InvoiceRecipientType,
+} from '../../../../shared/models/auth.models';
+import { businessNitError, normalizeBusinessNit } from '../../../../shared/utils/business-nit';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -22,7 +27,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-create-business-modal',
-  imports: [ReactiveFormsModule, AddressLocationSelect, Button, Input, Modal, PhoneInput],
+  imports: [ReactiveFormsModule, AddressLocationSelect, Button, Input, Modal, PhoneInput, Select],
   templateUrl: './create-business-modal.html',
 })
 export class CreateBusinessModal {
@@ -44,11 +49,33 @@ export class CreateBusinessModal {
     location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
+    invoiceRecipient: this.fb.control<InvoiceRecipientType>('owner'),
+    nit: [''],
   });
+
+  readonly invoiceRecipientOptions: SelectOption[] = [
+    { id: 'owner', label: 'A mi nombre' },
+    { id: 'business', label: 'A nombre del negocio (requiere NIT)' },
+  ];
 
   reset(): void {
     this.error.set('');
-    this.form.reset({ name: '', location: null, address: '', phone: '' });
+    this.form.reset({
+      name: '',
+      location: null,
+      address: '',
+      phone: '',
+      invoiceRecipient: 'owner',
+      nit: '',
+    });
+  }
+
+  nitError(): string {
+    const { nit, invoiceRecipient } = this.form.controls;
+    if (!nit.touched && !nit.dirty && !invoiceRecipient.dirty) {
+      return '';
+    }
+    return businessNitError(nit.value, invoiceRecipient.value === 'business');
   }
 
   async close(): Promise<void> {
@@ -73,14 +100,16 @@ export class CreateBusinessModal {
   }
 
   submit(): void {
-    if (this.form.invalid) {
+    const raw = this.form.getRawValue();
+    const nitInvalid = !!businessNitError(raw.nit, raw.invoiceRecipient === 'business');
+    if (this.form.invalid || nitInvalid) {
       this.form.markAllAsTouched();
       return;
     }
 
     this.saving.set(true);
     this.error.set('');
-    const raw = this.form.getRawValue();
+    const nit = normalizeBusinessNit(raw.nit);
 
     this.businessApi
       .createBusinessAccount({
@@ -91,6 +120,8 @@ export class CreateBusinessModal {
         cityName: raw.location?.cityName ?? '',
         address: raw.address,
         phone: this.phoneValue(raw.phone),
+        ...(nit ? { nit } : {}),
+        invoiceRecipient: { type: raw.invoiceRecipient },
       })
       .pipe(
         finalize(() => this.saving.set(false)),

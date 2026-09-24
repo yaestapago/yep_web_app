@@ -33,6 +33,21 @@
       [required]="true"
       [error]="isInvalid('phone') ? 'Ingresa un teléfono válido' : ''"
     ></yep-phone-input>
+    <yep-select
+      formControlName="invoiceRecipient"
+      label="Cuentas de cobro de YEP a nombre de"
+      [options]="invoiceRecipientOptions"
+      hint="Podrás cambiarlo después en Datos del negocio."
+      dataCy="create-business-invoice-recipient"
+    />
+    <yep-input
+      formControlName="nit"
+      label="NIT del negocio"
+      placeholder="900123456-7"
+      [required]="form.controls.invoiceRecipient.value === 'business'"
+      [hint]="form.controls.invoiceRecipient.value === 'business' ? '' : 'Opcional'"
+      [error]="nitError()"
+    />
   </form>
 
   <ng-container modalFooter>

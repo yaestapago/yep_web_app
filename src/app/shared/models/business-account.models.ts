@@ -3,6 +3,7 @@ import {
   BusinessMembership,
   BusinessMembershipRole,
   BusinessMembershipStatus,
+  InvoiceRecipient,
 } from './auth.models';
 
 export interface BusinessAccountsResponse {
@@ -21,6 +22,8 @@ export interface BusinessAccountRequest {
   cityName: string;
   address: string;
   phone: string;
+  nit?: string;
+  invoiceRecipient?: InvoiceRecipient;
 }
 
 export interface CreateBusinessAccountResponse {
@@ -40,6 +43,9 @@ export interface UpdateBusinessAccountRequest {
   cityName?: string;
   address?: string;
   phone?: string;
+  /** Cadena vacía borra el NIT. */
+  nit?: string;
+  invoiceRecipient?: InvoiceRecipient;
 }
 
 export interface BusinessLookupResult {

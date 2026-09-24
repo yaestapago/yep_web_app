@@ -163,8 +163,19 @@ export interface BusinessAccount {
   phone: string;
   slug?: string;
   preferences?: BusinessAccountPreferences;
+  /** NIT del negocio; los negocios creados antes de esta opción no lo tienen. */
+  nit?: string;
+  /** A nombre de quién salen las cuentas de cobro de YEP. Sin valor = owner más antiguo. */
+  invoiceRecipient?: InvoiceRecipient;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export type InvoiceRecipientType = 'business' | 'owner';
+
+export interface InvoiceRecipient {
+  type: InvoiceRecipientType;
+  ownerUserId?: string;
 }
 
 export interface BusinessMembership {

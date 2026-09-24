@@ -14,12 +14,13 @@ import {
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { BusinessMembership } from '../../../../shared/models/auth.models';
+import { BusinessMembership, InvoiceRecipientType } from '../../../../shared/models/auth.models';
 import type { AddressLocationValue } from '../../../../shared/models/geo.models';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Button } from '../../../../shared/ui/button/button';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
+import { businessNitError, normalizeBusinessNit } from '../../../../shared/utils/business-nit';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -69,18 +70,30 @@ export class OnboardingPage {
     location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
+    invoiceRecipient: this.fb.control<InvoiceRecipientType>('owner'),
+    nit: [''],
   });
+
+  nitError(): string {
+    const { nit, invoiceRecipient } = this.businessForm.controls;
+    if (!nit.touched && !nit.dirty && !invoiceRecipient.dirty) {
+      return '';
+    }
+    return businessNitError(nit.value, invoiceRecipient.value === 'business');
+  }
 
   createBusiness(): void {
     this.error.set('');
     this.success.set('');
 
-    if (this.businessForm.invalid) {
+    const raw = this.businessForm.getRawValue();
+    const nitInvalid = !!businessNitError(raw.nit, raw.invoiceRecipient === 'business');
+    if (this.businessForm.invalid || nitInvalid) {
       this.businessForm.markAllAsTouched();
       return;
     }
 
-    const raw = this.businessForm.getRawValue();
+    const nit = normalizeBusinessNit(raw.nit);
     this.creatingBusiness.set(true);
     this.businessApi
       .createBusinessAccount({
@@ -91,6 +104,8 @@ export class OnboardingPage {
         cityName: raw.location?.cityName ?? '',
         address: raw.address,
         phone: this.phoneValue(raw.phone),
+        ...(nit ? { nit } : {}),
+        invoiceRecipient: { type: raw.invoiceRecipient },
       })
       .pipe(
         finalize(() => this.creatingBusiness.set(false)),

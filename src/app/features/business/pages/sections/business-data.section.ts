@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,7 +12,9 @@ import {
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { InvoiceRecipientType } from '../../../../shared/models/auth.models';
 import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import type { ApprovedMember } from '../../../../shared/models/schedule.models';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
@@ -21,6 +23,8 @@ import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { OtpInput } from '../../../../shared/ui/otp-input/otp-input';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { businessNitError, normalizeBusinessNit } from '../../../../shared/utils/business-nit';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminBusinessesApiService } from '../../services/admin-businesses-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -44,6 +48,7 @@ type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
     Modal,
     OtpInput,
     PhoneInput,
+    Select,
     LucidePencil,
     LucideClipboardCopy,
     LucideClipboardCheck,
@@ -134,7 +139,82 @@ export class BusinessDataSection implements OnDestroy {
     location: this.fb.control<AddressLocationValue | null>(null, [Validators.required]),
     address: ['', [Validators.required, Validators.minLength(4)]],
     phone: this.fb.control<PhoneInputValue | string | null>(null, [Validators.required]),
+    /** `business` | `owner:<userId>` | `owner` (owner más antiguo, sin elegir). */
+    invoiceRecipient: [''],
+    nit: [''],
   });
+
+  // --- A nombre de quién se factura -----------------------------------------
+
+  /** Owners aprobados (el endpoint de miembros es solo para owner/SU). */
+  readonly owners = signal<ApprovedMember[]>([]);
+
+  private readonly loadOwners = effect((onCleanup) => {
+    const businessId = this.businessId();
+    if (!businessId || !this.canManage()) {
+      this.owners.set([]);
+      return;
+    }
+    const sub = this.businessApi.listApprovedMembers(businessId).subscribe({
+      next: ({ memberships }) =>
+        this.owners.set(
+          memberships
+            .filter((member) => member.role === 'account_owner' && member.userId)
+            // El backend ordena del más nuevo al más antiguo.
+            .reverse(),
+        ),
+      error: () => this.owners.set([]),
+    });
+    onCleanup(() => sub.unsubscribe());
+  });
+
+  readonly invoiceRecipientOptions = computed<SelectOption[]>(() => {
+    const owners = this.owners();
+    const ownerOptions: SelectOption[] = owners.length
+      ? owners.map((owner) => ({
+          id: `owner:${owner.userId}`,
+          label: this.ownerName(owner),
+          secondLabel: owner.email,
+        }))
+      : [{ id: 'owner', label: 'Dueño del negocio' }];
+    return [{ id: 'business', label: 'El negocio (con su NIT)' }, ...ownerOptions];
+  });
+
+  readonly invoiceRecipientLabel = computed(() => {
+    const account = this.account();
+    const recipient = account?.invoiceRecipient;
+    if (recipient?.type === 'business') {
+      return `El negocio · NIT ${account?.nit ?? ''}`;
+    }
+    const owners = this.owners();
+    const owner = owners.find((o) => o.userId === recipient?.ownerUserId) ?? owners[0];
+    return owner ? this.ownerName(owner) : 'Dueño del negocio';
+  });
+
+  billToBusinessSelected(): boolean {
+    return this.businessForm.controls.invoiceRecipient.value === 'business';
+  }
+
+  nitError(): string {
+    const { nit, invoiceRecipient } = this.businessForm.controls;
+    if (!nit.touched && !nit.dirty && !invoiceRecipient.dirty) {
+      return '';
+    }
+    return businessNitError(nit.value, this.billToBusinessSelected());
+  }
+
+  private currentRecipientValue(): string {
+    const recipient = this.account()?.invoiceRecipient;
+    if (recipient?.type === 'business') {
+      return 'business';
+    }
+    const ownerUserId = recipient?.ownerUserId ?? this.owners()[0]?.userId;
+    return ownerUserId ? `owner:${ownerUserId}` : 'owner';
+  }
+
+  private ownerName(owner: ApprovedMember): string {
+    return [owner.firstName, owner.lastName].filter(Boolean).join(' ').trim() || owner.email || 'Dueño';
+  }
 
   openEdit(): void {
     const account = this.account();
@@ -145,6 +225,8 @@ export class BusinessDataSection implements OnDestroy {
       location: this.accountLocationValue(),
       address: account?.address ?? '',
       phone: account?.phone ?? '',
+      invoiceRecipient: this.currentRecipientValue(),
+      nit: account?.nit ?? '',
     });
     this.editOpen.set(true);
   }
@@ -172,14 +254,22 @@ export class BusinessDataSection implements OnDestroy {
 
   saveBusiness(): void {
     const businessId = this.businessId();
-    if (!businessId || this.businessForm.invalid) {
+    const raw = this.businessForm.getRawValue();
+    const nitInvalid = !!businessNitError(raw.nit, raw.invoiceRecipient === 'business');
+    if (!businessId || this.businessForm.invalid || nitInvalid) {
       this.businessForm.markAllAsTouched();
       return;
     }
 
     this.savingBusiness.set(true);
     this.error.set('');
-    const raw = this.businessForm.getRawValue();
+    const nit = normalizeBusinessNit(raw.nit);
+    const nitChanged = nit !== (this.account()?.nit ?? '');
+    const recipientChanged = raw.invoiceRecipient !== this.currentRecipientValue();
+    const [recipientType, ownerUserId] = raw.invoiceRecipient.split(':') as [
+      InvoiceRecipientType,
+      string | undefined,
+    ];
 
     this.businessApi
       .updateBusinessAccount(businessId, {
@@ -190,6 +280,10 @@ export class BusinessDataSection implements OnDestroy {
         cityName: raw.location?.cityName,
         address: raw.address,
         phone: this.phoneValue(raw.phone),
+        ...(nitChanged ? { nit } : {}),
+        ...(recipientChanged
+          ? { invoiceRecipient: { type: recipientType, ...(ownerUserId ? { ownerUserId } : {}) } }
+          : {}),
       })
       .pipe(
         finalize(() => this.savingBusiness.set(false)),

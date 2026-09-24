@@ -112,6 +112,27 @@
             [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
           ></yep-phone-input>
 
+          <label>
+            <span>Cuentas de cobro de YEP a nombre de</span>
+            <select formControlName="invoiceRecipient" data-cy="onboarding-invoice-recipient">
+              <option value="owner">A mi nombre</option>
+              <option value="business">A nombre del negocio (requiere NIT)</option>
+            </select>
+          </label>
+
+          <label>
+            <span>
+              NIT del negocio
+              @if (businessForm.controls.invoiceRecipient.value !== 'business') {
+                (opcional)
+              }
+            </span>
+            <input type="text" formControlName="nit" placeholder="900123456-7" />
+            @if (nitError()) {
+              <small>{{ nitError() }}</small>
+            }
+          </label>
+
           <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
             @if (creatingBusiness()) {
               <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
