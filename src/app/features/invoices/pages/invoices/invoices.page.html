@@ -75,7 +75,10 @@
           <span class="field-label">Facturado a</span>
           <strong>{{ invoice.buyerName }}</strong>
           @if (invoice.buyerIdentification) {
-            <span>Documento {{ invoice.buyerIdentification }}</span>
+            <span>
+              {{ invoice.buyerIdentificationType === 'NIT' ? 'NIT' : 'Documento' }}
+              {{ invoice.buyerIdentification }}
+            </span>
           }
           @if (invoice.buyerEmail) {
             <span>{{ invoice.buyerEmail }}</span>

@@ -42,6 +42,15 @@
       <span class="info-value">{{ account()?.phone || '—' }}</span>
     </div>
     <div class="info-cell">
+      <span class="info-label">NIT</span>
+      <span class="info-value">{{ account()?.nit || '—' }}</span>
+    </div>
+    <div class="info-cell">
+      <span class="info-label">Cuentas de cobro a nombre de</span>
+      <span class="info-value">{{ invoiceRecipientLabel() }}</span>
+      <span class="info-hint">Titular de las cuentas de cobro de YEP para este negocio.</span>
+    </div>
+    <div class="info-cell">
       <span class="info-label">Código para compartir</span>
       <span class="info-value code-value">
         <code class="code-chip">{{ shareCode() }}</code>
@@ -137,6 +146,20 @@
       formControlName="address"
       label="Dirección"
       [error]="isBusinessInvalid('address') ? 'Requerido' : ''"
+    />
+    <yep-select
+      formControlName="invoiceRecipient"
+      label="Cuentas de cobro a nombre de"
+      [options]="invoiceRecipientOptions()"
+      dataCy="edit-business-invoice-recipient"
+    />
+    <yep-input
+      formControlName="nit"
+      label="NIT del negocio"
+      placeholder="900123456-7"
+      [required]="billToBusinessSelected()"
+      [hint]="billToBusinessSelected() ? '' : 'Opcional'"
+      [error]="nitError()"
     />
   </form>
 

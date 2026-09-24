@@ -78,11 +78,18 @@ describe('OnboardingPage - crear negocio, esperar aprobacion y salir sin quedar 
       },
       address: 'Calle 1 # 2-3',
       phone: { countryCode: '57', nationalNumber: '3001234567', e164: '+573001234567' },
+      invoiceRecipient: 'business',
+      nit: '900.123.456-7',
     });
 
     page.createBusiness();
 
-    httpMock.expectOne(`${environment.apiUrl}/business-accounts`).flush({
+    const request = httpMock.expectOne(`${environment.apiUrl}/business-accounts`);
+    expect(request.request.body).toMatchObject({
+      nit: '900123456-7',
+      invoiceRecipient: { type: 'business' },
+    });
+    request.flush({
       businessAccount: { id: 'business-1', name: 'Cafeteria Centro' },
       membership: {
         id: 'membership-1',
@@ -96,6 +103,29 @@ describe('OnboardingPage - crear negocio, esperar aprobacion y salir sin quedar 
     expect(session.updateMemberships).toHaveBeenCalled();
     expect(session.setActiveBusinessAccountId).toHaveBeenCalledWith('business-1');
     expect(navigate).toHaveBeenCalledWith(['/businesses', 'business-1', 'business-data']);
+  });
+
+  it('no crea el negocio a nombre del negocio sin NIT', () => {
+    const page = create();
+
+    page.businessForm.setValue({
+      name: 'Cafeteria Centro',
+      location: {
+        departmentCode: '11',
+        departmentName: 'Bogota D.C.',
+        cityCode: '11001',
+        cityName: 'Bogota',
+      },
+      address: 'Calle 1 # 2-3',
+      phone: { countryCode: '57', nationalNumber: '3001234567', e164: '+573001234567' },
+      invoiceRecipient: 'business',
+      nit: '',
+    });
+
+    page.createBusiness();
+
+    httpMock.expectNone(`${environment.apiUrl}/business-accounts`);
+    expect(page.nitError()).toContain('primero ingresa su NIT');
   });
 
   it('detecta solicitudes staff pendientes para mostrar la espera de aprobacion', () => {

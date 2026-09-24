@@ -118,6 +118,8 @@ export interface BillingInvoiceSummary {
   sellerRut: string;
   buyerName: string;
   buyerIdentification?: string;
+  /** 'NIT' cuando la cuenta de cobro sale a nombre del negocio; sin valor = cédula. */
+  buyerIdentificationType?: 'CC' | 'NIT';
   buyerEmail?: string;
   concept: string;
   items: BillingInvoiceItemSummary[];
