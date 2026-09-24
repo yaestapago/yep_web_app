@@ -18,6 +18,13 @@ export class AdminInvoicesApiService {
     return this.http.get<BillingInvoiceSummary[]>(`${this.apiUrl}/admin/invoices`);
   }
 
+  generatePdf(id: string): Observable<InvoiceVoucherUrl & { filename: string }> {
+    return this.http.post<InvoiceVoucherUrl & { filename: string }>(
+      `${this.apiUrl}/admin/invoices/${id}/pdf`,
+      {},
+    );
+  }
+
   getVoucherUrl(id: string): Observable<InvoiceVoucherUrl> {
     return this.http.get<InvoiceVoucherUrl>(`${this.apiUrl}/admin/invoices/${id}/voucher`);
   }

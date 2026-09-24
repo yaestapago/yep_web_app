@@ -86,11 +86,36 @@
   title="Detalle de factura"
   [subtitle]="selectedInvoice()?.invoiceNumber || ''"
   size="lg"
-  [loading]="actingId() === selectedInvoice()?.id"
+  [loading]="generatingPdf() || actingId() === selectedInvoice()?.id"
   (closeRequested)="closeInvoice()"
 >
   @if (selectedInvoice(); as invoice) {
     <div class="invoice-detail">
+      <div class="invoice-detail__pdf">
+        <yep-button
+          [fullWidth]="true"
+          [loading]="generatingPdf()"
+          [disabled]="!invoice.canGeneratePdf"
+          (clicked)="generatePdf(invoice)"
+        >
+          <svg lucideFileDown aria-hidden="true"></svg>
+          {{ generatingPdf() ? 'Generando…' : 'Generar PDF' }}
+        </yep-button>
+      </div>
+      @if (pdfError()) {
+        <yep-alert variant="error">{{ pdfError() }}</yep-alert>
+      }
+      @if (invoice.canGeneratePdf === undefined) {
+        <yep-alert variant="warning"
+          >El servidor todav?a no informa la disponibilidad del PDF. Actualiza el backend y vuelve a
+          cargar las facturas.</yep-alert
+        >
+      } @else if (!invoice.canGeneratePdf) {
+        <yep-alert variant="warning"
+          >Esta factura no conserva los datos de emisión necesarios para generar la cuenta de
+          cobro.</yep-alert
+        >
+      }
       <div class="invoice-detail__summary">
         <div>
           <span class="field-label">Negocio</span>
