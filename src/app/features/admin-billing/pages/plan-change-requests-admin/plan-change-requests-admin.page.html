@@ -6,10 +6,16 @@
         Revisa, aprueba o rechaza cambios de plan, add-ons y toppings solicitados por los negocios.
       </p>
     </div>
-    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
-      <svg lucideRefreshCw aria-hidden="true"></svg>
-      Actualizar
-    </yep-button>
+    <div class="page-header__actions">
+      <yep-button size="sm" (clicked)="openAssignment()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Nueva asignación
+      </yep-button>
+      <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+    </div>
   </header>
 
   @if (error()) {
@@ -79,6 +85,119 @@
     </ul>
   }
 </section>
+
+<yep-modal
+  [open]="assignmentOpen()"
+  title="Asignar plan a un negocio"
+  [loading]="assignmentSubmitting()"
+  (closeRequested)="closeAssignment()"
+>
+  @if (assignmentError()) {
+    <yep-alert variant="error">{{ assignmentError() }}</yep-alert>
+  }
+
+  @if (assignmentOptionsLoading()) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando negocios y planes...
+    </div>
+  } @else {
+    <div class="assignment-form">
+      <yep-select
+        label="Negocio"
+        placeholder="Selecciona un negocio"
+        [options]="accountOptions()"
+        [searchable]="true"
+        [required]="true"
+        [ngModel]="assignmentAccountId()"
+        (ngModelChange)="selectAssignmentAccount($event)"
+      ></yep-select>
+
+      @if (selectedAssignmentAccount(); as account) {
+        <div class="current-plan">
+          <span>Plan actual</span>
+          <strong>{{ account.currentPlanName ?? account.currentPlanCode ?? 'Sin plan' }}</strong>
+          @if (account.hasPendingChangeRequest) {
+            <small>Este negocio ya tiene una solicitud pendiente.</small>
+          }
+        </div>
+      }
+
+      <yep-select
+        label="Nuevo plan"
+        placeholder="Selecciona un plan"
+        [options]="planOptions()"
+        [required]="true"
+        [disabled]="!selectedAssignmentAccount()"
+        [ngModel]="assignmentPlanCode()"
+        (ngModelChange)="selectAssignmentPlan($event)"
+      ></yep-select>
+
+      <fieldset class="period-fieldset">
+        <legend>Facturación</legend>
+        <div class="period-options">
+          <yep-radio
+            name="assignmentBillingPeriod"
+            value="monthly"
+            label="Mensual"
+            [checked]="assignmentBillingPeriod() === 'monthly'"
+            (selected)="assignmentBillingPeriod.set('monthly')"
+          ></yep-radio>
+          <yep-radio
+            name="assignmentBillingPeriod"
+            value="annual"
+            label="Anual"
+            [checked]="assignmentBillingPeriod() === 'annual'"
+            (selected)="assignmentBillingPeriod.set('annual')"
+          ></yep-radio>
+        </div>
+      </fieldset>
+
+      @if (selectedAssignmentPlan(); as plan) {
+        <div class="selected-plan-price">
+          <span>Valor del plan</span>
+          <strong>
+            @if (plan.isCustom) {
+              Precio personalizado
+            } @else if (assignmentBillingPeriod() === 'annual' && plan.annualPriceCop) {
+              {{ formatCop(plan.annualPriceCop) }} / año
+            } @else {
+              {{ formatCop(plan.priceCop) }} / mes
+            }
+          </strong>
+        </div>
+      }
+
+      <yep-input
+        label="Motivo del cambio"
+        name="assignmentMessage"
+        [required]="true"
+        [ngModel]="assignmentMessage()"
+        (ngModelChange)="assignmentMessage.set($event)"
+        hint="Quedará registrado en el historial de la solicitud."
+      ></yep-input>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="closeAssignment()">Cancelar</yep-button>
+    <yep-button
+      variant="ghost"
+      [disabled]="assignmentOptionsLoading() || assignmentSubmitting() || !assignmentValid()"
+      [loading]="assignmentSubmitting() && !assignmentApplyImmediately()"
+      (clicked)="submitAssignment(false)"
+    >
+      Crear solicitud
+    </yep-button>
+    <yep-button
+      [disabled]="assignmentOptionsLoading() || assignmentSubmitting() || !assignmentValid()"
+      [loading]="assignmentSubmitting() && assignmentApplyImmediately()"
+      (clicked)="submitAssignment(true)"
+    >
+      Aplicar ahora
+    </yep-button>
+  </ng-container>
+</yep-modal>
 
 <yep-modal
   [open]="approvingRequest() !== null"

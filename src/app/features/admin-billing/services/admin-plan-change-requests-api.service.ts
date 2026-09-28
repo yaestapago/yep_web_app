@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import type {
+  AdminCreatePlanChangeRequestPayload,
+  AdminCreatePlanChangeRequestResponse,
+  AdminPlanAssignmentOptionsResponse,
   PlanChangeRequestStatus,
   PlanChangeRequestSummary,
   ReviewPlanChangeRequestPayload,
@@ -27,6 +30,21 @@ export class AdminPlanChangeRequestsApiService {
     return this.http.get<PlanChangeRequestSummary[]>(
       `${this.apiUrl}/admin/subscriptions/change-requests`,
       { params },
+    );
+  }
+
+  assignmentOptions(): Observable<AdminPlanAssignmentOptionsResponse> {
+    return this.http.get<AdminPlanAssignmentOptionsResponse>(
+      `${this.apiUrl}/admin/subscriptions/assignment-options`,
+    );
+  }
+
+  create(
+    payload: AdminCreatePlanChangeRequestPayload,
+  ): Observable<AdminCreatePlanChangeRequestResponse> {
+    return this.http.post<AdminCreatePlanChangeRequestResponse>(
+      `${this.apiUrl}/admin/subscriptions/change-requests`,
+      payload,
     );
   }
 
