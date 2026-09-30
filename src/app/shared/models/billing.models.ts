@@ -95,6 +95,42 @@ export interface CreatePlanChangeRequestPayload {
   message?: string;
 }
 
+export interface AdminPlanAssignmentAccount {
+  id: string;
+  name: string;
+  currentPlanCode?: string | null;
+  currentPlanName?: string | null;
+  billingPeriod?: 'monthly' | 'annual' | null;
+  hasPendingChangeRequest?: boolean;
+}
+
+export interface AdminPlanAssignmentPlan {
+  code: string;
+  name: string;
+  priceCop: number;
+  annualPriceCop?: number | null;
+  isCustom?: boolean;
+}
+
+export interface AdminPlanAssignmentOptionsResponse {
+  accounts: AdminPlanAssignmentAccount[];
+  plans: AdminPlanAssignmentPlan[];
+}
+
+export interface AdminCreatePlanChangeRequestPayload {
+  accountId: string;
+  requestType: Extract<PlanChangeRequestType, 'upgrade' | 'downgrade'>;
+  requestedPlanCode: string;
+  billingPeriod: 'monthly' | 'annual';
+  message: string;
+  applyImmediately: boolean;
+}
+
+export interface AdminCreatePlanChangeRequestResponse {
+  request: PlanChangeRequestSummary;
+  invoice?: unknown;
+}
+
 export interface ReviewPlanChangeRequestPayload {
   reviewNote?: string;
   finalPriceCop?: number;
