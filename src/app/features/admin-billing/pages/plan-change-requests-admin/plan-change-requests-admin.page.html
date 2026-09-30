@@ -59,9 +59,7 @@
           <span class="request-status" [attr.data-status]="request.status">
             {{ request.status }}
           </span>
-          @if (request.status === 'pending' && request.requestType === 'upgrade') {
-            <p class="request-hint">Confirma el pago en Facturas para aplicar este upgrade.</p>
-          } @else if (request.status === 'pending') {
+          @if (request.status === 'pending') {
             <div class="request-row__actions">
               <yep-button
                 size="sm"
@@ -231,7 +229,11 @@
   <ng-container modalFooter>
     <yep-button variant="ghost" (clicked)="closeApprove()">Cancelar</yep-button>
     <yep-button [loading]="approving()" (clicked)="confirmApprove()">
-      Aprobar y generar factura
+      @if (approvingRequest()?.requestType === 'downgrade') {
+        Aprobar y programar cambio
+      } @else {
+        Aprobar y generar factura
+      }
     </yep-button>
   </ng-container>
 </yep-modal>
