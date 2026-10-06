@@ -78,6 +78,14 @@ export interface SourceEvent {
    * cliente cae a su propia deduplicación por evento/transacción.
    */
   firstReport?: boolean;
+  /**
+   * Emisión temprana: el enlace con la transacción tardaba (> ~3 s) y el
+   * backend mostró el evento antes de saber si es primer reporte (sin
+   * `firstReport` y, normalmente, sin `linkedTransactionId`). Después llega el
+   * anuncio final del MISMO id con `firstReport` y el enlace; la voz espera a
+   * ese anuncio para decidir.
+   */
+  linkPending?: boolean;
   linkedSupportId?: string;
   receipt?: SourceEventReceipt;
   processedAt?: string;

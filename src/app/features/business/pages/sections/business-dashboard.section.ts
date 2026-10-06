@@ -593,10 +593,18 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     // de un pago ya listado, o el backend la marca con `firstReport: false`)
     // nunca la enciende: si el usuario ya abrió ese pago, sigue visto. Las
     // reemisiones (cambio de estado) tampoco re-marcan como no leído algo que
-    // ya se abrió. No se QUITA nada al fundirse filas: el reporte que se suma
-    // puede ser justo el primero, aún sin ver (si su emisión enlazada llegó
-    // después de la corroboración), y la fila debe seguir sin leer.
-    if (change.isNewReport && !change.corroborates && event.firstReport !== false) {
+    // ya se abrió.
+    // - Emisión temprana (`linkPending`): aún no se sabe si es corroboración;
+    //   se muestra como fila nueva con campana (si resulta ser primer reporte,
+    //   ya quedó marcada; si el anuncio final no llega, sigue siendo un pago).
+    // - Anuncio final con `firstReport: false`: el backend confirma que es
+    //   corroboración, así que se retira la campana que encendió su emisión
+    //   temprana; la fila del pago conserva el estado de sus otros reportes.
+    // - Al fundirse filas sin esa confirmación no se quita nada: el reporte que
+    //   se suma puede ser justo el primero, aún sin ver.
+    if (event.firstReport === false) {
+      this.setEventsUnread([event.id], false);
+    } else if (change.isNewReport && !change.corroborates) {
       this.setEventsUnread([event.id], true);
     }
     if (change.corroborates) {
