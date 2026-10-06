@@ -17,6 +17,7 @@ import {
   LucideReceipt,
   LucideSettings,
   LucideSun,
+  LucideWallet,
 } from '@lucide/angular';
 
 import { AuthSessionService } from '../../services/auth-session.service';
@@ -70,6 +71,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     LucideReceipt,
     LucideSettings,
     LucideSun,
+    LucideWallet,
   ],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',

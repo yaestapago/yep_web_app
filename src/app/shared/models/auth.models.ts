@@ -81,6 +81,9 @@ export interface UserSubscriptionSummary {
   whatsappTopUpBalance: number;
   recurringAddOnsCop: number;
   pendingChange: PendingSubscriptionChange | null;
+  /** Desde cuándo el negocio está bloqueado por cobro; `null` si no lo está. */
+  blockedAt?: string | null;
+  blockReason?: 'trial_ended' | 'payment_overdue' | 'subscription_ended' | null;
 }
 
 export type SubscriptionCreationMetric = 'businesses' | 'locations' | 'bankAccounts';

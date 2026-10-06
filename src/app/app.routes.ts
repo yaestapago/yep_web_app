@@ -6,6 +6,7 @@ import { businessManagementGuard } from './core/guards/business-management.guard
 import { businessGuard } from './core/guards/business.guard';
 import { businessContextGuard } from './core/guards/business-context.guard';
 import { businessSectionGuard } from './core/guards/business-section.guard';
+import { billingBlockedGuard } from './core/guards/billing-blocked.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { opsGuard } from './core/guards/ops.guard';
 import { subscriptionGuard } from './core/guards/subscription.guard';
@@ -87,6 +88,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: '__ops/billing',
+        canActivate: [opsGuard],
+        loadComponent: () =>
+          import('./features/admin-billing/pages/billing-customers-admin/billing-customers-admin.page').then(
+            (m) => m.BillingCustomersAdminPage,
+          ),
+      },
+      {
         path: '__ops/support',
         canActivate: [opsGuard],
         loadComponent: () =>
@@ -126,10 +135,20 @@ export const routes: Routes = [
             // `immersive`: el panel ocupa el viewport completo, así que la
             // cabecera del negocio se compacta (ver BusinessShellPage).
             data: { immersive: true, section: 'dashboard' },
-            canActivate: [businessSectionGuard],
+            canActivate: [businessSectionGuard, billingBlockedGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-dashboard.section').then(
                 (m) => m.BusinessDashboardSection,
+              ),
+          },
+          {
+            // Negocio bloqueado por cobro (prueba terminada / cuenta de cobro
+            // vencida). Las secciones con datos de pagos llevan
+            // `billingBlockedGuard` y el interceptor de 402 redirige aquí.
+            path: 'blocked',
+            loadComponent: () =>
+              import('./features/business/pages/sections/business-blocked.section').then(
+                (m) => m.BusinessBlockedSection,
               ),
           },
           {
@@ -196,7 +215,7 @@ export const routes: Routes = [
           {
             path: 'reports',
             data: { section: 'reports' },
-            canActivate: [businessSectionGuard],
+            canActivate: [businessSectionGuard, billingBlockedGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-reports.section').then(
                 (m) => m.BusinessReportsSection,
@@ -205,7 +224,7 @@ export const routes: Routes = [
           {
             path: 'insights',
             data: { section: 'insights' },
-            canActivate: [businessSectionGuard],
+            canActivate: [businessSectionGuard, billingBlockedGuard],
             loadComponent: () =>
               import('./features/business/pages/sections/business-insights.section').then(
                 (m) => m.BusinessInsightsSection,

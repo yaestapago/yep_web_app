@@ -81,6 +81,15 @@
           <span>Soporte operativo</span>
         </a>
         <a
+          routerLink="/__ops/billing"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Clientes y cobros"
+        >
+          <svg lucideWallet aria-hidden="true"></svg>
+          <span>Clientes y cobros</span>
+        </a>
+        <a
           routerLink="/__ops/subscriptions/invoices"
           routerLinkActive="active"
           (click)="onNavigate()"

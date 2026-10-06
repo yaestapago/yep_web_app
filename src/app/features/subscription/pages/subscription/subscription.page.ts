@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import {
   LucideCheckCircle2,
   LucideCreditCard,
@@ -11,6 +12,8 @@ import {
 import { finalize, forkJoin } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { BillingStatusService } from '../../../../core/services/billing-status.service';
+import { SUPPORT_WHATSAPP_URL } from '../../../../shared/constants/legal.constants';
 import type {
   SubscriptionPlanSummary,
   SubscriptionUsageMetric,
@@ -28,6 +31,10 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import {
+  blockReasonLabel,
+  formatLongDate,
+} from '../../../../shared/utils/billing-format';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { SubscriptionsApiService } from '../../services/subscriptions-api.service';
 
@@ -69,7 +76,11 @@ const REQUEST_STATUS_LABELS: Record<string, string> = {
 export class SubscriptionPage implements OnInit {
   private readonly subscriptionsApi = inject(SubscriptionsApiService);
   private readonly session = inject(AuthSessionService);
+  private readonly billing = inject(BillingStatusService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly supportWhatsappUrl = SUPPORT_WHATSAPP_URL;
 
   readonly subscription = signal(this.session.subscription());
   readonly usage = signal<SubscriptionUsageMetric[]>([]);
@@ -87,6 +98,31 @@ export class SubscriptionPage implements OnInit {
   readonly isReactivating = computed(() => this.subscription()?.status !== 'active');
   readonly isPastDueOrSuspended = computed(() =>
     ['past_due', 'suspended'].includes(this.subscription()?.status ?? ''),
+  );
+  /** Bloqueo por cobro: el negocio no puede ver datos de pagos. */
+  readonly blockedAt = computed(() => this.subscription()?.blockedAt ?? null);
+  readonly blockReason = computed(() => this.subscription()?.blockReason ?? null);
+  readonly blockedSinceLabel = computed(() => formatLongDate(this.blockedAt()));
+  readonly blockReasonText = computed(() => blockReasonLabel(this.blockReason()));
+  /**
+   * La prueba gratis terminó (`suspended` con plan `free_trial`): se sale
+   * eligiendo un plan, no pagando una cuenta de cobro.
+   */
+  readonly isTrialEnded = computed(() => {
+    const subscription = this.subscription();
+    if (!subscription) return false;
+    return (
+      subscription.blockReason === 'trial_ended' ||
+      (subscription.plan.code === 'free_trial' && subscription.status === 'suspended')
+    );
+  });
+  /** Pagar la cuenta de cobro vencida (no cambiar de plan) reactiva el servicio. */
+  readonly paysInvoiceToUnblock = computed(() => this.blockReason() === 'payment_overdue');
+  readonly trialEndLabel = computed(() => formatLongDate(this.subscription()?.trialEndsAt));
+  readonly periodEndLabel = computed(() => formatLongDate(this.subscription()?.currentPeriodEnd));
+  /** Planes que el negocio puede elegir por sí mismo (Pro+ es a la medida). */
+  readonly selectablePlans = computed(() =>
+    this.availablePlans().filter((plan) => !plan.isCustom),
   );
 
   readonly addonPricing = signal<AddOnPricingResponse | null>(null);
@@ -137,6 +173,7 @@ export class SubscriptionPage implements OnInit {
           this.availablePlans.set(overview.availablePlans);
           this.changeRequests.set(requests);
           this.session.updateSubscription(overview.subscription);
+          void this.billing.refresh();
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
@@ -223,7 +260,25 @@ export class SubscriptionPage implements OnInit {
     return this.availablePlans().find((plan) => plan.code === code)?.name ?? code;
   }
 
+  scrollToPlans(): void {
+    document.getElementById('subscription-plans')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  goToInvoices(): void {
+    void this.router.navigateByUrl('/invoices');
+  }
+
+  planActionLabel(plan: SubscriptionPlanSummary): string {
+    if (this.isCurrentPlan(plan)) {
+      return this.isTrialEnded() ? 'Prueba terminada' : 'Plan actual';
+    }
+    return this.isTrialEnded() ? 'Elegir este plan' : 'Solicitar cambio';
+  }
+
   openPlanChangeModal(plan: SubscriptionPlanSummary): void {
+    if (plan.isCustom) {
+      return;
+    }
     this.openRequestModal();
     this.requestType.set(plan.priceCop >= this.currentPlanPrice() ? 'upgrade' : 'downgrade');
     this.selectedPlanCode.set(plan.code);
@@ -234,7 +289,7 @@ export class SubscriptionPage implements OnInit {
     this.success.set('');
     this.requestType.set('upgrade');
     this.selectedPlanCode.set(
-      this.availablePlans().find((plan) => !this.isCurrentPlan(plan))?.code ?? '',
+      this.selectablePlans().find((plan) => !this.isCurrentPlan(plan))?.code ?? '',
     );
     this.selectedBillingPeriod.set('monthly');
     this.selectAddOnMetric('locations');
@@ -279,6 +334,7 @@ export class SubscriptionPage implements OnInit {
           this.success.set(
             'Gracias, reportamos tu pago. Nuestro equipo lo confirmara pronto.',
           );
+          void this.billing.refresh();
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
@@ -334,6 +390,10 @@ export class SubscriptionPage implements OnInit {
       this.error.set('Selecciona un plan.');
       return;
     }
+    if (this.availablePlans().some((plan) => plan.code === this.selectedPlanCode() && plan.isCustom)) {
+      this.error.set('El plan a la medida se contrata con nuestro equipo. Escribenos para cotizarlo.');
+      return;
+    }
 
     this.submitting.set(true);
     this.error.set('');
@@ -378,12 +438,12 @@ export class SubscriptionPage implements OnInit {
       if (this.isReactivating()) {
         const cycleLabel = this.selectedBillingPeriod() === 'annual' ? 'anual' : 'mensual';
         return (
-          `Se genero una factura por ${this.formatCop(result.proratedAmountCop)} (ciclo ${cycleLabel}). ` +
+          `Se genero una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} (ciclo ${cycleLabel}). ` +
           `Tu plan ${result.newPlan.name} se activara apenas confirmemos el pago.`
         );
       }
       return (
-        `Se genero una factura por ${this.formatCop(result.proratedAmountCop)} por los dias restantes de tu periodo actual. ` +
+        `Se genero una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} por los dias restantes de tu periodo actual. ` +
         `Tu plan cambiara a ${result.newPlan.name} apenas se confirme el pago. ` +
         `Tu proxima renovacion sigue siendo el ${periodEndLabel}, por ${this.formatCop(result.newPlan.priceCop)}.`
       );
