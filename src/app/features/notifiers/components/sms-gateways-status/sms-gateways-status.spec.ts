@@ -63,12 +63,28 @@ describe('SmsGatewaysStatus — receptores SMS (superadmin)', () => {
     const content = text(fixture);
     expect(content).toContain('Receptores SMS');
     expect(content).toContain('Respaldo: Encendido · +573001112233, +573104445566');
-    expect(content).toContain('Webhook: token · 2 llave(s) de firma');
+    expect(content).toContain('Webhook: token · 2 llave(s) de firma · cualquier receptor');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="sms-gateways-truncated"]',
+      ),
+    ).toBeNull();
     expect(content).toContain('+573001112233');
     expect(content).toContain(`Último ping ${formatDateTime('2026-10-06T14:55:00.000Z')}`);
     expect(content).toContain(`último SMS ${formatDateTime('2026-10-06T14:50:00.000Z')}`);
     expect(content).toContain('(aceptado)');
     expect(content).toContain('10 aceptados de 12 SMS');
+  });
+
+  it('avisa cuando el backend recortó la lista y cuántos receptores están autorizados', () => {
+    const fixture = render(
+      response({
+        total: 321,
+        relay: { ...response().relay, allowedDeviceIds: 2 },
+      }),
+    );
+    expect(text(fixture)).toContain('Mostrando 1 de 321 receptores');
+    expect(text(fixture)).toContain('2 receptor(es) autorizados');
   });
 
   it('dice qué falta cuando el respaldo está apagado', () => {

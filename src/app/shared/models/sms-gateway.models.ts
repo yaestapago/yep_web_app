@@ -25,10 +25,14 @@ export interface SmsRelayConfigFlags {
   gatewayNumbers: string[];
   webhookTokenConfigured: boolean;
   signingKeysConfigured: number;
+  /** Receptores en `SMS_GATEWAY_DEVICE_IDS` (0 = acepta cualquiera con token y firma). */
+  allowedDeviceIds?: number;
   staleAfterMinutes: number;
 }
 
 export interface SmsGatewaysResponse {
+  /** Receptores registrados en total (la lista trae como mucho 50). */
+  total?: number;
   gateways: SmsGatewayStatus[];
   relay: SmsRelayConfigFlags;
 }

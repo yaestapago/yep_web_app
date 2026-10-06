@@ -85,6 +85,18 @@ export class SmsGatewaysStatus implements OnInit {
 
   readonly rows = computed(() => (this.data()?.gateways ?? []).map(gatewayRow));
 
+  /**
+   * `Mostrando 50 de 321 receptores` cuando el backend recortó la lista. Muchos
+   * receptores de más es señal de token y firma filtrados.
+   */
+  readonly truncatedLabel = computed(() => {
+    const total = this.data()?.total ?? 0;
+    const shown = this.rows().length;
+    return total > shown
+      ? `Mostrando ${shown.toLocaleString('es-CO')} de ${total.toLocaleString('es-CO')} receptores`
+      : '';
+  });
+
   /** `Encendido · +57300…, +57310…` / `Apagado`. */
   readonly relayLabel = computed(() => {
     const relay = this.data()?.relay;
@@ -107,6 +119,9 @@ export class SmsGatewaysStatus implements OnInit {
       relay.signingKeysConfigured > 0
         ? `${relay.signingKeysConfigured} llave(s) de firma`
         : 'sin llave de firma',
+      relay.allowedDeviceIds
+        ? `${relay.allowedDeviceIds} receptor(es) autorizados`
+        : 'cualquier receptor',
     ];
     return parts.join(' · ');
   });

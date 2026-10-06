@@ -23,6 +23,11 @@
     @if (rows().length === 0) {
       <p class="sms-gateways__empty">Aún no hay receptores reportando.</p>
     } @else {
+      @if (truncatedLabel()) {
+        <p class="sms-gateways__error" data-testid="sms-gateways-truncated">
+          {{ truncatedLabel() }}
+        </p>
+      }
       <ul class="sms-gateways__list">
         @for (row of rows(); track row.id) {
           <li class="sms-gateways__row" [attr.data-level]="row.level">
