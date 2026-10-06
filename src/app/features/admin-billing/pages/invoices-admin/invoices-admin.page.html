@@ -1,9 +1,9 @@
 <section class="page invoices-admin-page">
   <header class="page-header">
     <div class="page-header__text">
-      <h1 class="page-title">Facturas</h1>
+      <h1 class="page-title">Cuentas de cobro</h1>
       <p class="page-subtitle">
-        Confirma pagos reportados por los clientes o marca facturas como pagadas/canceladas.
+        Confirma pagos reportados por los clientes o marca cuentas de cobro como pagadas/canceladas.
       </p>
     </div>
     <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
@@ -24,7 +24,7 @@
       <span>Buscar</span>
       <input
         type="search"
-        placeholder="Factura, negocio, comprador o correo"
+        placeholder="Cuenta de cobro, negocio, comprador o correo"
         [ngModel]="search()"
         (ngModelChange)="search.set($event)"
       />
@@ -52,10 +52,10 @@
   @if (loading() && invoices().length === 0) {
     <div class="loading-row">
       <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando facturas...
+      Cargando cuentas de cobro...
     </div>
   } @else if (filteredInvoices().length === 0) {
-    <p class="empty-hint">No hay facturas en este estado.</p>
+    <p class="empty-hint">No hay cuentas de cobro en este estado.</p>
   } @else {
     <ul class="invoices-list">
       @for (invoice of filteredInvoices(); track invoice.id) {
@@ -83,7 +83,7 @@
 
 <yep-modal
   [open]="selectedInvoice() !== null"
-  title="Detalle de factura"
+  title="Detalle de la cuenta de cobro"
   [subtitle]="selectedInvoice()?.invoiceNumber || ''"
   size="lg"
   [loading]="generatingPdf() || actingId() === selectedInvoice()?.id"
@@ -108,11 +108,11 @@
       @if (invoice.canGeneratePdf === undefined) {
         <yep-alert variant="warning"
           >El servidor todav?a no informa la disponibilidad del PDF. Actualiza el backend y vuelve a
-          cargar las facturas.</yep-alert
+          cargar las cuentas de cobro.</yep-alert
         >
       } @else if (!invoice.canGeneratePdf) {
         <yep-alert variant="warning"
-          >Esta factura no conserva los datos de emisión necesarios para generar la cuenta de
+          >Esta cuenta de cobro no conserva los datos de emisión necesarios para generar la cuenta de
           cobro.</yep-alert
         >
       }
@@ -144,7 +144,7 @@
           <span>RUT/NIT {{ invoice.sellerRut }}</span>
         </div>
         <div>
-          <span class="field-label">Facturado a</span>
+          <span class="field-label">A nombre de</span>
           <strong>{{ invoice.buyerName }}</strong>
           <span>{{ invoice.buyerIdentification || 'Sin identificacion' }}</span>
           <span>{{ invoice.buyerEmail || 'Sin correo' }}</span>
@@ -198,7 +198,7 @@
           Ver comprobante de pago
         </yep-button>
       } @else if (invoice.status === 'reported') {
-        <yep-alert variant="warning">Esta factura no tiene un comprobante adjunto.</yep-alert>
+        <yep-alert variant="warning">Esta cuenta de cobro no tiene un comprobante adjunto.</yep-alert>
       }
     </div>
   }
@@ -212,7 +212,7 @@
           [loading]="actingId() === invoice.id"
           (clicked)="markCancelled(invoice)"
         >
-          Cancelar factura
+          Cancelar cuenta de cobro
         </yep-button>
         <yep-button [loading]="actingId() === invoice.id" (clicked)="markPaid(invoice)">
           Confirmar pago

@@ -225,8 +225,8 @@ export class InvoicesAdminPage implements OnInit {
           }
           this.success.set(
             status === 'paid'
-              ? 'Factura marcada como pagada. Si venia de un upgrade o reactivacion, el plan ya se aplico.'
-              : 'Factura cancelada.',
+              ? 'Cuenta de cobro marcada como pagada. Si venía de un upgrade o reactivación, el plan ya se aplicó.'
+              : 'Cuenta de cobro cancelada.',
           );
         },
         error: (error) => this.error.set(httpErrorMessage(error)),

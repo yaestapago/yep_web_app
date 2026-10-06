@@ -1,9 +1,9 @@
 <section class="page invoices-page">
   <header class="page-header">
     <div class="page-header__text">
-      <h1 class="page-title">Facturas</h1>
+      <h1 class="page-title">Cuentas de cobro</h1>
       <p class="page-subtitle">
-        Historial de facturas de tu suscripcion y de tus toppings de notificaciones.
+        Historial de cuentas de cobro de tu suscripción y de tus toppings de notificaciones.
       </p>
     </div>
     <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
@@ -22,10 +22,10 @@
   @if (loading() && invoices().length === 0) {
     <div class="loading-row">
       <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando facturas...
+      Cargando cuentas de cobro...
     </div>
   } @else if (invoices().length === 0) {
-    <p class="empty-hint">Todavia no se ha generado ninguna factura para tu negocio.</p>
+    <p class="empty-hint">Todavía no se ha generado ninguna cuenta de cobro para tu negocio.</p>
   } @else {
     <ul class="invoices-list">
       @for (invoice of invoices(); track invoice.id) {
@@ -60,7 +60,7 @@
 
 <yep-modal
   [open]="selectedInvoice() !== null"
-  title="Factura {{ selectedInvoice()?.invoiceNumber }}"
+  title="Cuenta de cobro {{ selectedInvoice()?.invoiceNumber }}"
   (closeRequested)="close()"
 >
   @if (selectedInvoice(); as invoice) {
@@ -72,7 +72,7 @@
           <span>RUT/NIT {{ invoice.sellerRut }}</span>
         </div>
         <div>
-          <span class="field-label">Facturado a</span>
+          <span class="field-label">A nombre de</span>
           <strong>{{ invoice.buyerName }}</strong>
           @if (invoice.buyerIdentification) {
             <span>
@@ -145,7 +145,7 @@
 >
   @if (reportInvoice(); as invoice) {
     <p>
-      Factura <strong>{{ invoice.invoiceNumber }}</strong> por
+      Cuenta de cobro <strong>{{ invoice.invoiceNumber }}</strong> por
       <strong>{{ formatCop(invoice.totalCop) }}</strong>
     </p>
   }
