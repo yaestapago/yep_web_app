@@ -33,6 +33,10 @@ import type {
   SourceEventStatus,
   SourceEventType,
 } from '../../../../shared/models/source-event.models';
+import {
+  sourceEventGroupKey,
+  sourceEventReporterKey,
+} from '../../../../shared/utils/source-event-groups';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
@@ -128,6 +132,12 @@ export class DashboardEventsPanel {
   readonly error = defineInput('');
   /** IDs llegados en vivo y aún no vistos (resaltado estilo bandeja). */
   readonly unreadIds = defineInput<Set<string>>(new Set());
+  /**
+   * IDs de reportes que acaban de sumarse en vivo a un pago ya listado (otro
+   * notificador lo corroboró): la fila da un pulso visual breve, sin sonido.
+   * La sección los retira solos a los pocos segundos.
+   */
+  readonly corroboratedIds = defineInput<Set<string>>(new Set());
   /** Catálogo de cuentas bancarias por id, para mostrar nombre/plataforma. */
   readonly bankAccounts = defineInput<Map<string, BankAccount>>(new Map());
   /** Bancos disponibles para el select (fuente estable: cuentas del negocio). */
@@ -177,7 +187,12 @@ export class DashboardEventsPanel {
   });
 
   private groupKey(event: SourceEvent): string {
-    return event.linkedTransactionId ?? `event:${event.id}`;
+    return sourceEventGroupKey(event);
+  }
+
+  /** Todos los reportes (cargados) del mismo pago que `event`, incluido él. */
+  private groupOf(event: SourceEvent): SourceEvent[] {
+    return this.groups().get(this.groupKey(event)) ?? [event];
   }
 
   /**
@@ -255,8 +270,21 @@ export class DashboardEventsPanel {
 
   /** true si el propio evento o alguno de sus hermanos de grupo llegó en vivo y no se ha visto. */
   isUnread(event: SourceEvent): boolean {
-    const group = this.groups().get(this.groupKey(event)) ?? [event];
-    return group.some((sibling) => this.unreadIds().has(sibling.id));
+    return this.groupOf(event).some((sibling) => this.unreadIds().has(sibling.id));
+  }
+
+  /** true mientras dura el pulso de "otra fuente acaba de confirmar este pago". */
+  isJustCorroborated(event: SourceEvent): boolean {
+    return this.groupOf(event).some((sibling) => this.corroboratedIds().has(sibling.id));
+  }
+
+  /**
+   * Cuántos reportantes distintos confirmaron el pago (cada notificador cuenta
+   * una vez; dos avisos del mismo celular siguen siendo una sola fuente). Con
+   * 2 o más la fila muestra "Confirmado por N fuentes".
+   */
+  reporterCount(event: SourceEvent): number {
+    return new Set(this.groupOf(event).map(sourceEventReporterKey)).size;
   }
 
   openDetail(event: SourceEvent): void {
@@ -322,20 +350,30 @@ export class DashboardEventsPanel {
    * en vez de aparecer como dos filas separadas.
    */
   groupIcons(event: SourceEvent): Array<'smartphone' | 'monitor' | 'mail'> {
-    const group = this.groups().get(this.groupKey(event)) ?? [event];
     const icons = new Set<'smartphone' | 'monitor' | 'mail'>();
-    for (const sibling of group) {
+    for (const sibling of this.groupOf(event)) {
       const icon = this.eventIcon(sibling);
       if (icon) icons.add(icon);
     }
     return [...icons];
   }
 
-  /** Título del grupo de íconos: los orígenes distintos que reportaron este pago. */
+  /**
+   * Título del grupo de íconos: los orígenes distintos que reportaron este
+   * pago. Si un mismo origen llegó por varios notificadores (dos celulares) se
+   * indica cuántos, para que el tooltip explique el "N fuentes" de la fila.
+   */
   groupSourceLabel(event: SourceEvent): string {
-    const group = this.groups().get(this.groupKey(event)) ?? [event];
-    const labels = new Set(group.map((sibling) => this.sourceLabel(sibling.sourceType)));
-    return [...labels].join(' + ');
+    const reportersByLabel = new Map<string, Set<string>>();
+    for (const sibling of this.groupOf(event)) {
+      const label = this.sourceLabel(sibling.sourceType);
+      const reporters = reportersByLabel.get(label) ?? new Set<string>();
+      reporters.add(sourceEventReporterKey(sibling));
+      reportersByLabel.set(label, reporters);
+    }
+    return [...reportersByLabel]
+      .map(([label, reporters]) => (reporters.size > 1 ? `${label} (${reporters.size})` : label))
+      .join(' + ');
   }
 
   /**

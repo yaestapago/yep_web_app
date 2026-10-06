@@ -78,9 +78,12 @@
     } @else {
       <ul class="events">
         @for (event of paged(); track event.id) {
+          @let reporters = reporterCount(event);
+          @let icons = groupIcons(event);
           <li
             class="event event--{{ statusTone(event.status) }}"
             [class.event--unread]="isUnread(event)"
+            [class.event--corroborated]="isJustCorroborated(event)"
             (click)="openDetail(event)"
           >
             <div class="event__main">
@@ -88,9 +91,9 @@
                 <span
                   class="event__type"
                   [attr.title]="groupSourceLabel(event)"
-                  [class.event__type--grouped]="groupIcons(event).length > 1"
+                  [class.event__type--grouped]="icons.length > 1 || reporters > 1"
                 >
-                  @for (icon of groupIcons(event); track icon) {
+                  @for (icon of icons; track icon) {
                     @switch (icon) {
                       @case ('smartphone') {
                         <svg lucideSmartphone aria-hidden="true"></svg>
@@ -104,6 +107,11 @@
                     }
                   } @empty {
                     {{ sourceLabel(event.sourceType) }}
+                  }
+                  <!-- Varias fuentes del mismo pago: una sola fila (la voz habló
+                       una vez) y este rótulo junto a los íconos de origen. -->
+                  @if (reporters > 1) {
+                    <span class="event__confirmed">Confirmado por {{ reporters }} fuentes</span>
                   }
                 </span>
                 @if (platformLabel(event)) {
