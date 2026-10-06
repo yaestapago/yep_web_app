@@ -12,11 +12,37 @@ export interface NotifierPairedDevice {
   manufacturer?: string;
   osVersion?: string;
   appVersion?: string;
+  /**
+   * App de SMS por defecto del teléfono (p. ej. `com.android.mms`). `null`
+   * mientras el teléfono no la reporta (app vieja o sin abrir tras actualizar).
+   * Ausente en respuestas de un backend anterior.
+   */
+  defaultSmsPackage?: string | null;
   pairedAt: string;
 }
 
 export interface NotifierDeviceHistoryEntry extends NotifierPairedDevice {
   unpairedAt?: string;
+}
+
+/**
+ * Por qué el teléfono no envió un aviso que parecía bancario:
+ * - `sender_not_matched`: el remitente del SMS no es uno que reconozcamos.
+ * - `content_not_matched`: el texto no coincide con un ingreso que sepamos leer.
+ * - `package_not_watched`: llegó por una app que no estamos escuchando.
+ */
+export type NotifierDiscardReason =
+  | 'sender_not_matched'
+  | 'content_not_matched'
+  | 'package_not_watched';
+
+/** Avisos descartados por el teléfono, acumulados por (app, motivo). Sin texto. */
+export interface NotifierRecentDiscard {
+  packageName: string;
+  reason: NotifierDiscardReason;
+  count: number;
+  firstAt: string;
+  lastAt: string;
 }
 
 /**
@@ -59,6 +85,11 @@ export interface Notifier {
   pairingVersion: number;
   pairedDevice: NotifierPairedDevice | null;
   deviceHistory: NotifierDeviceHistoryEntry[];
+  /**
+   * Avisos que el teléfono descartó en los últimos 30 días (máx. 20, del más
+   * reciente al más viejo). Se borran al desemparejar.
+   */
+  recentDiscards?: NotifierRecentDiscard[];
   lastSeenAt?: string;
   lastLoginAt?: string;
   isOnline: boolean;

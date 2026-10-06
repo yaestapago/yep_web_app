@@ -43,6 +43,7 @@ import type {
   SupportedAccountType,
   UpdateBankRequest,
 } from '../../../../shared/models/bank.models';
+import { DEFAULT_SMS_PACKAGE_TOKEN } from '../../../../shared/models/bank.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
 import { ExampleEditorModal } from '../../components/example-editor-modal/example-editor-modal';
@@ -1195,7 +1196,10 @@ export class BankAdminPage {
   private describeChannel(key: ChannelKey, label: string): string {
     const g = this.form.controls[key].getRawValue();
     if (!g.enabled) return `${label}: desactivado — no se escucha nada por este canal.`;
-    const pkgs = this.toList(g.packageNames);
+    // El token se lee en lenguaje humano en el resumen.
+    const pkgs = this.toList(g.packageNames).map((pkg) =>
+      pkg === DEFAULT_SMS_PACKAGE_TOKEN ? 'la app de SMS por defecto del celular' : pkg,
+    );
     const contents = this.toList(g.contentPatterns);
     const senders = this.toList(g.senderPatterns);
 

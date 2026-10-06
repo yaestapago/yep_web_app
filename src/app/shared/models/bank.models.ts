@@ -50,7 +50,14 @@ export interface AccountResolutionPolicy {
 }
 
 /**
- * Config técnica de un canal de un banco. `packageNames` = apps a escuchar;
+ * Token que puede ir en `packageNames`: la app de SMS por defecto de cada celular
+ * (la reporta la app móvil). Se usa junto a los paquetes explícitos.
+ */
+export const DEFAULT_SMS_PACKAGE_TOKEN = '@default_sms';
+
+/**
+ * Config técnica de un canal de un banco. `packageNames` = apps a escuchar
+ * (paquetes Android o `@default_sms`);
  * `contentPatterns` = si hay, solo pasan mensajes que contengan alguno (allowlist);
  * `displayNames` = señal para escritorio (Vínculo Windows); `senderPatterns` =
  * remitente (móvil/desk: título del SMS; email: remitentes esperados);

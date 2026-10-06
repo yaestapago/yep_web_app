@@ -92,6 +92,8 @@
                 {{ deviceLabel(row.notifier) }} ·
                 {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
               </span>
+              <!-- App de SMS del teléfono y avisos que descartó (solo celular emparejado). -->
+              <app-notifier-device-diagnostics [notifier]="row.notifier" />
             } @else {
               <span class="list-card__meta">
                 {{ row.notifier.active ? 'Activo' : 'Inactivo' }}

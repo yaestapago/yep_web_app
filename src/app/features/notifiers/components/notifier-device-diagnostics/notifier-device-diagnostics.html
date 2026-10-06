@@ -1,0 +1,50 @@
+@if (visible()) {
+  <div class="device-diagnostics">
+    <span class="device-diagnostics__sms" data-testid="sms-app">
+      <svg lucideMessageSquare aria-hidden="true"></svg>
+      <span class="device-diagnostics__label">App de SMS:</span>
+      @if (smsPackage(); as pkg) {
+        @if (smsAppLabel(); as appLabel) {
+          <span>{{ appLabel }}</span>
+        }
+        <code class="device-diagnostics__pkg">{{ pkg }}</code>
+      } @else {
+        <span class="device-diagnostics__pending"
+          >No detectada aún — abre la app en el celular</span
+        >
+      }
+    </span>
+
+    @if (groups().length > 0) {
+      <details class="device-diagnostics__discards" data-testid="discards">
+        <summary class="device-diagnostics__summary">
+          <svg lucideTriangleAlert aria-hidden="true"></svg>
+          Avisos descartados
+          <span class="device-diagnostics__total">· {{ totalLabel() }}</span>
+        </summary>
+
+        @for (group of groups(); track group.reason) {
+          <section class="device-diagnostics__group" [attr.data-reason]="group.reason">
+            <h4 class="device-diagnostics__reason">{{ group.label }}</h4>
+            <p class="device-diagnostics__hint">{{ group.hint }}</p>
+            <ul class="device-diagnostics__rows">
+              @for (row of group.rows; track row.key) {
+                <li class="device-diagnostics__row">
+                  <span class="device-diagnostics__app">
+                    @if (row.appLabel) {
+                      {{ row.appLabel }}
+                    }
+                    <code class="device-diagnostics__pkg">{{ row.packageName }}</code>
+                  </span>
+                  <span class="device-diagnostics__meta">
+                    {{ row.countLabel }} · último {{ row.lastAtLabel }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </details>
+    }
+  </div>
+}

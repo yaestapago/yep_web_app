@@ -29,6 +29,7 @@ import {
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { NotifierRuntimeConfigModal } from './notifier-runtime-config-modal';
+import { NotifierDeviceDiagnostics } from '../../../notifiers/components/notifier-device-diagnostics/notifier-device-diagnostics';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type {
@@ -89,6 +90,7 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     StatusDot,
     Toggle,
     NotifierRuntimeConfigModal,
+    NotifierDeviceDiagnostics,
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLink,
