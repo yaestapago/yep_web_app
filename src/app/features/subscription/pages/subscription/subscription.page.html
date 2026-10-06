@@ -34,7 +34,7 @@
       <div class="summary-icon" aria-hidden="true">
         <svg lucideCreditCard></svg>
       </div>
-      <div>
+      <div class="summary-text">
         <span class="summary-label">Plan actual</span>
         <h2>{{ currentPlanName() }}</h2>
         @if (isTrialEnded()) {
@@ -44,8 +44,32 @@
         } @else {
           <p>Periodo vigente hasta el {{ periodEndLabel() }}</p>
         }
+        @if (showBillingPeriod()) {
+          <p data-cy="subscription-billing-period">
+            Ciclo de pago: {{ currentBillingPeriodSummary() }}
+          </p>
+        }
       </div>
+      @if (canSwitchBillingPeriod()) {
+        <div class="summary-actions">
+          <yep-button
+            size="sm"
+            variant="secondary"
+            data-cy="subscription-switch-billing-period"
+            (clicked)="openBillingPeriodSwitch()"
+          >
+            {{ billingPeriodSwitchLabel() }}
+          </yep-button>
+        </div>
+      }
     </section>
+
+    @if (pendingBillingPeriodMessage()) {
+      <yep-alert variant="info" data-cy="subscription-pending-billing-period">
+        {{ pendingBillingPeriodMessage() }}
+        La cuenta de cobro de ese periodo se genera 5 días antes.
+      </yep-alert>
+    }
 
     @if (blockedAt()) {
       <yep-alert
@@ -174,7 +198,7 @@
                 <h3>{{ plan.name }}</h3>
                 <p>{{ priceLabel(plan) }}</p>
                 @if (annualPriceLabel(plan); as annualLabel) {
-                  <p class="plan-card__annual">o {{ annualLabel }} (2 meses gratis)</p>
+                  <p class="plan-card__annual">o {{ annualLabel }} (paga 10, recibe 12)</p>
                 }
               </div>
               @if (isCurrentPlan(plan)) {
@@ -301,23 +325,28 @@
         [ngModel]="selectedPlanCode()"
         (ngModelChange)="selectedPlanCode.set($event)"
       >
-        @for (plan of selectablePlans(); track plan.code) {
-          <option [value]="plan.code">{{ plan.name }} - {{ priceLabel(plan) }}</option>
+        @for (plan of modalPlans(); track plan.code) {
+          <option [value]="plan.code">
+            {{ plan.name }} - {{ priceLabel(plan) }}{{ isCurrentPlan(plan) ? ' (actual)' : '' }}
+          </option>
         }
       </select>
 
-      @if (isReactivating()) {
-        <label class="field-label" for="billing-period">Ciclo de pago</label>
-        <select
-          id="billing-period"
-          class="native-select"
-          name="billingPeriod"
-          [ngModel]="selectedBillingPeriod()"
-          (ngModelChange)="selectedBillingPeriod.set($event)"
-        >
-          <option value="monthly">Mensual</option>
-          <option value="annual">Anual (2 meses gratis)</option>
-        </select>
+      <!-- Mes adelantado: el ciclo se puede cambiar cuando quieras; con plan
+           activo aplica desde la próxima fecha de corte. -->
+      <label class="field-label" for="billing-period">Ciclo de pago</label>
+      <select
+        id="billing-period"
+        class="native-select"
+        name="billingPeriod"
+        [ngModel]="selectedBillingPeriod()"
+        (ngModelChange)="selectedBillingPeriod.set($event)"
+      >
+        <option value="monthly">{{ monthlyOptionLabel() }}</option>
+        <option value="annual">{{ annualOptionLabel() }}</option>
+      </select>
+      @if (billingPeriodHint()) {
+        <p class="field-hint" data-cy="billing-period-hint">{{ billingPeriodHint() }}</p>
       }
     }
 

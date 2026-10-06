@@ -98,6 +98,9 @@
 </div>
 
 @if (isSuperUser()) {
+  <!-- Solo superadmin (account_su): soporte no ve ni edita la fecha de corte. -->
+  <app-billing-cutoff-card [businessId]="businessId()" />
+
   <div class="danger-zone">
     <div class="section-heading">
       <h2 class="section-title danger-zone__title">

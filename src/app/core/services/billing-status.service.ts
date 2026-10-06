@@ -127,6 +127,10 @@ export class BillingStatusService {
       isOwner: base?.isOwner ?? this.session.activeMembership()?.role === 'account_owner',
       planName: base?.planName ?? null,
       currentInvoice: base?.currentInvoice ?? null,
+      cutoffDate: base?.cutoffDate ?? null,
+      billingPeriod: base?.billingPeriod,
+      pendingBillingPeriod: base?.pendingBillingPeriod ?? null,
+      pendingBillingPeriodEffectiveAt: base?.pendingBillingPeriodEffectiveAt ?? null,
     });
   }
 

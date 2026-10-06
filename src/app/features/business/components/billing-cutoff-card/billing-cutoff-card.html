@@ -1,0 +1,142 @@
+@if (visible()) {
+  <section class="cutoff-card" data-cy="billing-cutoff-card">
+    <div class="cutoff-card__heading">
+      <h2 class="cutoff-card__title">
+        <svg lucideCalendarClock aria-hidden="true"></svg>
+        Cobro y fecha de corte
+      </h2>
+      <p class="cutoff-card__subtitle">
+        Solo visible para superadmin. Cobro por mes adelantado: para la fecha de corte el siguiente
+        periodo ya debe estar pago.
+      </p>
+    </div>
+
+    @if (loadError()) {
+      <yep-alert variant="error">
+        {{ loadError() }}
+        <div class="cutoff-card__actions">
+          <yep-button size="sm" variant="secondary" (clicked)="load()">Reintentar</yep-button>
+        </div>
+      </yep-alert>
+    }
+
+    @if (loading() && !status()) {
+      <p class="cutoff-card__muted">Cargando estado de cobro…</p>
+    }
+
+    @if (status(); as current) {
+      <div class="cutoff-card__grid">
+        <div class="cutoff-card__cell">
+          <span class="cutoff-card__label">Plan</span>
+          <span class="cutoff-card__value">{{ current.planName || '—' }}</span>
+        </div>
+        <div class="cutoff-card__cell">
+          <span class="cutoff-card__label">Ciclo de pago</span>
+          <span class="cutoff-card__value">{{ periodLabel() }}</span>
+          @if (pendingPeriodLabel()) {
+            <span class="cutoff-card__hint">{{ pendingPeriodLabel() }}</span>
+          }
+        </div>
+        <div class="cutoff-card__cell">
+          <span class="cutoff-card__label">Estado</span>
+          <span class="cutoff-card__value">
+            <span class="state-badge" [attr.data-state]="current.state">{{ stateLabel() }}</span>
+          </span>
+        </div>
+        <div class="cutoff-card__cell">
+          <span class="cutoff-card__label">Fecha de corte</span>
+          <span class="cutoff-card__value" data-cy="billing-cutoff-date">
+            {{ cutoffLabel() || '—' }}
+          </span>
+          @if (cutoffHint()) {
+            <span class="cutoff-card__hint">{{ cutoffHint() }}</span>
+          }
+        </div>
+        <div class="cutoff-card__cell">
+          <span class="cutoff-card__label">Cuenta de cobro pendiente</span>
+          @if (invoice(); as due) {
+            <span class="cutoff-card__value">{{ due.invoiceNumber }} · {{ invoiceAmount() }}</span>
+            <span class="cutoff-card__hint">
+              <span class="invoice-status" [attr.data-status]="due.status">
+                {{ invoiceStatusLabel() }}
+              </span>
+            </span>
+          } @else {
+            <span class="cutoff-card__value">Ninguna</span>
+          }
+        </div>
+      </div>
+
+      <div class="cutoff-card__form">
+        <label class="cutoff-card__field">
+          <span class="cutoff-card__field-label">Nueva fecha de corte</span>
+          <input
+            type="date"
+            class="cutoff-card__input"
+            name="cutoffDate"
+            data-cy="billing-cutoff-input"
+            [min]="minDate()"
+            [ngModel]="cutoffInput()"
+            (ngModelChange)="updateCutoffInput($event)"
+            [disabled]="saving()"
+          />
+        </label>
+        <label class="cutoff-card__field cutoff-card__field--wide">
+          <span class="cutoff-card__field-label">Motivo (opcional)</span>
+          <textarea
+            class="cutoff-card__input"
+            name="cutoffNote"
+            rows="2"
+            data-cy="billing-cutoff-note"
+            [attr.maxlength]="noteMaxLength"
+            [ngModel]="note()"
+            (ngModelChange)="updateNote($event)"
+            [disabled]="saving()"
+            placeholder="Ej: el cliente volvió y alineamos su día de cobro."
+          ></textarea>
+          <span class="cutoff-card__hint">{{ note().length }}/{{ noteMaxLength }}</span>
+        </label>
+      </div>
+
+      @if (saveError()) {
+        <yep-alert variant="error">{{ saveError() }}</yep-alert>
+      }
+      @if (saveSuccess()) {
+        <yep-alert variant="success">{{ saveSuccess() }}</yep-alert>
+      }
+
+      @if (confirming()) {
+        <yep-alert
+          variant="warning"
+          [title]="'¿Mover la fecha de corte al ' + selectedDateLabel() + '?'"
+          data-cy="billing-cutoff-confirm"
+        >
+          @if (selectedIsToday()) {
+            <p class="cutoff-card__strong">
+              Elegiste hoy: el negocio quedará bloqueado hasta que pague.
+            </p>
+          }
+          <p>
+            Si la fecha es hoy, el negocio queda bloqueado hasta que pague el periodo que empieza
+            hoy. Si es futura y estaba bloqueado, se reactiva hasta esa fecha. Una cuenta de cobro
+            del próximo periodo sin pagar se anula y se vuelve a generar con las fechas nuevas.
+          </p>
+          <div class="cutoff-card__actions">
+            <yep-button size="sm" [loading]="saving()" (clicked)="confirmSave()">
+              Sí, guardar fecha de corte
+            </yep-button>
+            <yep-button size="sm" variant="ghost" [disabled]="saving()" (clicked)="cancelConfirm()">
+              Cancelar
+            </yep-button>
+          </div>
+        </yep-alert>
+      } @else {
+        <div class="cutoff-card__actions">
+          <yep-button size="sm" [disabled]="!cutoffInput() || saving()" (clicked)="requestSave()">
+            Guardar fecha de corte
+          </yep-button>
+        </div>
+      }
+    }
+  </section>
+}

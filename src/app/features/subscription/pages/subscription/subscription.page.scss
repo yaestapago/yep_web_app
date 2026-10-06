@@ -82,6 +82,18 @@ yep-alert {
   width: 44px;
 }
 
+.summary-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.summary-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .summary-label {
   color: var(--color-text-secondary);
   display: block;

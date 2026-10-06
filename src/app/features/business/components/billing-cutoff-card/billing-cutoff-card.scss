@@ -1,0 +1,184 @@
+:host {
+  display: block;
+}
+
+.cutoff-card {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+  padding: var(--space-5);
+}
+
+.cutoff-card p {
+  margin: 0;
+}
+
+.cutoff-card__heading {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.cutoff-card__title {
+  align-items: center;
+  display: flex;
+  font-size: var(--font-size-xl);
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.cutoff-card__title svg {
+  color: var(--color-primary);
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+.cutoff-card__subtitle,
+.cutoff-card__muted {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.cutoff-card__grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.cutoff-card__cell {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.cutoff-card__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.cutoff-card__value {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cutoff-card__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cutoff-card__strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.cutoff-card__form {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(min(100%, 200px), 240px) minmax(0, 1fr);
+}
+
+.cutoff-card__field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cutoff-card__field-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.cutoff-card__input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  min-height: var(--control-height-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+textarea.cutoff-card__input {
+  resize: vertical;
+}
+
+.cutoff-card__input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.cutoff-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.state-badge,
+.invoice-status {
+  border-radius: var(--radius-full);
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px var(--space-2);
+  white-space: nowrap;
+}
+
+.state-badge {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success-strong);
+}
+
+.state-badge[data-state='blocked'] {
+  background: color-mix(in srgb, var(--color-error) 15%, transparent);
+  color: var(--color-error);
+}
+
+.state-badge[data-state='due_soon'] {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: var(--color-text-primary);
+}
+
+.state-badge[data-state='payment_review'] {
+  background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
+  color: var(--color-secondary);
+}
+
+.invoice-status {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: var(--color-text-primary);
+}
+
+.invoice-status[data-status='reported'] {
+  background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
+  color: var(--color-secondary);
+}
+
+.invoice-status[data-status='paid'] {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success-strong);
+}
+
+.invoice-status[data-status='cancelled'] {
+  background: color-mix(in srgb, var(--color-text-secondary) 14%, transparent);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .cutoff-card__form {
+    grid-template-columns: 1fr;
+  }
+}

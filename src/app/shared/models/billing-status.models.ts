@@ -44,6 +44,39 @@ export interface BillingStatusResponse {
   isOwner: boolean;
   planName: string | null;
   currentInvoice: BillingStatusInvoice | null;
+  /**
+   * Fecha de corte (ISO): fin de la prueba o del ciclo pagado en curso. Mes
+   * adelantado: para esa fecha la cuenta de cobro del ciclo siguiente ya debe
+   * estar paga. Opcional por compatibilidad con backends anteriores.
+   */
+  cutoffDate?: string | null;
+  billingPeriod?: BillingPeriod;
+  /** Cambio mensual ↔ anual agendado; entra en `pendingBillingPeriodEffectiveAt`. */
+  pendingBillingPeriod?: BillingPeriod | null;
+  pendingBillingPeriodEffectiveAt?: string | null;
+}
+
+export type BillingPeriod = 'monthly' | 'annual';
+
+/** `PATCH /admin/billing/businesses/:businessAccountId/cutoff` (solo `account_su`). */
+export interface AdjustCutoffPayload {
+  /** `YYYY-MM-DD`; el backend la toma a las 00:00 de Bogotá. No puede ser anterior a hoy. */
+  cutoffDate: string;
+  /** Motivo (auditoría), máximo 300 caracteres. */
+  note?: string;
+}
+
+export interface AdjustCutoffResponse {
+  businessAccountId: string;
+  phase: BillingPhase;
+  state: BillingState;
+  /** trialing | active | past_due | suspended | cancelled | expired */
+  status: string;
+  cutoffDate: string;
+  deadline: string | null;
+  daysLeft: number | null;
+  blockedAt: string | null;
+  currentInvoice: BillingStatusInvoice | null;
 }
 
 export function isBusinessBillingBlockedError(body: unknown): body is BusinessBillingBlockedError {
