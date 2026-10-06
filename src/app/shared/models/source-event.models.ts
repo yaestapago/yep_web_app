@@ -70,6 +70,14 @@ export interface SourceEvent {
   normalized?: SourceEventNormalized;
   status: SourceEventStatus;
   linkedTransactionId?: string;
+  /**
+   * Solo en el push SSE del evento de banco recién creado: `true` = primer
+   * reporte de este pago (se anuncia por voz); `false` = otro notificador
+   * corrobora un pago ya reportado (nunca suena). Ausente = no se sabe
+   * (backend anterior, respuestas GET, reemisiones por cambio de estado): el
+   * cliente cae a su propia deduplicación por evento/transacción.
+   */
+  firstReport?: boolean;
   linkedSupportId?: string;
   receipt?: SourceEventReceipt;
   processedAt?: string;
