@@ -98,6 +98,23 @@ describe('BillingCustomersAdminPage helpers', () => {
     expect(chips[1].hasFailure).toBe(true);
   });
 
+  it('labels the WhatsApp quota notices after the billing ones', () => {
+    const chips = buildNoticeChips([
+      notice({
+        kind: 'whatsapp_quota_reached',
+        whatsapp: { status: 'skipped', reason: 'template_not_configured' },
+      }),
+      notice({ kind: 'whatsapp_quota_warning' }),
+      notice({ kind: 'blocked' }),
+    ]);
+
+    expect(chips.map((chip) => chip.short)).toEqual(['Bloqueo', 'Cupo 80%', 'Cupo agotado']);
+    expect(chips[1].title).toContain('Cupo de WhatsApp al 80 %');
+    expect(chips[2].title).toContain('Cupo de WhatsApp agotado');
+    expect(chips[2].title).toContain('template_not_configured');
+    expect(chips[2].whatsapp.symbol).toBe('–');
+  });
+
   it('formats money, overdue days and blocked rows for the table', () => {
     const blocked = toBillingCustomerView(
       row({

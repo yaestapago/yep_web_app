@@ -82,6 +82,8 @@ const NOTICE_KINDS: Array<{ kind: BillingNoticeKind; short: string; label: strin
   { kind: 'reminder_2d', short: '2d', label: 'Recordatorio 2 días' },
   { kind: 'blocked', short: 'Bloqueo', label: 'Aviso de bloqueo' },
   { kind: 'payment_confirmed', short: 'Pago', label: 'Pago confirmado' },
+  { kind: 'whatsapp_quota_warning', short: 'Cupo 80%', label: 'Cupo de WhatsApp al 80 %' },
+  { kind: 'whatsapp_quota_reached', short: 'Cupo agotado', label: 'Cupo de WhatsApp agotado' },
 ];
 
 const CHANNEL_SYMBOLS: Record<BillingNoticeChannelStatus, string> = {

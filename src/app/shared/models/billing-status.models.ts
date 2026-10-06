@@ -93,7 +93,15 @@ export function isBusinessBillingBlockedError(body: unknown): body is BusinessBi
 
 // --- Vista operativa "Clientes y cobros" -----------------------------------
 
-export type BillingNoticeKind = 'reminder_5d' | 'reminder_2d' | 'blocked' | 'payment_confirmed';
+export type BillingNoticeKind =
+  | 'reminder_5d'
+  | 'reminder_2d'
+  | 'blocked'
+  | 'payment_confirmed'
+  /** Lleva el 80 % de la cuota mensual de WhatsApp del plan. */
+  | 'whatsapp_quota_warning'
+  /** Agotó la cuota sin mensajes adicionales: reenvíos en pausa hasta el mes siguiente. */
+  | 'whatsapp_quota_reached';
 export type BillingNoticeChannelStatus = 'sent' | 'failed' | 'skipped';
 
 export interface BillingNoticeChannelResult {
