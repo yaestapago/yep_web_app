@@ -47,6 +47,7 @@ import { DEFAULT_SMS_PACKAGE_TOKEN } from '../../../../shared/models/bank.models
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
 import { ExampleEditorModal } from '../../components/example-editor-modal/example-editor-modal';
+import { SmsGatewaysStatus } from '../../../notifiers/components/sms-gateways-status/sms-gateways-status';
 import {
   expectedDateSummary,
   formatTransactionDate,
@@ -116,6 +117,7 @@ const ACCOUNT_TYPES: { key: SupportedAccountType; label: string }[] = [
     StatusDot,
     Toggle,
     ExampleEditorModal,
+    SmsGatewaysStatus,
     LucideArrowLeft,
     LucideInfo,
     LucideLoaderCircle,

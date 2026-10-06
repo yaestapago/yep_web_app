@@ -1,0 +1,89 @@
+:host {
+  display: block;
+}
+
+.sms-gateways {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.sms-gateways__header {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.sms-gateways__title {
+  font-size: var(--font-size-md, 1rem);
+  margin: 0;
+}
+
+.sms-gateways__refresh {
+  background: none;
+  border: 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  padding: var(--space-1);
+
+  svg {
+    height: 14px;
+    width: 14px;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+.sms-gateways__meta {
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+
+.sms-gateways__list {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sms-gateways__row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+.sms-gateways__name {
+  font-family: var(--font-mono, monospace);
+  font-weight: var(--font-weight-semibold);
+}
+
+.sms-gateways__detail {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.sms-gateways__row-error,
+.sms-gateways__error {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.sms-gateways__empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}

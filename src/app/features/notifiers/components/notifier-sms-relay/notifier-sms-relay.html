@@ -1,0 +1,71 @@
+@if (visible()) {
+  <div class="sms-relay" [attr.data-tone]="copy().tone" data-testid="sms-relay">
+    <div class="sms-relay__row">
+      <span class="sms-relay__title">
+        <svg lucideMessageSquareText aria-hidden="true"></svg>
+        Respaldo por SMS cuando no hay internet
+      </span>
+      <span
+        class="sms-relay__status sms-relay__status--{{ copy().tone }}"
+        data-testid="sms-relay-status"
+      >
+        {{ copy().label }}
+      </span>
+      @if (canManage()) {
+        <yep-toggle
+          appearance="switch"
+          [pressed]="optedIn()"
+          [disabled]="saving()"
+          [ariaLabel]="optedIn() ? 'Desactivar respaldo por SMS' : 'Activar respaldo por SMS'"
+          [title]="optedIn() ? 'Activo — toca para desactivar' : 'Toca para activar'"
+          [dataCy]="'sms-relay-toggle'"
+          (toggled)="onToggle($event)"
+        />
+      }
+    </div>
+    <p class="sms-relay__hint">
+      {{ copy().hint }}
+      @if (optedIn() && consentAtLabel()) {
+        <span class="sms-relay__consent">Autorizado el {{ consentAtLabel() }}.</span>
+      }
+    </p>
+    @if (error()) {
+      <p class="sms-relay__error" role="alert">{{ error() }}</p>
+    }
+  </div>
+
+  <yep-modal
+    [open]="consentOpen()"
+    title="Respaldo por SMS"
+    subtitle="Cuando el celular no tiene internet"
+    size="sm"
+    [loading]="saving()"
+    (closeRequested)="closeConsent()"
+  >
+    <div class="sms-relay-consent" data-testid="sms-relay-consent">
+      <p>{{ consentText }}</p>
+      <p class="sms-relay-consent__note">
+        Solo se usa cuando no hay internet; con conexión todo sigue llegando como siempre. El
+        celular debe tener concedido el permiso de SMS en la app de YEP. Puedes desactivarlo cuando
+        quieras.
+      </p>
+      <yep-checkbox
+        [checked]="consentChecked()"
+        [label]="consentCheckbox"
+        [dataCy]="'sms-relay-consent-check'"
+        (checkedChange)="consentChecked.set($event)"
+      />
+      @if (error()) {
+        <p class="sms-relay__error" role="alert">{{ error() }}</p>
+      }
+    </div>
+    <ng-container modalFooter>
+      <yep-button variant="ghost" [disabled]="saving()" (clicked)="closeConsent()">
+        Cancelar
+      </yep-button>
+      <yep-button [disabled]="!consentChecked()" [loading]="saving()" (clicked)="confirmConsent()">
+        Activar respaldo
+      </yep-button>
+    </ng-container>
+  </yep-modal>
+}

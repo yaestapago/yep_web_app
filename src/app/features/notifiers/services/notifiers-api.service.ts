@@ -8,6 +8,7 @@ import {
   DeleteNotifierResponse,
   NotifierResponse,
   NotifiersResponse,
+  SetSmsRelayRequest,
   UpdateNotifierRequest,
 } from '../../../shared/models/notifier.models';
 
@@ -46,5 +47,10 @@ export class NotifiersApiService {
 
   unpair(id: string): Observable<NotifierResponse> {
     return this.http.post<NotifierResponse>(`${this.apiUrl}/notifiers/${id}/unpair`, {});
+  }
+
+  /** Respaldo por SMS (solo celular, solo dueño). Activarlo exige `consentVersion`. */
+  setSmsRelay(id: string, request: SetSmsRelayRequest): Observable<NotifierResponse> {
+    return this.http.patch<NotifierResponse>(`${this.apiUrl}/notifiers/${id}/sms-relay`, request);
   }
 }

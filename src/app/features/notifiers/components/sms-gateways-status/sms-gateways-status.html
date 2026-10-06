@@ -1,0 +1,48 @@
+<section class="sms-gateways" data-testid="sms-gateways">
+  <header class="sms-gateways__header">
+    <h2 class="sms-gateways__title">Receptores SMS</h2>
+    <button
+      type="button"
+      class="sms-gateways__refresh"
+      title="Actualizar"
+      aria-label="Actualizar receptores SMS"
+      [disabled]="loading()"
+      (click)="load()"
+    >
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+    </button>
+  </header>
+
+  @if (error()) {
+    <p class="sms-gateways__error" role="alert">{{ error() }}</p>
+  } @else if (data()) {
+    <p class="sms-gateways__meta">
+      <span>Respaldo: {{ relayLabel() }}</span>
+      <span>Webhook: {{ webhookLabel() }}</span>
+    </p>
+    @if (rows().length === 0) {
+      <p class="sms-gateways__empty">Aún no hay receptores reportando.</p>
+    } @else {
+      <ul class="sms-gateways__list">
+        @for (row of rows(); track row.id) {
+          <li class="sms-gateways__row" [attr.data-level]="row.level">
+            <span class="sms-gateways__name">{{ row.title }}</span>
+            <yep-status-dot [level]="row.level" [label]="row.statusLabel" />
+            <span class="sms-gateways__detail">
+              Último ping {{ row.lastPing }} · último SMS {{ row.lastSms }}
+              @if (row.lastResult) {
+                ({{ row.lastResult }})
+              }
+              · {{ row.counts }}
+            </span>
+            @if (row.lastError) {
+              <span class="sms-gateways__row-error">Último error: {{ row.lastError }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+  } @else if (loading()) {
+    <p class="sms-gateways__empty">Cargando…</p>
+  }
+</section>

@@ -291,6 +291,14 @@ export class DashboardEventsPanel {
     this.view.emit(event);
   }
 
+  /**
+   * ¿Algún reporte de este pago llegó por el respaldo SMS (el celular estaba
+   * sin internet)? Lo marca el backend con `transport: 'sms'`.
+   */
+  viaSms(event: SourceEvent): boolean {
+    return this.groupOf(event).some((sibling) => sibling.transport === 'sms');
+  }
+
   /** Plataforma/banco del evento (Nequi, Bancolombia…) desde el normalizado. */
   platformLabel(event: SourceEvent): string {
     const bankId = event.normalized?.bankId;

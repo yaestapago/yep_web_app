@@ -144,6 +144,15 @@
   text-transform: uppercase;
 }
 
+.report__via-sms {
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.05rem var(--space-2);
+}
+
 .report__sub {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);

@@ -285,6 +285,17 @@
   padding: 0.1rem 0.45rem;
 }
 
+/* El aviso llegó por el respaldo SMS (el celular estaba sin internet). */
+.event__via-sms {
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
 .event__account {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);

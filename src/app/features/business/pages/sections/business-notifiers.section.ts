@@ -30,6 +30,7 @@ import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { NotifierRuntimeConfigModal } from './notifier-runtime-config-modal';
 import { NotifierDeviceDiagnostics } from '../../../notifiers/components/notifier-device-diagnostics/notifier-device-diagnostics';
+import { NotifierSmsRelay } from '../../../notifiers/components/notifier-sms-relay/notifier-sms-relay';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type {
@@ -91,6 +92,7 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     Toggle,
     NotifierRuntimeConfigModal,
     NotifierDeviceDiagnostics,
+    NotifierSmsRelay,
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLink,
@@ -464,6 +466,19 @@ export class BusinessNotifiersSection implements OnInit {
   closeConfig(): void {
     this.configModalOpen.set(false);
     this.configNotifier.set(null);
+  }
+
+  /** Se activó/desactivó el respaldo por SMS: actualiza la tarjeta. */
+  onSmsRelayUpdated(updated: Notifier): void {
+    this.notifiers.update((notifiers) =>
+      notifiers.map((current) => (current.id === updated.id ? updated : current)),
+    );
+    this.error.set('');
+    this.success.set(
+      updated.smsRelay?.optedIn
+        ? 'Respaldo por SMS autorizado. El celular lo aplicará al reconectarse.'
+        : 'Respaldo por SMS desactivado.',
+    );
   }
 
   /** El modal guardó/restableció: actualiza la tarjeta y muestra el éxito. */

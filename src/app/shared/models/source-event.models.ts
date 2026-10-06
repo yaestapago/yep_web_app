@@ -87,6 +87,11 @@ export interface SourceEvent {
    */
   linkPending?: boolean;
   linkedSupportId?: string;
+  /**
+   * `'sms'` si el aviso llegó por el respaldo SMS (el celular no tenía
+   * internet), aunque después llegara también por internet. Ausente en lo demás.
+   */
+  transport?: 'sms';
   receipt?: SourceEventReceipt;
   processedAt?: string;
   error?: string;

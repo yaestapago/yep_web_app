@@ -1,0 +1,91 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.sms-relay {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  font-size: var(--font-size-sm);
+  gap: var(--space-1);
+  max-width: 40rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+.sms-relay__row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+
+.sms-relay__title {
+  align-items: center;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-2);
+
+  svg {
+    flex: 0 0 auto;
+    height: 14px;
+    width: 14px;
+  }
+}
+
+.sms-relay__status {
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.1rem 0.45rem;
+}
+
+.sms-relay__status--active {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success-strong);
+}
+
+.sms-relay__status--unavailable {
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  color: var(--color-text-primary);
+}
+
+.sms-relay__status--disabled {
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.sms-relay__row yep-toggle {
+  margin-left: auto;
+}
+
+.sms-relay__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.sms-relay__consent {
+  margin-left: var(--space-1);
+}
+
+.sms-relay__error {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.sms-relay-consent {
+  display: grid;
+  gap: var(--space-3);
+
+  p {
+    margin: 0;
+  }
+}
+
+.sms-relay-consent__note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

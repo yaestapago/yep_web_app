@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import type { AdminBank, BankChannelConfig } from '../../../../shared/models/bank.models';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
+import { SmsGatewaysAdminApiService } from '../../../notifiers/services/sms-gateways-admin-api.service';
 import { BankAdminPage } from './bank-admin.page';
 
 const channel = (overrides: Partial<BankChannelConfig> = {}): BankChannelConfig => ({
@@ -49,6 +50,11 @@ describe('BankAdminPage — token @default_sms en packageNames', () => {
         {
           provide: NotificationModalService,
           useValue: { confirm: vi.fn().mockResolvedValue(true) },
+        },
+        // Bloque "Receptores SMS" de la cabecera (fuera del alcance de este spec).
+        {
+          provide: SmsGatewaysAdminApiService,
+          useValue: { list: vi.fn().mockReturnValue(of({ gateways: [], relay: null })) },
         },
       ],
     });

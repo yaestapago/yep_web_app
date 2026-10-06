@@ -117,6 +117,14 @@
                 @if (platformLabel(event)) {
                   <span class="event__platform">{{ platformLabel(event) }}</span>
                 }
+                @if (viaSms(event)) {
+                  <span
+                    class="event__via-sms"
+                    data-testid="via-sms"
+                    title="Llegó por SMS porque el celular no tenía internet"
+                    >vía SMS</span
+                  >
+                }
                 <span
                   class="event__receipt event__receipt--{{ receiptTone(event) }}"
                   [title]="receiptTitle(event)"

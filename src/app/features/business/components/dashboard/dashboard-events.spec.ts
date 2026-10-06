@@ -127,4 +127,26 @@ describe('DashboardEventsPanel — un pago, varias fuentes', () => {
     fixture.detectChanges();
     expect(paymentRow.classList).not.toContain('event--corroborated');
   });
+
+  it('marca "vía SMS" el pago que llegó por el respaldo SMS (aunque otra fuente lo confirme)', () => {
+    const fixture = create([
+      sourceEvent({
+        id: 'evt-sms',
+        notifierId: 'phone-1',
+        linkedTransactionId: 'tx-1',
+        transport: 'sms',
+      }),
+      sourceEvent({
+        id: 'evt-mail',
+        sourceType: 'EMAIL_GMAIL',
+        notifierId: 'mailbox-1',
+        linkedTransactionId: 'tx-1',
+      }),
+      sourceEvent({ id: 'evt-net', notifierId: 'phone-1', linkedTransactionId: 'tx-2' }),
+    ]);
+
+    const [smsRow, internetRow] = rows(fixture);
+    expect(smsRow.querySelector('[data-testid="via-sms"]')?.textContent?.trim()).toBe('vía SMS');
+    expect(internetRow.querySelector('[data-testid="via-sms"]')).toBeNull();
+  });
 });

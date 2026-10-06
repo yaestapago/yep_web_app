@@ -45,6 +45,33 @@ export interface NotifierRecentDiscard {
   lastAt: string;
 }
 
+/** Versión del texto de consentimiento del respaldo por SMS que acepta el dueño. */
+export const SMS_RELAY_CONSENT_VERSION = 'v1-2026-10';
+
+/**
+ * Estado del respaldo por SMS de un notificador de celular, tal como lo ve el
+ * dueño (nunca trae la llave). `status`:
+ * - `active`: autorizado y disponible.
+ * - `unavailable`: autorizado, pero YEP todavía no lo ofrece (no sale ningún SMS).
+ * - `disabled`: sin autorizar.
+ */
+export interface NotifierSmsRelayStatus {
+  optedIn: boolean;
+  /** YEP lo tiene encendido (interruptor global, receptores listos). */
+  globallyAvailable: boolean;
+  /** Efectivo: autorizado, disponible y con el celular emparejado. */
+  enabled: boolean;
+  status: 'active' | 'unavailable' | 'disabled';
+  consentAt: string | null;
+  consentVersion: string | null;
+}
+
+export interface SetSmsRelayRequest {
+  enabled: boolean;
+  /** Obligatorio al activar. */
+  consentVersion?: string;
+}
+
 /**
  * Config operativa efectiva que el backend calcula para un notificador
  * (default global + override propio, ya saneada). Solo lectura en la UI.
@@ -90,6 +117,11 @@ export interface Notifier {
    * reciente al más viejo). Se borran al desemparejar.
    */
   recentDiscards?: NotifierRecentDiscard[];
+  /**
+   * Solo `phone_app`: respaldo por SMS cuando el celular no tiene internet.
+   * `null` en otros tipos; ausente en respuestas de un backend anterior.
+   */
+  smsRelay?: NotifierSmsRelayStatus | null;
   lastSeenAt?: string;
   lastLoginAt?: string;
   isOnline: boolean;
