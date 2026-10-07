@@ -1,0 +1,119 @@
+:host {
+  display: block;
+}
+
+.loading-row {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+}
+
+.loading-row svg {
+  height: 18px;
+  width: 18px;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.blocked-card {
+  --blocked-tone: var(--color-error);
+
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--blocked-tone) 38%, var(--color-border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+  display: grid;
+  gap: var(--space-4);
+  max-width: 46rem;
+  padding: var(--space-6);
+}
+
+.blocked-card--review {
+  --blocked-tone: var(--color-secondary);
+}
+
+.blocked-card--ok {
+  --blocked-tone: var(--color-success-strong);
+}
+
+.blocked-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--blocked-tone) 13%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--blocked-tone);
+  display: inline-flex;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.blocked-icon svg {
+  height: 24px;
+  width: 24px;
+}
+
+.blocked-copy {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.blocked-copy h2 {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+.blocked-reason {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.blocked-note {
+  background: color-mix(in srgb, var(--color-secondary) 9%, transparent);
+  border-left: 3px solid var(--color-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.blocked-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: 560px) {
+  .blocked-card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .blocked-actions {
+    flex-direction: column;
+  }
+
+  .blocked-actions yep-button,
+  .blocked-actions yep-button ::ng-deep .yep-button {
+    width: 100%;
+  }
+}

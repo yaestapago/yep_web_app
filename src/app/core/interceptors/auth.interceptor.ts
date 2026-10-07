@@ -38,6 +38,7 @@ function isBusinessScopedRequest(url: string): boolean {
     '/notifications',
     '/payment-supports',
     '/source-events',
+    '/subscriptions/billing-status',
     '/transactions',
     '/whatsapp',
   ].some((path) => url.includes(path));

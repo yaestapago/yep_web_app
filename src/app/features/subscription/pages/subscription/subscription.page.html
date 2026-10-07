@@ -34,29 +34,103 @@
       <div class="summary-icon" aria-hidden="true">
         <svg lucideCreditCard></svg>
       </div>
-      <div>
+      <div class="summary-text">
         <span class="summary-label">Plan actual</span>
         <h2>{{ currentPlanName() }}</h2>
-        @if (subscription()?.trialEndsAt) {
-          <p>Trial activo hasta {{ subscription()?.trialEndsAt | date: 'mediumDate' }}</p>
+        @if (isTrialEnded()) {
+          <p>Tu prueba gratis terminó{{ trialEndLabel() ? ' el ' + trialEndLabel() : '' }}.</p>
+        } @else if (subscription()?.trialEndsAt) {
+          <p>Prueba gratis activa hasta el {{ trialEndLabel() }}</p>
         } @else {
-          <p>Periodo vigente hasta {{ subscription()?.currentPeriodEnd | date: 'mediumDate' }}</p>
+          <p>Periodo vigente hasta el {{ periodEndLabel() }}</p>
+        }
+        @if (showBillingPeriod()) {
+          <p data-cy="subscription-billing-period">
+            Ciclo de pago: {{ currentBillingPeriodSummary() }}
+          </p>
         }
       </div>
+      @if (canSwitchBillingPeriod()) {
+        <div class="summary-actions">
+          <yep-button
+            size="sm"
+            variant="secondary"
+            data-cy="subscription-switch-billing-period"
+            (clicked)="openBillingPeriodSwitch()"
+          >
+            {{ billingPeriodSwitchLabel() }}
+          </yep-button>
+        </div>
+      }
     </section>
 
-    @if (isPastDueOrSuspended()) {
-      <yep-alert variant="error">
-        @if (subscription()?.status === 'suspended') {
-          Tu cuenta esta suspendida por falta de pago: no se enviaran nuevas notificaciones de
-          WhatsApp hasta que confirmemos tu pago.
-        } @else {
-          Tu pago esta pendiente. Tienes unos dias de gracia antes de que se suspenda el envio
-          de notificaciones de WhatsApp.
-        }
+    @if (pendingBillingPeriodMessage()) {
+      <yep-alert variant="info" data-cy="subscription-pending-billing-period">
+        {{ pendingBillingPeriodMessage() }}
+        La cuenta de cobro de ese periodo se genera 5 días antes.
+      </yep-alert>
+    }
+
+    @if (blockedAt()) {
+      <yep-alert
+        variant="error"
+        [title]="
+          blockedSinceLabel()
+            ? 'Tu negocio está bloqueado desde el ' + blockedSinceLabel()
+            : 'Tu negocio está bloqueado'
+        "
+      >
+        <p>
+          {{ blockReasonText() }}
+          @if (paysInvoiceToUnblock()) {
+            Paga la cuenta de cobro pendiente y reporta el pago para reactivar el servicio.
+          } @else {
+            Elige un plan para reactivar el servicio.
+          }
+        </p>
+        <p>
+          Seguimos registrando los pagos que recibe tu negocio; podrás verlos apenas se confirme
+          el pago. Los avisos por WhatsApp de este periodo no se enviarán.
+        </p>
         <div class="alert-actions">
+          @if (paysInvoiceToUnblock()) {
+            <yep-button size="sm" (clicked)="goToInvoices()">Ver cuentas de cobro</yep-button>
+            <yep-button size="sm" variant="secondary" (clicked)="openReportModal()">
+              Ya pagué / Reportar pago
+            </yep-button>
+          } @else {
+            <yep-button size="sm" (clicked)="scrollToPlans()">Elegir un plan</yep-button>
+          }
+        </div>
+      </yep-alert>
+    } @else if (subscription()?.status === 'past_due') {
+      <!-- past_due = venció el plazo pero el pago ya fue reportado y está en revisión. -->
+      <yep-alert variant="info" title="Estamos revisando tu pago">
+        <p>
+          Recibimos el reporte de tu pago. Mientras lo confirmamos, tu servicio sigue activo con
+          normalidad.
+        </p>
+        <div class="alert-actions">
+          <yep-button size="sm" variant="secondary" (clicked)="goToInvoices()">
+            Ver cuentas de cobro
+          </yep-button>
+        </div>
+      </yep-alert>
+    } @else if (isTrialEnded()) {
+      <yep-alert variant="warning" title="Tu prueba gratis terminó">
+        <p>Elige un plan para seguir viendo los pagos que recibe tu negocio.</p>
+        <div class="alert-actions">
+          <yep-button size="sm" (clicked)="scrollToPlans()">Elegir un plan</yep-button>
+        </div>
+      </yep-alert>
+    } @else if (isPastDueOrSuspended()) {
+      <yep-alert variant="error">
+        Tu negocio está bloqueado por falta de pago: no podrás ver los pagos que recibe hasta
+        que confirmemos tu pago.
+        <div class="alert-actions">
+          <yep-button size="sm" (clicked)="goToInvoices()">Ver cuentas de cobro</yep-button>
           <yep-button size="sm" variant="secondary" (clicked)="openReportModal()">
-            Ya pague / Reportar pago
+            Ya pagué / Reportar pago
           </yep-button>
         </div>
       </yep-alert>
@@ -78,7 +152,7 @@
               <article class="addon-card">
                 <span>Recargo mensual por add-ons (sedes/usuarios)</span>
                 <strong>{{ formatCop(sub.recurringAddOnsCop) }}</strong>
-                <p>Se suma todos los meses a tu factura junto con el precio del plan.</p>
+                <p>Se suma todos los meses a tu cuenta de cobro junto con el precio del plan.</p>
               </article>
             }
           </div>
@@ -114,7 +188,7 @@
       </div>
     </section>
 
-    <section class="plans-section">
+    <section class="plans-section" id="subscription-plans">
       <h2 class="section-heading">Planes disponibles</h2>
       <div class="plans-grid">
         @for (plan of availablePlans(); track plan.code) {
@@ -124,7 +198,7 @@
                 <h3>{{ plan.name }}</h3>
                 <p>{{ priceLabel(plan) }}</p>
                 @if (annualPriceLabel(plan); as annualLabel) {
-                  <p class="plan-card__annual">o {{ annualLabel }} (2 meses gratis)</p>
+                  <p class="plan-card__annual">o {{ annualLabel }} (paga 10, recibe 12)</p>
                 }
               </div>
               @if (isCurrentPlan(plan)) {
@@ -162,14 +236,21 @@
               </div>
             </dl>
 
-            <yep-button
-              size="sm"
-              variant="secondary"
-              [disabled]="isCurrentPlan(plan)"
-              (clicked)="openPlanChangeModal(plan)"
-            >
-              {{ isCurrentPlan(plan) ? 'Plan actual' : 'Solicitar cambio' }}
-            </yep-button>
+            @if (plan.isCustom && !isCurrentPlan(plan)) {
+              <p class="plan-card__custom">
+                Plan a la medida —
+                <a [href]="supportWhatsappUrl" target="_blank" rel="noopener">contáctanos</a>
+              </p>
+            } @else {
+              <yep-button
+                size="sm"
+                [variant]="isTrialEnded() && !isCurrentPlan(plan) ? 'primary' : 'secondary'"
+                [disabled]="isCurrentPlan(plan)"
+                (clicked)="openPlanChangeModal(plan)"
+              >
+                {{ planActionLabel(plan) }}
+              </yep-button>
+            }
           </article>
         }
       </div>
@@ -244,30 +325,35 @@
         [ngModel]="selectedPlanCode()"
         (ngModelChange)="selectedPlanCode.set($event)"
       >
-        @for (plan of availablePlans(); track plan.code) {
-          <option [value]="plan.code">{{ plan.name }} - {{ priceLabel(plan) }}</option>
+        @for (plan of modalPlans(); track plan.code) {
+          <option [value]="plan.code">
+            {{ plan.name }} - {{ priceLabel(plan) }}{{ isCurrentPlan(plan) ? ' (actual)' : '' }}
+          </option>
         }
       </select>
 
-      @if (isReactivating()) {
-        <label class="field-label" for="billing-period">Ciclo de pago</label>
-        <select
-          id="billing-period"
-          class="native-select"
-          name="billingPeriod"
-          [ngModel]="selectedBillingPeriod()"
-          (ngModelChange)="selectedBillingPeriod.set($event)"
-        >
-          <option value="monthly">Mensual</option>
-          <option value="annual">Anual (2 meses gratis)</option>
-        </select>
+      <!-- Mes adelantado: el ciclo se puede cambiar cuando quieras; con plan
+           activo aplica desde la próxima fecha de corte. -->
+      <label class="field-label" for="billing-period">Ciclo de pago</label>
+      <select
+        id="billing-period"
+        class="native-select"
+        name="billingPeriod"
+        [ngModel]="selectedBillingPeriod()"
+        (ngModelChange)="selectedBillingPeriod.set($event)"
+      >
+        <option value="monthly">{{ monthlyOptionLabel() }}</option>
+        <option value="annual">{{ annualOptionLabel() }}</option>
+      </select>
+      @if (billingPeriodHint()) {
+        <p class="field-hint" data-cy="billing-period-hint">{{ billingPeriodHint() }}</p>
       }
     }
 
     @if (requestType() === 'add_on') {
       <yep-alert variant="info">
         Esto es un cargo recurrente: se suma a tu mensualidad todos los meses a partir del
-        siguiente ciclo de facturacion.
+        siguiente ciclo de cobro.
       </yep-alert>
       <label class="field-label" for="addon-metric">Que quieres agregar</label>
       <select
@@ -293,7 +379,7 @@
         }
       </select>
       <p class="field-hint">
-        Se cobra a partir de tu proximo ciclo de facturacion; tu mensualidad actual no cambia
+        Se cobra a partir de tu proximo ciclo de cobro; tu mensualidad actual no cambia
         hasta entonces.
       </p>
     }

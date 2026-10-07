@@ -9,6 +9,7 @@ import { ReceiptCaptureModal } from '../../../features/extraction/components/rec
 import { Button } from '../../../shared/ui/button/button';
 import { Modal } from '../../../shared/ui/modal/modal';
 import { AuthSessionService } from '../../services/auth-session.service';
+import { BillingStatusService } from '../../services/billing-status.service';
 import { Sidebar } from '../sidebar/sidebar';
 
 const SIDEBAR_COLLAPSED_KEY = 'yep-sidebar-collapsed';
@@ -25,12 +26,17 @@ export class Shell {
   private readonly destroyRef = inject(DestroyRef);
   private readonly session = inject(AuthSessionService);
   private readonly authApi = inject(AuthApiService);
+  private readonly billing = inject(BillingStatusService);
 
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);
   readonly receiptCaptureOpen = signal(false);
+  /** Oculto en prueba gratis y mientras el negocio activo esté bloqueado por cobro. */
   readonly canShowReceiptCaptureButton = computed(
-    () => !this.session.isSupportUser() && this.session.subscription()?.plan.code !== 'free_trial',
+    () =>
+      !this.session.isSupportUser() &&
+      this.session.subscription()?.plan.code !== 'free_trial' &&
+      !this.billing.isBlocked(),
   );
 
   /** Rail colapsable en escritorio; se recuerda entre sesiones. */

@@ -22,6 +22,25 @@
       </header>
     }
 
+    @if (billingBanner(); as banner) {
+      <div
+        class="billing-banner"
+        [class.billing-banner--warning]="banner.tone === 'warning'"
+        [class.billing-banner--info]="banner.tone === 'info'"
+        role="status"
+      >
+        @if (banner.tone === 'warning') {
+          <svg class="billing-banner__icon" lucideTriangleAlert aria-hidden="true"></svg>
+        } @else {
+          <svg class="billing-banner__icon" lucideClock aria-hidden="true"></svg>
+        }
+        <span class="billing-banner__text">{{ banner.text }}</span>
+        @if (banner.cta; as cta) {
+          <a class="billing-banner__cta" [routerLink]="cta.link">{{ cta.label }}</a>
+        }
+      </div>
+    }
+
     <router-outlet />
   } @else {
     <div class="placeholder">

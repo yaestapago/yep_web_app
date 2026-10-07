@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { LucideLoaderCircle, LucideReceipt, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
+import { BillingStatusService } from '../../../../core/services/billing-status.service';
 import type { BillingInvoiceSummary } from '../../../../shared/models/billing.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
@@ -31,6 +32,7 @@ import { InvoicesApiService } from '../../services/invoices-api.service';
 })
 export class InvoicesPage implements OnInit {
   private readonly invoicesApi = inject(InvoicesApiService);
+  private readonly billing = inject(BillingStatusService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly invoices = signal<BillingInvoiceSummary[]>([]);
@@ -111,6 +113,8 @@ export class InvoicesPage implements OnInit {
           }
           this.reportInvoice.set(null);
           this.success.set('Pago reportado. Nuestro equipo revisara la informacion.');
+          // Un pago reportado deja el negocio "en revisión" (no bloqueado).
+          void this.billing.refresh();
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });

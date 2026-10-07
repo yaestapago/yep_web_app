@@ -7,12 +7,19 @@ import { TestBed } from '@angular/core/testing';
 
 import { environment } from '../../../../environments/environment';
 import type { SourceEvent } from '../../../shared/models/source-event.models';
-import { TtsPlaybackService } from './tts-playback.service';
+import { LINK_PENDING_TIMEOUT_MS, TtsPlaybackService } from './tts-playback.service';
 
 const STORAGE_KEY = 'yep_web.tts.enabled';
+/** Referencia real (antes de cualquier `vi.useFakeTimers`) para drenar la cola. */
+const realSetTimeout = globalThis.setTimeout;
 
-function event(id: string, linkedTransactionId?: string): SourceEvent {
-  return { id, linkedTransactionId } as SourceEvent;
+function event(id: string, linkedTransactionId?: string, firstReport?: boolean): SourceEvent {
+  return { id, linkedTransactionId, firstReport } as SourceEvent;
+}
+
+/** Emisión temprana del backend: enlace aún en curso, sin `firstReport`. */
+function earlyEvent(id: string, linkedTransactionId?: string): SourceEvent {
+  return { id, linkedTransactionId, linkPending: true } as SourceEvent;
 }
 
 describe('TtsPlaybackService', () => {
@@ -88,6 +95,145 @@ describe('TtsPlaybackService', () => {
     requests.forEach((req) =>
       req.flush(new Blob([new Uint8Array([1])], { type: 'audio/wav' })),
     );
+  });
+
+  describe('un pago, una sola voz', () => {
+    const ttsPrefix = `${environment.apiUrl}/source-events/`;
+
+    beforeEach(() => {
+      // jsdom no reproduce audio: simulamos que cada pista termina enseguida
+      // para que la cola avance y se vea TODO lo que llegaría a sonar.
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLMediaElement,
+      ) {
+        queueMicrotask(() => this.dispatchEvent(new Event('ended')));
+        return Promise.resolve();
+      });
+      service.setEnabled(true);
+    });
+
+    afterEach(() => vi.restoreAllMocks());
+
+    /** Atiende todas las peticiones de audio (también las que encola la cola) y
+     *  devuelve los ids de evento que sonaron, en orden. */
+    async function spokenIds(): Promise<string[]> {
+      const spoken: string[] = [];
+      for (let round = 0; round < 20; round++) {
+        const pending = httpMock.match(() => true);
+        if (pending.length === 0) {
+          return spoken;
+        }
+        for (const req of pending) {
+          spoken.push(req.request.url.replace(ttsPrefix, '').replace(/\/tts$/, ''));
+          req.flush(new Blob([new Uint8Array([1])], { type: 'audio/wav' }));
+        }
+        await new Promise((resolve) => realSetTimeout(resolve, 0));
+      }
+      return spoken;
+    }
+
+    it('received sin enlace → processed enlazado → aviso de otro notificador: suena una vez', async () => {
+      service.speak(event('evt-a')); // primer emit, aún sin transacción
+      service.speak(event('evt-a', 'tx-1')); // reemisión al enlazarse
+      service.speak(event('evt-b', 'tx-1')); // otro notificador, mismo pago
+
+      expect(await spokenIds()).toEqual(['evt-a']);
+    });
+
+    it('firstReport: false nunca suena (ni su reemisión posterior sin el campo)', async () => {
+      service.speak(event('evt-b', 'tx-2', false));
+      service.speak(event('evt-b', 'tx-2')); // reemisión por cambio de estado
+
+      expect(await spokenIds()).toEqual([]);
+    });
+
+    it('firstReport: true suena una sola vez aunque se re-emita', async () => {
+      service.speak(event('evt-a', 'tx-3', true));
+      service.speak(event('evt-a', 'tx-3', true)); // entrega repetida
+      service.speak(event('evt-a', 'tx-3')); // reemisión sin el campo
+      service.speak(event('evt-b', 'tx-3', false)); // corroboración
+
+      expect(await spokenIds()).toEqual(['evt-a']);
+    });
+
+    it('firstReport: true suena aunque la corroboración haya llegado antes por SSE', async () => {
+      service.speak(event('evt-b', 'tx-4', false));
+      service.speak(event('evt-a', 'tx-4', true));
+
+      expect(await spokenIds()).toEqual(['evt-a']);
+    });
+
+    it('sin firstReport (backend anterior) deduplica por evento y transacción', async () => {
+      service.speak(event('evt-a', 'tx-5'));
+      service.speak(event('evt-b', 'tx-5')); // mismo pago, otro notificador
+      service.speak(event('evt-c', 'tx-6')); // otro pago
+      service.speak(event('evt-d')); // otro pago, aún sin transacción
+
+      expect(await spokenIds()).toEqual(['evt-a', 'evt-c', 'evt-d']);
+    });
+
+    it('al encender la voz no suena tarde la reemisión de un pago que llegó con la voz apagada', async () => {
+      service.setEnabled(false);
+      service.speak(event('evt-a'));
+      service.setEnabled(true);
+      service.speak(event('evt-a', 'tx-7')); // reemisión al enlazarse
+      service.speak(event('evt-b', 'tx-7')); // otro notificador
+
+      expect(await spokenIds()).toEqual([]);
+    });
+
+    describe('emisión temprana (linkPending)', () => {
+      beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }));
+      afterEach(() => vi.useRealTimers());
+
+      it('no suena al llegar, y calla si el anuncio final es firstReport: false', async () => {
+        service.speak(earlyEvent('evt-b'));
+        expect(await spokenIds()).toEqual([]);
+
+        service.speak(event('evt-b', 'tx-8', false)); // anuncio final
+        vi.advanceTimersByTime(LINK_PENDING_TIMEOUT_MS); // el respaldo ya no debe disparar
+
+        expect(await spokenIds()).toEqual([]);
+      });
+
+      it('suena una sola vez cuando el anuncio final es firstReport: true', async () => {
+        service.speak(earlyEvent('evt-a'));
+        service.speak(event('evt-a', 'tx-9', true)); // anuncio final
+        vi.advanceTimersByTime(LINK_PENDING_TIMEOUT_MS);
+        service.speak(event('evt-a', 'tx-9')); // reemisión posterior sin el campo
+
+        expect(await spokenIds()).toEqual(['evt-a']);
+      });
+
+      it('sin anuncio final, suena una vez al vencer el plazo (respaldo)', async () => {
+        service.speak(earlyEvent('evt-a'));
+        vi.advanceTimersByTime(LINK_PENDING_TIMEOUT_MS - 1);
+        expect(await spokenIds()).toEqual([]);
+
+        vi.advanceTimersByTime(1);
+        expect(await spokenIds()).toEqual(['evt-a']);
+
+        service.speak(event('evt-a', 'tx-10', true)); // anuncio final tardío
+        expect(await spokenIds()).toEqual([]);
+      });
+
+      it('la corroboración emitida temprano (sin enlace) no suena, ni su anuncio final', async () => {
+        service.speak(event('evt-a', 'tx-11', true)); // primer reporte (otro notificador)
+        service.speak(earlyEvent('evt-b')); // corroboración, aún sin enlace
+        service.speak(event('evt-b', 'tx-11', false)); // su anuncio final
+        vi.advanceTimersByTime(LINK_PENDING_TIMEOUT_MS);
+
+        expect(await spokenIds()).toEqual(['evt-a']);
+      });
+
+      it('el respaldo deduplica por transacción si lo retenido ya traía el enlace', async () => {
+        service.speak(event('evt-a', 'tx-12', true));
+        service.speak(earlyEvent('evt-b', 'tx-12'));
+        vi.advanceTimersByTime(LINK_PENDING_TIMEOUT_MS);
+
+        expect(await spokenIds()).toEqual(['evt-a']);
+      });
+    });
   });
 
   it('descarta eventos cuando la cola está llena', () => {

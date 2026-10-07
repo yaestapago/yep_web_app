@@ -70,7 +70,28 @@ export interface SourceEvent {
   normalized?: SourceEventNormalized;
   status: SourceEventStatus;
   linkedTransactionId?: string;
+  /**
+   * Solo en el push SSE del evento de banco recién creado: `true` = primer
+   * reporte de este pago (se anuncia por voz); `false` = otro notificador
+   * corrobora un pago ya reportado (nunca suena). Ausente = no se sabe
+   * (backend anterior, respuestas GET, reemisiones por cambio de estado): el
+   * cliente cae a su propia deduplicación por evento/transacción.
+   */
+  firstReport?: boolean;
+  /**
+   * Emisión temprana: el enlace con la transacción tardaba (> ~3 s) y el
+   * backend mostró el evento antes de saber si es primer reporte (sin
+   * `firstReport` y, normalmente, sin `linkedTransactionId`). Después llega el
+   * anuncio final del MISMO id con `firstReport` y el enlace; la voz espera a
+   * ese anuncio para decidir.
+   */
+  linkPending?: boolean;
   linkedSupportId?: string;
+  /**
+   * `'sms'` si el aviso llegó por el respaldo SMS (el celular no tenía
+   * internet), aunque después llegara también por internet. Ausente en lo demás.
+   */
+  transport?: 'sms';
   receipt?: SourceEventReceipt;
   processedAt?: string;
   error?: string;

@@ -32,6 +32,9 @@
     <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
+  <!-- Estado de los celulares receptores del respaldo por SMS. -->
+  <app-sms-gateways-status class="bank-admin__sms-gateways" />
+
   <div class="bank-admin__layout">
     <!-- Menú lateral: lista de bancos -->
     <aside class="bank-admin__sidebar">
@@ -206,6 +209,11 @@
             (ej. <code>com.nequi.mobileapp</code>). Es lo que el celular escucha. Si
             no hay patrones de contenido/remitente, el banco se atribuye con solo
             que la notificación venga de una de estas apps.
+          </small>
+          <small class="bank-form__hint" data-testid="default-sms-hint">
+            <code>&#64;default_sms</code> = la app de SMS por defecto de cada celular (la
+            reporta la app móvil); déjalo junto a los paquetes explícitos, que siguen
+            sirviendo a celulares con la app sin actualizar.
           </small>
         </label>
       }

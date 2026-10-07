@@ -81,13 +81,22 @@
           <span>Soporte operativo</span>
         </a>
         <a
+          routerLink="/__ops/billing"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+          title="Clientes y cobros"
+        >
+          <svg lucideWallet aria-hidden="true"></svg>
+          <span>Clientes y cobros</span>
+        </a>
+        <a
           routerLink="/__ops/subscriptions/invoices"
           routerLinkActive="active"
           (click)="onNavigate()"
-          title="Gestión de facturas"
+          title="Gestión de cuentas de cobro"
         >
           <svg lucideReceipt aria-hidden="true"></svg>
-          <span>Gestión de facturas</span>
+          <span>Gestión de cuentas de cobro</span>
         </a>
         <a
           routerLink="/__ops/subscriptions/change-requests"
@@ -232,11 +241,11 @@
             routerLink="/invoices"
             routerLinkActive="active"
             role="menuitem"
-            title="Mis facturas"
+            title="Cuentas de cobro"
             (click)="onNavigate()"
           >
             <svg lucideReceipt aria-hidden="true"></svg>
-            <span>Mis facturas</span>
+            <span>Cuentas de cobro</span>
           </a>
         }
 

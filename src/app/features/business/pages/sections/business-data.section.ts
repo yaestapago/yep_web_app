@@ -26,6 +26,7 @@ import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-in
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { businessNitError, normalizeBusinessNit } from '../../../../shared/utils/business-nit';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { BillingCutoffCard } from '../../components/billing-cutoff-card/billing-cutoff-card';
 import { AdminBusinessesApiService } from '../../services/admin-businesses-api.service';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -43,6 +44,7 @@ type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
     ReactiveFormsModule,
     AddressLocationSelect,
     Alert,
+    BillingCutoffCard,
     Button,
     Input,
     Modal,

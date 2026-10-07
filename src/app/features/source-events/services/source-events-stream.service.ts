@@ -1,12 +1,16 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, effect, inject, signal, untracked } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { AuthSessionService } from '../../../core/services/auth-session.service';
+import { BillingStatusService } from '../../../core/services/billing-status.service';
 import type { SourceEvent } from '../../../shared/models/source-event.models';
 import type { Notifier } from '../../../shared/models/notifier.models';
 import type { PaymentTransaction } from '../../../shared/models/transaction.models';
+
+const RECONNECT_BASE_DELAY_MS = 3000;
+const RECONNECT_MAX_DELAY_MS = 60_000;
 
 /**
  * Canal en vivo por cuenta (SSE, multi-tópico). Pide un ticket efímero
@@ -15,7 +19,10 @@ import type { PaymentTransaction } from '../../../shared/models/transaction.mode
  * - `events$`         → nuevos source_events de banco.
  * - `transactions$`   → transacción creada/actualizada (mismo shape que la API).
  * - `notifierStatus$` → estado de un notificador tras su heartbeat.
- * Se reconecta solo (con ticket nuevo) ante caídas y al cambiar de negocio.
+ * Se reconecta solo (con ticket nuevo) ante caídas y al cambiar de negocio,
+ * con backoff exponencial (3 s → 60 s). No conecta mientras el negocio activo
+ * esté bloqueado por cobro (el ticket responde 402): reintenta solo cuando el
+ * estado de cobro deja de ser "bloqueado".
  *
  * La UI solo consume los observables y `connected`; no necesita conocer SSE.
  */
@@ -23,10 +30,12 @@ import type { PaymentTransaction } from '../../../shared/models/transaction.mode
 export class SourceEventsStreamService {
   private readonly http = inject(HttpClient);
   private readonly session = inject(AuthSessionService);
+  private readonly billing = inject(BillingStatusService);
   private readonly apiUrl = environment.apiUrl;
 
   private eventSource: EventSource | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempts = 0;
   private readonly incoming = new Subject<SourceEvent>();
   private readonly incomingTransactions = new Subject<PaymentTransaction>();
   private readonly incomingNotifierStatus = new Subject<Notifier>();
@@ -44,12 +53,14 @@ export class SourceEventsStreamService {
 
   constructor() {
     // Conecta/reconecta cuando hay sesión y cambia el negocio activo; se
-    // desconecta al cerrar sesión.
+    // desconecta al cerrar sesión o si el negocio queda bloqueado por cobro.
     effect(() => {
       const token = this.session.accessToken();
       const accountId = this.session.activeBusinessAccountId();
+      const blocked = this.billing.isBlocked();
       untracked(() => {
-        if (token && accountId) {
+        if (token && accountId && !blocked) {
+          this.reconnectAttempts = 0;
           this.connect();
         } else {
           this.disconnect();
@@ -63,7 +74,12 @@ export class SourceEventsStreamService {
     if (typeof EventSource === 'undefined') {
       return;
     }
-    if (!this.session.accessToken() || !this.session.activeBusinessAccountId()) {
+    if (
+      !this.session.accessToken() ||
+      !this.session.activeBusinessAccountId() ||
+      this.billing.isBlocked()
+    ) {
+      this.disconnect();
       return;
     }
     this.disconnect();
@@ -72,7 +88,14 @@ export class SourceEventsStreamService {
       .post<{ ticket: string }>(`${this.apiUrl}/source-events/stream-ticket`, {})
       .subscribe({
         next: ({ ticket }) => this.openStream(ticket),
-        error: () => this.scheduleReconnect(),
+        error: (error: unknown) => {
+          // 402: negocio bloqueado por cobro. El interceptor ya marcó el
+          // estado; el effect reconecta cuando se desbloquee. No reintentar.
+          if (error instanceof HttpErrorResponse && error.status === 402) {
+            return;
+          }
+          this.scheduleReconnect();
+        },
       });
   }
 
@@ -94,7 +117,10 @@ export class SourceEventsStreamService {
     const source = new EventSource(url);
     this.eventSource = source;
 
-    source.addEventListener('ready', () => this.connected.set(true));
+    source.addEventListener('ready', () => {
+      this.reconnectAttempts = 0;
+      this.connected.set(true);
+    });
 
     source.addEventListener('source-event', (event) => {
       try {
@@ -138,12 +164,17 @@ export class SourceEventsStreamService {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectTimer) {
+    if (this.reconnectTimer || this.billing.isBlocked()) {
       return;
     }
+    const delay = Math.min(
+      RECONNECT_BASE_DELAY_MS * 2 ** this.reconnectAttempts,
+      RECONNECT_MAX_DELAY_MS,
+    );
+    this.reconnectAttempts += 1;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();
-    }, 3000);
+    }, delay);
   }
 }

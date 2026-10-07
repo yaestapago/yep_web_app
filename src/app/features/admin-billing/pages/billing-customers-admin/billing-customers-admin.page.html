@@ -1,0 +1,179 @@
+<section class="page billing-customers-page">
+  <header class="page-header">
+    <div class="page-header__text">
+      <h1 class="page-title">Clientes y cobros</h1>
+      <p class="page-subtitle">
+        Estado de cobro de cada negocio: pruebas, vencimientos, bloqueos y avisos enviados.
+      </p>
+    </div>
+    <div class="page-header__actions">
+      @if (generatedAtLabel()) {
+        <span class="generated-at">Actualizado {{ generatedAtLabel() }}</span>
+      }
+      <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+    </div>
+  </header>
+
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+
+  <div class="kpi-grid" role="list" aria-label="Resumen de clientes">
+    @for (kpi of kpis(); track kpi.key) {
+      <article class="kpi-tile" role="listitem" [attr.data-tone]="kpi.tone">
+        <span class="kpi-tile__label">
+          @if (kpi.tone !== 'neutral') {
+            <span class="kpi-tile__dot" aria-hidden="true"></span>
+          }
+          {{ kpi.label }}
+        </span>
+        <strong class="kpi-tile__value">{{ kpi.value }}</strong>
+      </article>
+    }
+  </div>
+
+  <div class="toolbar">
+    <label class="search-box">
+      <svg lucideSearch aria-hidden="true"></svg>
+      <span class="visually-hidden">Buscar negocio</span>
+      <input
+        type="search"
+        placeholder="Buscar por negocio o propietario"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </label>
+
+    <div class="filter-chips" role="group" aria-label="Filtrar por estado">
+      @for (option of filters; track option.key) {
+        <button
+          type="button"
+          [class.active]="filter() === option.key"
+          [attr.aria-pressed]="filter() === option.key"
+          (click)="filter.set(option.key)"
+        >
+          {{ option.label }}
+          <span class="filter-chips__count">{{ filterCounts()[option.key] }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading() && !response()) {
+    <div class="loading-row">
+      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+      Cargando clientes...
+    </div>
+  } @else if (response()) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Negocio</th>
+            <th scope="col">Propietarios</th>
+            <th scope="col">Plan</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha límite</th>
+            <th scope="col">Cuenta de cobro</th>
+            <th scope="col">Avisos enviados</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (view of visibleRows(); track view.row.accountId) {
+            <tr [attr.data-state]="view.row.state">
+              <td>
+                <strong>{{ view.row.businessName || 'Negocio sin nombre' }}</strong>
+              </td>
+              <td>
+                @for (owner of view.row.owners; track owner.userId) {
+                  <div class="owner">
+                    <span class="owner__name">{{ owner.name }}</span>
+                    @if (owner.phone) {
+                      <small>{{ owner.phone }}</small>
+                    }
+                    @if (owner.email) {
+                      <small>{{ owner.email }}</small>
+                    }
+                  </div>
+                } @empty {
+                  <small class="muted">Sin propietarios</small>
+                }
+              </td>
+              <td>
+                <span>{{ view.row.planName || view.row.planCode }}</span>
+                <small>{{ view.planDetail }}</small>
+              </td>
+              <td>
+                <span class="state-badge" [attr.data-state]="view.row.state">
+                  {{ view.stateLabel }}
+                </span>
+                <small>{{ view.detailLabel }}</small>
+              </td>
+              <td class="num">
+                <span>{{ view.deadlineLabel || '—' }}</span>
+                @if (view.daysLabel) {
+                  <small class="days" [attr.data-tone]="view.daysTone">{{ view.daysLabel }}</small>
+                }
+              </td>
+              <td class="num">
+                @if (view.row.currentInvoice; as invoice) {
+                  <a
+                    class="invoice-link"
+                    routerLink="/__ops/subscriptions/invoices"
+                    [queryParams]="{ business: invoice.invoiceNumber, status: 'all' }"
+                    title="Ver en gestión de cuentas de cobro"
+                  >
+                    {{ invoice.invoiceNumber }}
+                  </a>
+                  <small>{{ formatCop(invoice.totalCop) }}</small>
+                  <span class="invoice-status" [attr.data-status]="invoice.status">
+                    {{ view.invoiceStatusLabel }}
+                  </span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+              <td>
+                <div class="notices">
+                  @for (chip of view.notices; track chip.kind) {
+                    <span
+                      class="notice-chip"
+                      [class.notice-chip--failed]="chip.hasFailure"
+                      role="img"
+                      [attr.title]="chip.title"
+                      [attr.aria-label]="chip.title"
+                    >
+                      <strong>{{ chip.short }}</strong>
+                      <span class="notice-mark" [attr.data-status]="chip.whatsapp.status"
+                        >WA {{ chip.whatsapp.symbol }}</span
+                      >
+                      <span class="notice-mark" [attr.data-status]="chip.email.status"
+                        >Mail {{ chip.email.symbol }}</span
+                      >
+                    </span>
+                  } @empty {
+                    <small class="muted">Sin avisos</small>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="empty">
+                No hay negocios con este filtro.
+                @if (search() || filter() !== 'all') {
+                  <button type="button" class="text-button" (click)="clearFilters()">
+                    Limpiar filtros
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

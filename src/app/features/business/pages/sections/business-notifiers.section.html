@@ -92,6 +92,14 @@
                 {{ deviceLabel(row.notifier) }} ·
                 {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
               </span>
+              <!-- App de SMS del teléfono y avisos que descartó (solo celular emparejado). -->
+              <app-notifier-device-diagnostics [notifier]="row.notifier" />
+              <!-- Respaldo por SMS cuando el celular no tiene internet (solo celular). -->
+              <app-notifier-sms-relay
+                [notifier]="row.notifier"
+                [canManage]="canManage()"
+                (updated)="onSmsRelayUpdated($event)"
+              />
             } @else {
               <span class="list-card__meta">
                 {{ row.notifier.active ? 'Activo' : 'Inactivo' }}

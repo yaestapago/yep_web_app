@@ -62,6 +62,10 @@ import {
 } from '../../../../shared/utils/notifier-status';
 import { transactionCategory } from '../../../../shared/utils/transaction-status';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import {
+  classifyLiveSourceEvent,
+  sourceEventGroupKey,
+} from '../../../../shared/utils/source-event-groups';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { SourceEventsStreamService } from '../../../source-events/services/source-events-stream.service';
@@ -94,6 +98,8 @@ const EVENTS_PAGE_LIMIT = 50;
 const TRANSACTIONS_PAGE_LIMIT = 100;
 /** Respaldo (ms) de re-consulta de notificadores; el push SSE es la vía principal. */
 const NOTIFIERS_BACKUP_POLL_MS = 120_000;
+/** Duración (ms) del pulso de "otra fuente confirmó este pago" (algo más que la animación). */
+const CORROBORATION_CUE_MS = 2_000;
 const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
 const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
   'received',
@@ -281,6 +287,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
 
   /** IDs de eventos llegados en vivo y aún no vistos (estilo bandeja). */
   readonly unreadEventIds = signal<Set<string>>(new Set());
+  /** IDs de reportes que acaban de corroborar en vivo un pago ya listado (pulso breve). */
+  readonly corroboratedEventIds = signal<Set<string>>(new Set());
+  private readonly corroborationTimers = new Set<ReturnType<typeof setTimeout>>();
 
   /** Cuentas bancarias del negocio, para resolver nombre/plataforma en eventos. */
   readonly bankAccounts = signal<BankAccount[]>([]);
@@ -539,6 +548,8 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   }
 
   ngOnDestroy(): void {
+    this.corroborationTimers.forEach((timer) => clearTimeout(timer));
+    this.corroborationTimers.clear();
     this.kpiResizeObserver?.disconnect();
     if (this.kpiScrollRaf !== null) {
       this.document.defaultView?.cancelAnimationFrame(this.kpiScrollRaf);
@@ -573,13 +584,61 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     if (!this.matchesEventFilter(event, this.eventFilters())) {
       return;
     }
+    // Se clasifica contra la lista ANTES de insertar: ¿es un reporte nuevo o
+    // la reemisión de uno ya listado? ¿se suma a la fila de un pago ya listado?
+    const change = classifyLiveSourceEvent(this.sourceEvents(), event);
     this.sourceEvents.update((events) => this.upsert(events, event));
-    this.unreadEventIds.update((ids) => {
-      const next = new Set(ids);
-      next.add(event.id);
-      return next;
-    });
+
+    // Campana de "no leído" = pago nuevo. Una corroboración (se suma a la fila
+    // de un pago ya listado, o el backend la marca con `firstReport: false`)
+    // nunca la enciende: si el usuario ya abrió ese pago, sigue visto. Las
+    // reemisiones (cambio de estado) tampoco re-marcan como no leído algo que
+    // ya se abrió.
+    // - Emisión temprana (`linkPending`): aún no se sabe si es corroboración;
+    //   se muestra como fila nueva con campana (si resulta ser primer reporte,
+    //   ya quedó marcada; si el anuncio final no llega, sigue siendo un pago).
+    // - Anuncio final con `firstReport: false`: el backend confirma que es
+    //   corroboración, así que se retira la campana que encendió su emisión
+    //   temprana; la fila del pago conserva el estado de sus otros reportes.
+    // - Al fundirse filas sin esa confirmación no se quita nada: el reporte que
+    //   se suma puede ser justo el primero, aún sin ver.
+    if (event.firstReport === false) {
+      this.setEventsUnread([event.id], false);
+    } else if (change.isNewReport && !change.corroborates) {
+      this.setEventsUnread([event.id], true);
+    }
+    if (change.corroborates) {
+      this.cueCorroboration(event.id);
+    }
     this.now.set(Date.now());
+  }
+
+  /** Pulso visual breve en la fila del pago (sin sonido); se retira solo. */
+  private cueCorroboration(eventId: string): void {
+    this.corroboratedEventIds.update((ids) => new Set(ids).add(eventId));
+    const timer = setTimeout(() => {
+      this.corroborationTimers.delete(timer);
+      this.corroboratedEventIds.update((ids) => {
+        const next = new Set(ids);
+        next.delete(eventId);
+        return next;
+      });
+    }, CORROBORATION_CUE_MS);
+    this.corroborationTimers.add(timer);
+  }
+
+  /** Marca/desmarca ids como no leídos (no toca el signal si nada cambia). */
+  private setEventsUnread(eventIds: string[], unread: boolean): void {
+    const current = this.unreadEventIds();
+    if (eventIds.every((id) => current.has(id) === unread)) {
+      return;
+    }
+    const next = new Set(current);
+    for (const id of eventIds) {
+      if (unread) next.add(id);
+      else next.delete(id);
+    }
+    this.unreadEventIds.set(next);
   }
 
   /** ¿El evento encaja en el filtro activo de la tabla de eventos? */
@@ -719,16 +778,17 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     return raw !== '0';
   }
 
-  /** Marca un evento como visto (al abrirlo en la lista, estilo bandeja). */
-  markEventSeen(eventId: string): void {
-    if (!this.unreadEventIds().has(eventId)) {
-      return;
-    }
-    this.unreadEventIds.update((ids) => {
-      const next = new Set(ids);
-      next.delete(eventId);
-      return next;
-    });
+  /**
+   * Marca como visto el pago del evento (al abrirlo en la lista, estilo
+   * bandeja): TODOS los reportes de su fila, no solo el representante. Si no,
+   * un hermano no leído dejaría la campana de la fila encendida para siempre.
+   */
+  markEventSeen(event: SourceEvent): void {
+    const key = sourceEventGroupKey(event);
+    const groupIds = this.sourceEvents()
+      .filter((current) => sourceEventGroupKey(current) === key)
+      .map((current) => current.id);
+    this.setEventsUnread([event.id, ...groupIds], false);
   }
 
   loadBankAccounts(): void {
@@ -1049,7 +1109,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
    * a factura (vía `TransactionSupportsPanel`).
    */
   openEventDetail(event: SourceEvent): void {
-    this.markEventSeen(event.id);
+    this.markEventSeen(event);
     this.eventDetailTarget.set(event);
   }
 

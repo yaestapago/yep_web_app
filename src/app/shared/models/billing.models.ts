@@ -71,7 +71,8 @@ export interface ChangePlanPayload {
 }
 
 export interface ChangePlanResponse {
-  type: 'same_plan' | 'upgrade' | 'downgrade';
+  /** `billing_period_change`: mismo plan, solo se agendó el cambio de ciclo. */
+  type: 'same_plan' | 'upgrade' | 'downgrade' | 'billing_period_change';
   currentPlan: { code: string; name: string; priceCop: number };
   newPlan: { code: string; name: string; priceCop: number };
   currentPeriodEnd: string | null;
@@ -80,6 +81,17 @@ export interface ChangePlanResponse {
   paymentRequired: boolean;
   changeRequestId: string | null;
   invoiceId: string | null;
+  /**
+   * Paso a mensual/anual agendado por esta solicitud (entra al inicio de un
+   * ciclo). `null`/ausente si no se cambió el ciclo.
+   */
+  billingPeriodChange?: BillingPeriodChange | null;
+}
+
+/** Cambio de ciclo agendado devuelto por `POST /subscriptions/change-plan`. */
+export interface BillingPeriodChange {
+  billingPeriod: 'monthly' | 'annual';
+  effectiveAt: string;
 }
 
 export interface ReportPaymentPayload {

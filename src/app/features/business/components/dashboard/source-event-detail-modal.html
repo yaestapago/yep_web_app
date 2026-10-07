@@ -58,6 +58,14 @@
               <span class="report__main">
                 <span class="report__type">
                   {{ sourceLabel(report) }} · {{ deviceLabel(report) }}
+                  @if (report.transport === 'sms') {
+                    <span
+                      class="report__via-sms"
+                      data-testid="report-via-sms"
+                      title="Llegó por SMS porque el celular no tenía internet"
+                      >vía SMS</span
+                    >
+                  }
                   @if (isAnchor(report)) {
                     <span class="report__you">este reporte</span>
                   }

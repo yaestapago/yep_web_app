@@ -205,6 +205,44 @@
   width: 15px;
 }
 
+/* "Confirmado por N fuentes" dentro de la misma píldora de íconos: se lee como
+   una sola etiqueta. No se parte; si no cabe, el resto de `.event__top`
+   (plataforma, recibo) baja de línea, que en celular es lo natural. */
+.event__confirmed {
+  color: var(--color-text-secondary);
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* Otro notificador acaba de confirmar este pago en vivo: pulso breve en la
+   píldora (donde cambió el conteo). Sin sonido: es corroboración, no un pago
+   nuevo. La sección quita la clase a los ~2 s. */
+.event--corroborated .event__type--grouped {
+  animation: event-corroborated 1.6s ease-out;
+}
+
+@keyframes event-corroborated {
+  0% {
+    background: color-mix(in srgb, var(--color-success) 28%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Sin movimiento: el mismo aviso como un tinte fijo mientras dure la clase. */
+@media (prefers-reduced-motion: reduce) {
+  .event--corroborated .event__type--grouped {
+    animation: none;
+    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+  }
+}
+
 /* Ícono de recibo: verde solo si el evento tiene comprobante enlazado. */
 .event__receipt {
   align-items: center;
@@ -245,6 +283,17 @@
   font-size: var(--font-size-xxs);
   font-weight: var(--font-weight-bold);
   padding: 0.1rem 0.45rem;
+}
+
+/* El aviso llegó por el respaldo SMS (el celular estaba sin internet). */
+.event__via-sms {
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xxs);
+  font-weight: var(--font-weight-bold);
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
 }
 
 .event__account {

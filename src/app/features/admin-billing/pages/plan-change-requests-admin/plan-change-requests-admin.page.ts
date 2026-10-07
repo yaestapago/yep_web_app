@@ -293,10 +293,18 @@ export class PlanChangeRequestsAdminPage implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: ({ request: updated }) => {
+        next: ({ request: updated, invoice }) => {
           this.updateRequestInList(updated);
           this.approvingRequest.set(null);
-          this.success.set('Solicitud aprobada y factura generada.');
+          // Mes adelantado: un add-on suele ir incluido en la cuenta de cobro
+          // del próximo ciclo; solo se genera una aparte si esa ya se pagó.
+          this.success.set(
+            invoice
+              ? 'Solicitud aprobada y cuenta de cobro generada.'
+              : updated.requestType === 'add_on'
+                ? 'Solicitud aprobada. Se cobra en la cuenta de cobro del próximo ciclo.'
+                : 'Solicitud aprobada.',
+          );
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
