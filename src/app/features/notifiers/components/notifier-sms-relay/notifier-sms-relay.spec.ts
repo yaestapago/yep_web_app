@@ -124,6 +124,13 @@ describe('NotifierSmsRelay — respaldo por SMS en la tarjeta del celular', () =
     expect(text(fixture)).toContain('no se envía ningún SMS');
   });
 
+  it('no se muestra si YEP aún no lo ofrece y el dueño no lo autorizó', () => {
+    for (const smsRelay of [relay({ globallyAvailable: false }), null, undefined]) {
+      const { fixture } = render(notifier({ smsRelay }));
+      expect(el(fixture).querySelector('[data-testid="sms-relay"]')).toBeNull();
+    }
+  });
+
   it('no se muestra para notificadores de correo o escritorio', () => {
     for (const type of ['email_gmail', 'desktop_app'] as const) {
       const { fixture } = render(notifier({ type, smsRelay: null }));

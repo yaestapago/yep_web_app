@@ -90,7 +90,17 @@ export class NotifierSmsRelay {
   readonly consentText = SMS_RELAY_CONSENT_TEXT;
   readonly consentCheckbox = SMS_RELAY_CONSENT_CHECKBOX;
 
-  readonly visible = computed(() => this.notifier().type === 'phone_app');
+  /** Mientras YEP no ofrezca el respaldo (sin receptores) no se muestra, para
+   * no pedir un consentimiento de cobro de SMS que no se va a usar; si el dueño
+   * ya lo había autorizado, se sigue mostrando para que pueda desactivarlo. */
+  readonly visible = computed(() => {
+    const notifier = this.notifier();
+    const relay = notifier.smsRelay;
+    return (
+      notifier.type === 'phone_app' &&
+      (relay?.globallyAvailable === true || relay?.optedIn === true)
+    );
+  });
   readonly optedIn = computed(() => this.notifier().smsRelay?.optedIn === true);
   readonly copy = computed(() =>
     smsRelayCopy(this.notifier().smsRelay, Boolean(this.notifier().pairedDevice)),
