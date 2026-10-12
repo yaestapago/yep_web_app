@@ -27,3 +27,7 @@ export * from './avatar/avatar';
 export * from './icon-tile/icon-tile';
 export * from './banner/banner';
 export * from './file-drop/file-drop';
+export * from './check-group/check-group';
+export * from './check-group/check-option';
+export * from './menu/menu';
+export * from './menu/menu-item';
