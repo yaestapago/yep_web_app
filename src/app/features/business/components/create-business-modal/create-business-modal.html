@@ -6,10 +6,10 @@
   (closeRequested)="close()"
 >
   @if (error()) {
-    <div class="field-error" role="alert" style="color: var(--color-error)">{{ error() }}</div>
+    <yep-alert class="modal-alert" variant="error">{{ error() }}</yep-alert>
   }
 
-  <form [formGroup]="form" (ngSubmit)="submit()" style="display: grid; gap: var(--space-4)">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="create-form">
     <yep-input
       formControlName="name"
       label="Nombre del negocio"
