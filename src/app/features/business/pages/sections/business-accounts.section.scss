@@ -1,15 +1,113 @@
-.field textarea {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font: inherit;
-  min-height: 84px;
-  padding: var(--space-3);
-  resize: vertical;
+// S6 · Cuentas bancarias · docs/rediseno-web/04-pantallas.md#s6--cuentas-bancarias
+// Encabezado de sección (h2) con "Actualizar" y "Nueva cuenta"; tabla en una yep-card a sangre.
+
+.accounts-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.field textarea:focus {
-  border-color: var(--color-primary);
+/* ---------- Tabla ---------- */
+.accounts-name {
+  color: var(--color-text-primary);
+  display: block;
+  font-weight: var(--font-weight-semibold);
+}
+
+.accounts-sub {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: var(--font-size-xs);
+}
+
+.accounts-last4 {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  margin-left: var(--space-1);
+  white-space: nowrap;
+}
+
+.accounts-key {
+  display: block;
+}
+
+.accounts-muted {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-regular);
+}
+
+.accounts-sr-only {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+td.actions yep-menu {
+  margin-left: var(--space-1);
+}
+
+/* ---------- Modal ---------- */
+.accounts-textarea {
+  gap: 0.375rem;
+}
+
+.accounts-textarea .field-label,
+.accounts-locations .field-label {
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+}
+
+/* P6 · igual que yep-input: borde fuerte, foco = borde 1,5 px sin halo. */
+.accounts-textarea textarea {
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  min-height: 84px;
   outline: none;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  transition: border-color var(--motion-fast);
+}
+
+.accounts-textarea textarea:hover:not(:focus) {
+  border-color: var(--color-text-secondary);
+}
+
+.accounts-textarea textarea:focus {
+  border-color: var(--color-focus);
+  border-width: var(--border-width-focus);
+  padding: calc(var(--space-2) - 0.5px) calc(var(--space-3) - 0.5px);
+}
+
+.accounts-textarea textarea.accounts-textarea__control--invalid,
+.accounts-textarea textarea.accounts-textarea__control--invalid:hover,
+.accounts-textarea textarea.accounts-textarea__control--invalid:focus {
+  border-color: var(--color-error);
+}
+
+.accounts-textarea textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.accounts-textarea .field-error {
+  color: var(--color-error-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accounts-textarea textarea {
+    transition: none;
+  }
 }

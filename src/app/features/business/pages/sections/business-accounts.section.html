@@ -4,7 +4,7 @@
       <h2 class="section-title">Cuentas bancarias</h2>
       <p class="section-subtitle">Cuentas donde se reciben los pagos de este negocio.</p>
     </div>
-    <div class="list-card__actions">
+    <div class="accounts-toolbar__actions">
       <yep-button variant="ghost" size="sm" (clicked)="load()">
         <svg lucideRefreshCw aria-hidden="true"></svg>
         Actualizar
@@ -23,11 +23,11 @@
     </div>
   </div>
 
-  @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
+  @if (error() && !modalOpen() && (loading() || bankAccounts().length > 0)) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
   }
   @if (success()) {
-    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+    <yep-alert variant="success">{{ success() }}</yep-alert>
   }
   @if (planAlert()) {
     <yep-alert variant="warning" title="Limite del plan">
@@ -39,48 +39,90 @@
   }
 
   @if (loading()) {
-    <div class="loading-row">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando cuentas…
-    </div>
+    <yep-state kind="loading" title="Cargando cuentas…" [rows]="3" />
+  } @else if (error() && !modalOpen() && bankAccounts().length === 0) {
+    <yep-state kind="error" [title]="error()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()">
+        Reintentar
+      </yep-button>
+    </yep-state>
   } @else if (bankAccounts().length === 0) {
-    <div class="empty-state">
-      <h3>Sin cuentas bancarias</h3>
-      <p>Agrega una cuenta para asociar los pagos verificados de este negocio.</p>
-    </div>
+    <yep-state
+      kind="empty"
+      title="Sin cuentas bancarias"
+      description="Agrega una cuenta para asociar los pagos verificados de este negocio."
+    >
+      <svg slot="icon" lucideLandmark aria-hidden="true"></svg>
+    </yep-state>
   } @else {
-    <div class="card-list">
-      @for (account of bankAccounts(); track account.id) {
-        <article class="list-card">
-          <div class="list-card__main">
-            <h3 class="list-card__title">{{ title(account) }}</h3>
-            <span class="list-card__meta">
-              {{ account.currency }} · {{ account.accountType }} · {{ locationNames(account) }}
-            </span>
-            <span class="list-card__meta">Bre-B: {{ account.breBKeysDisplay.join(', ') }}</span>
-            <span class="list-card__meta">{{ account.isActive ? 'Activa' : 'Inactiva' }}</span>
-          </div>
-          @if (canManage()) {
-            <div class="list-card__actions">
-              <yep-icon-button action="edit" (clicked)="openEdit(account)" />
-              @if (account.isActive) {
-                <yep-icon-button
-                  action="deactivate"
-                  [loading]="actingId() === account.id"
-                  (clicked)="deactivate(account)"
-                />
-              } @else {
-                <yep-icon-button
-                  action="activate"
-                  [loading]="actingId() === account.id"
-                  (clicked)="activate(account)"
-                />
+    <yep-card padding="none" aria-label="Cuentas">
+      <div class="yep-table-wrap">
+        <table yepTable>
+          <thead>
+            <tr>
+              <th>Cuenta</th>
+              <th>Banco y tipo</th>
+              <th class="num">Llave Bre-B</th>
+              <th>Sede</th>
+              <th>Estado</th>
+              @if (canManage()) {
+                <th class="actions"><span class="accounts-sr-only">Acciones</span></th>
               }
-            </div>
-          }
-        </article>
-      }
-    </div>
+            </tr>
+          </thead>
+          <tbody>
+            @for (account of bankAccounts(); track account.id) {
+              <tr>
+                <td data-label="Cuenta">
+                  <span class="accounts-name">{{ title(account) }}</span>
+                  @if (account.holderName) {
+                    <span class="accounts-sub">{{ account.holderName }}</span>
+                  }
+                </td>
+                <td data-label="Banco y tipo">
+                  {{ bankName(account.bankId) }} ·
+                  {{ account.accountType ? accountTypeLabels[account.accountType] : '—' }} ·
+                  {{ account.currency }}
+                  <span class="accounts-last4">****{{ account.accountNumberLast4 }}</span>
+                </td>
+                <td data-label="Llave Bre-B" class="num">
+                  @for (key of account.breBKeysDisplay; track key) {
+                    <span class="accounts-key">{{ key }}</span>
+                  } @empty {
+                    <span class="accounts-muted">Sin llave</span>
+                  }
+                </td>
+                <td data-label="Sede">{{ locationNames(account) }}</td>
+                <td data-label="Estado">
+                  <yep-status-chip
+                    [tone]="account.isActive ? 'success' : 'neutral'"
+                    [label]="account.isActive ? 'Activa' : 'Inactiva'"
+                  />
+                </td>
+                @if (canManage()) {
+                  <td class="actions">
+                    <yep-icon-button action="edit" (clicked)="openEdit(account)" />
+                    <yep-menu label="Más acciones" [disabled]="actingId() === account.id">
+                      @if (account.isActive) {
+                        <button yepMenuItem tone="danger" (click)="deactivate(account)">
+                          <svg lucidePowerOff aria-hidden="true"></svg>
+                          Desactivar
+                        </button>
+                      } @else {
+                        <button yepMenuItem (click)="activate(account)">
+                          <svg lucidePower aria-hidden="true"></svg>
+                          Activar
+                        </button>
+                      }
+                    </yep-menu>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </yep-card>
   }
 </div>
 
@@ -92,6 +134,9 @@
   (closeRequested)="closeModal()"
 >
   <form [formGroup]="form" (ngSubmit)="save()" class="form-grid">
+    @if (error()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
     <div class="form-grid form-grid--2">
       <yep-select
         formControlName="bankId"
@@ -115,9 +160,14 @@
       <yep-input formControlName="holderName" label="Titular (opcional)" />
     </div>
 
-    <label class="field full-field">
+    <label class="field full-field accounts-textarea">
       <span class="field-label">Llaves Bre-B</span>
-      <textarea formControlName="breBKeys" rows="3" placeholder="Una llave por línea"></textarea>
+      <textarea
+        formControlName="breBKeys"
+        rows="3"
+        placeholder="Una llave por línea"
+        [class.accounts-textarea__control--invalid]="isInvalid('breBKeys')"
+      ></textarea>
       @if (isInvalid('breBKeys')) {
         <span class="field-error">Agrega al menos una llave Bre-B</span>
       }
@@ -140,7 +190,7 @@
       />
     </div>
 
-    <div class="field full-field">
+    <div class="field full-field accounts-locations">
       <span class="field-label">Sedes</span>
       @if (locations().length === 0) {
         <p class="section-subtitle">
