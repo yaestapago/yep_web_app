@@ -1,7 +1,12 @@
 // yep-banner · docs/rediseno-web/03-componentes.md#yep-banner
 // Plano (P7): sin sombras, degradados ni filtros. Fondo de marca fijo: igual en claro y en oscuro.
+//
+// El diseño responde al ancho del propio banner (container query sobre el host), no al viewport:
+// un banner en una columna estrecha de escritorio se comporta como en el celular. P9: la diagonal
+// nunca queda detrás del texto, el texto le reserva su espacio.
 
 :host {
+  container: yep-banner / inline-size;
   display: block;
   min-width: 0;
 }
@@ -15,6 +20,14 @@
   --banner-text: var(--brand-on-ink-muted);
   --banner-band: var(--brand-ink-2);
   --banner-stroke: var(--brand-green);
+  // Medidas: relleno y tamaño de la diagonal (el texto se aparta de ella).
+  --banner-pad-block: var(--space-6);
+  --banner-pad-inline: var(--space-6);
+  --banner-diag-w: 260px;
+  --banner-diag-h: 200px;
+  --banner-title-size: 2.5rem;
+  --banner-stack-gap: var(--space-3);
+  --banner-actions-extra: var(--space-2);
 
   align-items: center;
   background: var(--banner-bg);
@@ -25,7 +38,7 @@
   gap: var(--space-6);
   min-height: 200px;
   overflow: hidden;
-  padding: var(--space-6);
+  padding: var(--banner-pad-block) var(--banner-pad-inline);
   position: relative;
 }
 
@@ -60,16 +73,31 @@
   --banner-stroke: var(--color-primary);
 }
 
+// Compacto (columna estrecha, mockup 01-home "Invita a tu equipo"): relleno 24/28, sin alto mínimo,
+// título 28 px, contenido en columna y diagonal pequeña.
+
+.yep-banner--compact {
+  --banner-pad-block: var(--space-5);
+  --banner-pad-inline: 1.75rem;
+  --banner-diag-w: 104px;
+  --banner-diag-h: 80px;
+  --banner-title-size: 1.75rem;
+  --banner-stack-gap: 14px;
+  --banner-actions-extra: 0px;
+
+  min-height: 0;
+}
+
 // Diagonal de marca (P9)
 
 .yep-banner__diagonal {
   animation: yep-banner-diagonal-in var(--motion-brand) both;
-  height: 200px;
+  height: var(--banner-diag-h);
   pointer-events: none;
   position: absolute;
   right: 0;
   top: 0;
-  width: 260px;
+  width: var(--banner-diag-w);
 }
 
 .yep-banner__band {
@@ -98,21 +126,42 @@
   }
 }
 
-// Texto
+// Texto. En fila, el bloque de texto deja libre todo el ancho de la diagonal; si hay ilustración,
+// es ella la que ocupa ese lado (va por encima de la diagonal).
 
 .yep-banner__copy {
   display: flex;
   flex: 1 1 380px;
   flex-direction: column;
   gap: var(--space-3);
+  margin-inline-end: calc(var(--banner-diag-w) - var(--banner-pad-inline));
   max-width: 560px;
   min-width: 0;
   position: relative;
   z-index: 1;
 }
 
+.yep-banner--with-image .yep-banner__copy {
+  margin-inline-end: 0;
+}
+
+.yep-banner__icon {
+  display: flex;
+}
+
+.yep-banner__icon:empty {
+  display: none;
+}
+
+// En lima, el icon-tile proyectado va en tinta con el icono lima (mockup 01-home).
+.yep-banner--lime .yep-banner__icon {
+  --color-surface-muted: var(--brand-ink);
+  --color-text-primary: var(--brand-lime);
+}
+
 .yep-banner__eyebrow {
   color: var(--banner-eyebrow);
+  display: block;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
@@ -124,7 +173,7 @@
 .yep-banner__title {
   color: var(--banner-title);
   font-family: var(--font-family-display);
-  font-size: 2.5rem;
+  font-size: var(--banner-title-size);
   font-weight: var(--font-weight-extrabold);
   line-height: 0.98;
   margin: 0;
@@ -170,28 +219,58 @@
   width: 280px;
 }
 
-// Celular: se apila, sin ilustración y con la diagonal reducida para no quedar detrás del texto.
+// En columna (compacto, o banner de menos de 640 px de ancho): se apila, sin ilustración. El texto
+// ocupa todo el ancho y una reserva flotante del tamaño de la diagonal aparta solo las líneas que
+// caen a su altura; las de abajo usan el ancho completo.
 
-@media (max-width: 639.98px) {
-  .yep-banner {
-    align-items: flex-start;
+@mixin stacked($banner) {
+  #{$banner} {
+    align-items: stretch;
     flex-direction: column;
   }
 
-  .yep-banner__copy {
+  #{$banner} .yep-banner__copy {
+    display: block;
     flex: 0 1 auto;
+    margin-inline-end: 0;
+    max-width: none;
   }
 
-  .yep-banner__art {
+  #{$banner} .yep-banner__copy::before {
+    content: '';
+    float: right;
+    height: calc(var(--banner-diag-h) - var(--banner-pad-block));
+    width: calc(var(--banner-diag-w) - var(--banner-pad-inline) + var(--space-2));
+  }
+
+  #{$banner} .yep-banner__copy > * + * {
+    margin-top: var(--banner-stack-gap);
+  }
+
+  #{$banner} .yep-banner__copy > .yep-banner__actions {
+    margin-top: calc(var(--banner-stack-gap) + var(--banner-actions-extra));
+  }
+
+  // Sin icono, el primer elemento visible no lleva margen arriba.
+  #{$banner} .yep-banner__icon:empty + * {
+    margin-top: 0;
+  }
+
+  #{$banner} .yep-banner__art {
     display: none;
   }
+}
 
-  .yep-banner__title {
-    font-size: 2rem;
+@include stacked('.yep-banner--compact');
+
+@container yep-banner (max-width: 639.98px) {
+  .yep-banner:not(.yep-banner--compact) {
+    --banner-pad-block: var(--space-5);
+    --banner-pad-inline: var(--space-5);
+    --banner-diag-w: 104px;
+    --banner-diag-h: 80px;
+    --banner-title-size: 2rem;
   }
 
-  .yep-banner__diagonal {
-    height: 80px;
-    width: 104px;
-  }
+  @include stacked('.yep-banner');
 }

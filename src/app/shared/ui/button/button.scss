@@ -1,6 +1,8 @@
 // yep-button · docs/rediseno-web/03-componentes.md#yep-button
 // Plano (P7): sin sombras, degradados ni filtros. Solo tokens.
 
+@use 'button-skin' as skin;
+
 :host {
   display: inline-flex;
 }
@@ -10,117 +12,11 @@
   width: 100%;
 }
 
-.yep-button {
-  align-items: center;
-  background: var(--color-primary);
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--color-on-primary);
-  cursor: pointer;
-  display: inline-flex;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  gap: var(--space-2);
-  justify-content: center;
-  line-height: var(--line-height-snug);
-  min-height: 2.5rem;
-  padding: 0 var(--space-4);
-  text-align: center;
-  text-decoration: none;
-  transition:
-    background-color var(--motion-fast),
-    border-color var(--motion-fast),
-    color var(--motion-fast);
-  width: auto;
-}
-
-.yep-button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
+@include skin.skin;
 
 .yep-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
-}
-
-// Variantes
-
-.yep-button--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.yep-button--secondary,
-.yep-button--ghost {
-  background: transparent;
-  color: var(--color-text-primary);
-}
-
-.yep-button--secondary {
-  border-color: var(--color-text-primary);
-}
-
-.yep-button--secondary:hover:not(:disabled),
-.yep-button--ghost:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-}
-
-.yep-button--danger {
-  background: var(--color-error-strong);
-  color: var(--color-on-danger);
-}
-
-.yep-button--danger:hover:not(:disabled) {
-  background: var(--color-danger-hover);
-}
-
-// Tonos (solo secondary y ghost)
-
-.yep-button--tone-danger {
-  color: var(--color-error-strong);
-}
-
-.yep-button--secondary.yep-button--tone-danger {
-  border-color: var(--color-error-strong);
-}
-
-.yep-button--tone-danger:hover:not(:disabled) {
-  background: var(--color-error-soft);
-}
-
-.yep-button--tone-on-brand {
-  color: var(--brand-on-ink);
-}
-
-.yep-button--secondary.yep-button--tone-on-brand {
-  border-color: var(--brand-on-ink);
-}
-
-.yep-button--tone-on-brand:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand-on-ink) 12%, transparent);
-}
-
-.yep-button--tone-on-brand:focus-visible {
-  outline-color: var(--brand-on-ink);
-}
-
-// Tamaños: sm 32 px · md 40 px · lg 48 px
-
-.yep-button--sm {
-  font-size: 0.8125rem;
-  min-height: 2rem;
-  padding: 0 var(--space-3);
-}
-
-.yep-button--lg {
-  font-size: 0.9375rem;
-  min-height: 3rem;
-  padding: 0 1.25rem;
-}
-
-.yep-button--full {
-  width: 100%;
 }
 
 // Contenido e icono (16 px, separación 8 px)

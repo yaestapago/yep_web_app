@@ -12,14 +12,16 @@
     imageSrc="illustrations/home-panel.svg"
   >
     @if (shortcuts().dashboard; as dashboardLink) {
-      <a slot="actions" class="home-action home-action--primary" [routerLink]="dashboardLink">
+      <a slot="actions" yepButton [routerLink]="dashboardLink">
         Ir al panel de control
         <svg lucideArrowRight aria-hidden="true"></svg>
       </a>
     }
     <a
       slot="actions"
-      class="home-action home-action--on-brand"
+      yepButton
+      variant="secondary"
+      tone="on-brand"
       [href]="novedadesPostUrl"
       target="_blank"
       rel="noreferrer"
@@ -34,7 +36,9 @@
       <div class="home-quick">
         @for (item of shortcuts().quickLinks; track item.title) {
           <a class="home-quick__card" [routerLink]="item.link">
-            <yep-icon-tile [active]="item.active"><svg [lucideIcon]="item.icon" aria-hidden="true"></svg></yep-icon-tile>
+            <yep-icon-tile [active]="item.active"
+              ><svg [lucideIcon]="item.icon" aria-hidden="true"></svg
+            ></yep-icon-tile>
             <span class="home-quick__copy">
               <span class="home-quick__title">{{ item.title }}</span>
               <span class="home-quick__text">{{ item.text }}</span>
@@ -51,7 +55,13 @@
 
   <div class="home-bottom">
     <yep-card class="home-news" title="Más novedades" subtitle="Lo último que llegó a YEP.">
-      <a slot="actions" class="home-link" [href]="novedadesPostUrl" target="_blank" rel="noreferrer">
+      <a
+        slot="actions"
+        class="home-link"
+        [href]="novedadesPostUrl"
+        target="_blank"
+        rel="noreferrer"
+      >
         Leer en el blog
         <svg lucideArrowRight aria-hidden="true"></svg>
       </a>
@@ -71,13 +81,14 @@
       <yep-banner
         class="home-team"
         tone="lime"
+        size="compact"
         title="Invita a tu equipo"
         text="Comparte el código del negocio y cada persona de la caja recibe sus avisos."
       >
-        <a slot="actions" class="home-action home-action--ink" [routerLink]="employeesLink">
-          <svg lucideUsers aria-hidden="true"></svg>
-          Ir a Empleados
-        </a>
+        <yep-icon-tile slot="icon" [size]="48"
+          ><svg lucideUsers aria-hidden="true"></svg
+        ></yep-icon-tile>
+        <a slot="actions" yepButton tone="ink" [routerLink]="employeesLink">Ir a Empleados</a>
       </yep-banner>
     }
   </div>

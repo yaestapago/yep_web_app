@@ -17,6 +17,7 @@ import {
 } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { Banner, Card, IconTile, PageHeader, StatusChip } from '../../../../shared/ui';
+import { ButtonLink } from '../../../../shared/ui/button/button-link';
 
 interface Novedad {
   category: string;
@@ -49,6 +50,7 @@ const TODAY_FORMAT = new Intl.DateTimeFormat('es-CO', {
     LucideDynamicIcon,
     LucideUsers,
     Banner,
+    ButtonLink,
     Card,
     IconTile,
     PageHeader,

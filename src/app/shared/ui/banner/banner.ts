@@ -1,6 +1,7 @@
 import { Component, input as defineInput } from '@angular/core';
 
 export type BannerTone = 'ink' | 'lime' | 'paper';
+export type BannerSize = 'md' | 'compact';
 
 let nextBannerId = 0;
 
@@ -26,7 +27,14 @@ let nextBannerId = 0;
  * - `tone="paper"`: fondo `--color-surface` con borde.
  * - `imageSrc`: ilustración de `public/illustrations/`, a la derecha y oculta por debajo de 640 px.
  *   Es decorativa (`alt=""`): el título y el texto ya dicen lo que importa.
- * - La diagonal de marca (P9) entra desde la esquina superior derecha con `--motion-brand`.
+ * - `size="compact"`: para columnas estrechas (lima "Invita a tu equipo" del home): relleno 24/28,
+ *   sin alto mínimo, título 28 px y contenido en columna. La ilustración no se muestra.
+ * - Proyección: `[slot=actions]` (botones o enlaces `a[yepButton]`) y `[slot=icon]` (p. ej. un
+ *   `yep-icon-tile`, arriba del eyebrow y el título). En `lime`, el icon-tile va en tinta con el
+ *   icono lima, como en el mockup.
+ * - La diagonal de marca (P9) entra desde la esquina superior derecha con `--motion-brand`. Nunca
+ *   queda detrás del texto: el texto se reserva su ancho, y por debajo de 640 px de ancho del
+ *   propio banner (container query, no el viewport) la diagonal se encoge a 104 × 80 px.
  */
 @Component({
   selector: 'yep-banner',
@@ -43,6 +51,7 @@ export class Banner {
   readonly text = defineInput('');
   readonly tone = defineInput<BannerTone>('ink');
   readonly imageSrc = defineInput('');
+  readonly size = defineInput<BannerSize>('md');
 
   protected readonly titleId = `yep-banner-title-${nextBannerId++}`;
 }

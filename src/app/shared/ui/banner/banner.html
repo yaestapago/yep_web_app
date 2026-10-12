@@ -3,6 +3,7 @@
   [class.yep-banner--ink]="tone() === 'ink'"
   [class.yep-banner--lime]="tone() === 'lime'"
   [class.yep-banner--paper]="tone() === 'paper'"
+  [class.yep-banner--compact]="size() === 'compact'"
   [class.yep-banner--with-image]="!!imageSrc()"
   [attr.aria-labelledby]="titleId"
 >
@@ -13,6 +14,7 @@
   </svg>
 
   <div class="yep-banner__copy">
+    <div class="yep-banner__icon"><ng-content select="[slot=icon]"></ng-content></div>
     @if (eyebrow()) {
       <span class="yep-banner__eyebrow">{{ eyebrow() }}</span>
     }

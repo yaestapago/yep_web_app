@@ -1,0 +1,146 @@
+// Piel común de yep-button y a[yepButton] · docs/rediseno-web/03-componentes.md#yep-button
+// Plano (P7): sin sombras, degradados ni filtros. Solo tokens.
+//
+// `$el`: elemento que antecede a cada clase (`''` dentro del componente encapsulado, `a` en el
+// enlace, que no tiene encapsulación). Así ambos comparten medidas y colores sin duplicarlos.
+
+@mixin skin($el: '') {
+  #{$el}.yep-button {
+    align-items: center;
+    background: var(--color-primary);
+    border: var(--border-width) solid transparent;
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    color: var(--color-on-primary);
+    cursor: pointer;
+    display: inline-flex;
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    gap: var(--space-2);
+    justify-content: center;
+    line-height: var(--line-height-snug);
+    min-height: 2.5rem;
+    padding: 0 var(--space-4);
+    text-align: center;
+    text-decoration: none;
+    transition:
+      background-color var(--motion-fast),
+      border-color var(--motion-fast),
+      color var(--motion-fast);
+    width: auto;
+  }
+
+  #{$el}.yep-button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  // Variantes
+
+  #{$el}.yep-button--primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+
+  #{$el}.yep-button--secondary,
+  #{$el}.yep-button--ghost {
+    background: transparent;
+    color: var(--color-text-primary);
+  }
+
+  #{$el}.yep-button--secondary {
+    border-color: var(--color-text-primary);
+  }
+
+  #{$el}.yep-button--secondary:hover:not(:disabled),
+  #{$el}.yep-button--ghost:hover:not(:disabled) {
+    background: var(--color-surface-muted);
+  }
+
+  #{$el}.yep-button--danger {
+    background: var(--color-error-strong);
+    color: var(--color-on-danger);
+  }
+
+  #{$el}.yep-button--danger:hover:not(:disabled) {
+    background: var(--color-danger-hover);
+  }
+
+  // Tonos
+
+  #{$el}.yep-button--tone-danger {
+    color: var(--color-error-strong);
+  }
+
+  #{$el}.yep-button--secondary.yep-button--tone-danger {
+    border-color: var(--color-error-strong);
+  }
+
+  #{$el}.yep-button--tone-danger:hover:not(:disabled) {
+    background: var(--color-error-soft);
+  }
+
+  #{$el}.yep-button--tone-on-brand {
+    color: var(--brand-on-ink);
+  }
+
+  #{$el}.yep-button--secondary.yep-button--tone-on-brand {
+    border-color: var(--brand-on-ink);
+  }
+
+  #{$el}.yep-button--tone-on-brand:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-on-ink) 12%, transparent);
+  }
+
+  #{$el}.yep-button--tone-on-brand:focus-visible {
+    outline-color: var(--brand-on-ink);
+  }
+
+  // `ink`: para fondos de marca claros (`--brand-lime`). Colores de marca fijos, iguales en claro
+  // y en oscuro. `primary` pasa a fondo tinta; `secondary` y `ghost`, a texto y borde tinta.
+
+  #{$el}.yep-button--primary.yep-button--tone-ink {
+    background: var(--brand-ink);
+    color: var(--brand-on-ink);
+  }
+
+  #{$el}.yep-button--primary.yep-button--tone-ink:hover:not(:disabled) {
+    background: var(--brand-ink-2);
+  }
+
+  #{$el}.yep-button--secondary.yep-button--tone-ink,
+  #{$el}.yep-button--ghost.yep-button--tone-ink {
+    color: var(--brand-ink);
+  }
+
+  #{$el}.yep-button--secondary.yep-button--tone-ink {
+    border-color: var(--brand-ink);
+  }
+
+  #{$el}.yep-button--secondary.yep-button--tone-ink:hover:not(:disabled),
+  #{$el}.yep-button--ghost.yep-button--tone-ink:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-ink) 10%, transparent);
+  }
+
+  #{$el}.yep-button--tone-ink:focus-visible {
+    outline-color: var(--brand-ink);
+  }
+
+  // Tamaños: sm 32 px · md 40 px · lg 48 px
+
+  #{$el}.yep-button--sm {
+    font-size: 0.8125rem;
+    min-height: 2rem;
+    padding: 0 var(--space-3);
+  }
+
+  #{$el}.yep-button--lg {
+    font-size: 0.9375rem;
+    min-height: 3rem;
+    padding: 0 1.25rem;
+  }
+
+  #{$el}.yep-button--full {
+    width: 100%;
+  }
+}

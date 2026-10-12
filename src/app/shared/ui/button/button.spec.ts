@@ -88,6 +88,29 @@ describe('Button', () => {
     expect(button().classList).toContain(`yep-button--tone-${tone}`);
   });
 
+  it.each<ButtonVariant>(['primary', 'secondary', 'ghost'])(
+    '%s admite tone ink (fondos lima)',
+    (variant) => {
+      host().variant.set(variant);
+      host().tone.set('ink');
+      fixture.detectChanges();
+      expect(button().classList).toContain('yep-button--tone-ink');
+    },
+  );
+
+  it.each<ButtonTone>(['danger', 'on-brand'])('primary ignora tone %s', (tone) => {
+    host().tone.set(tone);
+    fixture.detectChanges();
+    expect(button().className).not.toContain('yep-button--tone-');
+  });
+
+  it('danger ignora tone ink', () => {
+    host().variant.set('danger');
+    host().tone.set('ink');
+    fixture.detectChanges();
+    expect(button().className).not.toContain('yep-button--tone-');
+  });
+
   it.each<ButtonVariant>(['primary', 'danger'])('%s ignora el tono', (variant) => {
     host().variant.set(variant);
     host().tone.set('danger');
