@@ -9,8 +9,16 @@ import {
 } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { Button } from '../../../../shared/ui/button/button';
-import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import {
+  Avatar,
+  Button,
+  Card,
+  CardSection,
+  CheckGroup,
+  CheckOption,
+  State,
+  StatusChip,
+} from '../../../../shared/ui';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
@@ -29,8 +37,14 @@ interface EmployeeRoutingView {
 @Component({
   selector: 'app-business-notification-routing-section',
   imports: [
+    Avatar,
     Button,
-    Checkbox,
+    Card,
+    CardSection,
+    CheckGroup,
+    CheckOption,
+    State,
+    StatusChip,
     LucideChevronRight,
     LucideLoaderCircle,
     LucideRefreshCw,

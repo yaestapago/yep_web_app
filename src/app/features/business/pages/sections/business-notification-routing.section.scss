@@ -1,41 +1,133 @@
-.list-card__clickable {
+// S9 · Alertas WhatsApp · docs/rediseno-web/04-pantallas.md#s9--alertas-whatsapp
+// Una yep-card por empleado: cabecera clicable (chevron, avatar, nombre, teléfono · rol, chip) y,
+// al abrir, un yep-card-section por banco con un yep-check-group por cuenta.
+
+.routing-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.routing-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.routing-toggle {
+  align-items: center;
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: inherit;
   cursor: pointer;
+  display: flex;
+  flex: 1 1 auto;
+  font: inherit;
+  gap: var(--space-3);
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  &:hover .routing-employee-name {
+    color: var(--color-primary-strong);
+  }
 }
 
-.list-card__clickable:hover .list-card__title {
-  color: var(--color-primary);
+.routing-chevron {
+  color: var(--color-text-secondary);
+  flex: 0 0 auto;
+  height: 20px;
+  transition: transform var(--motion-fast);
+  width: 20px;
 }
 
-.routing-employee-info{align-items:center;display:flex;gap:var(--space-2);min-width:0}
+.routing-chevron[data-expanded='true'] {
+  transform: rotate(90deg);
+}
 
-.routing-chevron{color:var(--color-text-secondary);flex:0 0 auto;height:16px;transition:transform var(--motion-fast);width:16px}
+.routing-employee-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
 
-.routing-chevron[data-expanded='true']{transform:rotate(90deg)}
+.routing-employee-name {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--motion-fast);
+  white-space: nowrap;
+}
 
-.routing-summary{flex:0 0 auto}
+.routing-employee-meta {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
 
-.routing-badge{border-radius:var(--radius-full);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);padding:var(--space-1) var(--space-3);white-space:nowrap}
+.routing-summary {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
 
-.routing-badge--active{background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-strong,var(--color-success))}
+.routing-spin {
+  animation: routing-spin 800ms linear infinite;
+  color: var(--color-text-secondary);
+  height: 16px;
+  width: 16px;
+}
 
-.routing-badge--inactive{background:color-mix(in srgb,var(--color-text-muted) 10%,transparent);color:var(--color-text-secondary)}
+@keyframes routing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-.routing-accounts{border-top:1px solid var(--color-border);display:grid;gap:var(--space-3);margin-top:var(--space-3);padding-top:var(--space-3);width:100%}
+// Contenido abierto: alineado con el nombre (chevron 20 + espacio 12).
+.routing-accounts {
+  margin-top: var(--space-5);
+  min-width: 0;
+  padding-left: calc(20px + var(--space-3));
+}
 
-.routing-bank-group{display:grid;gap:var(--space-1);margin-bottom:var(--space-2)}
+.routing-no-accounts {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
 
-.routing-bank-label{color:var(--color-text-secondary);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);text-transform:uppercase}
+@media (max-width: 640px) {
+  .routing-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 
-.routing-account-row{padding-left:var(--space-3)}
+  .routing-summary {
+    padding-left: calc(20px + var(--space-3));
+  }
 
-.routing-bre-b-key-row{padding-left:var(--space-3)}
+  .routing-accounts {
+    padding-left: 0;
+  }
+}
 
-.routing-bank-header{align-items:center}
+@media (prefers-reduced-motion: reduce) {
+  .routing-chevron,
+  .routing-employee-name {
+    transition: none;
+  }
 
-.routing-breB-keys{display:grid;gap:var(--space-1);margin-left:var(--space-6)}
-
-.routing-breB-key-row{align-items:center}
-
-.routing-no-keys{color:var(--color-text-secondary);font-size:var(--font-size-xs);font-style:italic}
-
-.routing-no-accounts{color:var(--color-text-secondary);font-size:var(--font-size-sm);text-align:center}
+  .routing-spin {
+    animation: none;
+  }
+}
