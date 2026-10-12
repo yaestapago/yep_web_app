@@ -31,3 +31,4 @@ export * from './check-group/check-group';
 export * from './check-group/check-option';
 export * from './menu/menu';
 export * from './menu/menu-item';
+export * from './button/button-link';

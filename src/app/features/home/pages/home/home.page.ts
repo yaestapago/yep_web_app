@@ -16,8 +16,7 @@ import {
   canAccessSubscription,
 } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { Banner, Card, IconTile, PageHeader, StatusChip } from '../../../../shared/ui';
-import { ButtonLink } from '../../../../shared/ui/button/button-link';
+import { Banner, ButtonLink, Card, IconTile, PageHeader, StatusChip } from '../../../../shared/ui';
 
 interface Novedad {
   category: string;
