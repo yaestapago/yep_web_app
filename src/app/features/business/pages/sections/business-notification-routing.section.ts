@@ -10,6 +10,7 @@ import {
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import {
+  Alert,
   Avatar,
   Button,
   Card,
@@ -37,6 +38,7 @@ interface EmployeeRoutingView {
 @Component({
   selector: 'app-business-notification-routing-section',
   imports: [
+    Alert,
     Avatar,
     Button,
     Card,

@@ -14,7 +14,7 @@
 
   @if (loading()) {
     <yep-state kind="loading" title="Cargando empleados…" [rows]="3" />
-  } @else if (error()) {
+  } @else if (error() && employeeViews().length === 0) {
     <yep-state kind="error" [title]="error()">
       <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()">
         Reintentar
@@ -29,6 +29,9 @@
       <svg slot="icon" lucideUsers aria-hidden="true"></svg>
     </yep-state>
   } @else {
+    @if (error()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
     <div class="routing-list">
       @for (view of employeeViews(); track view.member.id) {
         @let expanded = expandedEmployeeIds().has(view.member.id);
