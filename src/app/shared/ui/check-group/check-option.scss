@@ -1,0 +1,19 @@
+// yep-check-option · docs/rediseno-web/03-componentes.md#yep-check-group
+// Fila de 40 px sin borde ni fondo propio; casilla + label 13/600 + meta 12 px.
+
+@use './check-box';
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.yep-check-option {
+  font-size: 0.8125rem;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.yep-check--disabled {
+  opacity: 0.45;
+}

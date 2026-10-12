@@ -1,0 +1,89 @@
+// Casilla compartida por yep-check-group y yep-check-option.
+// Imita la casilla de yep-checkbox (03 · yep-checkbox) y añade el estado indeterminado.
+
+.yep-check {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.yep-check--disabled {
+  cursor: not-allowed;
+}
+
+/* Casilla nativa oculta pero accesible (recibe foco, teclado y lectores de pantalla). */
+.yep-check__input {
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.yep-check__box {
+  align-items: center;
+  background: var(--color-input-bg);
+  border: var(--border-width-focus) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  color: var(--color-on-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 18px;
+  justify-content: center;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+  width: 18px;
+}
+
+.yep-check__box svg {
+  height: 12px;
+  stroke-width: 3;
+  width: 12px;
+}
+
+.yep-check:hover:not(.yep-check--disabled) .yep-check__box {
+  border-color: var(--color-text-secondary);
+}
+
+.yep-check--on .yep-check__box,
+.yep-check--on:hover:not(.yep-check--disabled) .yep-check__box {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Foco de teclado: anillo plano (P7), sin halo. */
+.yep-check__input:focus-visible + .yep-check__box {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.yep-check__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.yep-check__label {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.yep-check__meta {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yep-check__box {
+    transition: none;
+  }
+}
