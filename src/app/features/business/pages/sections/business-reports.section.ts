@@ -7,7 +7,9 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { DashboardDateRange } from '../../../../shared/models/dashboard-summary.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import {
   DateRangePicker,
   defaultDashboardRange,
@@ -29,7 +31,7 @@ const ALL_LOCATIONS_OPTION_ID = 'all';
  */
 @Component({
   selector: 'app-business-reports-section',
-  imports: [FormsModule, Button, DateRangePicker, Select, LucideFileDown],
+  imports: [FormsModule, Alert, Button, Card, DateRangePicker, Select, LucideFileDown],
   templateUrl: './business-reports.section.html',
   styleUrls: ['./business-sections.scss', './business-reports.section.scss'],
 })
