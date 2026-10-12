@@ -1,73 +1,26 @@
+// S14 · Configuración · docs/rediseno-web/04-pantallas.md · mockups/21-configuracion.html
+// Una sola `yep-card` con un `yep-card-section` por bloque; cada fila: icono, texto y acción.
+
 :host {
   display: block;
 }
 
-.settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+.settings-alert {
+  display: block;
+  margin-bottom: var(--space-4);
+  max-width: 880px;
 }
 
-.settings-success {
-  background: color-mix(in srgb, var(--color-success) 18%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--color-success-strong);
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-4);
+.settings-card {
+  display: block;
+  max-width: 880px;
 }
 
-.field-error {
-  background: color-mix(in srgb, var(--color-error) 14%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--color-error);
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-}
-
-/* Forms inside modals */
-.form-grid {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.form-grid--2 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-@media (max-width: 520px) {
-  .form-grid--2 {
-    grid-template-columns: 1fr;
-  }
-}
-
-.setting-card {
+/* Fila de ajuste */
+.setting-row {
   align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
   display: flex;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-}
-
-.setting-icon {
-  align-items: center;
-  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--color-secondary);
-  display: flex;
-  flex-shrink: 0;
-  height: 44px;
-  justify-content: center;
-  width: 44px;
-}
-
-.setting-icon svg {
-  height: 22px;
-  width: 22px;
 }
 
 .setting-body {
@@ -76,163 +29,76 @@
 }
 
 .setting-title {
-  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  font-size: 0.9375rem;
   font-weight: var(--font-weight-semibold);
+  line-height: 1.4;
   margin: 0;
 }
 
 .setting-desc {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  margin: var(--space-1) 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 2px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-// Enlace de acción con apariencia de botón ghost pequeño (paridad visual con
-// los `yep-button variant="ghost" size="sm"` de las otras tarjetas). Se usa un
-// `<a>` en lugar de un botón por accesibilidad al navegar a URLs externas.
-.setting-link {
-  align-items: center;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  display: inline-flex;
+.setting-action {
   flex-shrink: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-3);
-  text-decoration: none;
 }
 
-.setting-link:hover {
-  background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
-}
-
-.setting-tag {
-  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-warning);
-  flex-shrink: 0;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 2px var(--space-3);
-}
-
-.theme-switch {
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-shrink: 0;
-  gap: 2px;
-  padding: 3px;
-}
-
-.seg {
-  align-items: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: flex;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  transition:
-    background var(--motion-fast),
-    color var(--motion-fast);
-}
-
-.seg svg {
-  height: 16px;
-  width: 16px;
-}
-
-.seg.active {
-  background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
-  color: var(--color-primary);
-}
-
-/* Tarjetas con contenido apilado (notificaciones, preferencias generales) */
-.setting-card--stacked {
-  align-items: stretch;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.setting-row {
-  align-items: center;
-  display: flex;
-  gap: var(--space-4);
-}
-
-/* Acordeón (preferencias de notificaciones) */
-.setting-accordion {
-  gap: 0;
-  padding: 0;
-}
-
+/* Acordeón (preferencias de notificaciones): la fila entera es el botón. */
 .accordion-header {
-  align-items: center;
   background: transparent;
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   color: inherit;
   cursor: pointer;
-  display: flex;
   font: inherit;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
+  padding: 0;
   text-align: left;
   width: 100%;
-}
-
-.accordion-header:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
 }
 
 .accordion-chevron {
   color: var(--color-text-secondary);
   flex-shrink: 0;
-  height: 20px;
+  height: var(--icon-md);
   transition: transform var(--motion-fast);
-  width: 20px;
+  width: var(--icon-md);
+}
+
+.accordion-header:hover .accordion-chevron {
+  color: var(--color-text-primary);
 }
 
 .accordion-chevron.open {
   transform: rotate(180deg);
 }
 
-.setting-accordion .toggle-list {
-  padding: 0 var(--space-5) var(--space-4);
-}
-
 /* Toggles de notificaciones */
 .toggle-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: var(--space-3) 0 0;
+  padding: 0 0 0 calc(36px + var(--space-4));
 }
 
 .toggle-item {
   align-items: center;
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width) solid var(--color-border);
   display: flex;
   gap: var(--space-4);
   justify-content: space-between;
   padding: var(--space-3) 0;
+}
+
+.toggle-item:last-child {
+  padding-bottom: 0;
 }
 
 .toggle-text {
@@ -252,13 +118,28 @@
   font-size: var(--font-size-xs);
 }
 
-/* El interruptor on/off ahora vive en el primitivo reutilizable `yep-toggle`. */
+/* Formularios dentro de los modales */
+.form-grid {
+  display: grid;
+  gap: var(--space-4);
+}
 
-/* Formulario de preferencias generales */
+.form-grid--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 520px) {
+  .form-grid--2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Formulario de preferencias generales (bloque hoy comentado en la plantilla) */
 .general-form {
   display: grid;
   gap: var(--space-4);
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: var(--space-4);
 }
 
 .select-field {
@@ -268,23 +149,24 @@
 }
 
 .select-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
 }
 
 .select-control {
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font: inherit;
   font-size: var(--font-size-sm);
-  padding: var(--space-2) var(--space-3);
+  min-height: var(--control-height-md);
+  padding: 0 var(--space-3);
   width: 100%;
 }
 
 .select-control:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-focus);
   outline: none;
 }
 
@@ -296,16 +178,23 @@
 }
 
 @media (max-width: 560px) {
-  .setting-card {
+  .setting-row:not(.accordion-header) {
     flex-wrap: wrap;
   }
 
-  .theme-switch {
-    width: 100%;
+  .setting-body {
+    flex-basis: calc(100% - 36px - var(--space-4));
   }
 
-  .seg {
-    flex: 1;
-    justify-content: center;
+  .setting-desc {
+    white-space: normal;
+  }
+
+  .setting-action {
+    margin-left: calc(36px + var(--space-4));
+  }
+
+  .toggle-list {
+    padding-left: 0;
   }
 }

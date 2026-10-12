@@ -6,13 +6,11 @@ import {
   LucideChevronDown,
   LucideFileText,
   LucideMessageCircle,
-  LucideMoon,
   LucidePalette,
   LucidePencil,
   LucideShield,
   // LucideSlidersHorizontal se usa solo en el bloque de "Preferencias generales",
   // hoy comentado en el template. Reactívalo junto con ese bloque.
-  LucideSun,
   LucideUser,
 } from '@lucide/angular';
 import { finalize } from 'rxjs';
@@ -27,11 +25,18 @@ import {
   SUPPORT_WHATSAPP_URL,
   TERMS_URL,
 } from '../../../../shared/constants/legal.constants';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { ButtonLink } from '../../../../shared/ui/button/button-link';
+import { Card } from '../../../../shared/ui/card/card';
+import { CardSection } from '../../../../shared/ui/card-section/card-section';
+import { IconTile } from '../../../../shared/ui/icon-tile/icon-tile';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
+import { Segmented, type SegmentedOption } from '../../../../shared/ui/segmented/segmented';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
@@ -61,20 +66,25 @@ interface NotificationToggle {
   selector: 'app-settings-page',
   imports: [
     ReactiveFormsModule,
+    Alert,
     Button,
+    ButtonLink,
+    Card,
+    CardSection,
+    IconTile,
     Input,
     Modal,
+    PageHeader,
     PhoneInput,
+    Segmented,
     Toggle,
     LucideBell,
     LucideChevronDown,
     LucideFileText,
     LucideMessageCircle,
-    LucideMoon,
     LucidePalette,
     LucidePencil,
     LucideShield,
-    LucideSun,
     LucideUser,
   ],
   templateUrl: './settings.page.html',
@@ -93,6 +103,12 @@ export class SettingsPage implements OnInit {
 
   readonly termsUrl = TERMS_URL;
   readonly supportWhatsappUrl = SUPPORT_WHATSAPP_URL;
+
+  /** Opciones del control segmentado de tema; el valor se deriva de `isDark()`. */
+  readonly themeOptions: readonly SegmentedOption[] = [
+    { value: 'light', label: 'Claro' },
+    { value: 'dark', label: 'Oscuro' },
+  ];
 
   readonly notifications = computed<NotificationPreferences>(
     () => this.user()?.preferences?.notifications ?? DEFAULT_NOTIFICATIONS,
