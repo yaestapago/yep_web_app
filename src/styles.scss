@@ -1,6 +1,10 @@
 :root {
-  --font-family-base:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Tokens del rediseño: docs/rediseno-web/02-tokens.md. Único sitio con colores literales. */
+
+  /* Tipografía */
+  --font-family-base: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
   --font-size-xxs: 0.625rem;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -18,6 +22,8 @@
   --line-height-tight: 1.1;
   --line-height-snug: 1.25;
   --line-height-body: 1.5;
+
+  /* Espacio, radios y tamaños */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -37,62 +43,172 @@
   --control-height-sm: 2.375rem;
   --control-height-md: 2.5rem;
   --control-height-lg: 3rem;
-  --color-primary: #00c27d;
-  --color-secondary: #008d8c;
-  --color-accent: #bff06c;
-  --color-success: #77da73;
-  --color-success-strong: #287a3d;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-background: #f7faf9;
+  --content-max: 1200px;
+  --page-pad-x: 32px;
+  --sidebar-width: 256px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  /* Marca fija (iguales en ambos temas) */
+  --brand-ink: #012e31;
+  --brand-ink-2: #0a4043;
+  --brand-green: #09c18d;
+  --brand-lime: #bff06c;
+  --brand-on-ink: #ffffff;
+  --brand-on-ink-muted: #c9ddd7;
+
+  /* Color · modo claro */
+  --color-background: #f4f8f7;
   --color-surface: #ffffff;
+  --color-surface-muted: #eef4f2;
   --color-input-bg: #ffffff;
-  --color-border: #d8e5e0;
-  --color-text-primary: #102a2c;
-  --color-text-secondary: #5f7778;
-  --color-text-muted: #7b9191;
-  --color-gray-50: #f0f4f9;
-  --color-gray-300: #a3abbf;
+  --color-border: #dce7e3;
+  --color-border-strong: #7e9a96;
+  --color-text-primary: #012e31;
+  --color-text-secondary: #3f5b5c;
+  --color-text-muted: #587473;
+  --color-primary: #09c18d;
+  --color-on-primary: #012e31;
+  --color-primary-hover: #07ad7e;
+  --color-primary-strong: #087a60;
+  --color-primary-soft: #e3f7ef;
+  /* Obsoleto: antes teal #008D8C. Alias; no usar en código nuevo. */
+  --color-secondary: var(--color-primary-strong);
+  --color-accent: #bff06c;
+  --color-accent-soft: #f0fbdd;
+  --color-success: #09c18d;
+  --color-success-strong: #087a60;
+  --color-success-soft: #e3f7ef;
+  --color-warning: #e0a100;
+  --color-warning-strong: #8a5a00;
+  --color-warning-soft: #fdf3d8;
+  --color-error: #d64545;
+  --color-error-strong: #b42318;
+  --color-error-soft: #fdecea;
+  --color-info: #2f7f8f;
+  --color-info-strong: #245f6b;
+  --color-info-soft: #e4f0f2;
+  --color-focus: #012e31;
+  --color-on-danger: #ffffff;
+  --color-danger-hover: #931c13;
+  --kpi-emphasis-bg: var(--brand-ink);
+  --kpi-emphasis-fg: var(--brand-on-ink);
+  --kpi-emphasis-muted: var(--brand-on-ink-muted);
+  --color-overlay: rgba(1, 46, 49, 0.48);
+
+  /* Variables heredadas de la paleta anterior, remapeadas a tokens nuevos */
+  --color-gray-50: var(--color-surface-muted);
+  --color-gray-300: var(--color-border-strong);
   --color-gray-700: var(--color-text-primary);
   --scrollbar-track: var(--color-gray-50);
   --scrollbar-thumb: var(--color-gray-300);
-  --shadow-xs: 0 1px 2px rgba(16, 42, 44, 0.04);
-  --shadow-sm: 0 6px 18px rgba(16, 42, 44, 0.06);
-  --shadow-md: 0 12px 30px rgba(16, 42, 44, 0.08);
-  --shadow-lg: 0 24px 60px rgba(16, 42, 44, 0.1);
-  --shadow-focus: 0 0 0 4px color-mix(in srgb, var(--color-primary) 18%, transparent);
-  --shadow-focus-error: 0 0 0 4px color-mix(in srgb, var(--color-error) 14%, transparent);
-  --shadow-soft: var(--shadow-sm);
-  --shadow-panel: var(--shadow-md);
+
+  /* Gráficas (Chart.js) */
+  --chart-1: #09c18d;
+  --chart-2: #012e31;
+  --chart-3: #bff06c;
+  --chart-4: #7e9a96;
+  --chart-grid: #dce7e3;
+  --chart-axis: #587473;
+
+  /* Bordes y sombras (P7: plano; sombra solo en capas flotantes) */
+  --border-width: 1px;
+  --border-width-focus: 1.5px;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-focus: none;
+  --shadow-focus-error: none;
+  --shadow-soft: none;
+  --shadow-panel: none;
+  --shadow-overlay: 0 12px 32px rgba(1, 46, 49, 0.12);
+
+  /* Movimiento */
   --motion-fast: 120ms ease;
   --motion-base: 180ms ease;
   --motion-slow: 260ms ease;
+  --motion-brand: 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
   color-scheme: light;
 }
 
 :root[data-theme='dark'] {
-  --color-primary: #00c27d;
-  --color-secondary: #00a887;
+  --color-background: #01272a;
+  --color-surface: #063a3d;
+  --color-surface-muted: #0a4548;
+  --color-input-bg: #03302f;
+  --color-border: #164f4d;
+  --color-border-strong: #5e8a84;
+  --color-text-primary: #eaf4f1;
+  --color-text-secondary: #a9c4be;
+  --color-text-muted: #8fb0a9;
+  --color-primary: #09c18d;
+  --color-on-primary: #012e31;
+  --color-primary-hover: #2bd3a0;
+  --color-primary-strong: #3fd9a8;
+  --color-primary-soft: color-mix(in srgb, #09c18d 18%, #063a3d);
+  --color-secondary: var(--color-primary-strong);
   --color-accent: #bff06c;
-  --color-success: #77da73;
-  --color-success-strong: #9be797;
-  --color-warning: #ffb84d;
-  --color-error: #ff5d73;
-  --color-background: #0f1720;
-  --color-surface: #162126;
-  --color-input-bg: #101a1f;
-  --color-border: #26343a;
-  --color-text-primary: #eaf7f3;
-  --color-text-secondary: #9fb5ad;
-  --color-text-muted: #829993;
+  --color-accent-soft: color-mix(in srgb, #bff06c 14%, #063a3d);
+  --color-success: #09c18d;
+  --color-success-strong: #3fd9a8;
+  --color-success-soft: color-mix(in srgb, #09c18d 18%, #063a3d);
+  --color-warning: #f5c04a;
+  --color-warning-strong: #f5c04a;
+  --color-warning-soft: color-mix(in srgb, #f5c04a 16%, #063a3d);
+  --color-error: #ff8a7a;
+  --color-error-strong: #ff8a7a;
+  --color-error-soft: color-mix(in srgb, #ff8a7a 16%, #063a3d);
+  --color-info: #7fc4d4;
+  --color-info-strong: #7fc4d4;
+  --color-info-soft: color-mix(in srgb, #7fc4d4 16%, #063a3d);
+  --color-focus: #09c18d;
+  --color-on-danger: #012e31;
+  --color-danger-hover: #ff6f5c;
+  --kpi-emphasis-bg: #09c18d;
+  --kpi-emphasis-fg: #012e31;
+  --kpi-emphasis-muted: #0a4043;
+  --color-overlay: rgba(0, 20, 22, 0.64);
   --color-gray-700: var(--color-text-primary);
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.18);
-  --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.22);
-  --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.34);
-  --shadow-soft: var(--shadow-sm);
-  --shadow-panel: var(--shadow-md);
+
+  --chart-1: #09c18d;
+  --chart-2: #eaf4f1;
+  --chart-3: #bff06c;
+  --chart-4: #5e8a84;
+  --chart-grid: #164f4d;
+  --chart-axis: #8fb0a9;
+
+  --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.4);
+
   color-scheme: dark;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --page-pad-x: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms linear;
+    --motion-base: 0ms linear;
+    --motion-slow: 0ms linear;
+    --motion-brand: 0ms linear;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {
@@ -211,13 +327,18 @@ p {
   line-height: var(--line-height-body);
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
+/* Foco de teclado (P6/P7): anillo plano en --color-focus, sin halo. */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Campos de texto: el borde pasa a 1,5 px --color-focus (la línea se dibuja sobre el borde). */
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='color']):focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
-  outline-offset: 2px;
+  outline-offset: calc(-1 * var(--border-width-focus));
+  outline-width: var(--border-width-focus);
 }
 
 /* Utilidades de página compartidas por las vistas autenticadas */
@@ -249,7 +370,6 @@ textarea:focus-visible {
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xs);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -270,9 +390,9 @@ textarea:focus-visible {
 
 .placeholder-icon {
   align-items: center;
-  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
+  background: var(--color-surface-muted);
   border-radius: var(--radius-full);
-  color: var(--color-secondary);
+  color: var(--color-text-primary);
   display: flex;
   height: 56px;
   justify-content: center;
