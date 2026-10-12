@@ -1,16 +1,13 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import {
-  LucideCircleCheck,
-  LucideClock,
-  LucideLoaderCircle,
-  LucideLock,
-} from '@lucide/angular';
+import { RouterLink } from '@angular/router';
+import { LucideCircleCheck, LucideClock, LucideLock } from '@lucide/angular';
 
 import { canAccessBusinessSection } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { BillingStatusService } from '../../../../core/services/billing-status.service';
 import { Button } from '../../../../shared/ui/button/button';
+import { ButtonLink } from '../../../../shared/ui/button/button-link';
+import { State } from '../../../../shared/ui/state/state';
 import {
   blockReasonLabel,
   formatCopAmount,
@@ -26,14 +23,13 @@ import {
  */
 @Component({
   selector: 'app-business-blocked-section',
-  imports: [Button, LucideCircleCheck, LucideClock, LucideLoaderCircle, LucideLock],
+  imports: [Button, ButtonLink, LucideCircleCheck, LucideClock, LucideLock, RouterLink, State],
   templateUrl: './business-blocked.section.html',
   styleUrl: './business-blocked.section.scss',
 })
 export class BusinessBlockedSection implements OnInit {
   private readonly billing = inject(BillingStatusService);
   private readonly session = inject(AuthSessionService);
-  private readonly router = inject(Router);
 
   readonly checking = signal(true);
   readonly status = this.billing.status;
@@ -46,6 +42,13 @@ export class BusinessBlockedSection implements OnInit {
     () => this.session.activeMembership()?.businessAccount?.name?.trim() || 'Tu negocio',
   );
   readonly blockedSince = computed(() => formatLongDate(this.billing.blockedAt()));
+  /** Título del estado del propietario (texto de presentación con los datos ya cargados). */
+  readonly ownerTitle = computed(() => {
+    const since = this.blockedSince();
+    return since
+      ? `${this.businessName()} está bloqueado desde el ${since}`
+      : `${this.businessName()} está bloqueado`;
+  });
   readonly reasonText = computed(() => blockReasonLabel(this.billing.reason()));
   readonly paysInvoice = computed(() => this.billing.reason() === 'payment_overdue');
   readonly nextStepText = computed(() => {
@@ -67,6 +70,13 @@ export class BusinessBlockedSection implements OnInit {
     );
   });
 
+  /** Enlace al panel del negocio activo; `null` si el rol no puede abrirlo. */
+  readonly dashboardLink = computed(() => {
+    if (!this.canOpenDashboard()) return null;
+    const businessId = this.session.activeBusinessAccountId();
+    return businessId ? ['/businesses', businessId, 'dashboard'] : ['/businesses'];
+  });
+
   ngOnInit(): void {
     this.check();
   }
@@ -74,18 +84,5 @@ export class BusinessBlockedSection implements OnInit {
   check(): void {
     this.checking.set(true);
     void this.billing.refresh().finally(() => this.checking.set(false));
-  }
-
-  goToSubscription(): void {
-    void this.router.navigateByUrl('/subscription');
-  }
-
-  goToInvoices(): void {
-    void this.router.navigateByUrl('/invoices');
-  }
-
-  goToDashboard(): void {
-    const businessId = this.session.activeBusinessAccountId();
-    void this.router.navigate(businessId ? ['/businesses', businessId, 'dashboard'] : ['/businesses']);
   }
 }

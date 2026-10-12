@@ -1,96 +1,82 @@
 @if (checking() && !status()) {
-  <div class="loading-row" role="status">
-    <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-    Revisando el estado del servicio...
-  </div>
+  <yep-state class="blocked-loading" kind="loading" title="Revisando el estado del servicio..." />
 } @else if (isBlocked()) {
-  <section class="blocked-card" aria-labelledby="blocked-title">
-    <span class="blocked-icon" aria-hidden="true"><svg lucideLock></svg></span>
-
-    @if (isOwner()) {
-      <div class="blocked-copy">
-        <p class="eyebrow">Servicio bloqueado</p>
-        <h2 id="blocked-title">
-          @if (blockedSince()) {
-            {{ businessName() }} está bloqueado desde el {{ blockedSince() }}
-          } @else {
-            {{ businessName() }} está bloqueado
-          }
-        </h2>
-        <p class="blocked-reason">{{ reasonText() }} {{ nextStepText() }}</p>
-      </div>
-
-      <p class="blocked-note">
-        Seguimos registrando los pagos que recibe tu negocio; podrás verlos apenas se confirme el
-        pago. Los avisos por WhatsApp de este periodo no se enviarán.
-      </p>
-
-      <div class="blocked-actions">
-        @if (paysInvoice()) {
-          <yep-button (clicked)="goToInvoices()">Ver cuentas de cobro</yep-button>
-          <yep-button variant="secondary" (clicked)="goToSubscription()">
-            Ir a Suscripción
-          </yep-button>
-        } @else {
-          <yep-button (clicked)="goToSubscription()">Ir a Suscripción</yep-button>
-          <yep-button variant="secondary" (clicked)="goToInvoices()">
-            Ver cuentas de cobro
-          </yep-button>
-        }
-        <yep-button variant="ghost" [loading]="checking()" (clicked)="check()">
-          Revisar estado
-        </yep-button>
-      </div>
-    } @else {
-      <div class="blocked-copy">
-        <p class="eyebrow">Servicio bloqueado</p>
-        <h2 id="blocked-title">{{ businessName() }} está bloqueado temporalmente</h2>
-        <p class="blocked-reason">
-          La información de pagos no está disponible mientras se regulariza la suscripción del
-          negocio. Contacta al propietario del negocio para que realice el pago.
+  @if (isOwner()) {
+    <yep-state
+      class="blocked-state"
+      kind="empty"
+      [title]="ownerTitle()"
+      [description]="reasonText() + ' ' + nextStepText()"
+    >
+      <svg slot="icon" lucideLock aria-hidden="true"></svg>
+      <div slot="action" class="blocked-body">
+        <p class="blocked-note">
+          Seguimos registrando los pagos que recibe tu negocio; podrás verlos apenas se confirme el
+          pago. Los avisos por WhatsApp de este periodo no se enviarán.
         </p>
-      </div>
 
-      <p class="blocked-note">
-        Seguimos registrando los pagos que recibe el negocio; podrás verlos apenas se confirme el
-        pago.
-      </p>
-
-      <div class="blocked-actions">
-        <yep-button variant="ghost" [loading]="checking()" (clicked)="check()">
-          Revisar estado
-        </yep-button>
+        <div class="blocked-actions">
+          @if (paysInvoice()) {
+            <a yepButton routerLink="/invoices">Ver cuentas de cobro</a>
+            <a yepButton variant="secondary" routerLink="/subscription">Ir a Suscripción</a>
+          } @else {
+            <a yepButton routerLink="/subscription">Ir a Suscripción</a>
+            <a yepButton variant="secondary" routerLink="/invoices">Ver cuentas de cobro</a>
+          }
+          <yep-button variant="ghost" [loading]="checking()" (clicked)="check()">
+            Revisar estado
+          </yep-button>
+        </div>
       </div>
-    }
-  </section>
+    </yep-state>
+  } @else {
+    <yep-state
+      class="blocked-state"
+      kind="empty"
+      [title]="businessName() + ' está bloqueado temporalmente'"
+      description="La información de pagos no está disponible mientras se regulariza la suscripción del negocio. Contacta al propietario del negocio para que realice el pago."
+    >
+      <svg slot="icon" lucideLock aria-hidden="true"></svg>
+      <div slot="action" class="blocked-body">
+        <p class="blocked-note">
+          Seguimos registrando los pagos que recibe el negocio; podrás verlos apenas se confirme el
+          pago.
+        </p>
+
+        <div class="blocked-actions">
+          <yep-button variant="ghost" [loading]="checking()" (clicked)="check()">
+            Revisar estado
+          </yep-button>
+        </div>
+      </div>
+    </yep-state>
+  }
 } @else if (state() === 'payment_review') {
-  <section class="blocked-card blocked-card--review" aria-labelledby="blocked-title">
-    <span class="blocked-icon" aria-hidden="true"><svg lucideClock></svg></span>
-    <div class="blocked-copy">
-      <p class="eyebrow">Pago en revisión</p>
-      <h2 id="blocked-title">Estamos revisando tu pago</h2>
-      <p class="blocked-reason">
-        Mientras lo confirmamos, {{ businessName() }} sigue funcionando con normalidad.
-      </p>
-    </div>
-    @if (canOpenDashboard()) {
-      <div class="blocked-actions">
-        <yep-button (clicked)="goToDashboard()">Ir al panel de control</yep-button>
+  <yep-state
+    class="blocked-state"
+    kind="empty"
+    title="Estamos revisando tu pago"
+    [description]="'Mientras lo confirmamos, ' + businessName() + ' sigue funcionando con normalidad.'"
+  >
+    <svg slot="icon" lucideClock aria-hidden="true"></svg>
+    @if (dashboardLink(); as link) {
+      <div slot="action" class="blocked-actions">
+        <a yepButton [routerLink]="link">Ir al panel de control</a>
       </div>
     }
-  </section>
+  </yep-state>
 } @else {
-  <section class="blocked-card blocked-card--ok" aria-labelledby="blocked-title">
-    <span class="blocked-icon" aria-hidden="true"><svg lucideCircleCheck></svg></span>
-    <div class="blocked-copy">
-      <p class="eyebrow">Servicio activo</p>
-      <h2 id="blocked-title">{{ businessName() }} no tiene bloqueos</h2>
-      <p class="blocked-reason">Ya puedes ver los pagos de tu negocio.</p>
-    </div>
-    @if (canOpenDashboard()) {
-      <div class="blocked-actions">
-        <yep-button (clicked)="goToDashboard()">Ir al panel de control</yep-button>
+  <yep-state
+    class="blocked-state"
+    kind="empty"
+    [title]="businessName() + ' no tiene bloqueos'"
+    description="Ya puedes ver los pagos de tu negocio."
+  >
+    <svg slot="icon" lucideCircleCheck aria-hidden="true"></svg>
+    @if (dashboardLink(); as link) {
+      <div slot="action" class="blocked-actions">
+        <a yepButton [routerLink]="link">Ir al panel de control</a>
       </div>
     }
-  </section>
+  </yep-state>
 }
