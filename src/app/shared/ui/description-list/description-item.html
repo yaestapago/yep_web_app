@@ -1,0 +1,24 @@
+<div class="yep-description-item__label">{{ label() }}</div>
+
+<div class="yep-description-item__body">
+  <div class="yep-description-item__value-row">
+    <div class="yep-description-item__value" [class.yep-description-item__value--mono]="mono()">
+      <ng-content></ng-content>
+    </div>
+    @if (copy()) {
+      <button
+        class="yep-description-item__copy"
+        type="button"
+        [attr.aria-label]="'Copiar ' + label()"
+        title="Copiar"
+        (click)="copied.emit()"
+      >
+        <svg lucideCopy aria-hidden="true"></svg>
+      </button>
+    }
+  </div>
+
+  @if (hint()) {
+    <div class="yep-description-item__hint">{{ hint() }}</div>
+  }
+</div>

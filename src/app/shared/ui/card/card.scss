@@ -1,0 +1,128 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.yep-card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  padding: var(--space-5);
+}
+
+/* Banner en tinta: los tokens de texto y borde se redefinen solo dentro de la tarjeta para que el
+   contenido proyectado (secciones, listas de datos) se lea igual en claro y en oscuro. */
+.yep-card--brand {
+  --color-text-primary: var(--brand-on-ink);
+  --color-text-secondary: var(--brand-on-ink-muted);
+  --color-text-muted: var(--brand-on-ink-muted);
+  --color-border: var(--brand-ink-2);
+  --color-surface-muted: var(--brand-ink-2);
+
+  background: var(--brand-ink);
+  border-color: var(--brand-ink);
+  color: var(--brand-on-ink);
+}
+
+.yep-card__header {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: calc(var(--space-4) + var(--space-1));
+}
+
+/* Sin título, subtítulo, icono ni acciones no hay cabecera. */
+.yep-card__header:not(:has(> :not(:empty))) {
+  display: none;
+}
+
+.yep-card__icon {
+  color: var(--color-text-primary);
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.yep-card__icon ::ng-deep svg {
+  height: var(--icon-md);
+  width: var(--icon-md);
+}
+
+.yep-card__heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.yep-card__title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.yep-card__subtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 2px 0 0;
+}
+
+.yep-card__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.yep-card__body {
+  min-width: 0;
+}
+
+.yep-card__footer {
+  border-top: var(--border-width) solid var(--color-border);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+}
+
+.yep-card__icon:empty,
+.yep-card__actions:empty,
+.yep-card__footer:empty {
+  display: none;
+}
+
+/* A sangre: la cabecera y el pie conservan su relleno; el contenido llega al borde. */
+.yep-card--flush {
+  overflow: hidden;
+  padding: 0;
+}
+
+.yep-card--flush .yep-card__header {
+  margin-bottom: 0;
+  padding: var(--space-5);
+}
+
+.yep-card--flush .yep-card__footer {
+  margin-top: 0;
+  padding: var(--space-4) var(--space-5);
+}
+
+@media (max-width: 768px) {
+  .yep-card {
+    padding: var(--space-4);
+  }
+
+  .yep-card--flush {
+    padding: 0;
+  }
+
+  .yep-card--flush .yep-card__header {
+    padding: var(--space-4);
+  }
+
+  .yep-card--flush .yep-card__footer {
+    padding: var(--space-4);
+  }
+}

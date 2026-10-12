@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+:host(.yep-description-list--stacked) {
+  display: grid;
+  gap: calc(var(--space-4) + var(--space-1)) var(--space-5);
+  grid-template-columns: repeat(var(--yep-dl-columns, 2), minmax(0, 1fr));
+}
+
+:host(.yep-description-list--inline) {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  :host(.yep-description-list--stacked) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
