@@ -10,7 +10,13 @@ import {
   signal,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { LucideCheck, LucideChevronDown, LucideSearch, LucideX } from '@lucide/angular';
+import {
+  LucideCheck,
+  LucideChevronDown,
+  LucideCircleAlert,
+  LucideSearch,
+  LucideX,
+} from '@lucide/angular';
 
 type SelectSize = 'sm' | 'md' | 'lg';
 type SelectOptionId = string | number;
@@ -37,7 +43,7 @@ let nextSelectId = 0;
 
 @Component({
   selector: 'yep-select',
-  imports: [LucideCheck, LucideChevronDown, LucideSearch, LucideX],
+  imports: [LucideCheck, LucideChevronDown, LucideCircleAlert, LucideSearch, LucideX],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

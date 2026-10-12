@@ -3,7 +3,7 @@
     <span class="yep-input__label">
       {{ label() }}
       @if (required()) {
-        <span aria-hidden="true">*</span>
+        <span class="yep-input__required" aria-hidden="true">*</span>
       }
     </span>
   }
@@ -42,7 +42,10 @@
   </span>
 
   @if (error()) {
-    <small class="yep-input__message yep-input__message--error" [id]="id() + '-message'">{{ error() }}</small>
+    <small class="yep-input__message yep-input__message--error" [id]="id() + '-message'">
+      <svg lucideCircleAlert aria-hidden="true"></svg>
+      <span>{{ error() }}</span>
+    </small>
   } @else if (hint()) {
     <small class="yep-input__message" [id]="id() + '-message'">{{ hint() }}</small>
   }

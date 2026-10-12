@@ -2,39 +2,37 @@
   position: relative;
 }
 
+/* P6 · el disparador es una caja de input; el panel es una capa flotante con --shadow-overlay. */
 .date-range__button {
   align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
   gap: var(--space-2);
-  min-height: 40px;
+  min-height: var(--control-height-md);
   min-width: 188px;
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-3);
   text-align: left;
-  transition:
-    background var(--motion-fast),
-    border-color var(--motion-fast),
-    box-shadow var(--motion-fast);
+  transition: border-color var(--motion-fast);
 }
 
-.date-range__button:hover,
+.date-range__button:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.date-range__button:focus-visible,
 .date-range--open .date-range__button {
-  background: color-mix(in srgb, var(--color-secondary) 5%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-secondary) 36%, var(--color-border));
-}
-
-.date-range__button:focus-visible {
-  box-shadow: var(--shadow-focus);
+  border-color: var(--color-focus);
+  border-width: var(--border-width-focus);
   outline: none;
 }
 
 .date-range__button svg {
-  color: var(--color-secondary);
+  color: var(--color-text-secondary);
   flex: 0 0 auto;
   height: 16px;
   width: 16px;
@@ -43,12 +41,12 @@
 .date-range__button-text {
   display: grid;
   flex: 1 1 auto;
-  gap: 0.05rem;
+  gap: 0.125rem;
   min-width: 0;
 }
 
 .date-range__button-label {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xxs);
   font-weight: var(--font-weight-medium);
   line-height: 1;
@@ -65,10 +63,10 @@
 }
 
 .date-range__chevron {
-  color: var(--color-text-muted) !important;
-  height: 15px !important;
+  color: var(--color-text-secondary) !important;
+  height: var(--icon-sm) !important;
   transition: transform var(--motion-fast);
-  width: 15px !important;
+  width: var(--icon-sm) !important;
 }
 
 .date-range--open .date-range__chevron {
@@ -78,8 +76,8 @@
 .date-range__panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
   display: flex;
   flex-direction: row;
   gap: var(--space-3);
@@ -107,7 +105,7 @@
 .date-range__month {
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
   text-align: center;
   text-transform: capitalize;
 }
@@ -127,8 +125,15 @@
 }
 
 .date-range__nav:hover {
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  background: var(--color-surface-muted);
   color: var(--color-text-primary);
+}
+
+.date-range__nav:focus-visible,
+.date-range__day:focus-visible,
+.date-range__preset:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
 }
 
 .date-range__nav svg {
@@ -144,9 +149,9 @@
 }
 
 .date-range__weekdays span {
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-medium);
   line-height: 28px;
   text-align: center;
 }
@@ -164,7 +169,8 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: var(--font-size-sm);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-medium);
   height: 34px;
   justify-content: center;
@@ -174,22 +180,22 @@
 }
 
 .date-range__day:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  background: var(--color-surface-muted);
 }
 
 .date-range__day--muted {
   color: var(--color-text-muted);
-  opacity: 0.58;
 }
 
 .date-range__day--today {
-  border-color: color-mix(in srgb, var(--color-primary) 36%, transparent);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-bold);
+  border-color: var(--color-border-strong);
+  color: var(--color-primary-strong);
+  font-weight: var(--font-weight-semibold);
 }
 
-.date-range__day--range {
-  background: color-mix(in srgb, var(--color-primary) 13%, transparent);
+.date-range__day--range,
+.date-range__day--range:hover:not(:disabled) {
+  background: var(--color-primary-soft);
   border-radius: 0;
   color: var(--color-text-primary);
 }
@@ -199,18 +205,18 @@
   background: var(--color-primary);
   border-color: var(--color-primary);
   border-radius: var(--radius-md);
-  color: var(--color-on-primary, #fff);
-  font-weight: var(--font-weight-bold);
+  color: var(--color-on-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .date-range__day:disabled {
   color: var(--color-text-muted);
   cursor: not-allowed;
-  opacity: 0.35;
+  opacity: 0.45;
 }
 
 .date-range__presets {
-  border-left: 1px solid var(--color-border);
+  border-left: var(--border-width) solid var(--color-border);
   display: flex;
   flex: 0 0 148px;
   flex-direction: column;
@@ -222,6 +228,7 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-xxs);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
   line-height: 1.2;
   margin-bottom: var(--space-1);
   text-transform: uppercase;
@@ -236,22 +243,23 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: 0.8125rem;
   font-weight: var(--font-weight-medium);
   justify-content: flex-start;
-  min-height: 34px;
+  min-height: 2.25rem;
   padding: 0 var(--space-2);
   text-align: left;
 }
 
-.date-range__preset:hover,
-.date-range__preset.active {
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
-  color: var(--color-text-primary);
+.date-range__preset:hover {
+  background: var(--color-surface-muted);
 }
 
-.date-range__preset.active {
-  font-weight: var(--font-weight-bold);
+.date-range__preset.active,
+.date-range__preset.active:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-weight: var(--font-weight-semibold);
 }
 
 @media (max-width: 560px) {
@@ -278,7 +286,7 @@
 
   .date-range__presets {
     border-left: 0;
-    border-top: 1px solid var(--color-border);
+    border-top: var(--border-width) solid var(--color-border);
     flex: 0 0 auto;
     flex-direction: row;
     flex-wrap: wrap;

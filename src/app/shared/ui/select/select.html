@@ -10,7 +10,7 @@
     <label class="yep-select__label" [for]="id()">
       {{ label() }}
       @if (required()) {
-        <span aria-hidden="true">*</span>
+        <span class="yep-select__required" aria-hidden="true">*</span>
       }
     </label>
   }
@@ -136,7 +136,8 @@
 
   @if (error()) {
     <small class="yep-select__message yep-select__message--error" [id]="id() + '-message'">
-      {{ error() }}
+      <svg lucideCircleAlert aria-hidden="true"></svg>
+      <span>{{ error() }}</span>
     </small>
   } @else if (hint()) {
     <small class="yep-select__message" [id]="id() + '-message'">{{ hint() }}</small>
