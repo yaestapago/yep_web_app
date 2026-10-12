@@ -1,27 +1,84 @@
-<section class="page">
-  <header class="page-header">
-    <h1 class="page-title">Hola, {{ user()?.firstName }}</h1>
-    <p class="page-subtitle">
-      Tu centro de información y accesos rápidos. Aquí verás anuncios, actividad reciente y
-      atajos a lo que más usas.
-    </p>
-  </header>
+<section class="home">
+  <yep-page-header
+    [eyebrow]="today()"
+    [title]="'Hola, ' + (user()?.firstName ?? '')"
+    subtitle="Tu centro de información y accesos rápidos. Aquí verás anuncios, actividad reciente y atajos a lo que más usas."
+  />
 
-  <section class="novedades">
-    <h2 class="novedades-title">Novedades</h2>
-
-    <div class="novedades-grid">
-      @for (novedad of novedades; track novedad.title) {
-        <article class="novedad-card">
-          <span class="novedad-category">{{ novedad.category }}</span>
-          <h3>{{ novedad.title }}</h3>
-          <p>{{ novedad.description }}</p>
-        </article>
-      }
-    </div>
-
-    <a class="novedades-cta" [href]="novedadesPostUrl" target="_blank" rel="noreferrer">
-      Leer el resumen completo en el blog <span aria-hidden="true">→</span>
+  <yep-banner
+    [eyebrow]="'Novedad · ' + featured.category"
+    [title]="featured.title"
+    [text]="featured.description"
+    imageSrc="illustrations/home-panel.svg"
+  >
+    @if (shortcuts().dashboard; as dashboardLink) {
+      <a slot="actions" class="home-action home-action--primary" [routerLink]="dashboardLink">
+        Ir al panel de control
+        <svg lucideArrowRight aria-hidden="true"></svg>
+      </a>
+    }
+    <a
+      slot="actions"
+      class="home-action home-action--on-brand"
+      [href]="novedadesPostUrl"
+      target="_blank"
+      rel="noreferrer"
+    >
+      Ver todas las novedades
     </a>
-  </section>
+  </yep-banner>
+
+  @if (shortcuts().quickLinks.length) {
+    <section class="home-section" aria-labelledby="home-quick-title">
+      <h2 class="home-section__title" id="home-quick-title">Accesos rápidos</h2>
+      <div class="home-quick">
+        @for (item of shortcuts().quickLinks; track item.title) {
+          <a class="home-quick__card" [routerLink]="item.link">
+            <yep-icon-tile [active]="item.active"><svg [lucideIcon]="item.icon" aria-hidden="true"></svg></yep-icon-tile>
+            <span class="home-quick__copy">
+              <span class="home-quick__title">{{ item.title }}</span>
+              <span class="home-quick__text">{{ item.text }}</span>
+            </span>
+            <span class="home-link home-quick__open">
+              Abrir
+              <svg lucideArrowRight aria-hidden="true"></svg>
+            </span>
+          </a>
+        }
+      </div>
+    </section>
+  }
+
+  <div class="home-bottom">
+    <yep-card class="home-news" title="Más novedades" subtitle="Lo último que llegó a YEP.">
+      <a slot="actions" class="home-link" [href]="novedadesPostUrl" target="_blank" rel="noreferrer">
+        Leer en el blog
+        <svg lucideArrowRight aria-hidden="true"></svg>
+      </a>
+
+      <ul class="home-news__list">
+        @for (novedad of moreNovedades; track novedad.title) {
+          <li class="home-news__item">
+            <yep-status-chip tone="neutral" [dot]="false" [label]="novedad.category" />
+            <h3 class="home-news__title">{{ novedad.title }}</h3>
+            <p class="home-news__text">{{ novedad.description }}</p>
+          </li>
+        }
+      </ul>
+    </yep-card>
+
+    @if (shortcuts().employees; as employeesLink) {
+      <yep-banner
+        class="home-team"
+        tone="lime"
+        title="Invita a tu equipo"
+        text="Comparte el código del negocio y cada persona de la caja recibe sus avisos."
+      >
+        <a slot="actions" class="home-action home-action--ink" [routerLink]="employeesLink">
+          <svg lucideUsers aria-hidden="true"></svg>
+          Ir a Empleados
+        </a>
+      </yep-banner>
+    }
+  </div>
 </section>
