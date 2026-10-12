@@ -79,42 +79,10 @@
   margin: 0;
 }
 
-/* Botón cerrar con el aspecto de yep-icon-button ghost md (40 × 40, icono 20 px). */
+/* Botón cerrar (yep-icon-button md): alineado con la esquina de la cabecera. */
 .yep-modal__close {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  display: inline-flex;
   flex: 0 0 auto;
-  height: var(--control-height-md);
-  justify-content: center;
   margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
-  padding: 0;
-  transition: background-color var(--motion-fast);
-  width: var(--control-height-md);
-}
-
-.yep-modal__close:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-}
-
-.yep-modal__close:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.yep-modal__close:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.yep-modal__close svg {
-  height: var(--icon-md);
-  stroke-width: 1.75;
-  width: var(--icon-md);
 }
 
 .yep-modal__body {

@@ -28,6 +28,10 @@ describe('Pagination', () => {
     expect(next.getAttribute('aria-label')).toBe('Página siguiente');
     expect(prev.disabled).toBe(false);
     expect(next.disabled).toBe(false);
+    expect(prev.classList).toContain('yep-icon-button--sm');
+    expect(prev.closest('yep-icon-button')?.classList).toContain('yep-pagination__button');
+    expect(prev.querySelector('svg.lucide-chevron-left')).toBeTruthy();
+    expect(next.querySelector('svg.lucide-chevron-right')).toBeTruthy();
   });
 
   it('emits the previous and next page', async () => {

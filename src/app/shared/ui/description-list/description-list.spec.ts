@@ -89,9 +89,13 @@ describe('DescriptionList', () => {
     const items = list.querySelectorAll('yep-description-item');
 
     expect(items[0].querySelector('.yep-description-item__copy')).toBeNull();
-    const button = items[2].querySelector('button.yep-description-item__copy') as HTMLButtonElement;
+    const button = items[2].querySelector(
+      'yep-icon-button.yep-description-item__copy button',
+    ) as HTMLButtonElement;
     expect(button).toBeTruthy();
+    expect(button.classList).toContain('yep-icon-button--sm');
     expect(button.getAttribute('aria-label')).toBe('Copiar Código para compartir');
+    expect(button.querySelector('svg.lucide-copy')).toBeTruthy();
 
     button.click();
     expect(fixture.componentInstance.copies).toBe(1);

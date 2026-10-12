@@ -1,5 +1,7 @@
 import { Component, computed, input as defineInput, output } from '@angular/core';
 import {
+  LucideDynamicIcon,
+  type LucideIcon,
   LucidePencil,
   LucidePower,
   LucidePowerOff,
@@ -43,31 +45,49 @@ const PRESETS: Record<IconButtonAction, IconButtonPreset> = {
  * El tooltip/`aria-label` sale del preset; usa `label` sólo para sobrescribirlo
  * (p. ej. "Quitar" en vez de "Eliminar") sin romper la uniformidad visual.
  * `tone="danger"` pinta el icono en rojo; la acción `delete` ya lo es por preset.
+ *
+ * Icono libre: pasa la clase del icono Lucide en `icon` y un `label` (obligatorio:
+ * va a `aria-label` y `title`). Si hay `icon`, se dibuja ése en lugar del de `action`.
+ *
+ * ```ts
+ * protected readonly closeIcon = LucideX;
+ * ```
+ * ```html
+ * <yep-icon-button [icon]="closeIcon" label="Cerrar" size="md" (clicked)="close()" />
+ * ```
  */
 @Component({
   selector: 'yep-icon-button',
-  imports: [LucidePencil, LucidePower, LucidePowerOff, LucideTrash2],
+  imports: [LucideDynamicIcon, LucidePencil, LucidePower, LucidePowerOff, LucideTrash2],
   templateUrl: './icon-button.html',
   styleUrl: './icon-button.scss',
 })
 export class IconButton {
-  readonly action = defineInput.required<IconButtonAction>();
+  /** Acción de fila con preset de icono, tono y tooltip. Opcional si se usa `icon`. */
+  readonly action = defineInput<IconButtonAction | null>(null);
+  /** Icono Lucide libre (p. ej. `LucideX`). Tiene prioridad sobre el icono de `action`; exige `label`. */
+  readonly icon = defineInput<LucideIcon | null>(null);
   readonly loading = defineInput(false);
   readonly disabled = defineInput(false);
   readonly size = defineInput<'sm' | 'md' | 'lg'>('sm');
-  /** Sobrescribe el tooltip/aria-label del preset. */
+  /** Tooltip/aria-label. Sobrescribe el del preset; obligatorio con `icon`. */
   readonly label = defineInput('');
   readonly tone = defineInput<IconButtonTone>('neutral');
 
   readonly clicked = output<MouseEvent>();
 
   /** @deprecated Solo informativo; ya no cambia el aspecto. */
-  readonly variant = computed<ButtonVariant>(() => PRESETS[this.action()].variant);
-  readonly title = computed(() => this.label() || PRESETS[this.action()].label);
+  readonly variant = computed<ButtonVariant>(() => this.preset()?.variant ?? 'ghost');
+  readonly title = computed(() => this.label() || this.preset()?.label || null);
   /** Tono efectivo: `danger` si se pide o si la acción lo trae por preset. */
   readonly appliedTone = computed<IconButtonTone>(() =>
-    this.tone() === 'danger' ? 'danger' : PRESETS[this.action()].tone,
+    this.tone() === 'danger' ? 'danger' : (this.preset()?.tone ?? 'neutral'),
   );
+
+  private readonly preset = computed<IconButtonPreset | null>(() => {
+    const action = this.action();
+    return action ? PRESETS[action] : null;
+  });
 
   onClick(event: MouseEvent): void {
     if (this.disabled() || this.loading()) {

@@ -9,11 +9,13 @@
   [disabled]="disabled() || loading()"
   [attr.aria-label]="title()"
   [attr.aria-busy]="loading() ? 'true' : null"
-  [title]="title()"
+  [attr.title]="title()"
   (click)="onClick($event)"
 >
   @if (loading()) {
     <span class="yep-icon-button__loader" aria-hidden="true"></span>
+  } @else if (icon(); as freeIcon) {
+    <svg [lucideIcon]="freeIcon" aria-hidden="true"></svg>
   } @else {
     @switch (action()) {
       @case ('edit') {

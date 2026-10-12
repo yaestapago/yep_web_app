@@ -20,10 +20,18 @@
   height: var(--yep-icon-button-size);
   justify-content: center;
   padding: 0;
+  position: relative;
   transition:
     background-color var(--motion-fast),
     color var(--motion-fast);
   width: var(--yep-icon-button-size);
+}
+
+/* sm: objetivo táctil de 40 px sin agrandar el botón (03 · accesibilidad). */
+.yep-icon-button--sm::before {
+  content: '';
+  inset: -4px;
+  position: absolute;
 }
 
 .yep-icon-button--md {
@@ -57,6 +65,7 @@
 .yep-icon-button svg {
   flex-shrink: 0;
   height: var(--yep-icon-button-icon);
+  stroke-width: 1.75;
   width: var(--yep-icon-button-icon);
 }
 

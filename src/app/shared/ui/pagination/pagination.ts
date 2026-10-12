@@ -1,6 +1,8 @@
 import { Component, computed, input as defineInput, numberAttribute, output } from '@angular/core';
 import { LucideChevronLeft, LucideChevronRight } from '@lucide/angular';
 
+import { IconButton } from '../icon-button/icon-button';
+
 /**
  * Paginador de tabla (03-componentes · yep-table → yep-pagination), solo para pantallas que **ya** paginan.
  * No conoce los datos: recibe la página actual (desde 1) y el total de páginas, y emite por `pageChange`
@@ -15,7 +17,7 @@ import { LucideChevronLeft, LucideChevronRight } from '@lucide/angular';
  */
 @Component({
   selector: 'yep-pagination',
-  imports: [LucideChevronLeft, LucideChevronRight],
+  imports: [IconButton],
   host: { class: 'yep-pagination' },
   templateUrl: './pagination.html',
   styleUrl: './pagination.scss',
@@ -24,6 +26,9 @@ export class Pagination {
   readonly page = defineInput.required({ transform: numberAttribute });
   readonly pageCount = defineInput.required({ transform: numberAttribute });
   readonly pageChange = output<number>();
+
+  protected readonly prevIcon = LucideChevronLeft;
+  protected readonly nextIcon = LucideChevronRight;
 
   protected readonly total = computed(() => Math.max(1, Math.floor(this.pageCount() || 0)));
   protected readonly current = computed(() =>

@@ -1,6 +1,7 @@
 import { Component, computed, inject, input as defineInput, output } from '@angular/core';
 import { LucideCopy } from '@lucide/angular';
 
+import { IconButton } from '../icon-button/icon-button';
 import { DescriptionList } from './description-list';
 
 type DescriptionItemSpan = 1 | 2 | 3;
@@ -13,7 +14,7 @@ type DescriptionItemSpan = 1 | 2 | 3;
  */
 @Component({
   selector: 'yep-description-item',
-  imports: [LucideCopy],
+  imports: [IconButton],
   host: {
     role: 'listitem',
     class: 'yep-description-item',
@@ -32,6 +33,8 @@ export class DescriptionItem {
   readonly copy = defineInput('');
   readonly span = defineInput<DescriptionItemSpan>(1);
   readonly copied = output<void>();
+
+  protected readonly copyIcon = LucideCopy;
 
   protected readonly inline = computed(() => this.list?.layout() === 'inline');
   protected readonly effectiveSpan = computed(() =>

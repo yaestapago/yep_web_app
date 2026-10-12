@@ -86,9 +86,18 @@ describe('Modal', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
+  it('el cerrar es un yep-icon-button md con icono x y label "Cerrar"', () => {
+    const { el } = setup();
+    const close = el.querySelector('yep-icon-button.yep-modal__close button') as HTMLButtonElement;
+    expect(close.classList).toContain('yep-icon-button--md');
+    expect(close.getAttribute('aria-label')).toBe('Cerrar');
+    expect(close.title).toBe('Cerrar');
+    expect(close.querySelector('svg.lucide-x')).toBeTruthy();
+  });
+
   it('pide cerrar con el botón, el fondo y escape', () => {
     const { host, el } = setup();
-    (el.querySelector('.yep-modal__close') as HTMLButtonElement).click();
+    (el.querySelector('.yep-modal__close button') as HTMLButtonElement).click();
     (el.querySelector('.yep-modal__backdrop') as HTMLElement).click();
     pressEscape(el);
     expect(host.closes).toBe(3);
@@ -106,7 +115,7 @@ describe('Modal', () => {
     host.loading.set(true);
     fixture.detectChanges();
     (el.querySelector('.yep-modal__backdrop') as HTMLElement).click();
-    expect((el.querySelector('.yep-modal__close') as HTMLButtonElement).disabled).toBe(true);
+    expect((el.querySelector('.yep-modal__close button') as HTMLButtonElement).disabled).toBe(true);
     pressEscape(el);
     expect(host.closes).toBe(0);
   });

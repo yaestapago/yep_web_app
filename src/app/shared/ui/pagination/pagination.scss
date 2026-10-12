@@ -31,52 +31,7 @@ b.yep-pagination__number {
   font-weight: var(--font-weight-semibold);
 }
 
-/* Mismo aspecto que yep-icon-button sm ghost: 32 px, radio md, sin borde, hover superficie atenuada. */
+/* Flechas: yep-icon-button sm (32 px, objetivo táctil de 40 px incluido). */
 .yep-pagination__button {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  display: inline-flex;
   flex: 0 0 auto;
-  height: 32px;
-  justify-content: center;
-  padding: 0;
-  position: relative;
-  transition: background-color var(--motion-fast);
-  width: 32px;
-}
-
-/* Objetivo táctil de 40 px sin agrandar el botón. */
-.yep-pagination__button::before {
-  content: '';
-  inset: -4px;
-  position: absolute;
-}
-
-.yep-pagination__button:hover:not(:disabled) {
-  background: var(--color-surface-muted);
-}
-
-.yep-pagination__button:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-
-.yep-pagination__button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.yep-pagination__button svg {
-  height: var(--icon-sm);
-  width: var(--icon-sm);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .yep-pagination__button {
-    transition: none;
-  }
 }

@@ -1,28 +1,22 @@
 <nav class="yep-pagination__nav" aria-label="Paginación">
-  <button
+  <yep-icon-button
     class="yep-pagination__button"
-    type="button"
-    aria-label="Página anterior"
-    title="Página anterior"
+    label="Página anterior"
+    [icon]="prevIcon"
     [disabled]="!canPrev()"
-    (click)="go(current() - 1)"
-  >
-    <svg lucideChevronLeft aria-hidden="true"></svg>
-  </button>
+    (clicked)="go(current() - 1)"
+  />
 
   <span class="yep-pagination__status" aria-live="polite">
     Página <b class="yep-pagination__number">{{ current() }}</b> de
     <span class="yep-pagination__number">{{ total() }}</span>
   </span>
 
-  <button
+  <yep-icon-button
     class="yep-pagination__button"
-    type="button"
-    aria-label="Página siguiente"
-    title="Página siguiente"
+    label="Página siguiente"
+    [icon]="nextIcon"
     [disabled]="!canNext()"
-    (click)="go(current() + 1)"
-  >
-    <svg lucideChevronRight aria-hidden="true"></svg>
-  </button>
+    (clicked)="go(current() + 1)"
+  />
 </nav>
