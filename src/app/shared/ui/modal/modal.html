@@ -12,6 +12,8 @@
       [attr.aria-label]="title()"
       (click)="$event.stopPropagation()"
     >
+      <span class="yep-modal__handle" aria-hidden="true"></span>
+
       @if (showHeader()) {
         <header class="yep-modal__header">
           <div class="yep-modal__heading">
