@@ -2,15 +2,25 @@ import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucideLoaderCircle, LucideReceipt, LucideRefreshCw } from '@lucide/angular';
+import { LucideReceipt, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { BillingStatusService } from '../../../../core/services/billing-status.service';
-import type { BillingInvoiceSummary } from '../../../../shared/models/billing.models';
+import type {
+  BillingInvoiceStatus,
+  BillingInvoiceSummary,
+} from '../../../../shared/models/billing.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip, type StatusChipTone } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { InvoicesApiService } from '../../services/invoices-api.service';
 
@@ -23,7 +33,13 @@ import { InvoicesApiService } from '../../services/invoices-api.service';
     Button,
     Input,
     Modal,
-    LucideLoaderCircle,
+    PageHeader,
+    Card,
+    Table,
+    State,
+    StatusChip,
+    DescriptionList,
+    DescriptionItem,
     LucideReceipt,
     LucideRefreshCw,
   ],
@@ -44,6 +60,14 @@ export class InvoicesPage implements OnInit {
   readonly reportNote = signal('');
   readonly reportFile = signal<File | null>(null);
   readonly reporting = signal(false);
+
+  /** Tono del chip de estado (solo presentación). */
+  protected readonly statusTones: Record<BillingInvoiceStatus, StatusChipTone> = {
+    issued: 'warning',
+    reported: 'info',
+    paid: 'success',
+    cancelled: 'neutral',
+  };
 
   ngOnInit(): void {
     this.load();

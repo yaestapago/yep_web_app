@@ -1,18 +1,15 @@
 <section class="page invoices-page">
-  <header class="page-header">
-    <div class="page-header__text">
-      <h1 class="page-title">Cuentas de cobro</h1>
-      <p class="page-subtitle">
-        Historial de cuentas de cobro de tu suscripción y de tus toppings de notificaciones.
-      </p>
-    </div>
-    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+  <yep-page-header
+    title="Cuentas de cobro"
+    subtitle="Historial de cuentas de cobro de tu suscripción y de tus toppings de notificaciones."
+  >
+    <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
       Actualizar
     </yep-button>
-  </header>
+  </yep-page-header>
 
-  @if (error()) {
+  @if (error() && invoices().length > 0) {
     <yep-alert variant="error">{{ error() }}</yep-alert>
   }
   @if (success()) {
@@ -20,41 +17,66 @@
   }
 
   @if (loading() && invoices().length === 0) {
-    <div class="loading-row">
-      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando cuentas de cobro...
-    </div>
+    <yep-state kind="loading" title="Cargando cuentas de cobro..." [rows]="3" />
+  } @else if (error() && invoices().length === 0) {
+    <yep-state kind="error" [title]="error()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()">
+        Reintentar
+      </yep-button>
+    </yep-state>
   } @else if (invoices().length === 0) {
-    <p class="empty-hint">Todavía no se ha generado ninguna cuenta de cobro para tu negocio.</p>
+    <yep-state
+      kind="empty"
+      title="Sin cuentas de cobro"
+      description="Todavía no se ha generado ninguna cuenta de cobro para tu negocio."
+    >
+      <svg slot="icon" lucideReceipt aria-hidden="true"></svg>
+    </yep-state>
   } @else {
-    <ul class="invoices-list">
-      @for (invoice of invoices(); track invoice.id) {
-        <li class="invoice-row">
-          <div class="invoice-row__icon" aria-hidden="true">
-            <svg lucideReceipt></svg>
-          </div>
-          <div class="invoice-row__body">
-            <strong>{{ invoice.invoiceNumber }}</strong>
-            <span>{{ invoice.concept }}</span>
-            <span class="invoice-row__date">{{ invoice.issuedAt | date: 'mediumDate' }}</span>
-          </div>
-          <div class="invoice-row__end">
-            <strong>{{ formatCop(invoice.totalCop) }}</strong>
-            <span class="invoice-status" [attr.data-status]="invoice.status">
-              {{ statusLabel(invoice.status) }}
-            </span>
-          </div>
-          <div class="invoice-row__actions">
-            @if (invoice.status === 'issued') {
-              <yep-button size="sm" variant="secondary" (clicked)="openReportPayment(invoice)">
-                Reportar pago
-              </yep-button>
+    <yep-card padding="none" aria-label="Cuentas de cobro">
+      <div class="yep-table-wrap">
+        <table yepTable>
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Concepto</th>
+              <th>Emitida</th>
+              <th class="num">Monto</th>
+              <th>Estado</th>
+              <th class="actions"><span class="invoices-sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (invoice of invoices(); track invoice.id) {
+              <tr>
+                <td data-label="Número">
+                  <span class="invoices-number">{{ invoice.invoiceNumber }}</span>
+                </td>
+                <td data-label="Concepto">{{ invoice.concept }}</td>
+                <td data-label="Emitida" class="invoices-date">
+                  {{ invoice.issuedAt | date: 'mediumDate' }}
+                </td>
+                <td data-label="Monto" class="num">{{ formatCop(invoice.totalCop) }}</td>
+                <td data-label="Estado">
+                  <yep-status-chip
+                    [tone]="statusTones[invoice.status]"
+                    [label]="statusLabel(invoice.status)"
+                  />
+                </td>
+                <td class="actions">
+                  @if (invoice.status === 'issued') {
+                    <yep-button size="sm" variant="secondary" (clicked)="openReportPayment(invoice)">
+                      Reportar pago
+                    </yep-button>
+                  }
+                  <yep-button size="sm" variant="ghost" (clicked)="open(invoice)">Ver</yep-button>
+                </td>
+              </tr>
             }
-            <yep-button size="sm" variant="ghost" (clicked)="open(invoice)">Ver</yep-button>
-          </div>
-        </li>
-      }
-    </ul>
+          </tbody>
+        </table>
+      </div>
+    </yep-card>
   }
 </section>
 
@@ -65,26 +87,24 @@
 >
   @if (selectedInvoice(); as invoice) {
     <div class="invoice-detail">
-      <div class="invoice-detail__parties">
-        <div>
-          <span class="field-label">Emitido por</span>
+      <yep-description-list [columns]="2">
+        <yep-description-item label="Emitido por">
           <strong>{{ invoice.sellerName }}</strong>
-          <span>RUT/NIT {{ invoice.sellerRut }}</span>
-        </div>
-        <div>
-          <span class="field-label">A nombre de</span>
+          <span class="invoice-detail__line">RUT/NIT {{ invoice.sellerRut }}</span>
+        </yep-description-item>
+        <yep-description-item label="A nombre de">
           <strong>{{ invoice.buyerName }}</strong>
           @if (invoice.buyerIdentification) {
-            <span>
+            <span class="invoice-detail__line">
               {{ invoice.buyerIdentificationType === 'NIT' ? 'NIT' : 'Documento' }}
               {{ invoice.buyerIdentification }}
             </span>
           }
           @if (invoice.buyerEmail) {
-            <span>{{ invoice.buyerEmail }}</span>
+            <span class="invoice-detail__line">{{ invoice.buyerEmail }}</span>
           }
-        </div>
-      </div>
+        </yep-description-item>
+      </yep-description-list>
 
       <p class="invoice-detail__meta">
         Emitida el {{ invoice.issuedAt | date: 'mediumDate' }} ·
@@ -101,25 +121,25 @@
         <thead>
           <tr>
             <th>Concepto</th>
-            <th>Cant.</th>
-            <th>Valor unitario</th>
-            <th>Total</th>
+            <th class="num">Cant.</th>
+            <th class="num">Valor unitario</th>
+            <th class="num">Total</th>
           </tr>
         </thead>
         <tbody>
           @for (item of invoice.items; track item.description) {
             <tr>
               <td>{{ item.description }}</td>
-              <td>{{ item.quantity }}</td>
-              <td>{{ formatCop(item.unitPriceCop) }}</td>
-              <td>{{ formatCop(item.totalCop) }}</td>
+              <td class="num">{{ item.quantity }}</td>
+              <td class="num">{{ formatCop(item.unitPriceCop) }}</td>
+              <td class="num">{{ formatCop(item.totalCop) }}</td>
             </tr>
           }
         </tbody>
         <tfoot>
           <tr>
             <td colspan="3">Total</td>
-            <td>{{ formatCop(invoice.totalCop) }}</td>
+            <td class="num">{{ formatCop(invoice.totalCop) }}</td>
           </tr>
         </tfoot>
       </table>
