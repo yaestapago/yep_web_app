@@ -8,7 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { LucideMessageSquareText } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import {
@@ -19,6 +18,7 @@ import {
 import { Button } from '../../../../shared/ui/button/button';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { StatusChip, type StatusChipTone } from '../../../../shared/ui/status-chip/status-chip';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { formatDateTime } from '../../../../shared/utils/billing-format';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -73,7 +73,7 @@ export function smsRelayCopy(
  */
 @Component({
   selector: 'app-notifier-sms-relay',
-  imports: [Button, Checkbox, Modal, Toggle, LucideMessageSquareText],
+  imports: [Button, Checkbox, Modal, StatusChip, Toggle],
   templateUrl: './notifier-sms-relay.html',
   styleUrl: './notifier-sms-relay.scss',
 })
@@ -89,6 +89,12 @@ export class NotifierSmsRelay {
 
   readonly consentText = SMS_RELAY_CONSENT_TEXT;
   readonly consentCheckbox = SMS_RELAY_CONSENT_CHECKBOX;
+  /** Tono del chip de estado según el tono del respaldo (solo presentación). */
+  protected readonly chipTone: Record<RelayTone, StatusChipTone> = {
+    active: 'success',
+    unavailable: 'warning',
+    disabled: 'neutral',
+  };
 
   /** Mientras YEP no ofrezca el respaldo (sin receptores) no se muestra, para
    * no pedir un consentimiento de cobro de SMS que no se va a usar; si el dueño

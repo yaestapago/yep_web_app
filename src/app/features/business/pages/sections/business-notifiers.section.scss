@@ -1,9 +1,99 @@
+/* ---------- Cabecera de la sección ---------- */
+.notifiers-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Resumen: 4 KPI sobre el fondo, sin tarjeta contenedora ---------- */
+.notifiers-summary {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+  .notifiers-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Lista de notificadores: una tarjeta por notificador ---------- */
+.notifier-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.notifier-card__head {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-bottom: calc(var(--space-4) + var(--space-1));
+}
+
+.notifier-card__identity {
+  align-items: center;
+  display: flex;
+  flex: 1 1 16rem;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.notifier-card__identity yep-icon-tile {
+  flex: 0 0 auto;
+}
+
+.notifier-card__heading {
+  min-width: 0;
+}
+
+.notifier-card__titlerow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) calc(var(--space-2) + 2px);
+}
+
+.notifier-card__title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.notifier-card__subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 2px 0 0;
+}
+
+.notifier-card__actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.notifier-card__muted {
+  color: var(--color-text-secondary);
+}
+
+.notifier-card__diagnostics {
+  margin-top: var(--space-4);
+}
+
 /* Código de emparejamiento con anillo de cuenta regresiva */
 .pair-code {
   align-items: center;
   background: var(--color-accent);
   border-radius: var(--radius-full);
-  color: var(--color-text-primary);
+  color: var(--brand-ink);
   display: inline-flex;
   gap: var(--space-2);
   padding: 2px var(--space-3) 2px 2px;
@@ -16,13 +106,13 @@
 
 .pair-code__ring-bg {
   fill: none;
-  stroke: rgba(16, 42, 44, 0.15);
+  stroke: color-mix(in srgb, currentColor 15%, transparent);
   stroke-width: 3;
 }
 
 .pair-code__ring-fg {
   fill: none;
-  stroke: var(--color-secondary);
+  stroke: currentColor;
   stroke-linecap: round;
   stroke-width: 3;
   transform: rotate(-90deg);
@@ -31,58 +121,61 @@
 }
 
 .pair-code__value {
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.1em;
 }
 
-.notifier-email-row {
+/* Remitentes del banco a declarar en el filtro de correo */
+.sender-row {
   align-items: flex-start;
   display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sender-row__label {
+  // Alto del chip: "De:" queda centrado con el primer correo.
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  min-height: 2rem;
+}
+
+.sender-row__values {
+  display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: var(--space-2);
   min-width: 0;
 }
 
-.notifier-email-row__label {
-  // Altura igual a .code-copy: centra "De:" con el primer correo, no con
-  // todo el bloque, aunque haya varios correos apilados debajo.
+.sender-chip {
   align-items: center;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex: 0 0 auto;
-  font-weight: var(--font-weight-semibold);
-  height: 30px;
-}
-
-.notifier-email-row__copy-group {
-  align-items: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
   display: inline-flex;
-  flex: 0 1 auto;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  max-width: 100%;
+  min-height: 2rem;
   min-width: 0;
+  padding: 0 2px 0 var(--space-3);
 }
 
-.notifier-email-row__values {
-  display: flex;
-  flex: 0 1 auto;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.notifier-email-row__value {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  font-family: var(--font-mono, monospace);
+.sender-chip__value {
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
-  max-width: min(100%, 28rem);
+  font-weight: var(--font-weight-medium);
+  min-width: 0;
   overflow-wrap: anywhere;
-  padding: 2px var(--space-2);
 }
 
+/* ---------- Modal de crear / editar ---------- */
 .field-heading-row {
   align-items: flex-start;
   display: flex;
@@ -92,8 +185,7 @@
 }
 
 .notifier-warning {
-  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
+  background: var(--color-warning-soft);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
@@ -103,11 +195,11 @@
 }
 
 .email-forwarding-help {
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
   border-radius: var(--radius-md);
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-4);
 }
 
 .email-forwarding-help__header {
@@ -125,14 +217,15 @@
 }
 
 .sender-pattern-list__item {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  font-family: var(--font-mono, monospace);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   max-width: 100%;
   overflow-wrap: anywhere;
-  padding: 3px var(--space-2);
+  padding: 3px var(--space-3);
 }
 
 .account-option--disabled {

@@ -18,6 +18,7 @@ import {
 } from '@angular/forms';
 import { finalize } from 'rxjs';
 
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -52,7 +53,7 @@ function integerInRange(min: number, max: number) {
  */
 @Component({
   selector: 'app-notifier-runtime-config-modal',
-  imports: [ReactiveFormsModule, Button, Input, Modal],
+  imports: [ReactiveFormsModule, Alert, Button, Input, Modal],
   templateUrl: './notifier-runtime-config-modal.html',
   styleUrls: ['./business-sections.scss', './notifier-runtime-config-modal.scss'],
 })

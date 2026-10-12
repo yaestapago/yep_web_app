@@ -1,16 +1,22 @@
 @if (visible()) {
-  <div class="sms-relay" [attr.data-tone]="copy().tone" data-testid="sms-relay">
+  <section class="sms-relay" [attr.data-tone]="copy().tone" data-testid="sms-relay">
     <div class="sms-relay__row">
-      <span class="sms-relay__title">
-        <svg lucideMessageSquareText aria-hidden="true"></svg>
-        Respaldo por SMS cuando no hay internet
-      </span>
-      <span
-        class="sms-relay__status sms-relay__status--{{ copy().tone }}"
-        data-testid="sms-relay-status"
-      >
-        {{ copy().label }}
-      </span>
+      <div class="sms-relay__heading">
+        <div class="sms-relay__titlerow">
+          <h4 class="sms-relay__title">Respaldo por SMS cuando no hay internet</h4>
+          <yep-status-chip
+            data-testid="sms-relay-status"
+            [tone]="chipTone[copy().tone]"
+            [label]="copy().label"
+          />
+        </div>
+        <p class="sms-relay__hint">
+          {{ copy().hint }}
+          @if (optedIn() && consentAtLabel()) {
+            <span class="sms-relay__consent">Autorizado el {{ consentAtLabel() }}.</span>
+          }
+        </p>
+      </div>
       @if (canManage()) {
         <yep-toggle
           appearance="switch"
@@ -23,16 +29,10 @@
         />
       }
     </div>
-    <p class="sms-relay__hint">
-      {{ copy().hint }}
-      @if (optedIn() && consentAtLabel()) {
-        <span class="sms-relay__consent">Autorizado el {{ consentAtLabel() }}.</span>
-      }
-    </p>
     @if (error()) {
       <p class="sms-relay__error" role="alert">{{ error() }}</p>
     }
-  </div>
+  </section>
 
   <yep-modal
     [open]="consentOpen()"
