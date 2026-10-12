@@ -13,88 +13,111 @@
     }
   </button>
 
-  <section class="auth-panel">
-    <div class="auth-logo" aria-label="Ya Está Pago">
-      <img
-        class="auth-logo__image auth-logo__image--light"
-        src="/brand/yep-light.svg"
-        alt="Ya Está Pago"
-      />
-      <img
-        class="auth-logo__image auth-logo__image--dark"
-        src="/brand/yep-dark.svg"
-        alt=""
-        aria-hidden="true"
-      />
+  <aside class="auth-brand" aria-label="YEP">
+    <svg
+      class="auth-brand__diagonal"
+      viewBox="0 0 640 900"
+      preserveAspectRatio="xMaxYMin slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <polygon class="auth-brand__band" points="300,0 520,0 -50,900 -270,900" />
+      <polygon class="auth-brand__stroke" points="560,0 640,0 640,40 300,578 262,518" />
+    </svg>
+    <img class="auth-brand__logo" src="/brand/yep-dark.svg" alt="Ya Está Pago" />
+    <div class="auth-brand__copy">
+      <p class="auth-brand__eyebrow">¿Ya está pago?</p>
+      <p class="auth-brand__title">Porque con YEP,<br /><span>ya está pago.</span></p>
+      <p class="auth-brand__text">
+        Te avisamos por WhatsApp y en la web apenas entra cada transferencia a tu cuenta.
+      </p>
     </div>
+  </aside>
 
-    <div class="auth-heading">
-      <h3>Inicia sesión</h3>
-      @if (inviteBusinessName()) {
-        <span>Entrarás para solicitar acceso staff a {{ inviteBusinessName() }}.</span>
-      } @else if (inviteCode()) {
-        <span>Entrarás para solicitar acceso staff a este negocio.</span>
-      }
-      @if (inviteCode()) {
-        <button
-          class="auth-inline-action"
-          type="button"
-          (click)="exitInvite()"
-        >
-          Salir de la invitación
-        </button>
-      }
-    </div>
+  <div class="auth-main">
+    <section class="auth-panel">
+      <div class="auth-logo" aria-label="Ya Está Pago">
+        <img
+          class="auth-logo__image auth-logo__image--light"
+          src="/brand/yep-light.svg"
+          alt="Ya Está Pago"
+        />
+        <img
+          class="auth-logo__image auth-logo__image--dark"
+          src="/brand/yep-dark.svg"
+          alt=""
+          aria-hidden="true"
+        />
+      </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <yep-input
-        label="Correo"
-        type="email"
-        autocomplete="username"
-        formControlName="email"
-        [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
-      />
-
-      <yep-input
-        label="Contraseña"
-        type="password"
-        autocomplete="current-password"
-        formControlName="password"
-        [error]="isInvalid('password') ? 'La contraseña debe tener al menos 8 caracteres.' : ''"
-      />
-
-      @if (mailEnabled()) {
-        <a class="auth-recovery-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
-      } @else {
-        <span class="auth-recovery-link auth-recovery-link--disabled">
-          Recuperación de contraseña no disponible temporalmente. Contáctanos si necesitas ayuda.
-        </span>
-      }
-
-      @if (error()) {
-        <yep-alert variant="error">{{ error() }}</yep-alert>
-      }
-
-      @if (success()) {
-        <yep-alert variant="success">{{ success() }}</yep-alert>
-      }
-
-      <yep-button
-        type="submit"
-        [loading]="loading()"
-        [disabled]="form.invalid || loading()"
-        [fullWidth]="true"
-      >
-        @if (!loading()) {
-          <svg lucideLogIn aria-hidden="true"></svg>
+      <div class="auth-heading">
+        <h3>Inicia sesión</h3>
+        @if (inviteBusinessName()) {
+          <span>Entrarás para solicitar acceso staff a {{ inviteBusinessName() }}.</span>
+        } @else if (inviteCode()) {
+          <span>Entrarás para solicitar acceso staff a este negocio.</span>
         }
-        <span>{{ loading() ? 'Entrando' : 'Entrar' }}</span>
-      </yep-button>
-    </form>
+        @if (inviteCode()) {
+          <button
+            class="auth-inline-action"
+            type="button"
+            (click)="exitInvite()"
+          >
+            Salir de la invitación
+          </button>
+        }
+      </div>
 
-    <p class="auth-switch">
-      ¿No tienes cuenta?
-      <a routerLink="/register" [queryParams]="registerQueryParams()">Regístrate</a>
-    </p>
-  </section>
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <yep-input
+          label="Correo"
+          type="email"
+          autocomplete="username"
+          formControlName="email"
+          [error]="isInvalid('email') ? 'Ingresa un correo válido.' : ''"
+        />
+
+        <yep-input
+          label="Contraseña"
+          type="password"
+          autocomplete="current-password"
+          formControlName="password"
+          [error]="isInvalid('password') ? 'La contraseña debe tener al menos 8 caracteres.' : ''"
+        />
+
+        @if (mailEnabled()) {
+          <a class="auth-recovery-link" routerLink="/forgot-password">¿Olvidaste tu contraseña?</a>
+        } @else {
+          <span class="auth-recovery-link auth-recovery-link--disabled">
+            Recuperación de contraseña no disponible temporalmente. Contáctanos si necesitas ayuda.
+          </span>
+        }
+
+        @if (error()) {
+          <yep-alert variant="error">{{ error() }}</yep-alert>
+        }
+
+        @if (success()) {
+          <yep-alert variant="success">{{ success() }}</yep-alert>
+        }
+
+        <yep-button
+          type="submit"
+          [loading]="loading()"
+          [disabled]="form.invalid || loading()"
+          [fullWidth]="true"
+        >
+          @if (!loading()) {
+            <svg lucideLogIn aria-hidden="true"></svg>
+          }
+          <span>{{ loading() ? 'Entrando' : 'Entrar' }}</span>
+        </yep-button>
+      </form>
+
+      <p class="auth-switch">
+        ¿No tienes cuenta?
+        <a routerLink="/register" [queryParams]="registerQueryParams()">Regístrate</a>
+      </p>
+    </section>
+  </div>
 </main>

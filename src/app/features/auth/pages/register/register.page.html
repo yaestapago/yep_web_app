@@ -1,169 +1,192 @@
 <main class="auth-page register-page">
-  <section class="auth-panel">
-    <div class="auth-logo" aria-label="Ya Está Pago">
-      <img
-        class="auth-logo__image auth-logo__image--light"
-        src="/brand/yep-light.svg"
-        alt="Ya Está Pago"
-      />
-      <img
-        class="auth-logo__image auth-logo__image--dark"
-        src="/brand/yep-dark.svg"
-        alt=""
-        aria-hidden="true"
-      />
+  <aside class="auth-brand" aria-label="YEP">
+    <svg
+      class="auth-brand__diagonal"
+      viewBox="0 0 640 900"
+      preserveAspectRatio="xMaxYMin slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <polygon class="auth-brand__band" points="300,0 520,0 -50,900 -270,900" />
+      <polygon class="auth-brand__stroke" points="560,0 640,0 640,40 300,578 262,518" />
+    </svg>
+    <img class="auth-brand__logo" src="/brand/yep-dark.svg" alt="Ya Está Pago" />
+    <div class="auth-brand__copy">
+      <p class="auth-brand__eyebrow">¿Ya está pago?</p>
+      <p class="auth-brand__title">Porque con YEP,<br /><span>ya está pago.</span></p>
+      <p class="auth-brand__text">
+        Te avisamos por WhatsApp y en la web apenas entra cada transferencia a tu cuenta.
+      </p>
     </div>
+  </aside>
 
-    <div class="auth-heading">
-      @if (step() === 'form') {
-        <h3>Crea tu cuenta</h3>
-        @if (inviteBusinessName()) {
-          <span>Te registrarás como staff de {{ inviteBusinessName() }}.</span>
-        } @else if (inviteCode()) {
-          <span>Te registrarás como staff de este negocio.</span>
-        }
-      } @else {
-        <h3>Verifica tu correo</h3>
-        <span>Enviamos un código de 6 dígitos a {{ maskedEmail() }}.</span>
-      }
-      @if (inviteCode()) {
-        <button
-          class="auth-inline-action"
-          type="button"
-          (click)="exitInvite()"
-        >
-          Salir de la invitación
-        </button>
-      }
-    </div>
-
-    @if (step() === 'form') {
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <div class="field-grid">
-          <yep-input
-            label="Nombre"
-            type="text"
-            autocomplete="given-name"
-            formControlName="firstName"
-            [error]="isInvalid('firstName') ? 'Ingresa tu nombre.' : ''"
-          />
-
-          <yep-input
-            label="Apellido"
-            type="text"
-            autocomplete="family-name"
-            formControlName="lastName"
-            [error]="isInvalid('lastName') ? 'Ingresa tu apellido.' : ''"
-          />
-
-          <yep-input
-            label="Identificación"
-            type="text"
-            autocomplete="off"
-            formControlName="identificationNumber"
-            [error]="isInvalid('identificationNumber') ? identificationNumberError() : ''"
-          />
-
-          <yep-input
-            label="Correo"
-            type="email"
-            autocomplete="username"
-            formControlName="email"
-            [error]="isInvalid('email') ? emailError() : ''"
-          />
-
-          <yep-input
-            label="Contraseña"
-            type="password"
-            autocomplete="new-password"
-            formControlName="password"
-            [error]="isInvalid('password') ? 'Mínimo 8 caracteres.' : ''"
-          />
-
-          <yep-input
-            label="Confirmar contraseña"
-            type="password"
-            autocomplete="new-password"
-            formControlName="confirmPassword"
-            [error]="isInvalid('confirmPassword') ? confirmPasswordError() : ''"
-          />
-
-          <yep-phone-input
-            class="full"
-            label="Celular"
-            placeholder="300 123 4567"
-            formControlName="cellphoneNumber"
-            [required]="true"
-            [error]="isInvalid('cellphoneNumber') ? cellphoneNumberError() : ''"
-          ></yep-phone-input>
-        </div>
-
-        @if (error()) {
-          <yep-alert variant="error">{{ error() }}</yep-alert>
-        }
-
-        @if (success()) {
-          <yep-alert variant="success">{{ success() }}</yep-alert>
-        }
-
-        <yep-checkbox
-          class="terms-check"
-          formControlName="acceptTerms"
-          appearance="box"
-          [error]="isInvalid('acceptTerms') ? 'invalid' : ''"
-        >
-          Acepto los
-          <a [href]="termsUrl" target="_blank" rel="noopener">Términos y Condiciones</a>
-          y la
-          <a [href]="privacyUrl" target="_blank" rel="noopener">Política de Privacidad</a>.
-        </yep-checkbox>
-
-        <yep-button
-          type="submit"
-          [loading]="loading()"
-          [disabled]="form.invalid || loading()"
-          [fullWidth]="true"
-        >
-          @if (!loading() && mailEnabled()) {
-            <svg lucideMail aria-hidden="true"></svg>
-          }
-          <span>
-            {{
-              mailEnabled()
-                ? (loading() ? 'Enviando' : 'Enviar código')
-                : (loading() ? 'Creando cuenta' : 'Registrar')
-            }}
-          </span>
-        </yep-button>
-      </form>
-    } @else {
-      <form [formGroup]="codeForm" novalidate>
-        @if (success()) {
-          <yep-alert variant="success">{{ success() }}</yep-alert>
-        }
-
-        @if (error()) {
-          <yep-alert variant="error">{{ error() }}</yep-alert>
-        }
-
-        <yep-otp-input
-          formControlName="code"
-          engine="email"
-          [status]="otpStatus()"
-          [errorMessage]="otpError()"
-          [resendSeconds]="resendSeconds()"
-          (codeChanged)="handleCodeChanged($event)"
-          (codeCompleted)="completeRegistration($event)"
-          (resendRequested)="resendCode()"
+  <div class="auth-main">
+    <section class="auth-panel">
+      <div class="auth-logo" aria-label="Ya Está Pago">
+        <img
+          class="auth-logo__image auth-logo__image--light"
+          src="/brand/yep-light.svg"
+          alt="Ya Está Pago"
         />
+        <img
+          class="auth-logo__image auth-logo__image--dark"
+          src="/brand/yep-dark.svg"
+          alt=""
+          aria-hidden="true"
+        />
+      </div>
 
-        <button class="auth-inline-action" type="button" (click)="editForm()">Cambiar datos</button>
-      </form>
-    }
+      <div class="auth-heading">
+        @if (step() === 'form') {
+          <h3>Crea tu cuenta</h3>
+          @if (inviteBusinessName()) {
+            <span>Te registrarás como staff de {{ inviteBusinessName() }}.</span>
+          } @else if (inviteCode()) {
+            <span>Te registrarás como staff de este negocio.</span>
+          }
+        } @else {
+          <h3>Verifica tu correo</h3>
+          <span>Enviamos un código de 6 dígitos a {{ maskedEmail() }}.</span>
+        }
+        @if (inviteCode()) {
+          <button
+            class="auth-inline-action"
+            type="button"
+            (click)="exitInvite()"
+          >
+            Salir de la invitación
+          </button>
+        }
+      </div>
 
-    <p class="auth-switch">
-      ¿Ya tienes cuenta?
-      <a routerLink="/login" [queryParams]="loginQueryParams()">Inicia sesión</a>
-    </p>
-  </section>
+      @if (step() === 'form') {
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <div class="field-grid">
+            <yep-input
+              label="Nombre"
+              type="text"
+              autocomplete="given-name"
+              formControlName="firstName"
+              [error]="isInvalid('firstName') ? 'Ingresa tu nombre.' : ''"
+            />
+
+            <yep-input
+              label="Apellido"
+              type="text"
+              autocomplete="family-name"
+              formControlName="lastName"
+              [error]="isInvalid('lastName') ? 'Ingresa tu apellido.' : ''"
+            />
+
+            <yep-input
+              label="Identificación"
+              type="text"
+              autocomplete="off"
+              formControlName="identificationNumber"
+              [error]="isInvalid('identificationNumber') ? identificationNumberError() : ''"
+            />
+
+            <yep-input
+              label="Correo"
+              type="email"
+              autocomplete="username"
+              formControlName="email"
+              [error]="isInvalid('email') ? emailError() : ''"
+            />
+
+            <yep-input
+              label="Contraseña"
+              type="password"
+              autocomplete="new-password"
+              formControlName="password"
+              [error]="isInvalid('password') ? 'Mínimo 8 caracteres.' : ''"
+            />
+
+            <yep-input
+              label="Confirmar contraseña"
+              type="password"
+              autocomplete="new-password"
+              formControlName="confirmPassword"
+              [error]="isInvalid('confirmPassword') ? confirmPasswordError() : ''"
+            />
+
+            <yep-phone-input
+              class="full"
+              label="Celular"
+              placeholder="300 123 4567"
+              formControlName="cellphoneNumber"
+              [required]="true"
+              [error]="isInvalid('cellphoneNumber') ? cellphoneNumberError() : ''"
+            ></yep-phone-input>
+          </div>
+
+          @if (error()) {
+            <yep-alert variant="error">{{ error() }}</yep-alert>
+          }
+
+          @if (success()) {
+            <yep-alert variant="success">{{ success() }}</yep-alert>
+          }
+
+          <yep-checkbox
+            class="terms-check"
+            formControlName="acceptTerms"
+            appearance="box"
+            [error]="isInvalid('acceptTerms') ? 'invalid' : ''"
+          >
+            Acepto los
+            <a [href]="termsUrl" target="_blank" rel="noopener">Términos y Condiciones</a>
+            y la
+            <a [href]="privacyUrl" target="_blank" rel="noopener">Política de Privacidad</a>.
+          </yep-checkbox>
+
+          <yep-button
+            type="submit"
+            [loading]="loading()"
+            [disabled]="form.invalid || loading()"
+            [fullWidth]="true"
+          >
+            @if (!loading() && mailEnabled()) {
+              <svg lucideMail aria-hidden="true"></svg>
+            }
+            <span>
+              {{
+                mailEnabled()
+                  ? (loading() ? 'Enviando' : 'Enviar código')
+                  : (loading() ? 'Creando cuenta' : 'Registrar')
+              }}
+            </span>
+          </yep-button>
+        </form>
+      } @else {
+        <form [formGroup]="codeForm" novalidate>
+          @if (success()) {
+            <yep-alert variant="success">{{ success() }}</yep-alert>
+          }
+
+          @if (error()) {
+            <yep-alert variant="error">{{ error() }}</yep-alert>
+          }
+
+          <yep-otp-input
+            formControlName="code"
+            engine="email"
+            [status]="otpStatus()"
+            [errorMessage]="otpError()"
+            [resendSeconds]="resendSeconds()"
+            (codeChanged)="handleCodeChanged($event)"
+            (codeCompleted)="completeRegistration($event)"
+            (resendRequested)="resendCode()"
+          />
+
+          <button class="auth-inline-action" type="button" (click)="editForm()">Cambiar datos</button>
+        </form>
+      }
+
+      <p class="auth-switch">
+        ¿Ya tienes cuenta?
+        <a routerLink="/login" [queryParams]="loginQueryParams()">Inicia sesión</a>
+      </p>
+    </section>
+  </div>
 </main>
