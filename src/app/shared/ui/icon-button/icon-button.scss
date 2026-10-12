@@ -1,0 +1,77 @@
+// yep-icon-button · docs/rediseno-web/03-componentes.md#yep-icon-button
+// Cuadrado, transparente, sin borde. Icono 16 px (sm) o 20 px (md, lg).
+
+:host {
+  display: inline-flex;
+}
+
+.yep-icon-button {
+  --yep-icon-button-size: 2rem;
+  --yep-icon-button-icon: var(--icon-sm);
+
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: var(--yep-icon-button-size);
+  justify-content: center;
+  padding: 0;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
+  width: var(--yep-icon-button-size);
+}
+
+.yep-icon-button--md {
+  --yep-icon-button-size: 2.5rem;
+  --yep-icon-button-icon: var(--icon-md);
+}
+
+.yep-icon-button--lg {
+  --yep-icon-button-size: 3rem;
+  --yep-icon-button-icon: var(--icon-md);
+}
+
+.yep-icon-button:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.yep-icon-button--danger {
+  color: var(--color-error-strong);
+}
+
+.yep-icon-button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.yep-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.yep-icon-button svg {
+  flex-shrink: 0;
+  height: var(--yep-icon-button-icon);
+  width: var(--yep-icon-button-icon);
+}
+
+.yep-icon-button__loader {
+  animation: yep-icon-button-spin 800ms linear infinite;
+  border: 2px solid currentColor;
+  border-radius: var(--radius-full);
+  border-right-color: transparent;
+  box-sizing: border-box;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+@keyframes yep-icon-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
