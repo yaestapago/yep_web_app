@@ -8,50 +8,55 @@
   transition:
     background-color var(--motion-fast),
     border-color var(--motion-fast),
-    color var(--motion-fast),
-    opacity var(--motion-fast);
+    color var(--motion-fast);
 }
 
 .yep-toggle:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.45;
+}
+
+/* Foco de teclado: anillo plano (P7), sin halo. */
+.yep-toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 /* ---------- appearance: switch ---------- */
 .yep-toggle--switch {
   align-items: center;
-  background: var(--color-border);
+  background: var(--color-border-strong);
   border: 0;
   border-radius: var(--radius-full);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 24px;
+  height: 20px;
   padding: 2px;
-  width: 44px;
+  width: 36px;
 }
 
 .yep-toggle--switch.yep-toggle--on {
   background: var(--color-primary);
 }
 
+/* Perilla blanca en ambos temas (marca fija). */
 .yep-toggle__thumb {
-  background: #ffffff;
+  background: var(--brand-on-ink);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-xs);
-  height: 20px;
+  height: 16px;
   transition: transform var(--motion-fast);
-  width: 20px;
+  width: 16px;
 }
 
 .yep-toggle--switch.yep-toggle--on .yep-toggle__thumb {
-  transform: translateX(20px);
+  transform: translateX(16px);
 }
 
 /* ---------- appearance: button (píldora de filtro) ---------- */
 .yep-toggle--button {
   align-items: center;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-full);
   color: var(--color-text-secondary);
   display: inline-flex;
@@ -59,26 +64,20 @@
   font-weight: var(--font-weight-medium);
   gap: var(--space-2);
   line-height: var(--line-height-snug);
+  min-height: 32px;
   padding: var(--space-1) var(--space-3);
 }
 
 .yep-toggle--button:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-}
-
-.yep-toggle--button.yep-toggle--on {
-  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  border-color: var(--color-text-secondary);
   color: var(--color-text-primary);
 }
 
-/* Estado desmarcado: atenuado para diferenciarlo del activo. */
-.yep-toggle--button:not(.yep-toggle--on) {
-  opacity: 0.6;
-}
-
-.yep-toggle--button:not(.yep-toggle--on):hover:not(:disabled) {
-  opacity: 1;
+.yep-toggle--button.yep-toggle--on,
+.yep-toggle--button.yep-toggle--on:hover:not(:disabled) {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
 }
 
 .yep-toggle__lead:empty {
