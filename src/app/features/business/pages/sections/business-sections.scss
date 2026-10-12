@@ -260,7 +260,8 @@ yep-alert {
 .account-option--selected,
 .account-option:has(input:checked) {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  outline: 1px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .account-option__checkbox {
@@ -327,7 +328,8 @@ yep-alert {
 
 .account-key-option ::ng-deep .yep-checkbox:has(input:checked) {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline: 1px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .account-key-option ::ng-deep .yep-checkbox__label {
