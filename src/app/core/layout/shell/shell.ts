@@ -1,12 +1,13 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { LucideFileScan, LucideMenu } from '@lucide/angular';
+import { LucideMenu, LucideScanLine } from '@lucide/angular';
 import { filter, startWith } from 'rxjs';
 
 import { AuthApiService } from '../../../features/auth/services/auth-api.service';
 import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
 import { Button } from '../../../shared/ui/button/button';
+import { IconButton } from '../../../shared/ui/icon-button/icon-button';
 import { Modal } from '../../../shared/ui/modal/modal';
 import { AuthSessionService } from '../../services/auth-session.service';
 import { BillingStatusService } from '../../services/billing-status.service';
@@ -16,7 +17,7 @@ const SIDEBAR_COLLAPSED_KEY = 'yep-sidebar-collapsed';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, LucideFileScan, LucideMenu],
+  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, IconButton, LucideScanLine],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -27,6 +28,9 @@ export class Shell {
   private readonly session = inject(AuthSessionService);
   private readonly authApi = inject(AuthApiService);
   private readonly billing = inject(BillingStatusService);
+
+  /** Icono del botón de menú de la barra superior en celular. */
+  protected readonly menuIcon = LucideMenu;
 
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);

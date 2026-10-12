@@ -19,14 +19,13 @@
 
   <div class="shell-main">
     <header class="mobile-topbar">
-      <button
+      <yep-icon-button
         class="menu-button"
-        type="button"
-        (click)="openDrawer()"
-        aria-label="Abrir menú de navegación"
-      >
-        <svg lucideMenu aria-hidden="true"></svg>
-      </button>
+        size="md"
+        [icon]="menuIcon"
+        label="Abrir menú de navegación"
+        (clicked)="openDrawer()"
+      />
       <span class="mobile-brand" aria-label="Ya Está Pago">
         <img class="mobile-brand__logo mobile-brand__logo--light" src="/brand/yep-light.svg" alt="Ya Está Pago" />
         <img class="mobile-brand__logo mobile-brand__logo--dark" src="/brand/yep-dark.svg" alt="" aria-hidden="true" />
@@ -39,16 +38,16 @@
   </div>
 
   @if (canShowReceiptCaptureButton()) {
-    <button
-      type="button"
+    <!-- Excepción de P3: primario global flotante; no cuenta para el límite de la vista. -->
+    <yep-button
       class="receipt-fab"
-      (click)="openReceiptCapture()"
-      aria-label="Capturar y validar comprobante"
+      size="lg"
       title="Capturar y validar comprobante"
+      (clicked)="openReceiptCapture()"
     >
-      <svg lucideFileScan aria-hidden="true"></svg>
-      <span>Validar pago</span>
-    </button>
+      <svg lucideScanLine aria-hidden="true"></svg>
+      Validar pago
+    </yep-button>
   }
 
   <app-receipt-capture-modal
@@ -65,7 +64,9 @@
   >
     <ng-container modalFooter>
       <yep-button variant="ghost" (clicked)="cancelLogout()">Cancelar</yep-button>
-      <yep-button variant="danger" (clicked)="confirmLogout()">Cerrar sesión</yep-button>
+      <yep-button variant="secondary" tone="danger" (clicked)="confirmLogout()">
+        Cerrar sesión
+      </yep-button>
     </ng-container>
   </yep-modal>
 </div>
