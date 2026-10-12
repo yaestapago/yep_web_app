@@ -13,62 +13,98 @@
   </div>
 
   @if (!canManage()) {
-    <div class="empty-state">
-      <h3>Solo para propietarios</h3>
-      <p>Necesitas rol de propietario para revisar y aprobar solicitudes de acceso.</p>
-    </div>
+    <yep-card>
+      <yep-state
+        kind="empty"
+        title="Solo para propietarios"
+        description="Necesitas rol de propietario para revisar y aprobar solicitudes de acceso."
+      >
+        <svg slot="icon" lucideLock aria-hidden="true"></svg>
+      </yep-state>
+    </yep-card>
   } @else {
     @if (error()) {
-      <div class="field-error" role="alert">{{ error() }}</div>
+      <yep-alert variant="error">{{ error() }}</yep-alert>
     }
     @if (success()) {
-      <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+      <yep-alert variant="success">{{ success() }}</yep-alert>
     }
 
     @if (loading()) {
-      <div class="loading-row">
-        <svg lucideLoaderCircle aria-hidden="true"></svg>
-        Cargando solicitudes…
-      </div>
+      <yep-state kind="loading" title="Cargando solicitudes…" />
     } @else if (message()) {
-      <div class="empty-state">
-        <h3>Bandeja no disponible</h3>
-        <p>{{ message() }}</p>
-      </div>
+      <yep-card>
+        <yep-state kind="error" title="Bandeja no disponible" [description]="message()" />
+      </yep-card>
     } @else if (requests().length === 0) {
-      <div class="empty-state">
-        <h3>Sin solicitudes pendientes</h3>
-        <p>Cuando alguien pida acceso a este negocio aparecerá aquí para tu aprobación.</p>
-      </div>
+      <yep-card>
+        <yep-state
+          kind="empty"
+          title="Sin solicitudes pendientes"
+          description="Cuando alguien pida acceso a este negocio aparecerá aquí para tu aprobación."
+        >
+          <svg slot="icon" lucideInbox aria-hidden="true"></svg>
+        </yep-state>
+      </yep-card>
     } @else {
-      <div class="card-list">
-        @for (request of requests(); track request.id) {
-          <article class="list-card">
-            <div class="list-card__main">
-              <h3 class="list-card__title">{{ requesterLabel(request) }}</h3>
-              <span class="list-card__meta">Rol solicitado: {{ roleLabel(request) }} · Estado: Pendiente</span>
-            </div>
-            <div class="list-card__actions">
-              <yep-button
-                variant="secondary"
-                size="sm"
-                [loading]="actingId() === request.id"
-                (clicked)="approve(request)"
-              >
-                Aprobar
-              </yep-button>
-              <yep-button
-                variant="danger"
-                size="sm"
-                [loading]="actingId() === request.id"
-                (clicked)="reject(request)"
-              >
-                Rechazar
-              </yep-button>
-            </div>
-          </article>
-        }
-      </div>
+      <yep-card padding="none">
+        <div class="yep-table-wrap">
+          <table yepTable aria-label="Solicitudes de acceso pendientes">
+            <thead>
+              <tr>
+                <th scope="col">Persona</th>
+                <th scope="col">Rol pedido</th>
+                <th scope="col">Fecha</th>
+                <th scope="col" class="actions" aria-label="Acciones"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (request of requests(); track request.id) {
+                @let name = requesterLabel(request);
+                <tr>
+                  <td data-label="Persona">
+                    <span class="person">
+                      <yep-avatar [name]="name" [size]="32" />
+                      <span class="person__name">{{ name }}</span>
+                    </span>
+                  </td>
+                  <td data-label="Rol pedido">
+                    <yep-status-chip tone="neutral" [dot]="false" [label]="roleLabel(request)" />
+                  </td>
+                  <td data-label="Fecha" class="request-date">
+                    @if (request.createdAt) {
+                      {{ request.createdAt | date: 'medium' }}
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="actions">
+                    <span class="row-actions">
+                      <yep-button
+                        variant="secondary"
+                        size="sm"
+                        [loading]="actingId() === request.id"
+                        (clicked)="approve(request)"
+                      >
+                        Aprobar
+                      </yep-button>
+                      <yep-button
+                        variant="ghost"
+                        tone="danger"
+                        size="sm"
+                        [loading]="actingId() === request.id"
+                        (clicked)="reject(request)"
+                      >
+                        Rechazar
+                      </yep-button>
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </yep-card>
     }
   }
 </div>

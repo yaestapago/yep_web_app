@@ -1,3 +1,57 @@
+/* ---------- Cabecera de la sección ---------- */
+.employees-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Tabla de empleados ---------- */
+.person {
+  align-items: center;
+  display: inline-flex;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+}
+
+.person yep-avatar {
+  flex: 0 0 auto;
+}
+
+.person__text {
+  display: grid;
+  min-width: 0;
+}
+
+.person__name {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.person__meta {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.row-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+
+/* El enlace de horarios solo envuelve al botón de icono: no pinta nada propio. */
+.row-actions__link {
+  color: inherit;
+  display: inline-flex;
+  text-decoration: none;
+}
+
+/* ---------- Modal de invitación ---------- */
 .invite-grid {
   display: grid;
   gap: var(--space-4);
@@ -10,7 +64,7 @@
 
 .qr-panel {
   align-items: center;
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
   display: grid;
   gap: var(--space-4);
@@ -24,10 +78,11 @@
   min-width: 0;
 }
 
+/* El QR se lee mejor sobre blanco fijo, también en tema oscuro. */
 .qr-panel__code {
   align-items: center;
-  background: #fff;
-  border: 1px solid var(--color-border);
+  background: var(--brand-on-ink);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   display: flex;
   justify-content: center;
@@ -54,18 +109,73 @@
   }
 }
 
-/* Tercer nivel del selector de apartados: opciones del resumen operativo. */
-.section-access-summary {
+/* ---------- Modales de acceso (cuentas y llaves, apartados) ---------- */
+.access-body {
   display: grid;
-  gap: var(--space-2);
-  grid-column: 1 / -1;
+  gap: var(--space-4);
+}
+
+.access-member {
+  align-items: center;
+  display: flex;
+  gap: 10px;
   min-width: 0;
 }
 
-.section-access-summary__children {
+.access-member yep-avatar {
+  flex: 0 0 auto;
+}
+
+.access-member__text {
   display: grid;
-  gap: var(--space-2);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  margin-left: calc(1.15rem + var(--space-2));
+  gap: 2px;
   min-width: 0;
+}
+
+.access-member__name {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.access-member__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.access-group-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.access-heading {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.access-key-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  grid-column: 1 / -1;
+}
+
+/* Tercer nivel (resumen operativo dentro del panel de control): sangría bajo su padre. */
+.access-nested-group {
+  margin-left: 30px;
+}
+
+@media (max-width: 520px) {
+  .access-nested-group {
+    margin-left: var(--space-4);
+  }
+}
+
+/* Las llaves Bre-B son códigos: van en mono (P9). */
+.access-key-option ::ng-deep .yep-check__label {
+  font-family: var(--font-family-mono);
 }

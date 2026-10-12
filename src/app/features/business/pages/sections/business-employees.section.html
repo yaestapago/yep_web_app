@@ -8,7 +8,7 @@
       </p>
     </div>
     @if (canManage()) {
-      <div class="list-card__actions">
+      <div class="employees-toolbar__actions">
         <yep-button size="sm" (clicked)="openInvite()">
           <svg lucideUserPlus aria-hidden="true"></svg>
           Agregar usuario
@@ -18,81 +18,109 @@
   </div>
 
   @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
+    <yep-alert variant="error">{{ error() }}</yep-alert>
   }
   @if (success()) {
-    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+    <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
   @if (loading()) {
-    <div class="loading-row">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando empleados…
-    </div>
+    <yep-state kind="loading" title="Cargando empleados…" />
   } @else if (message()) {
-    <div class="empty-state">
-      <h3>No disponible</h3>
-      <p>{{ message() }}</p>
-    </div>
+    <yep-card>
+      <yep-state kind="error" title="No disponible" [description]="message()" />
+    </yep-card>
   } @else if (members().length === 0) {
-    <div class="empty-state">
-      <h3>Sin empleados</h3>
-      <p>Aprueba solicitudes de acceso para ver empleados aquí.</p>
-    </div>
+    <yep-card>
+      <yep-state
+        kind="empty"
+        title="Sin empleados"
+        description="Aprueba solicitudes de acceso para ver empleados aquí."
+      >
+        <svg slot="icon" lucideUsers aria-hidden="true"></svg>
+      </yep-state>
+    </yep-card>
   } @else {
-    <div class="card-list">
-      @for (member of members(); track member.id) {
-        <article class="list-card">
-          <div class="list-card__main">
-            <h3 class="list-card__title">{{ employeeLabel(member) }}</h3>
-            <span class="list-card__meta">
-              {{ roleLabel(member) }}@if (contactLabel(member)) { · {{ contactLabel(member) }} }
-            </span>
-            <span class="list-card__meta">{{ locationNames(member) }}</span>
-          </div>
-          <div class="list-card__actions">
-            <a
-              [routerLink]="scheduleLink()"
-              [queryParams]="{ userId: member.userId ?? member.id }"
-              title="Ver horarios"
-            >
-              <yep-button variant="secondary" size="sm" [title]="'Ver horarios'">
-                <svg lucideCalendarClock aria-label="Ver horarios"></svg>
-              </yep-button>
-            </a>
-            @if (canManage()) {
-              @if (member.role === 'account_staff') {
-                <yep-button
-                  variant="ghost"
-                  size="sm"
-                  [attr.title]="accessSummary(member)"
-                  [disabled]="actingId() === member.id"
-                  (clicked)="openAccess(member)"
-                >
-                  <svg lucideBell aria-label="Configurar cuentas y llaves visibles"></svg>
-                </yep-button>
-                <yep-button
-                  variant="ghost"
-                  size="sm"
-                  title="Configurar apartados"
-                  [disabled]="actingId() === member.id"
-                  (clicked)="openSectionAccess(member)"
-                >
-                  <svg lucideSettings aria-label="Configurar apartados"></svg>
-                </yep-button>
-              }
-              <yep-icon-button action="edit" (clicked)="openEdit(member)" />
-              <yep-icon-button
-                action="delete"
-                label="Quitar"
-                [loading]="actingId() === member.id"
-                (clicked)="remove(member)"
-              />
+    <yep-card padding="none">
+      <div class="yep-table-wrap">
+        <table yepTable aria-label="Empleados">
+          <thead>
+            <tr>
+              <th scope="col">Persona</th>
+              <th scope="col">Rol</th>
+              <th scope="col">Sede</th>
+              <th scope="col" class="actions" aria-label="Acciones"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of members(); track member.id) {
+              @let name = employeeLabel(member);
+              <tr>
+                <td data-label="Persona">
+                  <span class="person">
+                    <yep-avatar [name]="name" [size]="32" />
+                    <span class="person__text">
+                      <span class="person__name">{{ name }}</span>
+                      @if (contactLabel(member)) {
+                        <span class="person__meta">{{ contactLabel(member) }}</span>
+                      }
+                    </span>
+                  </span>
+                </td>
+                <td data-label="Rol">
+                  <yep-status-chip
+                    [tone]="member.role === 'account_owner' ? 'info' : 'neutral'"
+                    [dot]="false"
+                    [label]="roleLabel(member)"
+                  />
+                </td>
+                <td data-label="Sede">{{ locationNames(member) }}</td>
+                <td class="actions">
+                  <span class="row-actions">
+                    <!-- El enlace navega; el botón solo le da la piel de icono (un solo foco). -->
+                    <a
+                      class="row-actions__link"
+                      tabindex="-1"
+                      [routerLink]="scheduleLink()"
+                      [queryParams]="{ userId: member.userId ?? member.id }"
+                    >
+                      <yep-icon-button [icon]="scheduleIcon" label="Ver horarios" />
+                    </a>
+                    @if (canManage()) {
+                      @if (member.role === 'account_staff') {
+                        <yep-icon-button
+                          [icon]="accessIcon"
+                          [label]="'Configurar cuentas y llaves visibles: ' + accessSummary(member)"
+                          [disabled]="actingId() === member.id"
+                          (clicked)="openAccess(member)"
+                        />
+                      }
+                      <yep-icon-button
+                        action="edit"
+                        [disabled]="actingId() === member.id"
+                        (clicked)="openEdit(member)"
+                      />
+                      <yep-menu label="Más acciones" [disabled]="actingId() === member.id">
+                        @if (member.role === 'account_staff') {
+                          <button yepMenuItem (click)="openSectionAccess(member)">
+                            <svg lucideSettings aria-hidden="true"></svg>
+                            Configurar apartados
+                          </button>
+                        }
+                        <button yepMenuItem tone="danger" (click)="remove(member)">
+                          <svg lucideTrash2 aria-hidden="true"></svg>
+                          Quitar
+                        </button>
+                      </yep-menu>
+                    }
+                  </span>
+                </td>
+              </tr>
             }
-          </div>
-        </article>
-      }
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </yep-card>
   }
 </div>
 
@@ -194,6 +222,7 @@
   </ng-container>
 </yep-modal>
 
+
 <yep-modal
   [open]="accessOpen()"
   title="Cuentas y llaves visibles"
@@ -203,92 +232,81 @@
   (closeRequested)="closeAccess()"
 >
   @if (accessMember(); as member) {
-    <div class="form-grid">
-      <div class="field full-field">
-        <span class="field-label">{{ employeeLabel(member) }}</span>
-        <span class="section-subtitle">
-          Por defecto el staff ve en el panel de control todas las cuentas y todas las llaves.
-        </span>
+    <div class="access-body">
+      <div class="access-member">
+        <yep-avatar [name]="employeeLabel(member)" [size]="40" />
+        <div class="access-member__text">
+          <span class="access-member__name">{{ employeeLabel(member) }}</span>
+          <span class="access-member__hint">
+            Por defecto el staff ve en el panel de control todas las cuentas y todas las llaves.
+          </span>
+        </div>
       </div>
 
-      <div class="field full-field">
-        <span class="field-label">Cuentas bancarias</span>
+      <div class="access-group-list">
+        <h3 class="access-heading">Cuentas bancarias</h3>
 
         @if (selectableBankAccounts().length === 0) {
           <p class="section-subtitle">
             No hay cuentas bancarias activas para configurar.
           </p>
         } @else {
-          <div class="account-picker">
+          <div>
             @for (account of selectableBankAccounts(); track account.id) {
-              <div
-                class="account-option"
-                [class.account-option--selected]="isAccessAccountSelected(account.id)"
+              @let accountSelected = isAccessAccountSelected(account.id);
+              <yep-check-group
+                [label]="accountLabel(account)"
+                [meta]="
+                  '****' +
+                  account.accountNumberLast4 +
+                  (accountTypeLabel(account) ? ' · ' + accountTypeLabel(account) : '')
+                "
+                [count]="accountSelected ? 'Llaves visibles de esta cuenta' : ''"
+                [checked]="accountSelected"
+                [disabled]="savingAccess()"
+                (checkedChange)="toggleAccessAccount(account.id, $event)"
               >
-                <yep-checkbox
-                  class="account-option__checkbox"
-                  [checked]="isAccessAccountSelected(account.id)"
-                  [disabled]="savingAccess()"
-                  (checkedChange)="toggleAccessAccount(account.id, $event)"
-                >
-                  <span class="account-option__body">
-                    <span class="account-option__title">{{ accountLabel(account) }}</span>
-                    <span class="account-option__meta">
-                      ****{{ account.accountNumberLast4 }}
-                      @if (accountTypeLabel(account)) {
-                        - {{ accountTypeLabel(account) }}
-                      }
-                    </span>
-                  </span>
-                </yep-checkbox>
-
-                @if (isAccessAccountSelected(account.id)) {
-                  <div class="account-key-list" aria-label="Llaves Bre-B visibles para este staff">
-                    <div class="account-key-list__header">
-                      <span class="account-key-hint">Llaves visibles de esta cuenta</span>
-                      <button
-                        type="button"
-                        class="inline-action"
-                        [disabled]="savingAccess()"
-                        (click)="toggleAllAccessFiltersForAccount(account)"
-                      >
-                        {{
-                          areAllAccessFiltersSelectedForAccount(account)
-                            ? 'Deseleccionar todo'
-                            : 'Seleccionar todo'
-                        }}
-                      </button>
-                    </div>
-
-                    <yep-checkbox
-                      class="account-key-option"
-                      [checked]="isAccessBreBKeySelected(directAccountFilterKey(account))"
-                      [disabled]="savingAccess()"
-                      (checkedChange)="toggleAccessBreBKey(directAccountFilterKey(account), $event)"
-                    >
-                      <span class="account-key-option__body">
-                        <span class="account-key-option__title">Cuenta directa</span>
-                        <span class="account-key-option__meta">Sin llave Bre-B</span>
-                      </span>
-                    </yep-checkbox>
-
-                    @for (key of account.breBKeys; track key; let i = $index) {
-                      <yep-checkbox
-                        class="account-key-option"
-                        [checked]="isAccessBreBKeySelected(key)"
-                        [disabled]="savingAccess()"
-                        (checkedChange)="toggleAccessBreBKey(key, $event)"
-                      >
-                        <code class="account-key-option__value">{{ account.breBKeysDisplay[i] || key }}</code>
-                      </yep-checkbox>
-                    }
-
-                    @if (account.breBKeys.length === 0) {
-                      <span class="account-key-empty">Sin llaves Bre-B registradas.</span>
-                    }
-                  </div>
+                @if (accountSelected) {
+                  <yep-button
+                    slot="actions"
+                    variant="ghost"
+                    size="sm"
+                    [disabled]="savingAccess()"
+                    (clicked)="toggleAllAccessFiltersForAccount(account)"
+                  >
+                    {{
+                      areAllAccessFiltersSelectedForAccount(account)
+                        ? 'Deseleccionar todo'
+                        : 'Seleccionar todo'
+                    }}
+                  </yep-button>
                 }
-              </div>
+
+                @if (accountSelected) {
+                  <yep-check-option
+                    label="Cuenta directa"
+                    meta="Sin llave Bre-B"
+                    [checked]="isAccessBreBKeySelected(directAccountFilterKey(account))"
+                    [disabled]="savingAccess()"
+                    (checkedChange)="toggleAccessBreBKey(directAccountFilterKey(account), $event)"
+                  />
+
+                  @for (key of account.breBKeys; track key; let i = $index) {
+                    <yep-check-option
+                      class="access-key-option"
+                      [label]="account.breBKeysDisplay[i] || key"
+                      meta="Llave Bre-B"
+                      [checked]="isAccessBreBKeySelected(key)"
+                      [disabled]="savingAccess()"
+                      (checkedChange)="toggleAccessBreBKey(key, $event)"
+                    />
+                  }
+
+                  @if (account.breBKeys.length === 0) {
+                    <span class="access-key-empty">Sin llaves Bre-B registradas.</span>
+                  }
+                }
+              </yep-check-group>
             }
           </div>
         }
@@ -315,145 +333,108 @@
   (closeRequested)="closeSectionAccess()"
 >
   @if (sectionAccessMember(); as member) {
-    <div class="form-grid">
-      <div class="field full-field">
-        <span class="field-label">{{ employeeLabel(member) }}</span>
-        <span class="section-subtitle">
-          Define qué apartados puede abrir este empleado. El propietario y el
-          superadministrador siempre conservan acceso completo.
-        </span>
+    @let access = selectedSectionAccess();
+    <div class="access-body">
+      <div class="access-member">
+        <yep-avatar [name]="employeeLabel(member)" [size]="40" />
+        <div class="access-member__text">
+          <span class="access-member__name">{{ employeeLabel(member) }}</span>
+          <span class="access-member__hint">
+            Define qué apartados puede abrir este empleado. El propietario y el
+            superadministrador siempre conservan acceso completo.
+          </span>
+        </div>
       </div>
 
-      <div class="field full-field">
-        <span class="field-label">Apartados</span>
-        <div class="account-picker">
-          <div
-            class="account-option"
-            [class.account-option--selected]="selectedSectionAccess().dashboard"
-          >
-            <yep-checkbox
-              class="account-option__checkbox"
-              [checked]="selectedSectionAccess().dashboard"
-              [disabled]="savingSectionAccess()"
-              (checkedChange)="toggleSectionAccess('dashboard', $event)"
-            >
-              <span class="account-option__body">
-                <span class="account-option__title">Panel de control</span>
-              </span>
-            </yep-checkbox>
+      <div class="access-group-list">
+        <h3 class="access-heading">Apartados</h3>
 
-            @if (selectedSectionAccess().dashboard) {
-              <div class="account-key-list" aria-label="Apartados del panel de control">
-                <div class="section-access-summary">
-                  <yep-checkbox
-                    class="account-key-option"
-                    [checked]="selectedSectionAccess().dashboardSummary"
-                    [disabled]="savingSectionAccess()"
-                    (checkedChange)="toggleSectionAccess('dashboardSummary', $event)"
-                  >
-                    <span class="account-key-option__body">
-                      <span class="account-key-option__title">Resumen operativo</span>
-                    </span>
-                  </yep-checkbox>
-                  @if (selectedSectionAccess().dashboardSummary) {
-                    <div class="section-access-summary__children" aria-label="Elementos del resumen operativo">
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Gráficas"
-                        [checked]="selectedSectionAccess().dashboardCharts"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardCharts', $event)"
-                      />
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Estado del sistema"
-                        [checked]="selectedSectionAccess().dashboardSystemStatus"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardSystemStatus', $event)"
-                      />
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Total capturado"
-                        [checked]="selectedSectionAccess().dashboardTotalAmount"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardTotalAmount', $event)"
-                      />
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Eventos detectados"
-                        [checked]="selectedSectionAccess().dashboardEvents"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardEvents', $event)"
-                      />
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Transacciones recibidas"
-                        [checked]="selectedSectionAccess().dashboardReceived"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardReceived', $event)"
-                      />
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Pendientes"
-                        [checked]="selectedSectionAccess().dashboardPending"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardPending', $event)"
-                      />
-                      <yep-checkbox
-                        class="account-key-option"
-                        label="Rechazadas"
-                        [checked]="selectedSectionAccess().dashboardRejected"
-                        [disabled]="savingSectionAccess()"
-                        (checkedChange)="toggleSectionAccess('dashboardRejected', $event)"
-                      />
-                    </div>
-                  }
-                </div>
-                <yep-checkbox
-                  class="account-key-option"
-                  [checked]="selectedSectionAccess().dashboardIncomeTable"
-                  [disabled]="savingSectionAccess()"
-                  (checkedChange)="toggleSectionAccess('dashboardIncomeTable', $event)"
-                >
-                  <span class="account-key-option__body">
-                    <span class="account-key-option__title">Tabla de ingresos</span>
-                  </span>
-                </yep-checkbox>
-              </div>
+        <div>
+          <yep-check-group
+            label="Panel de control"
+            [checked]="access.dashboard"
+            [disabled]="savingSectionAccess()"
+            (checkedChange)="toggleSectionAccess('dashboard', $event)"
+          >
+            @if (access.dashboard) {
+              <yep-check-option
+                label="Tabla de ingresos"
+                [checked]="access.dashboardIncomeTable"
+                [disabled]="savingSectionAccess()"
+                (checkedChange)="toggleSectionAccess('dashboardIncomeTable', $event)"
+              />
             }
-          </div>
+          </yep-check-group>
 
-          <div
-            class="account-option"
-            [class.account-option--selected]="selectedSectionAccess().businessData"
-          >
-            <yep-checkbox
-              class="account-option__checkbox"
-              [checked]="selectedSectionAccess().businessData"
+          <!-- Tercer nivel: el resumen operativo vive dentro del panel de control. -->
+          @if (access.dashboard) {
+            <yep-check-group
+              class="access-nested-group"
+              label="Resumen operativo"
+              [checked]="access.dashboardSummary"
               [disabled]="savingSectionAccess()"
-              (checkedChange)="toggleSectionAccess('businessData', $event)"
+              (checkedChange)="toggleSectionAccess('dashboardSummary', $event)"
             >
-              <span class="account-option__body">
-                <span class="account-option__title">Datos del negocio</span>
-              </span>
-            </yep-checkbox>
-          </div>
+              @if (access.dashboardSummary) {
+                <yep-check-option
+                  label="Gráficas"
+                  [checked]="access.dashboardCharts"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardCharts', $event)"
+                />
+                <yep-check-option
+                  label="Estado del sistema"
+                  [checked]="access.dashboardSystemStatus"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardSystemStatus', $event)"
+                />
+                <yep-check-option
+                  label="Total capturado"
+                  [checked]="access.dashboardTotalAmount"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardTotalAmount', $event)"
+                />
+                <yep-check-option
+                  label="Eventos detectados"
+                  [checked]="access.dashboardEvents"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardEvents', $event)"
+                />
+                <yep-check-option
+                  label="Transacciones recibidas"
+                  [checked]="access.dashboardReceived"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardReceived', $event)"
+                />
+                <yep-check-option
+                  label="Pendientes"
+                  [checked]="access.dashboardPending"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardPending', $event)"
+                />
+                <yep-check-option
+                  label="Rechazadas"
+                  [checked]="access.dashboardRejected"
+                  [disabled]="savingSectionAccess()"
+                  (checkedChange)="toggleSectionAccess('dashboardRejected', $event)"
+                />
+              }
+            </yep-check-group>
+          }
 
-          <div
-            class="account-option"
-            [class.account-option--selected]="selectedSectionAccess().reports"
-          >
-            <yep-checkbox
-              class="account-option__checkbox"
-              [checked]="selectedSectionAccess().reports"
-              [disabled]="savingSectionAccess()"
-              (checkedChange)="toggleSectionAccess('reports', $event)"
-            >
-              <span class="account-option__body">
-                <span class="account-option__title">Informes</span>
-              </span>
-            </yep-checkbox>
-          </div>
+          <yep-check-group
+            label="Datos del negocio"
+            [checked]="access.businessData"
+            [disabled]="savingSectionAccess()"
+            (checkedChange)="toggleSectionAccess('businessData', $event)"
+          />
+
+          <yep-check-group
+            label="Informes"
+            [checked]="access.reports"
+            [disabled]="savingSectionAccess()"
+            (checkedChange)="toggleSectionAccess('reports', $event)"
+          />
         </div>
       </div>
     </div>

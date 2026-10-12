@@ -1,19 +1,38 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { LucideLoaderCircle, LucideRefreshCw } from '@lucide/angular';
+import { LucideInbox, LucideLock, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { Alert } from '../../../../shared/ui/alert/alert';
+import { Avatar } from '../../../../shared/ui/avatar/avatar';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import type { BusinessMembership } from '../../../../shared/models/auth.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 @Component({
   selector: 'app-business-requests-section',
-  imports: [Button, LucideLoaderCircle, LucideRefreshCw],
+  imports: [
+    DatePipe,
+    Alert,
+    Avatar,
+    Button,
+    Card,
+    State,
+    StatusChip,
+    Table,
+    LucideInbox,
+    LucideLock,
+    LucideRefreshCw,
+  ],
   templateUrl: './business-requests.section.html',
   styleUrls: ['./business-sections.scss', './business-requests.section.scss'],
 })
