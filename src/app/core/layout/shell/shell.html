@@ -50,10 +50,12 @@
     </yep-button>
   }
 
-  <app-receipt-capture-modal
-    [open]="receiptCaptureOpen()"
-    (closeRequested)="closeReceiptCapture()"
-  />
+  @defer (when receiptCaptureOpen()) {
+    <app-receipt-capture-modal
+      [open]="receiptCaptureOpen()"
+      (closeRequested)="closeReceiptCapture()"
+    />
+  }
 
   <yep-modal
     [open]="logoutModalOpen()"
