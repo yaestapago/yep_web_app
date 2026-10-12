@@ -26,3 +26,4 @@ export * from './segmented/segmented';
 export * from './avatar/avatar';
 export * from './icon-tile/icon-tile';
 export * from './banner/banner';
+export * from './file-drop/file-drop';
