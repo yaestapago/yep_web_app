@@ -1,124 +1,92 @@
-<div class="section">
-  <div class="section-toolbar">
-    <div class="section-heading">
-      <h2 class="section-title">Datos del negocio</h2>
-      <p class="section-subtitle">Información general de {{ businessName() }}.</p>
-    </div>
+<div class="section data-section">
+  @if (error()) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+  @if (success()) {
+    <yep-alert variant="success">{{ success() }}</yep-alert>
+  }
+
+  <yep-card title="Datos del negocio" [subtitle]="'Información general de ' + businessName() + '.'">
     @if (canManage()) {
-      <yep-button variant="ghost" size="sm" (clicked)="openEdit()">
+      <yep-button slot="actions" variant="ghost" size="sm" (clicked)="openEdit()">
         <svg lucidePencil aria-hidden="true"></svg>
         Editar
       </yep-button>
     }
-  </div>
 
-  @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
-  }
-  @if (success()) {
-    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
-  }
-
-  <div class="info-grid">
-    <div class="info-cell">
-      <span class="info-label">Nombre</span>
-      <span class="info-value">{{ businessName() }}</span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">Ubicación</span>
-      <span class="info-value">
+    <yep-description-list [columns]="3">
+      <yep-description-item label="Nombre">{{ businessName() }}</yep-description-item>
+      <yep-description-item label="Ubicación">
         {{ account()?.cityName || '—' }}
         @if (account()?.departmentName) {
           · {{ account()?.departmentName }}
         }
-      </span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">Dirección</span>
-      <span class="info-value">{{ account()?.address || '—' }}</span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">Teléfono</span>
-      <span class="info-value">{{ account()?.phone || '—' }}</span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">NIT</span>
-      <span class="info-value">{{ account()?.nit || '—' }}</span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">Cuentas de cobro a nombre de</span>
-      <span class="info-value">{{ invoiceRecipientLabel() }}</span>
-      <span class="info-hint">Titular de las cuentas de cobro de YEP para este negocio.</span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">Código para compartir</span>
-      <span class="info-value code-value">
-        <code class="code-chip">{{ shareCode() }}</code>
-        <button
-          type="button"
-          class="code-copy"
-          (click)="copyCode()"
-          [attr.aria-label]="copied() ? 'Código copiado' : 'Copiar código'"
-          [title]="copied() ? 'Copiado' : 'Copiar'"
-        >
-          @if (copied()) {
-            <svg lucideClipboardCheck aria-hidden="true"></svg>
-          } @else {
-            <svg lucideClipboardCopy aria-hidden="true"></svg>
-          }
-        </button>
-      </span>
-      <span class="info-hint">Compártelo con quien quiera unirse a este negocio.</span>
-    </div>
-    <div class="info-cell">
-      <span class="info-label">Link de registro staff</span>
-      <span class="info-value code-value code-value--link">
-        <code class="code-chip code-chip--link">
+      </yep-description-item>
+      <yep-description-item label="Dirección">{{ account()?.address || '—' }}</yep-description-item>
+      <yep-description-item label="Teléfono" [mono]="true">
+        {{ account()?.phone || '—' }}
+      </yep-description-item>
+      <yep-description-item label="NIT" [mono]="true">{{ account()?.nit || '—' }}</yep-description-item>
+      <yep-description-item
+        label="Cuentas de cobro a nombre de"
+        hint="Titular de las cuentas de cobro de YEP para este negocio."
+      >
+        {{ invoiceRecipientLabel() }}
+      </yep-description-item>
+    </yep-description-list>
+  </yep-card>
+
+  <yep-card
+    title="Invitar al equipo"
+    subtitle="Comparte el código o el enlace con quien deba unirse a este negocio."
+  >
+    <yep-description-list [columns]="2">
+      <yep-description-item
+        label="Código para compartir"
+        hint="Compártelo con quien quiera unirse a este negocio."
+        [mono]="true"
+        [copy]="shareCode()"
+        (copied)="copyCode()"
+      >
+        <span class="share-code">{{ shareCode() }}</span>
+        @if (copied()) {
+          <span class="copy-feedback" role="status">Copiado</span>
+        }
+      </yep-description-item>
+      <yep-description-item
+        label="Enlace de registro staff"
+        hint="Envíalo a quien deba registrarse como staff."
+        [mono]="true"
+        [copy]="registrationLink()"
+        (copied)="copyRegistrationLink()"
+      >
+        <span class="share-link" [title]="registrationLink()">
           /register?code={{ shareCode() }}&amp;businessName={{ businessName() }}
-        </code>
-        <button
-          type="button"
-          class="code-copy code-copy--wide"
-          (click)="copyRegistrationLink()"
-          [attr.aria-label]="linkCopied() ? 'Link copiado' : 'Copiar link de registro'"
-          [title]="linkCopied() ? 'Link copiado' : 'Copiar link de registro'"
-        >
-          @if (linkCopied()) {
-            <svg lucideClipboardCheck aria-hidden="true"></svg>
-            <span>Copiado</span>
-          } @else {
-            <svg lucideClipboardCopy aria-hidden="true"></svg>
-            <span>Copiar link</span>
-          }
-        </button>
-      </span>
-      <span class="info-hint">Envíalo a quien deba registrarse como staff.</span>
-    </div>
-  </div>
+        </span>
+        @if (linkCopied()) {
+          <span class="copy-feedback" role="status">Enlace copiado</span>
+        }
+      </yep-description-item>
+    </yep-description-list>
+  </yep-card>
+
+  @if (isSuperUser()) {
+    <!-- Solo superadmin (account_su): soporte no ve ni edita la fecha de corte. -->
+    <app-billing-cutoff-card [businessId]="businessId()" />
+
+    <yep-card title="Zona de peligro" subtitle="Solo visible para superadmin.">
+      <svg slot="icon" class="danger-icon" lucideTriangleAlert aria-hidden="true"></svg>
+      <yep-alert variant="error">
+        Eliminar el negocio borra permanentemente todos sus datos: transacciones, notificadores,
+        empleados, sedes, cuentas bancarias y más. Esta acción no se puede deshacer.
+      </yep-alert>
+      <yep-button variant="secondary" tone="danger" size="sm" (clicked)="confirmDeleteIntent()">
+        <svg lucideTrash2 aria-hidden="true"></svg>
+        Eliminar negocio
+      </yep-button>
+    </yep-card>
+  }
 </div>
-
-@if (isSuperUser()) {
-  <!-- Solo superadmin (account_su): soporte no ve ni edita la fecha de corte. -->
-  <app-billing-cutoff-card [businessId]="businessId()" />
-
-  <div class="danger-zone">
-    <div class="section-heading">
-      <h2 class="section-title danger-zone__title">
-        <svg lucideTriangleAlert aria-hidden="true"></svg>
-        Zona de peligro
-      </h2>
-      <p class="section-subtitle">Solo visible para superadmin.</p>
-    </div>
-    <yep-alert variant="error">
-      Eliminar el negocio borra permanentemente todos sus datos: transacciones, notificadores,
-      empleados, sedes, cuentas bancarias y más. Esta acción no se puede deshacer.
-    </yep-alert>
-    <yep-button variant="danger" size="sm" (clicked)="confirmDeleteIntent()">
-      <svg lucideTrash2 aria-hidden="true"></svg>
-      Eliminar negocio
-    </yep-button>
-  </div>
-}
 
 <yep-modal
   [open]="editOpen()"
@@ -184,7 +152,7 @@
 >
   @if (deleteStep() === 'password') {
     <form [formGroup]="deletePasswordForm" (ngSubmit)="submitDeletePassword()" class="form-grid">
-      <p class="info-hint">Confirma tu contraseña para continuar con la eliminación del negocio.</p>
+      <p class="modal-hint">Confirma tu contraseña para continuar con la eliminación del negocio.</p>
       <yep-input
         formControlName="password"
         type="password"
@@ -194,7 +162,7 @@
       />
     </form>
   } @else {
-    <p class="info-hint">
+    <p class="modal-hint">
       Te enviamos un código de 6 dígitos a tu correo para confirmar la eliminación de
       "{{ businessName() }}".
     </p>
@@ -215,7 +183,8 @@
     </yep-button>
     @if (deleteStep() === 'password') {
       <yep-button
-        variant="danger"
+        variant="secondary"
+        tone="danger"
         type="submit"
         [loading]="deleting()"
         (clicked)="submitDeletePassword()"
