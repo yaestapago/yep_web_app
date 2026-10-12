@@ -20,9 +20,11 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import {
+  LucideCalendarClock,
   LucideChevronLeft,
   LucideChevronRight,
-  LucideLoaderCircle,
+  LucideMapPin,
+  LucideMoon,
   LucidePlus,
   LucideX,
 } from '@lucide/angular';
@@ -31,11 +33,14 @@ import { finalize, forkJoin } from 'rxjs';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type { ApprovedMember, DayOfWeek, Shift } from '../../../../shared/models/schedule.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { DayPicker } from '../../../../shared/ui/day-picker/day-picker';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
 import { TimePicker } from '../../../../shared/ui/time-picker/time-picker';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -253,15 +258,18 @@ function findOverlaps(
   selector: 'app-business-schedules-section',
   imports: [
     ReactiveFormsModule,
+    Alert,
     Button,
     DayPicker,
+    IconButton,
     Modal,
     Select,
+    State,
     TimePicker,
     Toggle,
-    LucideChevronLeft,
-    LucideChevronRight,
-    LucideLoaderCircle,
+    LucideCalendarClock,
+    LucideMapPin,
+    LucideMoon,
     LucidePlus,
     LucideX,
   ],
@@ -276,6 +284,8 @@ export class BusinessSchedulesSection implements OnInit {
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notifications = inject(NotificationModalService);
 
+  protected readonly prevWeekIcon = LucideChevronLeft;
+  protected readonly nextWeekIcon = LucideChevronRight;
   readonly hourHeight = HOUR_HEIGHT;
   readonly dayColumns = DAY_COLUMNS;
 

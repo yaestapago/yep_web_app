@@ -1,3 +1,6 @@
+// S10 · Horarios · docs/rediseno-web/04-pantallas.md#s10--sedes-y-horarios
+// Calendario semanal: cuadrícula --color-border, hoy en --color-primary-soft/-strong, turnos --color-primary-soft.
+
 /* Zona de filtros de la grilla de horarios: sedes + empleados como toggles. */
 .grid-filters {
   display: flex;
@@ -56,7 +59,7 @@
 
 .quick-chip {
   background: transparent;
-  border: 1px dashed var(--color-border);
+  border: var(--border-width) dashed var(--color-border-strong);
   border-radius: var(--radius-full);
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -70,15 +73,22 @@
 }
 
 .quick-chip:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-  color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-chip {
+    transition: none;
+  }
 }
 
 /* Duración calculada del turno, ayuda visual junto a hora inicio/fin. */
 .shift-duration {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: var(--color-primary-soft);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   margin: 0;
@@ -88,7 +98,7 @@
 
 /* Aviso de turno nocturno (cruza medianoche) en el formulario. */
 .shift-overnight-hint {
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  background: var(--color-surface-muted);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
@@ -99,7 +109,7 @@
 
 .employee-filter {
   align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  background: var(--color-primary-soft);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   display: flex;
@@ -107,22 +117,6 @@
   gap: var(--space-3);
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
-}
-
-.employee-filter__clear {
-  align-items: center;
-  background: transparent;
-  border: none;
-  color: var(--color-primary);
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  gap: var(--space-1);
-}
-
-.employee-filter__clear svg {
-  height: 14px;
-  width: 14px;
 }
 
 .legend__item {
@@ -140,34 +134,21 @@
   width: 12px;
 }
 
+/* ---------- Calendario semanal ---------- */
+.week-board {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+// Navegación de semana: cabecera de la tarjeta del calendario.
 .week-nav {
   align-items: center;
+  border-bottom: var(--border-width) solid var(--color-border);
   display: flex;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.week-nav__arrow {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  height: 32px;
-  justify-content: center;
-  width: 32px;
-}
-
-.week-nav__arrow:hover {
-  border-color: var(--color-primary);
-  color: var(--color-text-primary);
-}
-
-.week-nav__arrow svg {
-  height: 18px;
-  width: 18px;
+  padding: var(--space-3) var(--space-4);
 }
 
 .week-nav__month {
@@ -181,13 +162,6 @@
 
 .week-nav__today {
   margin-left: auto;
-}
-
-.week-board {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
 }
 
 // Contenedor scrolleable: scroll vertical (rango 00:00–24:00) y horizontal (días en móvil).
@@ -204,7 +178,7 @@
 
 .week-board__head {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width) solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 3;
@@ -212,7 +186,7 @@
 
 .week-board__corner {
   background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
   left: 0;
   position: sticky;
   z-index: 4;
@@ -222,8 +196,8 @@
   color: var(--color-text-secondary);
   display: flex;
   flex-direction: column;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   gap: 2px;
   padding: var(--space-2) var(--space-1);
   text-align: center;
@@ -231,20 +205,21 @@
 
 .week-board__dayname-date {
   color: var(--color-text-primary);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
 }
 
 .week-board__dayname--today {
-  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
 }
 
 .week-board__dayname--today .week-board__dayname-date {
-  color: var(--color-primary);
+  color: var(--color-primary-strong);
 }
 
 .week-board__dayname:not(:last-child) {
-  border-right: 1px solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
 }
 
 .week-board__body {
@@ -253,15 +228,16 @@
 
 .week-board__axis {
   background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
   left: 0;
   position: sticky;
   z-index: 2;
 }
 
 .week-board__hour {
-  color: var(--color-text-tertiary, var(--color-text-secondary));
-  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: 11px;
   position: relative;
 }
 
@@ -273,18 +249,22 @@
 
 .week-board__col {
   position: relative;
-  // Líneas horizontales por hora.
-  background-image: linear-gradient(
-    to bottom,
-    var(--color-border) 0,
-    var(--color-border) 1px,
-    transparent 1px
-  );
-  background-repeat: repeat-y;
 }
 
 .week-board__col:not(:last-child) {
-  border-right: 1px solid var(--color-border);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+// Líneas por hora: decorativas y sin clic, así `offsetY` del clic sigue midiéndose en la columna.
+.week-board__lines {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.week-board__line {
+  border-top: var(--border-width) solid var(--color-border);
+  box-sizing: border-box;
 }
 
 .week-board__col--clickable {
@@ -292,7 +272,7 @@
 }
 
 .week-board__col--today {
-  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  background-color: var(--color-primary-soft);
 }
 
 .week-board--empty .week-board__col {
@@ -300,8 +280,10 @@
 }
 
 .week-board__hint {
+  border-top: var(--border-width) solid var(--color-border);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  margin: 0;
   padding: var(--space-4);
   text-align: center;
 }
@@ -318,63 +300,103 @@
     max-height: 65vh;
   }
 
+  .week-nav {
+    padding: var(--space-3);
+  }
+
   .week-nav__month {
     font-size: var(--font-size-sm);
     min-width: 7rem;
   }
 }
 
+/* Turno: bloque --color-primary-soft con borde superior 2 px --color-primary y texto tinta.
+   El color del empleado (leyenda) queda como punto junto al nombre. */
 .shift-block {
   --shift-color: var(--color-primary);
-  background: color-mix(in srgb, var(--shift-color) 16%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, var(--shift-color) 45%, transparent);
-  border-left: 3px solid var(--shift-color);
+  background: var(--color-primary-soft);
+  border: 0;
   border-radius: var(--radius-sm);
+  border-top: 2px solid var(--color-primary);
   color: var(--color-text-primary);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 1px;
   font: inherit;
+  gap: 1px;
   overflow: hidden;
-  padding: 3px 6px;
+  padding: var(--space-1) var(--space-2);
   position: absolute;
   text-align: left;
-  transition: filter var(--motion-fast);
+  transition: border-color var(--motion-fast);
 }
 
 .shift-block:hover {
-  filter: brightness(1.04);
+  border-top-color: var(--color-primary-strong);
+}
+
+.shift-block:focus-visible {
+  outline: var(--border-width-focus) solid var(--color-focus);
+  outline-offset: 1px;
 }
 
 .shift-block--readonly {
   cursor: default;
 }
 
+.shift-block--readonly:hover {
+  border-top-color: var(--color-primary);
+}
+
 .shift-block__emp {
+  align-items: center;
+  display: flex;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
+  gap: var(--space-1);
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.shift-block__dot {
+  background: var(--shift-color);
+  border-radius: var(--radius-full);
+  flex: none;
+  height: 8px;
+  width: 8px;
 }
 
 .shift-block__time {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
   font-size: 11px;
-  opacity: 0.85;
 }
 
 .shift-block__night {
-  font-size: 10px;
+  display: inline-flex;
   margin-left: 2px;
+  vertical-align: -1px;
+}
+
+.shift-block__night svg {
+  height: 11px;
+  width: 11px;
 }
 
 .shift-block__loc {
-  font-size: 10px;
-  opacity: 0.7;
+  color: var(--color-text-secondary);
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shift-block {
+    transition: none;
+  }
 }
 
 .time-field {
@@ -389,8 +411,8 @@
 }
 
 .time-field__input {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font: inherit;
