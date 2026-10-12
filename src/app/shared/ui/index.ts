@@ -25,3 +25,4 @@ export * from './state/state';
 export * from './segmented/segmented';
 export * from './avatar/avatar';
 export * from './icon-tile/icon-tile';
+export * from './banner/banner';
