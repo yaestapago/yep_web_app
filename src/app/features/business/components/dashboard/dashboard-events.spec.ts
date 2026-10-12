@@ -39,7 +39,7 @@ describe('DashboardEventsPanel — un pago, varias fuentes', () => {
   }
 
   function rows(fixture: ComponentFixture<DashboardEventsPanel>): HTMLElement[] {
-    return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('li.event'));
+    return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tr.event'));
   }
 
   it('muestra "Confirmado por 2 fuentes" cuando dos notificadores reportan el mismo pago', () => {

@@ -14,16 +14,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  LucideActivity,
-  LucideBanknote,
-  LucideBell,
   LucideChevronDown,
   LucideChevronLeft,
   LucideChevronRight,
   LucideChevronUp,
-  LucideInbox,
-  LucideListChecks,
-  LucideTriangleAlert,
 } from '@lucide/angular';
 import { finalize, interval } from 'rxjs';
 
@@ -92,6 +86,7 @@ import {
   type DateRangePreset,
   defaultDashboardRange,
 } from '../../../../shared/ui/date-range-picker/date-range-picker';
+import { Alert, Kpi, PageHeader, StatusChip, type StatusChipTone } from '../../../../shared/ui';
 
 /** Tamaño de página (cursor) de cada tabla. */
 const EVENTS_PAGE_LIMIT = 50;
@@ -156,16 +151,14 @@ type KpiKey = 'totalAmount' | 'events' | 'received' | 'pending' | 'rejected';
   selector: 'app-business-dashboard-section',
   imports: [
     CurrencyPipe,
-    LucideActivity,
-    LucideBanknote,
-    LucideBell,
     LucideChevronDown,
     LucideChevronLeft,
     LucideChevronRight,
     LucideChevronUp,
-    LucideInbox,
-    LucideListChecks,
-    LucideTriangleAlert,
+    Alert,
+    Kpi,
+    PageHeader,
+    StatusChip,
     DashboardChartsPanel,
     DashboardKpiDetailPanel,
     DashboardStatusPanel,
@@ -253,6 +246,13 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       this.session.activeMembership()?.sectionAccess,
     ),
   );
+  /** Presentación: chip de conexión en vivo de la barra superior. */
+  readonly streamConnected = computed(() => this.sourceEventsStream.connected());
+  /** Presentación: tono del chip del semáforo cuando el resumen está oculto. */
+  readonly semaphoreTone = computed<StatusChipTone>(() => {
+    const level = this.summary().semaphore.level;
+    return level === 'red' ? 'error' : level === 'yellow' ? 'warning' : 'success';
+  });
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
   readonly invoiceReferenceLabel = computed(

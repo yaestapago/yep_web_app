@@ -6,6 +6,8 @@ import {
   LucideChevronsRight,
 } from '@lucide/angular';
 
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
+
 /**
  * Paginador compacto reutilizable para las zonas del panel. Siempre visible
  * (aunque haya una sola página) para dar una referencia estable de navegación.
@@ -15,64 +17,46 @@ import {
 @Component({
   selector: 'app-dashboard-pager',
   standalone: true,
-  imports: [
-    LucideChevronLeft,
-    LucideChevronRight,
-    LucideChevronsLeft,
-    LucideChevronsRight,
-  ],
+  imports: [IconButton],
   template: `
     <nav class="pager" aria-label="Paginación">
-      <button
-        type="button"
-        class="pager__btn"
-        (click)="go(1)"
+      <yep-icon-button
+        label="Primera página"
+        [icon]="firstIcon"
         [disabled]="page() <= 1"
-        aria-label="Primera página"
-        title="Primera página"
-      >
-        <svg lucideChevronsLeft aria-hidden="true"></svg>
-      </button>
-      <button
-        type="button"
-        class="pager__btn"
-        (click)="go(page() - 1)"
+        (clicked)="go(1)"
+      />
+      <yep-icon-button
+        label="Página anterior"
+        [icon]="prevIcon"
         [disabled]="page() <= 1"
-        aria-label="Página anterior"
-        title="Anterior"
-      >
-        <svg lucideChevronLeft aria-hidden="true"></svg>
-      </button>
-      <span class="pager__status">
-        Página <strong>{{ page() }}</strong> de {{ totalPages() }}
+        (clicked)="go(page() - 1)"
+      />
+      <span class="pager__status" aria-live="polite">
+        Página <b class="pager__number">{{ page() }}</b> de
+        <span class="pager__number">{{ totalPages() }}</span>
         @if (total() > 0) {
           <span class="pager__total">· {{ total() }}</span>
         }
       </span>
-      <button
-        type="button"
-        class="pager__btn"
-        (click)="go(page() + 1)"
+      <yep-icon-button
+        label="Página siguiente"
+        [icon]="nextIcon"
         [disabled]="page() >= totalPages()"
-        aria-label="Página siguiente"
-        title="Siguiente"
-      >
-        <svg lucideChevronRight aria-hidden="true"></svg>
-      </button>
-      <button
-        type="button"
-        class="pager__btn"
-        (click)="go(totalPages())"
+        (clicked)="go(page() + 1)"
+      />
+      <yep-icon-button
+        label="Última página"
+        [icon]="lastIcon"
         [disabled]="page() >= totalPages()"
-        aria-label="Última página"
-        title="Última página"
-      >
-        <svg lucideChevronsRight aria-hidden="true"></svg>
-      </button>
+        (clicked)="go(totalPages())"
+      />
     </nav>
   `,
   styles: [
     `
+      /* Mismo aspecto que yep-pagination (03 · yep-pagination), con primera y
+         última página. */
       :host {
         display: block;
         flex: 0 0 auto;
@@ -80,55 +64,40 @@ import {
 
       .pager {
         align-items: center;
-        border-top: 1px solid var(--color-border);
+        border-top: var(--border-width) solid var(--color-border);
         display: flex;
-        flex: 0 0 auto;
         gap: var(--space-1);
-        justify-content: center;
-        padding: var(--space-2) var(--space-3);
-      }
-
-      .pager__btn {
-        align-items: center;
-        background: transparent;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        color: var(--color-text-secondary);
-        cursor: pointer;
-        display: inline-flex;
-        height: var(--control-height-sm);
-        justify-content: center;
-        width: var(--control-height-sm);
-      }
-
-      .pager__btn:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
-        color: var(--color-text-primary);
-      }
-
-      .pager__btn:disabled {
-        cursor: not-allowed;
-        opacity: 0.45;
-      }
-
-      .pager__btn svg {
-        height: 16px;
-        width: 16px;
+        justify-content: flex-end;
+        padding: var(--space-3) var(--space-4);
       }
 
       .pager__status {
         color: var(--color-text-secondary);
-        font-size: var(--font-size-xs);
-        padding: 0 var(--space-2);
+        font-size: 0.8125rem;
+        font-weight: var(--font-weight-medium);
+        line-height: 1.45;
+        padding: 0 var(--space-1);
         white-space: nowrap;
       }
 
-      .pager__status strong {
+      .pager__number {
+        font-family: var(--font-family-mono);
+        font-variant-numeric: tabular-nums;
+      }
+
+      b.pager__number {
         color: var(--color-text-primary);
+        font-weight: var(--font-weight-semibold);
       }
 
       .pager__total {
         color: var(--color-text-muted);
+      }
+
+      @media (max-width: 560px) {
+        .pager {
+          justify-content: center;
+        }
       }
     `,
   ],
@@ -140,6 +109,11 @@ export class DashboardPager {
   readonly total = input<number>(0);
 
   readonly pageChange = output<number>();
+
+  protected readonly firstIcon = LucideChevronsLeft;
+  protected readonly prevIcon = LucideChevronLeft;
+  protected readonly nextIcon = LucideChevronRight;
+  protected readonly lastIcon = LucideChevronsRight;
 
   /** Indicador derivado por si el consumidor lo necesita. */
   readonly canPrev = computed(() => this.page() > 1);

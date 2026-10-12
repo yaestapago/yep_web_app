@@ -2,6 +2,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Component, computed, input as defineInput, output } from '@angular/core';
 import { LucideShieldCheck, LucideShieldX } from '@lucide/angular';
 
+import { DescriptionItem, DescriptionList } from '../../../../shared/ui';
 import { Button } from '../../../../shared/ui/button/button';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import type { PaymentTransaction } from '../../../../shared/models/transaction.models';
@@ -14,7 +15,15 @@ import { transactionStatusLabel } from '../../../../shared/utils/transaction-sta
  */
 @Component({
   selector: 'app-verify-transaction-modal',
-  imports: [CurrencyPipe, Button, Modal, LucideShieldCheck, LucideShieldX],
+  imports: [
+    CurrencyPipe,
+    Button,
+    DescriptionItem,
+    DescriptionList,
+    Modal,
+    LucideShieldCheck,
+    LucideShieldX,
+  ],
   templateUrl: './verify-transaction-modal.html',
   styleUrl: './verify-transaction-modal.scss',
 })

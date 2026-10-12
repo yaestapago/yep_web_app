@@ -1,7 +1,13 @@
-<div class="zone">
-  <div class="zone__head">
-    <h3 class="zone__title"><svg lucideBell aria-hidden="true"></svg> Eventos de ingreso</h3>
-    <span class="zone__count">{{ groupedEvents().length }}{{ hasMore() ? '+' : '' }}</span>
+<yep-card class="zone" title="Eventos de ingreso" padding="none">
+  <svg slot="icon" class="zone__icon" lucideBell aria-hidden="true"></svg>
+
+  <div slot="actions" class="zone__actions">
+    <yep-status-chip
+      class="zone__count"
+      tone="neutral"
+      [dot]="false"
+      [label]="groupedEvents().length + (hasMore() ? '+' : '')"
+    />
     <yep-toggle
       class="tts-toggle"
       appearance="button"
@@ -34,7 +40,6 @@
     </span>
     <yep-select
       class="filter-select"
-      size="sm"
       placeholder="Origen"
       [options]="typeOptions"
       [ngModel]="typeFilter()"
@@ -42,131 +47,151 @@
       (ngModelChange)="typeFilter.set($any($event) || '')"
     />
     @if (bankOptions().length > 0) {
-      <select
-        class="control"
-        [value]="bankFilter()"
-        (change)="bankFilter.set($any($event.target).value)"
-        aria-label="Filtrar por banco"
-      >
-        <option value="">Todo banco</option>
-        @for (bank of bankOptions(); track bank) {
-          <option [value]="bank">{{ bank }}</option>
-        }
-      </select>
+      <yep-select
+        class="filter-select"
+        placeholder="Banco"
+        [options]="bankSelectOptions()"
+        [ngModel]="bankFilter()"
+        [ngModelOptions]="{ standalone: true }"
+        (ngModelChange)="bankFilter.set($any($event) || '')"
+      />
     }
   </div>
 
   <div
-    class="zone__body events-body"
+    class="events-body"
     appAutoFitRows=".event"
-    [autoFitGap]="8"
+    autoFitHeader="thead"
     (fit)="pageSize.set($event)"
   >
     @if (loading()) {
-      <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
+      <yep-state kind="loading" title="Cargando eventos" [rows]="4" />
     } @else if (error()) {
-      <div class="state state--error">
-        <svg lucideTriangleAlert aria-hidden="true"></svg>
-        <p>{{ error() }}</p>
-      </div>
+      <yep-state kind="error" title="No se pudieron cargar los eventos" [description]="error()" />
     } @else if (events().length === 0) {
-      <div class="state">
-        <svg lucideCircleCheck aria-hidden="true"></svg>
-        <h4>Sin eventos</h4>
-        <p>No hay reportes de ingreso que coincidan con los filtros.</p>
-      </div>
+      <yep-state
+        kind="empty"
+        title="Sin eventos"
+        description="No hay reportes de ingreso que coincidan con los filtros."
+      />
     } @else {
-      <ul class="events">
-        @for (event of paged(); track event.id) {
-          @let reporters = reporterCount(event);
-          @let icons = groupIcons(event);
-          <li
-            class="event event--{{ statusTone(event.status) }}"
-            [class.event--unread]="isUnread(event)"
-            [class.event--corroborated]="isJustCorroborated(event)"
-            (click)="openDetail(event)"
-          >
-            <div class="event__main">
-              <div class="event__top">
-                <span
-                  class="event__type"
-                  [attr.title]="groupSourceLabel(event)"
-                  [class.event__type--grouped]="icons.length > 1 || reporters > 1"
-                >
-                  @for (icon of icons; track icon) {
-                    @switch (icon) {
-                      @case ('smartphone') {
-                        <svg lucideSmartphone aria-hidden="true"></svg>
+      <div class="yep-table-wrap">
+        <table yepTable clickableRows class="events">
+          <thead>
+            <tr>
+              <th scope="col">Origen</th>
+              <th scope="col">Pagador</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="num">Monto</th>
+              <th scope="col" class="num">Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of paged(); track event.id) {
+              @let reporters = reporterCount(event);
+              @let icons = groupIcons(event);
+              <tr
+                class="event event--{{ statusTone(event.status) }}"
+                [class.event--unread]="isUnread(event)"
+                [class.event--corroborated]="isJustCorroborated(event)"
+                (click)="openDetail(event)"
+              >
+                <td data-label="Origen">
+                  <span class="event__top">
+                    <span
+                      class="event__type"
+                      [attr.title]="groupSourceLabel(event)"
+                      [class.event__type--grouped]="icons.length > 1 || reporters > 1"
+                    >
+                      @for (icon of icons; track icon) {
+                        @switch (icon) {
+                          @case ('smartphone') {
+                            <svg lucideSmartphone aria-hidden="true"></svg>
+                          }
+                          @case ('monitor') {
+                            <svg lucideMonitor aria-hidden="true"></svg>
+                          }
+                          @case ('mail') {
+                            <svg lucideMail aria-hidden="true"></svg>
+                          }
+                        }
+                      } @empty {
+                        {{ sourceLabel(event.sourceType) }}
                       }
-                      @case ('monitor') {
-                        <svg lucideMonitor aria-hidden="true"></svg>
+                      <!-- Varias fuentes del mismo pago: una sola fila (la voz habló
+                           una vez) y este rótulo junto a los íconos de origen. -->
+                      @if (reporters > 1) {
+                        <span class="event__confirmed">Confirmado por {{ reporters }} fuentes</span>
                       }
-                      @case ('mail') {
-                        <svg lucideMail aria-hidden="true"></svg>
-                      }
+                    </span>
+                    @if (platformLabel(event)) {
+                      <yep-status-chip
+                        class="event__platform"
+                        tone="neutral"
+                        [dot]="false"
+                        [label]="platformLabel(event)"
+                      />
                     }
-                  } @empty {
-                    {{ sourceLabel(event.sourceType) }}
-                  }
-                  <!-- Varias fuentes del mismo pago: una sola fila (la voz habló
-                       una vez) y este rótulo junto a los íconos de origen. -->
-                  @if (reporters > 1) {
-                    <span class="event__confirmed">Confirmado por {{ reporters }} fuentes</span>
-                  }
-                </span>
-                @if (platformLabel(event)) {
-                  <span class="event__platform">{{ platformLabel(event) }}</span>
-                }
-                @if (viaSms(event)) {
-                  <span
-                    class="event__via-sms"
-                    data-testid="via-sms"
-                    title="Llegó por SMS porque el celular no tenía internet"
-                    >vía SMS</span
-                  >
-                }
-                <span
-                  class="event__receipt event__receipt--{{ receiptTone(event) }}"
-                  [title]="receiptTitle(event)"
-                  [attr.aria-label]="receiptTitle(event)"
-                >
-                  <svg lucideReceipt aria-hidden="true"></svg>
-                </span>
-              </div>
-              <p class="event__desc">{{ description(event) }}</p>
-              @if (accountName(event) || event.normalized?.reference || event.normalized?.senderName) {
-                <div class="event__source">
-                  @if (event.normalized?.senderName) {
-                    <span class="event__account">{{ event.normalized?.senderName }}</span>
-                  }
-                  @if (accountName(event)) {
-                    <span class="event__account">{{ accountName(event) }}</span>
-                  }
-                  @if (event.normalized?.reference) {
-                    <span class="event__ref">Ref. {{ event.normalized?.reference }}</span>
-                  }
-                </div>
-              }
-            </div>
-            <div class="event__aside">
-              @if (event.normalized?.amount) {
-                <span class="event__amount">{{
-                  event.normalized?.amount
-                    | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
-                }}</span>
-              }
-              <div class="event__aside-foot">
-                <time class="event__time">{{ event.createdAt | date: 'short' }}</time>
-                @if (isUnread(event)) {
-                  <span class="event__bell" aria-label="Nuevo" title="Nuevo">
-                    <svg lucideBell aria-hidden="true"></svg>
+                    @if (viaSms(event)) {
+                      <span
+                        class="event__via-sms"
+                        data-testid="via-sms"
+                        title="Llegó por SMS porque el celular no tenía internet"
+                        >vía SMS</span
+                      >
+                    }
+                    <span
+                      class="event__receipt event__receipt--{{ receiptTone(event) }}"
+                      [title]="receiptTitle(event)"
+                      [attr.aria-label]="receiptTitle(event)"
+                    >
+                      <svg lucideReceipt aria-hidden="true"></svg>
+                    </span>
                   </span>
-                }
-              </div>
-            </div>
-          </li>
-        }
-      </ul>
+                </td>
+                <td data-label="Pagador" class="event__main">
+                  @if (event.normalized?.senderName) {
+                    <span class="event__payer">{{ event.normalized?.senderName }}</span>
+                  }
+                  <span class="event__desc" [title]="description(event)">{{ description(event) }}</span>
+                  @if (accountName(event) || event.normalized?.reference) {
+                    <span class="event__source">
+                      @if (accountName(event)) {
+                        <span class="event__account">{{ accountName(event) }}</span>
+                      }
+                      @if (event.normalized?.reference) {
+                        <span class="event__ref">Ref. {{ event.normalized?.reference }}</span>
+                      }
+                    </span>
+                  }
+                </td>
+                <td data-label="Estado">
+                  <yep-status-chip
+                    [tone]="statusTone(event.status)"
+                    [label]="statusLabel(event.status)"
+                  />
+                </td>
+                <td data-label="Monto" class="num event__amount">
+                  @if (event.normalized?.amount) {
+                    {{
+                      event.normalized?.amount
+                        | currency: event.normalized?.currency || 'COP' : 'symbol-narrow' : '1.0-0'
+                    }}
+                  }
+                </td>
+                <td data-label="Hora" class="num event__when">
+                  @if (isUnread(event)) {
+                    <span class="event__bell" aria-label="Nuevo" title="Nuevo">
+                      <svg lucideBell aria-hidden="true"></svg>
+                    </span>
+                  }
+                  <time class="event__time">{{ event.createdAt | date: 'short' }}</time>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   </div>
 
@@ -188,4 +213,4 @@
       </button>
     }
   }
-</div>
+</yep-card>

@@ -31,6 +31,7 @@ import type {
   PaymentSupportType,
   PaymentTransaction,
 } from '../../../../shared/models/transaction.models';
+import { Alert, CardSection, StatusChip, type StatusChipTone } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   isTransactionInvoiceable,
@@ -87,6 +88,9 @@ const EVENT_SOURCE_LABELS: Record<string, string> = {
     LucideTriangleAlert,
     LucideUserCheck,
     LucideX,
+    Alert,
+    CardSection,
+    StatusChip,
   ],
   templateUrl: './transaction-supports-panel.html',
   styleUrl: './transaction-detail-modal.scss',
@@ -140,6 +144,19 @@ export class TransactionSupportsPanel {
   );
 
   readonly methodLabel = computed(() => validationMethodLabel(this.method()));
+
+  /** Presentación: tono del chip del método de validación. */
+  readonly methodTone = computed<StatusChipTone>(() => {
+    switch (this.method()) {
+      case 'automatica':
+      case 'mixta':
+        return 'success';
+      case 'manual':
+        return 'info';
+      default:
+        return 'warning';
+    }
+  });
 
   readonly levelLabel = computed(() => verificationLevelLabel(this.transaction().verification.level));
 

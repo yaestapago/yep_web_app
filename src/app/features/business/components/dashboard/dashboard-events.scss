@@ -1,15 +1,18 @@
-/* Toggle de voz: píldora compacta con icono de bocina, al extremo derecho. */
-.tts-toggle {
-  margin-left: auto;
-}
+/* Eventos de ingreso (S4): tabla con filas clicables; en celular cada fila es
+   un bloque (yep-table stackOnMobile). */
 
-/* Icono-solo: píldora cuadrada y ajustada (sin texto, sin gap sobrante). */
+/* Toggle de voz: botón cuadrado de 40 px con el icono de bocina. */
 .tts-toggle ::ng-deep .yep-toggle--button {
+  border-radius: var(--radius-md);
   gap: 0;
-  padding: var(--space-1);
+  height: var(--control-height-md);
+  justify-content: center;
+  min-height: 0;
+  padding: 0;
+  width: var(--control-height-md);
 }
 
-/* La etiqueta vacía del toggle no debe ocupar espacio en modo icono-solo. */
+/* La etiqueta vacía del toggle no ocupa espacio en modo icono-solo. */
 .tts-toggle ::ng-deep .yep-toggle__label:empty {
   display: none;
 }
@@ -19,8 +22,8 @@
 }
 
 .tts-toggle__icon svg {
-  height: 18px;
-  width: 18px;
+  height: var(--icon-md);
+  width: var(--icon-md);
 }
 
 .search {
@@ -29,90 +32,202 @@
 
 .search__icon {
   color: var(--color-text-muted);
-  height: 14px;
-  left: var(--space-2);
+  height: var(--icon-sm);
+  left: var(--space-3);
   pointer-events: none;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 14px;
+  width: var(--icon-sm);
 }
 
 .search__input {
-  padding-left: calc(var(--space-2) * 2 + 14px);
+  padding-left: calc(var(--space-3) + var(--icon-sm) + var(--space-2));
   width: 100%;
 }
 
 .filter-select {
-  min-width: 10rem;
+  flex: 0 0 168px;
+  min-width: 0;
 }
 
-.filter-select ::ng-deep .yep-select__button {
-  font-size: var(--font-size-xs);
-  min-height: var(--control-height-sm);
-}
-
+/* El host de appAutoFitRows: su alto define cuántas filas caben por página. */
 .events-body {
-  gap: var(--space-2);
+  border-top: var(--border-width) solid var(--color-border);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
 }
 
-.events {
+.events > tbody > tr > td {
+  vertical-align: middle;
+}
+
+.event--unread > td {
+  background: var(--color-primary-soft);
+}
+
+/* Origen: iconos 16 + banco en chip neutro + marcas. */
+.event__top {
+  align-items: center;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
-.event {
-  border: 1px solid var(--color-border);
-  border-left-width: 3px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: flex;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  transition: background var(--motion-fast);
+.event__type {
+  align-items: center;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-1);
 }
 
-.event:hover {
-  background: color-mix(in srgb, var(--color-secondary) 5%, transparent);
+/* Dos o más orígenes confirmaron el mismo pago: un fondo sutil deja claro que
+   es un grupo, no un solo aviso. */
+.event__type--grouped {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  padding: 2px var(--space-2);
 }
 
-.event--success {
-  border-left-color: var(--color-success);
-}
-.event--warning {
-  border-left-color: var(--color-warning);
-}
-.event--error {
-  border-left-color: var(--color-error);
-}
-.event--neutral {
-  border-left-color: var(--color-border);
+.event__type svg {
+  flex: 0 0 auto;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
-/* Evento recién llegado en vivo, aún no visto (estilo bandeja de correo). */
-.event--unread {
-  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+/* "Confirmado por N fuentes" dentro de la misma píldora de íconos. */
+.event__confirmed {
+  color: var(--color-text-secondary);
+  margin-left: 2px;
+  white-space: nowrap;
 }
 
-/* Campana de "no leído", a la derecha de la fila, con vibración sutil. */
+/* Otro notificador acaba de confirmar este pago en vivo: pulso breve en la
+   píldora. Sin sonido: es corroboración, no un pago nuevo. La sección quita
+   la clase a los ~2 s. */
+.event--corroborated .event__type--grouped {
+  animation: event-corroborated 1.6s ease-out;
+}
+
+@keyframes event-corroborated {
+  0% {
+    background: var(--color-success-soft);
+    color: var(--color-success-strong);
+  }
+  100% {
+    background: var(--color-surface-muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event--corroborated .event__type--grouped {
+    animation: none;
+    background: var(--color-success-soft);
+  }
+}
+
+/* El aviso llegó por el respaldo SMS (el celular estaba sin internet). */
+.event__via-sms {
+  align-items: center;
+  background: var(--color-warning-soft);
+  border-radius: var(--radius-full);
+  color: var(--color-warning-strong);
+  display: inline-flex;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  height: 22px;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+/* Ícono de recibo: verde solo si el evento tiene comprobante enlazado. */
+.event__receipt {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: inline-flex;
+}
+
+.event__receipt svg {
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+.event__receipt--linked {
+  color: var(--color-success-strong);
+}
+
+.event__receipt--duplicate {
+  color: var(--color-warning-strong);
+}
+
+/* Pagador y cuenta. */
+.event__main {
+  max-width: 0;
+  width: 100%;
+}
+
+.event__payer,
+.event__desc,
+.event__source {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event__payer {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.event__desc {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.event__source {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.event__account + .event__ref::before {
+  content: ' · ';
+}
+
+.event__amount {
+  color: var(--color-text-primary);
+}
+
+/* Hora: mono 12 + campana de "no leído". */
+.event__when {
+  color: var(--color-text-muted);
+}
+
+.event__time {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
 .event__bell {
   align-items: center;
-  color: var(--color-primary);
+  color: var(--color-primary-strong);
   display: inline-flex;
-  flex: 0 0 auto;
-  justify-content: center;
+  margin-right: var(--space-2);
   transform-origin: top center;
+  vertical-align: middle;
   animation: event-bell-shake 1.6s ease-in-out infinite;
 }
 
 .event__bell svg {
-  height: 16px;
-  width: 16px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 @keyframes event-bell-shake {
@@ -147,199 +262,69 @@
   }
 }
 
-.event__main {
-  display: grid;
-  flex: 1 1 auto;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-/* Columna derecha: monto prominente, hora y campana. */
-.event__aside {
-  align-items: flex-end;
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.event__amount {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  white-space: nowrap;
-}
-
-.event__aside-foot {
-  align-items: center;
-  display: flex;
-  gap: var(--space-2);
-}
-
-.event__top {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.event__type {
-  align-items: center;
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  gap: 4px;
-}
-
-/* Dos o más orígenes distintos confirmaron el mismo pago: además del espacio
-   entre íconos, un fondo sutil deja claro que es un grupo, no un solo aviso. */
-.event__type--grouped {
-  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
-  border-radius: var(--radius-full);
-  padding: 2px 6px;
-}
-
-.event__type svg {
-  height: 15px;
-  width: 15px;
-}
-
-/* "Confirmado por N fuentes" dentro de la misma píldora de íconos: se lee como
-   una sola etiqueta. No se parte; si no cabe, el resto de `.event__top`
-   (plataforma, recibo) baja de línea, que en celular es lo natural. */
-.event__confirmed {
-  color: var(--color-text-secondary);
-  margin-left: 2px;
-  white-space: nowrap;
-}
-
-/* Otro notificador acaba de confirmar este pago en vivo: pulso breve en la
-   píldora (donde cambió el conteo). Sin sonido: es corroboración, no un pago
-   nuevo. La sección quita la clase a los ~2 s. */
-.event--corroborated .event__type--grouped {
-  animation: event-corroborated 1.6s ease-out;
-}
-
-@keyframes event-corroborated {
-  0% {
-    background: color-mix(in srgb, var(--color-success) 28%, transparent);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 45%, transparent);
+/* Celular: cada fila es un bloque como en la app móvil (origen y estado arriba,
+   pagador al centro, monto y hora al pie con divisor). */
+@media (max-width: 768px) {
+  .events > tbody > tr {
+    column-gap: var(--space-3);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: var(--space-4);
+    row-gap: var(--space-2);
   }
-  70% {
-    box-shadow: 0 0 0 6px transparent;
+
+  .events > tbody > tr > td {
+    max-width: none;
+    padding: 0;
+    text-align: left;
+    width: auto;
   }
-  100% {
-    background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
-    box-shadow: 0 0 0 0 transparent;
+
+  .events > tbody > tr > td::before {
+    content: none;
   }
-}
 
-/* Sin movimiento: el mismo aviso como un tinte fijo mientras dure la clase. */
-@media (prefers-reduced-motion: reduce) {
-  .event--corroborated .event__type--grouped {
-    animation: none;
-    background: color-mix(in srgb, var(--color-success) 20%, transparent);
+  .events > tbody > tr > td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
   }
-}
 
-/* Ícono de recibo: verde solo si el evento tiene comprobante enlazado. */
-.event__receipt {
-  align-items: center;
-  border-radius: var(--radius-full, 999px);
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  opacity: 0.5;
-  padding: 2px;
-}
+  .events > tbody > tr > td:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
 
-.event__receipt svg {
-  height: 14px;
-  width: 14px;
-}
+  .events > tbody > tr > td:nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 
-.event__receipt--linked {
-  color: var(--color-success-strong);
-  opacity: 1;
-}
+  .events > tbody > tr > td:nth-child(4),
+  .events > tbody > tr > td:nth-child(5) {
+    border-top: var(--border-width) solid var(--color-border);
+    grid-row: 3;
+    padding-top: var(--space-2);
+  }
 
-.event__receipt--duplicate {
-  color: color-mix(in srgb, var(--color-warning) 70%, var(--color-text-primary));
-  opacity: 1;
-}
+  .events > tbody > tr > td:nth-child(4) {
+    font-size: var(--font-size-lg);
+    grid-column: 1;
+    text-align: left;
+  }
 
-/* Plataforma (Nequi/Bancolombia) + nombre de la cuenta bancaria asociada. */
-.event__source {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.event__platform {
-  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-secondary);
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-bold);
-  padding: 0.1rem 0.45rem;
-}
-
-/* El aviso llegó por el respaldo SMS (el celular estaba sin internet). */
-.event__via-sms {
-  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-bold);
-  padding: 0.1rem 0.45rem;
-  white-space: nowrap;
-}
-
-.event__account {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.event__time {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xxs);
-  white-space: nowrap;
-}
-
-.event__desc {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
-  margin: 0;
-}
-
-.event__ref {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+  .events > tbody > tr > td:nth-child(5) {
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    grid-column: 2;
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 560px) {
   .filter-select {
-    min-width: 0;
+    flex: initial;
     width: 100%;
-  }
-
-  .event {
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
-  .event__aside {
-    align-items: flex-start;
-    border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
-    flex-direction: row;
-    justify-content: space-between;
-    padding-top: var(--space-2);
-  }
-
-  .event__amount {
-    white-space: normal;
   }
 }
