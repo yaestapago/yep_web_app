@@ -17,3 +17,5 @@ export * from './description-list/description-item';
 export * from './description-list/description-list';
 export * from './page-header/page-header';
 export * from './icon-button/icon-button';
+export * from './pagination/pagination';
+export * from './table/table';
