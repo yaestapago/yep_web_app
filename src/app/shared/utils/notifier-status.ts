@@ -51,6 +51,11 @@ export interface NotifierStatus {
   lastSeenAt: string | null;
   /** Milisegundos transcurridos desde el último heartbeat (null si nunca reportó). */
   sinceMs: number | null;
+  /**
+   * Si el servicio que captura está vivo (app ≥ 1.0.6). `null` cuando la app
+   * no lo reporta: solo se sabe que "late".
+   */
+  listening: boolean | null;
 }
 
 const STATUS_LABELS: Record<NotifierStatusLevel, string> = {
@@ -60,40 +65,112 @@ const STATUS_LABELS: Record<NotifierStatusLevel, string> = {
   unknown: 'Sin datos',
 };
 
+/** Late (verde por heartbeat) pero el servicio que captura está muerto. */
+export const NOT_LISTENING_LABEL = 'En línea, sin escuchar';
+
+/** Verde de verdad: late Y captura. */
+export const LISTENING_LABEL = 'Escuchando';
+
 export function notifierStatusLabel(level: NotifierStatusLevel): string {
   return STATUS_LABELS[level];
 }
 
+/** Lo que `computeNotifierStatus` necesita de un notifier. */
+export type NotifierStatusInput = Pick<Notifier, 'lastSeenAt' | 'active'> &
+  Partial<Pick<Notifier, 'lastCaptureAliveAt' | 'runtimeConfig'>>;
+
 /**
- * Calcula el estado de un notifier a partir de su último heartbeat.
+ * Umbrales efectivos para un notifier: si tiene cadencias propias (heartbeat
+ * espaciado), el backend deriva una ventana "en línea" mayor y aquí se respeta,
+ * para no pintar amarillo/rojo entre dos latidos sanos. Nunca más estrictos
+ * que los de flota.
+ */
+export function effectiveThresholds(
+  notifier: Pick<NotifierStatusInput, 'runtimeConfig'>,
+  thresholds: NotifierStatusThresholds,
+): NotifierStatusThresholds {
+  const windowSeconds = notifier.runtimeConfig?.onlineWindowSeconds;
+  if (!windowSeconds || !Number.isFinite(windowSeconds) || windowSeconds <= 0) {
+    return thresholds;
+  }
+  const windowMs = windowSeconds * 1000;
+  return {
+    ...thresholds,
+    delayedAfterMs: Math.max(thresholds.delayedAfterMs, windowMs),
+    offlineAfterMs: Math.max(thresholds.offlineAfterMs, windowMs * 3),
+  };
+}
+
+/**
+ * Calcula el estado de un notifier a partir de su último heartbeat y, cuando
+ * la app lo reporta, de si el servicio que captura sigue vivo. "Verde" solo
+ * cuando late Y escucha: un celular que late por el respaldo de WorkManager
+ * con la captura muerta queda en amarillo con un texto que lo dice.
  * Centralizar aquí evita duplicar la lógica en tarjetas, tablas y dashboard.
  */
 export function computeNotifierStatus(
-  notifier: Pick<Notifier, 'lastSeenAt' | 'active'>,
+  notifier: NotifierStatusInput,
   thresholds: NotifierStatusThresholds = DEFAULT_NOTIFIER_STATUS_THRESHOLDS,
   now: number = Date.now(),
 ): NotifierStatus {
   const lastSeenAt = notifier.lastSeenAt ?? null;
+  const effective = effectiveThresholds(notifier, thresholds);
 
   if (!lastSeenAt) {
-    return { level: 'unknown', label: STATUS_LABELS.unknown, lastSeenAt: null, sinceMs: null };
+    return {
+      level: 'unknown',
+      label: STATUS_LABELS.unknown,
+      lastSeenAt: null,
+      sinceMs: null,
+      listening: null,
+    };
   }
 
   const parsed = new Date(lastSeenAt).getTime();
 
   if (Number.isNaN(parsed)) {
-    return { level: 'unknown', label: STATUS_LABELS.unknown, lastSeenAt, sinceMs: null };
+    return {
+      level: 'unknown',
+      label: STATUS_LABELS.unknown,
+      lastSeenAt,
+      sinceMs: null,
+      listening: null,
+    };
   }
 
   const sinceMs = Math.max(0, now - parsed);
-  const level: NotifierStatusLevel =
-    sinceMs >= thresholds.offlineAfterMs
+  let level: NotifierStatusLevel =
+    sinceMs >= effective.offlineAfterMs
       ? 'offline'
-      : sinceMs >= thresholds.delayedAfterMs
+      : sinceMs >= effective.delayedAfterMs
         ? 'delayed'
         : 'online';
+  let label = STATUS_LABELS[level];
 
-  return { level, label: STATUS_LABELS[level], lastSeenAt, sinceMs };
+  const listening = computeListening(notifier.lastCaptureAliveAt, effective, now);
+  if (level === 'online' && listening === false) {
+    level = 'delayed';
+    label = NOT_LISTENING_LABEL;
+  } else if (level === 'online' && listening === true) {
+    label = LISTENING_LABEL;
+  }
+
+  return { level, label, lastSeenAt, sinceMs, listening };
+}
+
+function computeListening(
+  lastCaptureAliveAt: string | null | undefined,
+  thresholds: NotifierStatusThresholds,
+  now: number,
+): boolean | null {
+  if (lastCaptureAliveAt === undefined || lastCaptureAliveAt === null) {
+    return null;
+  }
+  const parsed = new Date(lastCaptureAliveAt).getTime();
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  return Math.max(0, now - parsed) < thresholds.delayedAfterMs;
 }
 
 const EMAIL_STATUS_LABELS = {
@@ -109,7 +186,13 @@ const EMAIL_STATUS_LABELS = {
  */
 export function emailNotifierStatus(channelDown: boolean): NotifierStatus {
   const level: NotifierStatusLevel = channelDown ? 'offline' : 'online';
-  return { level, label: EMAIL_STATUS_LABELS[level], lastSeenAt: null, sinceMs: null };
+  return {
+    level,
+    label: EMAIL_STATUS_LABELS[level],
+    lastSeenAt: null,
+    sinceMs: null,
+    listening: null,
+  };
 }
 
 /** Texto relativo simple y legible para el último heartbeat. */
