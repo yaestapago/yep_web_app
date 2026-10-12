@@ -1,0 +1,84 @@
+// yep-status-chip · docs/rediseno-web/03-componentes.md#yep-status-chip
+// Fondo `--color-<tono>-soft`, texto `--color-<tono>-strong`, punto `--color-<tono>`. Solo tokens.
+
+:host {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.yep-status-chip {
+  --yep-chip-bg: var(--color-surface-muted);
+  --yep-chip-fg: var(--color-text-secondary);
+  --yep-chip-dot: var(--color-text-muted);
+
+  align-items: center;
+  background: var(--yep-chip-bg);
+  border-radius: var(--radius-full);
+  color: var(--yep-chip-fg);
+  display: inline-flex;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  gap: 6px;
+  height: 22px;
+  line-height: 1;
+  max-width: 100%;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.yep-status-chip__dot {
+  background: var(--yep-chip-dot);
+  border-radius: var(--radius-full);
+  flex: 0 0 auto;
+  height: 6px;
+  width: 6px;
+}
+
+.yep-status-chip__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Tamaños: sm 22 px · 12/600 — md 26 px · 13/600
+
+.yep-status-chip--md {
+  font-size: 0.8125rem;
+  height: 26px;
+  padding: 0 11px;
+}
+
+// Tonos
+
+.yep-status-chip--success {
+  --yep-chip-bg: var(--color-success-soft);
+  --yep-chip-fg: var(--color-success-strong);
+  --yep-chip-dot: var(--color-success);
+}
+
+.yep-status-chip--warning {
+  --yep-chip-bg: var(--color-warning-soft);
+  --yep-chip-fg: var(--color-warning-strong);
+  --yep-chip-dot: var(--color-warning);
+}
+
+.yep-status-chip--error {
+  --yep-chip-bg: var(--color-error-soft);
+  --yep-chip-fg: var(--color-error-strong);
+  --yep-chip-dot: var(--color-error);
+}
+
+.yep-status-chip--info {
+  --yep-chip-bg: var(--color-info-soft);
+  --yep-chip-fg: var(--color-info-strong);
+  --yep-chip-dot: var(--color-info);
+}
+
+// Lima con texto tinta fijo: se lee igual en claro y en oscuro (P4).
+.yep-status-chip--live {
+  --yep-chip-bg: var(--color-accent);
+  --yep-chip-fg: var(--brand-ink);
+  --yep-chip-dot: var(--brand-ink);
+}

@@ -1,0 +1,153 @@
+// yep-kpi · docs/rediseno-web/03-componentes.md#yep-kpi · 02-tokens "Cifra KPI"
+// Plano (P7): borde + superficie, sin sombra. Solo tokens.
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.yep-kpi {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-width: 0;
+  padding: 20px;
+}
+
+.yep-kpi__label {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+  gap: var(--space-2);
+  line-height: 1.45;
+  min-width: 0;
+}
+
+.yep-kpi__dot {
+  border-radius: var(--radius-full);
+  flex: 0 0 auto;
+  height: 8px;
+  width: 8px;
+}
+
+.yep-kpi__dot--success {
+  background: var(--color-success);
+}
+
+.yep-kpi__dot--warning {
+  background: var(--color-warning);
+}
+
+.yep-kpi__dot--error {
+  background: var(--color-error);
+}
+
+// Cifra KPI: display 40/1,0, 800, tabular-nums (celular 32).
+.yep-kpi__value {
+  font-family: var(--font-family-display);
+  font-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: 0.005em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.yep-kpi__hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+// sm: relleno 16 px y cifra de 28 px.
+.yep-kpi--sm {
+  padding: var(--space-4);
+}
+
+.yep-kpi--sm .yep-kpi__value {
+  font-size: 1.75rem;
+}
+
+// Destacado: un solo KPI por vista. En claro tinta; en oscuro verde (02-tokens).
+.yep-kpi--emphasis {
+  background: var(--kpi-emphasis-bg);
+  border-color: var(--kpi-emphasis-bg);
+  color: var(--kpi-emphasis-fg);
+}
+
+.yep-kpi--emphasis .yep-kpi__label,
+.yep-kpi--emphasis .yep-kpi__hint {
+  color: var(--kpi-emphasis-muted);
+}
+
+// Cargando: esqueleto con brillo de opacidad, no spinner (P10).
+.yep-kpi__skeleton {
+  animation: yep-kpi-pulse 1.4s ease-in-out infinite;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.yep-kpi__skeleton--value {
+  height: 2.5rem;
+  max-width: 100%;
+  width: 7.5rem;
+}
+
+.yep-kpi__skeleton--hint {
+  height: 12px;
+  width: 60%;
+}
+
+.yep-kpi--sm .yep-kpi__skeleton--value {
+  height: 1.75rem;
+}
+
+.yep-kpi--emphasis .yep-kpi__skeleton {
+  background: color-mix(in srgb, var(--kpi-emphasis-fg) 18%, transparent);
+}
+
+.yep-kpi__sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@keyframes yep-kpi-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yep-kpi__skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .yep-kpi:not(.yep-kpi--sm) {
+    padding: var(--space-4);
+  }
+
+  .yep-kpi:not(.yep-kpi--sm) .yep-kpi__value {
+    font-size: 2rem;
+  }
+
+  .yep-kpi:not(.yep-kpi--sm) .yep-kpi__skeleton--value {
+    height: 2rem;
+  }
+}

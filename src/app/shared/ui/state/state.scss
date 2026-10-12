@@ -1,0 +1,94 @@
+// yep-state · docs/rediseno-web/03-componentes.md#yep-state · P10
+// Plano (P7). Solo tokens.
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+// Cargando: barras de esqueleto con brillo de opacidad.
+
+.yep-state--loading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.yep-state__skeleton {
+  animation: yep-state-pulse 1.4s ease-in-out infinite;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  display: block;
+  height: 12px;
+  max-width: 100%;
+}
+
+.yep-state__sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@keyframes yep-state-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yep-state__skeleton {
+    animation: none;
+  }
+}
+
+// Vacío y error: icono + frase + acción, centrados.
+
+.yep-state--empty,
+.yep-state--error {
+  align-items: center;
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.yep-state__icon {
+  margin-bottom: var(--space-1);
+}
+
+.yep-state__title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 44ch;
+}
+
+.yep-state__description {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 44ch;
+}
+
+.yep-state__action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+.yep-state__action:empty {
+  display: none;
+}

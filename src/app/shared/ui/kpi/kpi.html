@@ -1,0 +1,27 @@
+<div
+  class="yep-kpi"
+  [class.yep-kpi--sm]="size() === 'sm'"
+  [class.yep-kpi--emphasis]="emphasis()"
+  [class.yep-kpi--loading]="loading()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+>
+  <span class="yep-kpi__label">
+    @if (tone() !== 'default') {
+      <span class="yep-kpi__dot" [class]="'yep-kpi__dot--' + tone()" aria-hidden="true"></span>
+    }
+    {{ label() }}
+  </span>
+
+  @if (loading()) {
+    <span class="yep-kpi__skeleton yep-kpi__skeleton--value" aria-hidden="true"></span>
+    <span class="yep-kpi__sr-only">Cargando</span>
+    @if (hint()) {
+      <span class="yep-kpi__skeleton yep-kpi__skeleton--hint" aria-hidden="true"></span>
+    }
+  } @else {
+    <span class="yep-kpi__value">{{ value() }}</span>
+    @if (hint()) {
+      <span class="yep-kpi__hint">{{ hint() }}</span>
+    }
+  }
+</div>
