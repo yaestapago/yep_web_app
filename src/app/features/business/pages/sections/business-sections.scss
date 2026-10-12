@@ -100,14 +100,6 @@
   min-width: 0;
 }
 
-.list-card__clickable {
-  cursor: pointer;
-}
-
-.list-card__clickable:hover .list-card__title {
-  color: var(--color-primary);
-}
-
 .report-filters {
   align-items: flex-end;
   display: flex;
@@ -116,29 +108,14 @@
   margin-top: var(--space-4);
 }
 
-.report-filters__location {
-  min-width: 250px;
-}
-
-.reports-card {
-  align-items: stretch;
-  padding: var(--space-5);
-}
-
-.reports-card__main {
-  flex: 1 1 42rem;
-}
-
+/* Solo lo usa business-reports, pero se queda aquí: va antes de .list-card__actions
+   (mismo elemento, misma especificidad) y debe perder align-items frente a ella. */
 .reports-card__actions {
   align-content: center;
   align-items: stretch;
   flex: 0 0 12rem;
   flex-direction: column;
   justify-content: center;
-}
-
-.reports-card__actions yep-button {
-  width: 100%;
 }
 
 .list-card__titlerow {
@@ -154,96 +131,11 @@
   margin: 0;
 }
 
-/* Código de emparejamiento con anillo de cuenta regresiva */
-.pair-code {
-  align-items: center;
-  background: var(--color-accent);
-  border-radius: var(--radius-full);
-  color: var(--color-text-primary);
-  display: inline-flex;
-  gap: var(--space-2);
-  padding: 2px var(--space-3) 2px 2px;
-}
-
-.pair-code__ring {
-  height: 24px;
-  width: 24px;
-}
-
-.pair-code__ring-bg {
-  fill: none;
-  stroke: rgba(16, 42, 44, 0.15);
-  stroke-width: 3;
-}
-
-.pair-code__ring-fg {
-  fill: none;
-  stroke: var(--color-secondary);
-  stroke-linecap: round;
-  stroke-width: 3;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-  transition: stroke-dashoffset 1s linear;
-}
-
-.pair-code__value {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.1em;
-}
-
 /* El interruptor activar/desactivar ahora vive en el primitivo `yep-toggle`. */
 
 .list-card__meta {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-}
-
-.notifier-email-row {
-  align-items: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.notifier-email-row__label {
-  // Altura igual a .code-copy: centra "De:" con el primer correo, no con
-  // todo el bloque, aunque haya varios correos apilados debajo.
-  align-items: center;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex: 0 0 auto;
-  font-weight: var(--font-weight-semibold);
-  height: 30px;
-}
-
-.notifier-email-row__copy-group {
-  align-items: center;
-  display: inline-flex;
-  flex: 0 1 auto;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.notifier-email-row__values {
-  display: flex;
-  flex: 0 1 auto;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.notifier-email-row__value {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs);
-  max-width: min(100%, 28rem);
-  overflow-wrap: anywhere;
-  padding: 2px var(--space-2);
 }
 
 .list-card__actions {
@@ -288,12 +180,7 @@
 }
 
 @media (max-width: 520px) {
-  .reports-card__actions {
-    flex-basis: 100%;
-  }
-
-  .report-filters,
-  .report-filters__location {
+  .report-filters {
     width: 100%;
   }
 
@@ -312,14 +199,6 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.field-heading-row {
-  align-items: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: space-between;
-}
-
 .inline-action {
   background: transparent;
   border: 1px solid var(--color-border);
@@ -336,80 +215,14 @@
   border-color: var(--color-primary);
 }
 
-.field textarea {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font: inherit;
-  min-height: 84px;
-  padding: var(--space-3);
-  resize: vertical;
-}
-
-.field textarea:focus {
-  border-color: var(--color-primary);
-  outline: none;
-}
-
 .field-error {
   color: var(--color-error);
   font-size: var(--font-size-xs);
 }
 
-.notifier-warning {
-  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-snug);
-  margin: 0;
-  padding: var(--space-3);
-}
-
 yep-alert {
   display: block;
   margin-bottom: var(--space-3);
-}
-
-.email-forwarding-help {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3);
-}
-
-.email-forwarding-help__header {
-  align-items: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: space-between;
-}
-
-.sender-pattern-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.sender-pattern-list__item {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  font-family: var(--font-mono, monospace);
-  font-size: var(--font-size-xs);
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  padding: 3px var(--space-2);
-}
-
-.info-grid {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
 }
 
 .info-cell {
@@ -435,414 +248,10 @@ yep-alert {
   min-width: 0;
 }
 
-/* Zona de filtros de la grilla de horarios: sedes + empleados como toggles. */
-.grid-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4) var(--space-5);
-}
-
-.grid-filters__group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.grid-filters__label {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.grid-filters__toggles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-/* Campo con etiqueta para envolver controles sin label propio (p. ej. yep-day-picker). */
-.shift-field {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.shift-field__label {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
-}
-
-.shift-field__label-row {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  justify-content: space-between;
-}
-
-/* Atajos de días/horarios dentro del formulario de turno. */
-.quick-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.quick-chip {
-  background: transparent;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  padding: var(--space-1) var(--space-3);
-  transition:
-    background-color var(--motion-fast),
-    border-color var(--motion-fast),
-    color var(--motion-fast);
-}
-
-.quick-chip:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-  color: var(--color-primary);
-}
-
-/* Duración calculada del turno, ayuda visual junto a hora inicio/fin. */
-.shift-duration {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  margin: 0;
-  padding: var(--space-1) var(--space-3);
-  width: fit-content;
-}
-
-/* Aviso de turno nocturno (cruza medianoche) en el formulario. */
-.shift-overnight-hint {
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-snug);
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-}
-
-.employee-filter {
-  align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  display: flex;
-  font-size: var(--font-size-sm);
-  gap: var(--space-3);
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-}
-
-.employee-filter__clear {
-  align-items: center;
-  background: transparent;
-  border: none;
-  color: var(--color-primary);
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  gap: var(--space-1);
-}
-
-.employee-filter__clear svg {
-  height: 14px;
-  width: 14px;
-}
-
 .legend {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3) var(--space-4);
-}
-
-.legend__item {
-  align-items: center;
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  font-size: var(--font-size-sm);
-  gap: var(--space-2);
-}
-
-.legend__dot {
-  border-radius: var(--radius-full);
-  display: inline-block;
-  height: 12px;
-  width: 12px;
-}
-
-.week-nav {
-  align-items: center;
-  display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-}
-
-.week-nav__arrow {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  height: 32px;
-  justify-content: center;
-  width: 32px;
-}
-
-.week-nav__arrow:hover {
-  border-color: var(--color-primary);
-  color: var(--color-text-primary);
-}
-
-.week-nav__arrow svg {
-  height: 18px;
-  width: 18px;
-}
-
-.week-nav__month {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
-  min-width: 9rem;
-  text-align: center;
-}
-
-.week-nav__today {
-  margin-left: auto;
-}
-
-.week-board {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-// Contenedor scrolleable: scroll vertical (rango 00:00–24:00) y horizontal (días en móvil).
-.week-board__scroll {
-  max-height: 70vh;
-  overflow: auto;
-}
-
-.week-board__head,
-.week-board__body {
-  display: grid;
-  grid-template-columns: 64px repeat(7, minmax(96px, 1fr));
-}
-
-.week-board__head {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  position: sticky;
-  top: 0;
-  z-index: 3;
-}
-
-.week-board__corner {
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  left: 0;
-  position: sticky;
-  z-index: 4;
-}
-
-.week-board__dayname {
-  color: var(--color-text-secondary);
-  display: flex;
-  flex-direction: column;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  gap: 2px;
-  padding: var(--space-2) var(--space-1);
-  text-align: center;
-}
-
-.week-board__dayname-date {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-}
-
-.week-board__dayname--today {
-  color: var(--color-primary);
-}
-
-.week-board__dayname--today .week-board__dayname-date {
-  color: var(--color-primary);
-}
-
-.week-board__dayname:not(:last-child) {
-  border-right: 1px solid var(--color-border);
-}
-
-.week-board__body {
-  position: relative;
-}
-
-.week-board__axis {
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  left: 0;
-  position: sticky;
-  z-index: 2;
-}
-
-.week-board__hour {
-  color: var(--color-text-tertiary, var(--color-text-secondary));
-  font-size: var(--font-size-xs);
-  position: relative;
-}
-
-.week-board__hour span {
-  position: absolute;
-  right: var(--space-2);
-  top: -7px;
-}
-
-.week-board__col {
-  position: relative;
-  // Líneas horizontales por hora.
-  background-image: linear-gradient(
-    to bottom,
-    var(--color-border) 0,
-    var(--color-border) 1px,
-    transparent 1px
-  );
-  background-repeat: repeat-y;
-}
-
-.week-board__col:not(:last-child) {
-  border-right: 1px solid var(--color-border);
-}
-
-.week-board__col--clickable {
-  cursor: copy;
-}
-
-.week-board__col--today {
-  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
-}
-
-.week-board--empty .week-board__col {
-  cursor: default;
-}
-
-.week-board__hint {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  padding: var(--space-4);
-  text-align: center;
-}
-
-// Móvil: los días se desplazan horizontalmente y el eje de horas queda fijo.
-// El scroll horizontal lo provoca `minmax(96px, 1fr)` al no caber 7 columnas.
-@media (max-width: 640px) {
-  .week-board__head,
-  .week-board__body {
-    grid-template-columns: 48px repeat(7, minmax(84px, 1fr));
-  }
-
-  .week-board__scroll {
-    max-height: 65vh;
-  }
-
-  .week-nav__month {
-    font-size: var(--font-size-sm);
-    min-width: 7rem;
-  }
-}
-
-.shift-block {
-  --shift-color: var(--color-primary);
-  background: color-mix(in srgb, var(--shift-color) 16%, var(--color-surface));
-  border: 1px solid color-mix(in srgb, var(--shift-color) 45%, transparent);
-  border-left: 3px solid var(--shift-color);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font: inherit;
-  overflow: hidden;
-  padding: 3px 6px;
-  position: absolute;
-  text-align: left;
-  transition: filter var(--motion-fast);
-}
-
-.shift-block:hover {
-  filter: brightness(1.04);
-}
-
-.shift-block--readonly {
-  cursor: default;
-}
-
-.shift-block__emp {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shift-block__time {
-  font-size: 11px;
-  opacity: 0.85;
-}
-
-.shift-block__night {
-  font-size: 10px;
-  margin-left: 2px;
-}
-
-.shift-block__loc {
-  font-size: 10px;
-  opacity: 0.7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.time-field {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.time-field__label {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.time-field__input {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font: inherit;
-  padding: var(--space-2) var(--space-3);
-}
-
-.time-field__input:focus {
-  border-color: var(--color-primary);
-  outline: none;
 }
 
 .code-value {
@@ -922,74 +331,8 @@ yep-alert {
   overflow-wrap: anywhere;
 }
 
-/* Zona de peligro: separada del resto con espacio + borde propio para que no
-   se sienta amontonada contra la info del negocio. */
-.danger-zone {
-  border: 1px solid color-mix(in srgb, var(--color-error) 35%, var(--color-border));
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  margin-top: var(--space-8);
-  padding: var(--space-5);
-}
-
-.danger-zone__title {
-  align-items: center;
-  color: var(--color-error);
-  display: flex;
-  gap: var(--space-2);
-}
-
-.danger-zone__title svg {
-  height: 1.125rem;
-  width: 1.125rem;
-}
-
-.invite-grid {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.invite-grid--single {
-  grid-template-columns: 1fr;
-}
-
-.qr-panel {
-  align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: minmax(0, 1fr) auto;
-  padding: var(--space-4);
-}
-
-.qr-panel__body {
-  display: grid;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.qr-panel__code {
-  align-items: center;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  justify-content: center;
-  min-height: 236px;
-  padding: var(--space-2);
-  width: 236px;
-}
-
-.qr-panel__code img {
-  display: block;
-  height: 220px;
-  width: 220px;
-}
-
+/* Solo lo usa business-employees, pero se queda aquí: va antes de .loading-row
+   (mismo elemento, misma especificidad) y debe perder color/padding frente a ella. */
 .loading-row--compact {
   color: var(--color-text-secondary);
   padding: 0;
@@ -1048,18 +391,6 @@ yep-alert {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 520px) {
-  .invite-grid,
-  .qr-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .qr-panel__code {
-    justify-self: center;
-    max-width: 100%;
-  }
-}
-
 /* Selector de cuentas bancarias */
 .account-picker {
   display: grid;
@@ -1081,11 +412,6 @@ yep-alert {
 .account-option:has(input:checked) {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 1px var(--color-primary);
-}
-
-.account-option--disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
 }
 
 .account-option__checkbox {
@@ -1195,55 +521,4 @@ yep-alert {
 .account-key-hint {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-}
-
-.routing-employee-info{align-items:center;display:flex;gap:var(--space-2);min-width:0}
-
-.routing-chevron{color:var(--color-text-secondary);flex:0 0 auto;height:16px;transition:transform var(--motion-fast);width:16px}
-
-.routing-chevron[data-expanded='true']{transform:rotate(90deg)}
-
-.routing-summary{flex:0 0 auto}
-
-.routing-badge{border-radius:var(--radius-full);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);padding:var(--space-1) var(--space-3);white-space:nowrap}
-
-.routing-badge--active{background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-strong,var(--color-success))}
-
-.routing-badge--inactive{background:color-mix(in srgb,var(--color-text-muted) 10%,transparent);color:var(--color-text-secondary)}
-
-.routing-accounts{border-top:1px solid var(--color-border);display:grid;gap:var(--space-3);margin-top:var(--space-3);padding-top:var(--space-3);width:100%}
-
-.routing-bank-group{display:grid;gap:var(--space-1);margin-bottom:var(--space-2)}
-
-.routing-bank-label{color:var(--color-text-secondary);font-size:var(--font-size-xs);font-weight:var(--font-weight-semibold);text-transform:uppercase}
-
-.routing-account-row{padding-left:var(--space-3)}
-
-.routing-bre-b-key-row{padding-left:var(--space-3)}
-
-.routing-bank-header{align-items:center}
-
-.routing-breB-keys{display:grid;gap:var(--space-1);margin-left:var(--space-6)}
-
-.routing-breB-key-row{align-items:center}
-
-.routing-no-keys{color:var(--color-text-secondary);font-size:var(--font-size-xs);font-style:italic}
-
-.routing-no-accounts{color:var(--color-text-secondary);font-size:var(--font-size-sm);text-align:center}
-
-
-/* Tercer nivel del selector de apartados: opciones del resumen operativo. */
-.section-access-summary {
-  display: grid;
-  gap: var(--space-2);
-  grid-column: 1 / -1;
-  min-width: 0;
-}
-
-.section-access-summary__children {
-  display: grid;
-  gap: var(--space-2);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  margin-left: calc(1.15rem + var(--space-2));
-  min-width: 0;
 }

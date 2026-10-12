@@ -37,7 +37,7 @@ interface EmployeeRoutingView {
     LucideUsers,
   ],
   templateUrl: './business-notification-routing.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-notification-routing.section.scss'],
 })
 export class BusinessNotificationRoutingSection implements OnInit {
   private readonly routingApi = inject(NotificationRoutingApiService);

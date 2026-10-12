@@ -31,7 +31,7 @@ const ALL_LOCATIONS_OPTION_ID = 'all';
   selector: 'app-business-reports-section',
   imports: [FormsModule, Button, DateRangePicker, Select, LucideFileDown],
   templateUrl: './business-reports.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-reports.section.scss'],
 })
 export class BusinessReportsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

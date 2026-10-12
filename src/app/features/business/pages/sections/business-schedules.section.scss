@@ -1,0 +1,403 @@
+/* Zona de filtros de la grilla de horarios: sedes + empleados como toggles. */
+.grid-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-5);
+}
+
+.grid-filters__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.grid-filters__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.grid-filters__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Campo con etiqueta para envolver controles sin label propio (p. ej. yep-day-picker). */
+.shift-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.shift-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.shift-field__label-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+/* Atajos de días/horarios dentro del formulario de turno. */
+.quick-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.quick-chip {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-3);
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.quick-chip:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  color: var(--color-primary);
+}
+
+/* Duración calculada del turno, ayuda visual junto a hora inicio/fin. */
+.shift-duration {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  width: fit-content;
+}
+
+/* Aviso de turno nocturno (cruza medianoche) en el formulario. */
+.shift-overnight-hint {
+  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.employee-filter {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-3);
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+}
+
+.employee-filter__clear {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: var(--space-1);
+}
+
+.employee-filter__clear svg {
+  height: 14px;
+  width: 14px;
+}
+
+.legend__item {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+}
+
+.legend__dot {
+  border-radius: var(--radius-full);
+  display: inline-block;
+  height: 12px;
+  width: 12px;
+}
+
+.week-nav {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.week-nav__arrow {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.week-nav__arrow:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.week-nav__arrow svg {
+  height: 18px;
+  width: 18px;
+}
+
+.week-nav__month {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  min-width: 9rem;
+  text-align: center;
+}
+
+.week-nav__today {
+  margin-left: auto;
+}
+
+.week-board {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+// Contenedor scrolleable: scroll vertical (rango 00:00–24:00) y horizontal (días en móvil).
+.week-board__scroll {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.week-board__head,
+.week-board__body {
+  display: grid;
+  grid-template-columns: 64px repeat(7, minmax(96px, 1fr));
+}
+
+.week-board__head {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.week-board__corner {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  left: 0;
+  position: sticky;
+  z-index: 4;
+}
+
+.week-board__dayname {
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  gap: 2px;
+  padding: var(--space-2) var(--space-1);
+  text-align: center;
+}
+
+.week-board__dayname-date {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.week-board__dayname--today {
+  color: var(--color-primary);
+}
+
+.week-board__dayname--today .week-board__dayname-date {
+  color: var(--color-primary);
+}
+
+.week-board__dayname:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.week-board__body {
+  position: relative;
+}
+
+.week-board__axis {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  left: 0;
+  position: sticky;
+  z-index: 2;
+}
+
+.week-board__hour {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  font-size: var(--font-size-xs);
+  position: relative;
+}
+
+.week-board__hour span {
+  position: absolute;
+  right: var(--space-2);
+  top: -7px;
+}
+
+.week-board__col {
+  position: relative;
+  // Líneas horizontales por hora.
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-border) 0,
+    var(--color-border) 1px,
+    transparent 1px
+  );
+  background-repeat: repeat-y;
+}
+
+.week-board__col:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.week-board__col--clickable {
+  cursor: copy;
+}
+
+.week-board__col--today {
+  background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+.week-board--empty .week-board__col {
+  cursor: default;
+}
+
+.week-board__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+// Móvil: los días se desplazan horizontalmente y el eje de horas queda fijo.
+// El scroll horizontal lo provoca `minmax(96px, 1fr)` al no caber 7 columnas.
+@media (max-width: 640px) {
+  .week-board__head,
+  .week-board__body {
+    grid-template-columns: 48px repeat(7, minmax(84px, 1fr));
+  }
+
+  .week-board__scroll {
+    max-height: 65vh;
+  }
+
+  .week-nav__month {
+    font-size: var(--font-size-sm);
+    min-width: 7rem;
+  }
+}
+
+.shift-block {
+  --shift-color: var(--color-primary);
+  background: color-mix(in srgb, var(--shift-color) 16%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--shift-color) 45%, transparent);
+  border-left: 3px solid var(--shift-color);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font: inherit;
+  overflow: hidden;
+  padding: 3px 6px;
+  position: absolute;
+  text-align: left;
+  transition: filter var(--motion-fast);
+}
+
+.shift-block:hover {
+  filter: brightness(1.04);
+}
+
+.shift-block--readonly {
+  cursor: default;
+}
+
+.shift-block__emp {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shift-block__time {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.shift-block__night {
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+.shift-block__loc {
+  font-size: 10px;
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time-field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.time-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.time-field__input {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  padding: var(--space-2) var(--space-3);
+}
+
+.time-field__input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}

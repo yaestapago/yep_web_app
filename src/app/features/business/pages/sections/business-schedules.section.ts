@@ -266,7 +266,7 @@ function findOverlaps(
     LucideX,
   ],
   templateUrl: './business-schedules.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-schedules.section.scss'],
 })
 export class BusinessSchedulesSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

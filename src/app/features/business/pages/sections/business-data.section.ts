@@ -58,7 +58,7 @@ type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
     LucideTriangleAlert,
   ],
   templateUrl: './business-data.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-data.section.scss'],
 })
 export class BusinessDataSection implements OnDestroy {
   private readonly businessApi = inject(BusinessAccountsApiService);

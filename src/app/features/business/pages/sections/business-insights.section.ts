@@ -42,7 +42,7 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   selector: 'app-business-insights-section',
   imports: [CurrencyPipe, DatePipe, Button, DateRangePicker, LucideLoaderCircle, LucideRefreshCw, LucideShieldAlert, LucideShieldCheck],
   templateUrl: './business-insights.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-insights.section.scss'],
 })
 export class BusinessInsightsSection implements OnInit {
   private readonly insightsApi = inject(InsightsApiService);

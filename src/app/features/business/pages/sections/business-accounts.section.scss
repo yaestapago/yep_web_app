@@ -1,0 +1,15 @@
+.field textarea {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+  min-height: 84px;
+  padding: var(--space-3);
+  resize: vertical;
+}
+
+.field textarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}

@@ -54,7 +54,7 @@ function integerInRange(min: number, max: number) {
   selector: 'app-notifier-runtime-config-modal',
   imports: [ReactiveFormsModule, Button, Input, Modal],
   templateUrl: './notifier-runtime-config-modal.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './notifier-runtime-config-modal.scss'],
 })
 export class NotifierRuntimeConfigModal {
   private readonly api = inject(NotifiersApiService);

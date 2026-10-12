@@ -105,7 +105,7 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     LucideUnlink,
   ],
   templateUrl: './business-notifiers.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-notifiers.section.scss'],
 })
 export class BusinessNotifiersSection implements OnInit {
   private readonly notifiersApi = inject(NotifiersApiService);

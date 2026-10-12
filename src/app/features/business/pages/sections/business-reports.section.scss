@@ -1,0 +1,26 @@
+.report-filters__location {
+  min-width: 250px;
+}
+
+.reports-card {
+  align-items: stretch;
+  padding: var(--space-5);
+}
+
+.reports-card__main {
+  flex: 1 1 42rem;
+}
+
+.reports-card__actions yep-button {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .reports-card__actions {
+    flex-basis: 100%;
+  }
+
+  .report-filters__location {
+    width: 100%;
+  }
+}

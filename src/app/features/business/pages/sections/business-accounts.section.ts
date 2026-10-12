@@ -43,7 +43,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     LucideRefreshCw,
   ],
   templateUrl: './business-accounts.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-accounts.section.scss'],
 })
 export class BusinessAccountsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

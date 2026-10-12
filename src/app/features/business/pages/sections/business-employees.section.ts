@@ -68,7 +68,7 @@ const DEFAULT_SECTION_ACCESS: SectionAccess = {
     LucideUserPlus,
   ],
   templateUrl: './business-employees.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-employees.section.scss'],
 })
 export class BusinessEmployeesSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

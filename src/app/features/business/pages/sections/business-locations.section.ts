@@ -34,7 +34,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     LucidePlus,
   ],
   templateUrl: './business-locations.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-locations.section.scss'],
 })
 export class BusinessLocationsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

@@ -15,7 +15,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   selector: 'app-business-requests-section',
   imports: [Button, LucideLoaderCircle, LucideRefreshCw],
   templateUrl: './business-requests.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-requests.section.scss'],
 })
 export class BusinessRequestsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

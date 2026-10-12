@@ -16,6 +16,6 @@ import { Component } from '@angular/core';
       </div>
     </section>
   `,
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-no-access.section.scss'],
 })
 export class BusinessNoAccessSection {}
