@@ -125,6 +125,17 @@ export interface Notifier {
   lastSeenAt?: string;
   lastLoginAt?: string;
   isOnline: boolean;
+  /**
+   * Último heartbeat en que el servicio que captura estaba vivo (app ≥ 1.0.6).
+   * `null`/ausente: la app aún no lo reporta y "en línea" es lo único que hay.
+   * Un celular que solo late por WorkManager tiene `lastSeenAt` fresco pero
+   * esta marca vieja: está en línea, pero sordo.
+   */
+  lastCaptureAliveAt?: string | null;
+  /** Isolate del último heartbeat (diagnóstico). */
+  captureSource?: 'foreground' | 'ui' | 'workmanager' | null;
+  /** Calculado por el backend al serializar; la UI lo recalcula con el reloj. */
+  isListening?: boolean;
   /** Config operativa efectiva (default global + override) de este notificador. */
   runtimeConfig?: NotifierRuntimeConfig;
   /** Override propio de cadencias; null cuando hereda los valores de flota. */
