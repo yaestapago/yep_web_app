@@ -15,6 +15,12 @@ import { Sidebar } from '../sidebar/sidebar';
 
 const SIDEBAR_COLLAPSED_KEY = 'yep-sidebar-collapsed';
 
+/**
+ * "Validar pago" (captura de comprobante) sigue en desarrollo: se oculta temporalmente
+ * para que los usuarios no hagan comprobaciones. Volver a `true` para habilitarlo.
+ */
+const RECEIPT_CAPTURE_ENABLED = false;
+
 @Component({
   selector: 'app-shell',
   imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, IconButton, LucideScanLine],
@@ -38,6 +44,7 @@ export class Shell {
   /** Oculto en prueba gratis y mientras el negocio activo esté bloqueado por cobro. */
   readonly canShowReceiptCaptureButton = computed(
     () =>
+      RECEIPT_CAPTURE_ENABLED &&
       !this.session.isSupportUser() &&
       this.session.subscription()?.plan.code !== 'free_trial' &&
       !this.billing.isBlocked(),
