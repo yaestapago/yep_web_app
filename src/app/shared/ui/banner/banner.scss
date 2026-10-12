@@ -1,0 +1,197 @@
+// yep-banner · docs/rediseno-web/03-componentes.md#yep-banner
+// Plano (P7): sin sombras, degradados ni filtros. Fondo de marca fijo: igual en claro y en oscuro.
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.yep-banner {
+  // Colores por tono; el tono `ink` es el de referencia.
+  --banner-bg: var(--brand-ink);
+  --banner-border: var(--brand-ink);
+  --banner-eyebrow: var(--brand-green);
+  --banner-title: var(--brand-on-ink);
+  --banner-text: var(--brand-on-ink-muted);
+  --banner-band: var(--brand-ink-2);
+  --banner-stroke: var(--brand-green);
+
+  align-items: center;
+  background: var(--banner-bg);
+  border: var(--border-width) solid var(--banner-border);
+  border-radius: var(--radius-xl);
+  color: var(--banner-title);
+  display: flex;
+  gap: var(--space-6);
+  min-height: 200px;
+  overflow: hidden;
+  padding: var(--space-6);
+  position: relative;
+}
+
+.yep-banner--ink {
+  // El contenido proyectado (botones secondary/ghost sin tono) se lee igual en claro y en oscuro.
+  --color-text-primary: var(--brand-on-ink);
+  --color-text-secondary: var(--brand-on-ink-muted);
+  --color-surface-muted: var(--brand-ink-2);
+}
+
+.yep-banner--lime {
+  --banner-bg: var(--brand-lime);
+  --banner-border: var(--brand-lime);
+  --banner-eyebrow: var(--brand-ink);
+  --banner-title: var(--brand-ink);
+  --banner-text: var(--brand-ink);
+  --banner-band: transparent;
+  --banner-stroke: var(--brand-ink);
+  --color-text-primary: var(--brand-ink);
+  --color-text-secondary: var(--brand-ink);
+  --color-surface-muted: color-mix(in srgb, var(--brand-ink) 10%, transparent);
+  --color-focus: var(--brand-ink);
+}
+
+.yep-banner--paper {
+  --banner-bg: var(--color-surface);
+  --banner-border: var(--color-border);
+  --banner-eyebrow: var(--color-primary-strong);
+  --banner-title: var(--color-text-primary);
+  --banner-text: var(--color-text-secondary);
+  --banner-band: var(--color-surface-muted);
+  --banner-stroke: var(--color-primary);
+}
+
+// Diagonal de marca (P9)
+
+.yep-banner__diagonal {
+  animation: yep-banner-diagonal-in var(--motion-brand) both;
+  height: 200px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 260px;
+}
+
+.yep-banner__band {
+  fill: var(--banner-band);
+}
+
+.yep-banner__stroke {
+  fill: var(--banner-stroke);
+}
+
+@keyframes yep-banner-diagonal-in {
+  from {
+    opacity: 0;
+    transform: translate(40px, -63px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yep-banner__diagonal {
+    animation: none;
+  }
+}
+
+// Texto
+
+.yep-banner__copy {
+  display: flex;
+  flex: 1 1 380px;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 560px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.yep-banner__eyebrow {
+  color: var(--banner-eyebrow);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.08em;
+  line-height: var(--line-height-snug);
+  text-transform: uppercase;
+}
+
+.yep-banner__title {
+  color: var(--banner-title);
+  font-family: var(--font-family-display);
+  font-size: 2.5rem;
+  font-weight: var(--font-weight-extrabold);
+  line-height: 0.98;
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.yep-banner__text {
+  color: var(--banner-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  margin: 0;
+  max-width: 480px;
+}
+
+.yep-banner__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.yep-banner__actions:empty {
+  display: none;
+}
+
+// Ilustración (decorativa)
+
+.yep-banner__art {
+  display: flex;
+  flex: 0 1 280px;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.yep-banner__image {
+  display: block;
+  height: auto;
+  max-width: 100%;
+  width: 280px;
+}
+
+// Celular: se apila, sin ilustración y con la diagonal reducida para no quedar detrás del texto.
+
+@media (max-width: 639.98px) {
+  .yep-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .yep-banner__copy {
+    flex: 0 1 auto;
+  }
+
+  .yep-banner__art {
+    display: none;
+  }
+
+  .yep-banner__title {
+    font-size: 2rem;
+  }
+
+  .yep-banner__diagonal {
+    height: 80px;
+    width: 104px;
+  }
+}
