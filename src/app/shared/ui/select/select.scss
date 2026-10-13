@@ -293,8 +293,8 @@
 
 .yep-select__message--error svg {
   flex: 0 0 auto;
-  height: 14px;
-  width: 14px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 .yep-select--sm .yep-select__button {

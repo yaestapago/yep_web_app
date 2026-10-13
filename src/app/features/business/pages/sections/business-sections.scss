@@ -18,7 +18,10 @@
 
 .section-heading {
   display: grid;
+  flex: 1 1 24rem;
   gap: var(--space-1);
+  max-width: 65ch;
+  min-width: 0;
 }
 
 .section-title {
@@ -206,8 +209,8 @@ yep-alert {
 
 .loading-row svg {
   animation: yep-section-spin 800ms linear infinite;
-  height: 18px;
-  width: 18px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 @keyframes yep-section-spin {

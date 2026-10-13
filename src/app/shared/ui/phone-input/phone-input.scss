@@ -108,8 +108,8 @@ input:disabled {
 
 .yep-phone-input__message--error svg {
   flex: 0 0 auto;
-  height: 14px;
-  width: 14px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 .yep-phone-input--sm .yep-phone-input__row {

@@ -128,19 +128,8 @@ const TIME_TEMPLATES: TimeTemplate[] = [
   { label: 'Jornada completa', startTime: '06:00', endTime: '18:00' },
 ];
 
-/** Paleta estable para colorear por empleado. */
-const PALETTE = [
-  '#2563eb',
-  '#16a34a',
-  '#db2777',
-  '#d97706',
-  '#7c3aed',
-  '#0891b2',
-  '#dc2626',
-  '#4f46e5',
-  '#ca8a04',
-  '#0d9488',
-];
+/** Paleta estable para colorear por empleado (tokens `--employee-*` de styles.scss). */
+const PALETTE = Array.from({ length: 10 }, (_, i) => `var(--employee-${i + 1})`);
 
 const HOUR_HEIGHT = 40; // px por hora (compacto: 24h × 40 = 960px)
 const PX_PER_MIN = HOUR_HEIGHT / 60;
