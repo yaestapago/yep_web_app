@@ -176,16 +176,21 @@
     (ngModelChange)="reportNote.set($event)"
     hint="Ej: transferencia Bancolombia, comprobante #12345."
   ></yep-input>
-  <label class="voucher-field">
-    <span>Comprobante de pago</span>
-    <input
-      type="file"
+  <div class="voucher-field">
+    <span class="voucher-field__label">Comprobante de pago</span>
+    <yep-file-drop
       accept="image/jpeg,image/png,application/pdf"
-      required
-      (change)="onVoucherSelected($event)"
+      label="Arrastra el comprobante o haz clic para elegirlo"
+      buttonLabel="Adjuntar comprobante"
+      hint="JPG, PNG o PDF. Tamaño máximo: 10 MB."
+      [files]="voucherFiles()"
+      [error]="voucherError()"
+      [disabled]="reporting()"
+      [removable]="!reporting()"
+      (fileChange)="onVoucherSelected($event)"
+      (removed)="removeVoucher()"
     />
-    <small>JPG, PNG o PDF. Tamaño máximo: 10 MB.</small>
-  </label>
+  </div>
 
   <ng-container modalFooter>
     <yep-button variant="ghost" (clicked)="closeReportPayment()">Cancelar</yep-button>
@@ -194,7 +199,7 @@
       [disabled]="reportFile() === null"
       (clicked)="submitReportPayment()"
     >
-      Enviar a revision
+      Enviar a revisión
     </yep-button>
   </ng-container>
 </yep-modal>
