@@ -316,7 +316,7 @@ export class SettingsPage implements OnInit {
     if (this.passwordForm.dirty) {
       const confirmed = await this.notificationModal.confirm({
         title: 'Descartar cambios',
-        message: 'Tienes cambios sin guardar en el cambio de contrasena.',
+        message: 'Tienes cambios sin guardar en el cambio de contraseña.',
         type: 'warning',
         confirmText: 'Descartar',
       });

@@ -44,8 +44,8 @@ export class ApplyInvoiceModal {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput<PaymentTransaction | null>(null);
-  /** Label configurado por el owner para el campo (ej. "Factura Numero"). */
-  readonly label = defineInput('Factura Numero');
+  /** Label configurado por el owner para el campo (ej. "Factura número"). */
+  readonly label = defineInput('Factura número');
   /** True cuando este modal además debe confirmar el pago pendiente. */
   readonly required = defineInput(false);
 

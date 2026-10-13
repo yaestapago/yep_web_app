@@ -26,7 +26,7 @@
       <yep-description-item label="Teléfono" [mono]="true">
         {{ account()?.phone || '—' }}
       </yep-description-item>
-      <yep-description-item label="NIT" [mono]="true">{{ account()?.nit || '—' }}</yep-description-item>
+      <yep-description-item label="NIT" [mono]="!!account()?.nit">{{ account()?.nit || '—' }}</yep-description-item>
       <yep-description-item
         label="Cuentas de cobro a nombre de"
         hint="Titular de las cuentas de cobro de YEP para este negocio."
@@ -60,9 +60,7 @@
         [copy]="registrationLink()"
         (copied)="copyRegistrationLink()"
       >
-        <span class="share-link" [title]="registrationLink()">
-          /register?code={{ shareCode() }}&amp;businessName={{ businessName() }}
-        </span>
+        <span class="share-link" [title]="registrationLink()">{{ registrationLinkLabel() }}</span>
         @if (linkCopied()) {
           <span class="copy-feedback" role="status">Enlace copiado</span>
         }

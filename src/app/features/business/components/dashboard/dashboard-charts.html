@@ -10,16 +10,16 @@
     @if (!hasData()) {
       <yep-state
         kind="empty"
-        title="Sin datos todavia"
-        description="Cuando registres transacciones y eventos veras aqui tus graficas."
+        title="Sin datos todavía"
+        description="Cuando registres transacciones y eventos verás aquí tus gráficas."
       >
         <svg slot="icon" lucideChartPie aria-hidden="true"></svg>
       </yep-state>
     } @else if (views().length === 0) {
       <yep-state
         kind="empty"
-        title="Ninguna grafica seleccionada"
-        description="Usa el boton de configurar para elegir que graficas mostrar."
+        title="Ninguna gráfica seleccionada"
+        description="Usa el botón de configurar para elegir qué gráficas mostrar."
       >
         <svg slot="icon" lucideChartPie aria-hidden="true"></svg>
       </yep-state>
@@ -111,8 +111,8 @@
 
 <yep-modal
   [open]="configOpen()"
-  title="Configurar graficas"
-  subtitle="Elige que graficas quieres ver en el panel."
+  title="Configurar gráficas"
+  subtitle="Elige qué gráficas quieres ver en el panel."
   size="sm"
   (closeRequested)="closeConfig()"
 >

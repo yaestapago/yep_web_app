@@ -51,6 +51,17 @@
   text-decoration: none;
 }
 
+/* Ocupa el lugar de "Configurar cuentas" en filas que no lo tienen (mismo ancho que yep-icon-button). */
+.row-actions__spacer {
+  flex: none;
+  width: 2rem;
+
+  /* Con la tabla apilada (≤ 768 px) no hay columna que alinear. */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
 /* ---------- Modal de invitación ---------- */
 .invite-grid {
   display: grid;

@@ -54,7 +54,7 @@ import { SubscriptionsApiService } from '../../services/subscriptions-api.servic
 const REQUEST_TYPE_LABELS: Record<PlanChangeRequestType, string> = {
   upgrade: 'Cambio de plan',
   downgrade: 'Cambio de plan',
-  renew_trial: 'Renovacion de prueba',
+  renew_trial: 'Renovación de prueba',
   top_up: 'Toping de WhatsApp',
   add_on: 'Add-on',
 };
@@ -467,7 +467,7 @@ export class SubscriptionPage implements OnInit {
   }
 
   topUpTierLabel(tier: AddOnPricingTier): string {
-    return `${this.formatNumber(tier.quantity)} notificaciones — ${this.formatCop(tier.totalPriceCop)} (pago unico)`;
+    return `${this.formatNumber(tier.quantity)} notificaciones — ${this.formatCop(tier.totalPriceCop)} (pago único)`;
   }
 
   addOnTierLabel(tier: AddOnPricingTier): string {
@@ -725,13 +725,13 @@ export class SubscriptionPage implements OnInit {
       : '';
 
     if (result.type === 'downgrade') {
-      return `Tu plan cambiara a ${result.newPlan.name} a partir del ${periodEndLabel}, sin cobro ahora. Hasta entonces conservas tu plan actual.`;
+      return `Tu plan cambiará a ${result.newPlan.name} a partir del ${periodEndLabel}, sin cobro ahora. Hasta entonces conservas tu plan actual.`;
     }
 
     if (result.paymentRequired) {
       if (this.isReactivating()) {
         return (
-          `Se genero una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} (ciclo ${billingPeriodWord(requestedPeriod)}). ` +
+          `Se generó una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} (ciclo ${billingPeriodWord(requestedPeriod)}). ` +
           `Tu plan ${result.newPlan.name} se activara apenas confirmemos el pago.`
         );
       }
@@ -744,13 +744,13 @@ export class SubscriptionPage implements OnInit {
           ? (catalogPlan?.annualPriceCop ?? result.newPlan.priceCop * 10)
           : result.newPlan.priceCop;
       return (
-        `Se genero una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} por los dias restantes de tu periodo actual. ` +
-        `Tu plan cambiara a ${result.newPlan.name} apenas se confirme el pago. ` +
-        `Tu proxima renovacion sigue siendo el ${periodEndLabel}, por ${this.formatCop(renewalPriceCop)}.`
+        `Se generó una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} por los días restantes de tu periodo actual. ` +
+        `Tu plan cambiará a ${result.newPlan.name} apenas se confirme el pago. ` +
+        `Tu próxima renovación sigue siendo el ${periodEndLabel}, por ${this.formatCop(renewalPriceCop)}.`
       );
     }
 
-    return `Tu plan cambio a ${result.newPlan.name}.`;
+    return `Tu plan cambió a ${result.newPlan.name}.`;
   }
 
   private buildRequestPayload(): CreatePlanChangeRequestPayload | null {

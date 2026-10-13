@@ -944,7 +944,7 @@ export class BusinessNotifiersSection implements OnInit {
   async remove(notifier: Notifier): Promise<void> {
     const confirmed = await this.notifications.confirm({
       title: 'Eliminar notificador',
-      message: 'Esta accion no se puede deshacer.',
+      message: 'Esta acción no se puede deshacer.',
       type: 'error',
       confirmText: 'Eliminar',
     });

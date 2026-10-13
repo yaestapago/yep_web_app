@@ -2,6 +2,25 @@
   position: relative;
 }
 
+/* Con etiqueta externa: misma anatomía que yep-input/yep-select (etiqueta 13/500 arriba). */
+.date-range--labeled {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.date-range__field-label {
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+/* Sin "Rango" dentro, el valor se lee como el de yep-select (14/400). */
+.date-range--labeled .date-range__button-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+}
+
 /* P6 · el disparador es una caja de input; el panel es una capa flotante con --shadow-overlay. */
 .date-range__button {
   align-items: center;

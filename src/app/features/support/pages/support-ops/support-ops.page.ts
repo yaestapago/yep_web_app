@@ -78,6 +78,11 @@ export class SupportOpsPage {
     { value: 'users', label: 'Usuarios' },
   ];
   protected readonly backIcon = LucideArrowLeft;
+
+  /** `Ciudad, Departamento` sin comas sueltas; `—` si no hay ninguno. */
+  protected locationLabel(business: { cityName?: string | null; departmentName?: string | null }): string {
+    return [business.cityName, business.departmentName].filter(Boolean).join(', ') || '—';
+  }
   readonly view = signal<MainView>('businesses');
   readonly search = signal('');
   readonly loading = signal(false);

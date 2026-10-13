@@ -107,6 +107,15 @@ export class BusinessDataSection implements OnDestroy {
     });
     return `${origin}/register?${params.toString()}`;
   });
+  /** El enlace que se copia, legible: sin `https://` y con espacios y tildes en vez de `+` y `%C3%A9`. */
+  readonly registrationLinkLabel = computed(() => {
+    const link = this.registrationLink().replace(/^https?:\/\//, '').replace(/\+/g, ' ');
+    try {
+      return decodeURIComponent(link);
+    } catch {
+      return link;
+    }
+  });
 
   ngOnDestroy(): void {
     this.clearDeleteResendTimer();

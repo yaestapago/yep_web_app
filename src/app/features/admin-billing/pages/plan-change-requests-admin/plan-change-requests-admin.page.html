@@ -1,7 +1,7 @@
 <section class="page requests-admin-page">
   <yep-page-header
     title="Solicitudes de cambio de plan"
-    subtitle="Revisa, aprueba o rechaza cambios de plan, add-ons y toppings solicitados por los negocios."
+    subtitle="Revisa, aprueba o rechaza cambios de plan, adicionales y recargas solicitados por los negocios."
   >
     <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
@@ -58,7 +58,7 @@
                   }
                 </td>
                 <td data-label="Fecha" class="requests-date">
-                  {{ request.createdAt | date: 'medium' }}
+                  {{ formatDateTime(request.createdAt) }}
                 </td>
                 <td data-label="Estado">
                   <yep-status-chip
@@ -226,7 +226,7 @@
         name="finalPrice"
         [ngModel]="approvePrice()"
         (ngModelChange)="approvePrice.set($event === '' ? null : +$event)"
-        hint="Si lo dejas vacio se usa el precio sugerido por la tabla de descuentos."
+        hint="Si lo dejas vacío se usa el precio sugerido por la tabla de descuentos."
       ></yep-input>
       <yep-input
         label="Nota (opcional)"

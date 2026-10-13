@@ -3,7 +3,7 @@
     <div class="section-heading">
       <h2 class="section-title">Notificadores</h2>
       <p class="section-subtitle">
-        Estado operativo según el último heartbeat. Se actualiza solo cada
+        Estado de cada dispositivo según su último latido. Se actualiza solo cada
         {{ thresholds.refreshIntervalMs / 1000 }} s.
       </p>
     </div>
@@ -165,7 +165,7 @@
                 @if (row.status.lastSeenAt) {
                   {{ relative(row.status) }} · {{ row.status.lastSeenAt | date: 'short' }}
                 } @else {
-                  <span class="notifier-card__muted">sin heartbeat</span>
+                  <span class="notifier-card__muted">sin latido</span>
                 }
               </yep-description-item>
               <yep-description-item label="Estado">

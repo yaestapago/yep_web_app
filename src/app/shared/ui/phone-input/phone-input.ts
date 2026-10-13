@@ -89,7 +89,7 @@ export class PhoneInput implements ControlValueAccessor, Validator {
   readonly id = defineInput(`yep-phone-input-${nextPhoneInputId++}`);
   readonly label = defineInput('');
   readonly size = defineInput<PhoneInputSize>('md');
-  readonly placeholder = defineInput('Numero de telefono');
+  readonly placeholder = defineInput('Número de teléfono');
   readonly hint = defineInput('');
   readonly error = defineInput('');
   readonly disabled = defineInput(false);

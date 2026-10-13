@@ -1,7 +1,7 @@
 <div class="bank-admin">
   <yep-page-header
-    title="Reglas de notificadores (superadmin)"
-    subtitle="Catálogo global de bancos. Controla qué escucha cada notificador (móvil, correo, escritorio) y guarda ejemplos de lo que sabemos que sí se reconoce. Los cambios aplican en el próximo latido, sin re-emparejar."
+    title="Reglas de notificadores"
+    subtitle="Catálogo global de bancos. Controla qué escucha cada notificador (móvil, correo, escritorio) y guarda ejemplos de lo que sabemos que sí se reconoce. Los cambios aplican en el próximo latido, sin volver a emparejar."
   >
     <yep-button slot="back" variant="ghost" size="sm" (clicked)="goBack()">
       <svg lucideArrowLeft aria-hidden="true"></svg>
@@ -65,8 +65,8 @@
               >
                 <span class="bank-list__toprow">
                   <span class="bank-list__name">{{ bank.name }}</span>
-                  <yep-status-dot
-                    [level]="bank.isActive ? 'online' : 'offline'"
+                  <yep-status-chip
+                    [tone]="bank.isActive ? 'success' : 'neutral'"
                     [label]="bank.isActive ? 'Activo' : 'Inactivo'"
                   />
                 </span>

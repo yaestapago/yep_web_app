@@ -1,7 +1,7 @@
 <section class="page invoices-page">
   <yep-page-header
     title="Cuentas de cobro"
-    subtitle="Historial de cuentas de cobro de tu suscripción y de tus toppings de notificaciones."
+    subtitle="Historial de cuentas de cobro de tu suscripción y de tus recargas de notificaciones."
   >
     <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
@@ -184,7 +184,7 @@
       required
       (change)="onVoucherSelected($event)"
     />
-    <small>JPG, PNG o PDF. Tamano maximo: 10 MB.</small>
+    <small>JPG, PNG o PDF. Tamaño máximo: 10 MB.</small>
   </label>
 
   <ng-container modalFooter>

@@ -281,9 +281,13 @@ svg {
 
 .plan-card__annual {
   color: var(--color-text-secondary);
-  font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   margin: 6px 0 0;
+}
+
+/* Solo el monto va en mono (P9); el resto de la frase en Inter. */
+.plan-card__annual-amount {
+  font-family: var(--font-family-mono);
 }
 
 .plan-limits {

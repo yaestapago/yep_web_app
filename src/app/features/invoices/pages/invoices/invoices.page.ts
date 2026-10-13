@@ -136,7 +136,7 @@ export class InvoicesPage implements OnInit {
             this.selectedInvoice.set(updated);
           }
           this.reportInvoice.set(null);
-          this.success.set('Pago reportado. Nuestro equipo revisara la informacion.');
+          this.success.set('Pago reportado. Nuestro equipo revisará la información.');
           // Un pago reportado deja el negocio "en revisión" (no bloqueado).
           void this.billing.refresh();
         },
@@ -172,7 +172,7 @@ export class InvoicesPage implements OnInit {
       case 'paid':
         return 'Pagada';
       case 'reported':
-        return 'Pago reportado (en revision)';
+        return 'Pago reportado (en revisión)';
       case 'cancelled':
         return 'Cancelada';
       default:

@@ -94,6 +94,9 @@
                           [disabled]="actingId() === member.id"
                           (clicked)="openAccess(member)"
                         />
+                      } @else {
+                        <!-- Hueco del mismo ancho: los iconos quedan en la misma columna en todas las filas. -->
+                        <span class="row-actions__spacer" aria-hidden="true"></span>
                       }
                       <yep-icon-button
                         action="edit"

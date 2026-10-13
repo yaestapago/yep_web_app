@@ -3,9 +3,7 @@
     @if (selectedBusiness(); as detail) {
       <yep-page-header
         [title]="detail.business.name"
-        subtitle="{{ detail.business.cityName }}, {{ detail.business.departmentName }} · {{
-          detail.business.phone
-        }}"
+        subtitle="{{ locationLabel(detail.business) }} · {{ detail.business.phone }}"
       >
         <yep-icon-button
           slot="leading"
@@ -51,7 +49,7 @@
             <yep-description-item label="Correo">{{ owner.email }}</yep-description-item>
           }
           <yep-description-item label="Plan">
-            {{ detail.subscription.subscription?.plan?.code || '-' }}
+            {{ detail.subscription.subscription?.plan?.code || '—' }}
           </yep-description-item>
           <yep-description-item label="Fin del periodo">
             {{ detail.subscription.subscription?.currentPeriodEnd | date: 'mediumDate' }}
@@ -72,7 +70,7 @@
       />
     } @else {
       <yep-page-header
-        title="Control operativo"
+        title="Soporte operativo"
         subtitle="Consulta centralizada de usuarios y negocios de YEP."
       >
         <yep-segmented
@@ -178,7 +176,7 @@
                         ><small>{{ business.slug || business.id }}</small>
                       </td>
                       <td data-label="Ubicación">
-                        {{ business.cityName }}, {{ business.departmentName }}
+                        {{ locationLabel(business) }}
                       </td>
                       <td data-label="Dirección">{{ business.address }}</td>
                       <td data-label="Teléfono">{{ business.phone }}</td>

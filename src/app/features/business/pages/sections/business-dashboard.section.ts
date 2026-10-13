@@ -256,7 +256,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
   readonly invoiceReferenceLabel = computed(
-    () => this.account()?.preferences?.invoiceReference?.label || 'Factura Numero',
+    () => this.account()?.preferences?.invoiceReference?.label || 'Factura número',
   );
 
   // --- Datos de las tablas (filtrados server-side) ---

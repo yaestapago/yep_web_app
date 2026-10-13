@@ -1,7 +1,7 @@
 <section class="page invoices-admin-page">
   <yep-page-header
     title="Cuentas de cobro"
-    subtitle="Confirma pagos reportados por los clientes o marca cuentas de cobro como pagadas/canceladas."
+    subtitle="Confirma pagos reportados por los clientes o marca cuentas de cobro como pagadas o canceladas."
   >
     <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
@@ -27,6 +27,7 @@
       (ngModelChange)="search.set($event)"
     />
     <yep-date-range-picker
+      fieldLabel="Rango"
       [range]="range()"
       [preset]="rangePreset()"
       (rangeChange)="onRangeChange($event)"
@@ -179,7 +180,7 @@
         <table class="invoice-items">
           <thead>
             <tr>
-              <th>Descripcion</th>
+              <th>Descripción</th>
               <th class="num">Cantidad</th>
               <th class="num">Valor unitario</th>
               <th class="num">Total</th>

@@ -40,8 +40,8 @@ interface CalendarDay {
 
 const PRESETS: PresetOption[] = [
   { id: 'today', label: 'Hoy' },
-  { id: '7d', label: 'Ultimos 7 dias' },
-  { id: '30d', label: 'Ultimos 30 dias' },
+  { id: '7d', label: 'Últimos 7 días' },
+  { id: '30d', label: 'Últimos 30 días' },
   { id: 'month', label: 'Este mes' },
 ];
 
@@ -56,6 +56,11 @@ export class DateRangePicker {
 
   readonly range = defineInput.required<DashboardDateRange>();
   readonly preset = defineInput<DateRangePreset>('today');
+  /**
+   * Etiqueta externa, arriba de la caja (como `yep-input`/`yep-select`). Úsala cuando el selector
+   * va en una fila de filtros con otros campos etiquetados; sin ella, "Rango" va dentro de la caja.
+   */
+  readonly fieldLabel = defineInput('');
   readonly rangeChange = output<{ range: DashboardDateRange; preset: DateRangePreset }>();
 
   readonly currentMonth = signal(monthStart(bogotaTodayParts()));

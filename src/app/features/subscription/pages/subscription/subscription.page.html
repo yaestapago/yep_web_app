@@ -1,6 +1,6 @@
 <section class="page subscription-page">
   <yep-page-header
-    title="Suscripcion"
+    title="Suscripción"
     subtitle="Revisa el consumo de tu plan y compara las capacidades disponibles."
   >
     <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
@@ -22,7 +22,7 @@
 
     @if (loading() && !subscription()) {
       <yep-card>
-        <yep-state kind="loading" title="Cargando suscripcion..." [rows]="4" />
+        <yep-state kind="loading" title="Cargando suscripción..." [rows]="4" />
       </yep-card>
     } @else {
       <yep-card class="current-plan">
@@ -39,7 +39,7 @@
               <p>Tu prueba gratis terminó{{ trialEndLabel() ? ' el ' + trialEndLabel() : '' }}.</p>
             } @else if (subscription()?.trialEndsAt) {
               <p>Prueba gratis activa hasta el {{ trialEndLabel() }}</p>
-            } @else {
+            } @else if (periodEndLabel()) {
               <p>Periodo vigente hasta el {{ periodEndLabel() }}</p>
             }
             @if (showBillingPeriod()) {
@@ -169,7 +169,7 @@
               <yep-description-list [columns]="2">
                 @if (sub.whatsappTopUpBalance > 0) {
                   <yep-description-item
-                    label="Saldo de notificaciones WhatsApp (pago unico)"
+                    label="Saldo de notificaciones WhatsApp (pago único)"
                     hint="No vence ni se reinicia cada mes; se usa cuando la cuota del plan llega a 0. No es un cargo recurrente."
                     [mono]="true"
                   >
@@ -247,7 +247,10 @@
                   }
                 </p>
                 @if (annualPriceLabel(card.plan); as annualLabel) {
-                  <p class="plan-card__annual">o {{ annualLabel }} (paga 10, recibe 12)</p>
+                  <p class="plan-card__annual">
+                    o <span class="plan-card__annual-amount">{{ annualLabel }}</span> (paga 10,
+                    recibe 12)
+                  </p>
                 }
               </div>
 
@@ -291,7 +294,7 @@
 
       <yep-card title="Mis solicitudes" padding="none">
         @if (changeRequests().length === 0) {
-          <yep-state kind="empty" title="Todavia no has enviado solicitudes de cambio de plan." />
+          <yep-state kind="empty" title="Todavía no has enviado solicitudes de cambio de plan." />
         } @else {
           <div class="yep-table-wrap">
             <table yepTable>
@@ -471,7 +474,7 @@
 <yep-modal
   [open]="reportModalOpen()"
   title="Reportar pago"
-  subtitle="Cuentanos como pagaste para que podamos confirmarlo mas rapido."
+  subtitle="Cuéntanos cómo pagaste para que podamos confirmarlo más rápido."
   [loading]="reporting()"
   (closeRequested)="closeReportModal()"
 >

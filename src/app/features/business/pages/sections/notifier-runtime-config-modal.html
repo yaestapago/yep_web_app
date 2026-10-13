@@ -15,7 +15,7 @@
   <p class="section-subtitle">
     Estos valores solo aplican a este notificador. Los campos no personalizados
     heredan la configuración global de flota. El cambio se aplicará en el próximo
-    latido, sin re-emparejar.
+    latido, sin volver a emparejar.
   </p>
 
   <form [formGroup]="form" (ngSubmit)="save()" id="runtime-config-form" class="form-grid">
@@ -45,7 +45,7 @@
 
     <div class="field full-field">
       <span class="section-subtitle runtime-config__summary">
-        Ventana "en línea" (derivada del heartbeat):
+        Ventana "en línea" (según el latido):
         <strong>{{ onlineWindowSeconds() ?? '—' }} s</strong>
         · configVersion: <code>{{ configVersion() }}</code>
         @if (isCustomized()) {

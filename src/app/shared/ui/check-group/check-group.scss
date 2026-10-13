@@ -44,8 +44,10 @@
   font-size: var(--font-size-sm);
 }
 
+/* La meta mezcla número y texto ("****9432 · Ahorros · Activa"): Inter con cifras
+   tabulares en vez de mono, para no poner en mono palabras que no son datos (P9). */
 .yep-check-group__meta {
-  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .yep-check-group__count {

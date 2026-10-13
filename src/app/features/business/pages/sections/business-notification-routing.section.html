@@ -65,7 +65,7 @@
                 @let count = activeAccountCount(view.member);
                 @let total = totalAccountCount();
                 @if (count > 0) {
-                  <yep-status-chip tone="success" [label]="count + ' de ' + total + ' cuentas'" />
+                  <yep-status-chip tone="success" [label]="count + ' de ' + total + (total === 1 ? ' cuenta' : ' cuentas')" />
                 } @else {
                   <yep-status-chip tone="neutral" label="Sin cuentas" />
                 }
