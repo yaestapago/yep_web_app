@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { LucideLoaderCircle, LucideRefreshCw, LucideSearch } from '@lucide/angular';
+import { LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type {
@@ -14,8 +14,21 @@ import type {
   BillingNoticeKind,
   BillingState,
 } from '../../../../shared/models/billing-status.models';
-import { Alert } from '../../../../shared/ui/alert/alert';
-import { Button } from '../../../../shared/ui/button/button';
+import {
+  Alert,
+  Button,
+  Card,
+  Input,
+  Kpi,
+  PageHeader,
+  type KpiTone,
+  Segmented,
+  type SegmentedOption,
+  State,
+  StatusChip,
+  type StatusChipTone,
+  Table,
+} from '../../../../shared/ui';
 import {
   formatCopAmount,
   formatDateTime,
@@ -75,6 +88,29 @@ const INVOICE_STATUS_LABELS: Record<string, string> = {
   reported: 'Pago reportado',
   paid: 'Pagada',
   cancelled: 'Cancelada',
+};
+
+/** Tonos de presentación: los KPI solo tienen punto para aviso, error y éxito. */
+const KPI_TONES: Partial<Record<string, KpiTone>> = {
+  neutral: 'default',
+  info: 'default',
+  warning: 'warning',
+  error: 'error',
+  success: 'success',
+};
+
+const STATE_TONES: Record<BillingState, StatusChipTone> = {
+  blocked: 'error',
+  due_soon: 'warning',
+  payment_review: 'info',
+  ok: 'success',
+};
+
+const INVOICE_STATUS_TONES: Partial<Record<string, StatusChipTone>> = {
+  issued: 'warning',
+  reported: 'info',
+  paid: 'success',
+  cancelled: 'neutral',
 };
 
 const NOTICE_KINDS: Array<{ kind: BillingNoticeKind; short: string; label: string }> = [
@@ -258,7 +294,21 @@ export function toBillingCustomerView(row: BillingCustomerRow): BillingCustomerV
 
 @Component({
   selector: 'app-billing-customers-admin-page',
-  imports: [FormsModule, RouterLink, Alert, Button, LucideLoaderCircle, LucideRefreshCw, LucideSearch],
+  imports: [
+    FormsModule,
+    RouterLink,
+    Alert,
+    Button,
+    Card,
+    Input,
+    Kpi,
+    PageHeader,
+    Segmented,
+    State,
+    StatusChip,
+    Table,
+    LucideRefreshCw,
+  ],
   templateUrl: './billing-customers-admin.page.html',
   styleUrl: './billing-customers-admin.page.scss',
 })
@@ -267,6 +317,9 @@ export class BillingCustomersAdminPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly filters = FILTERS;
+  protected readonly kpiTones = KPI_TONES;
+  protected readonly stateTones = STATE_TONES;
+  protected readonly invoiceStatusTones = INVOICE_STATUS_TONES;
   readonly response = signal<BillingCustomersResponse | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
@@ -301,6 +354,11 @@ export class BillingCustomersAdminPage implements OnInit {
     return Object.fromEntries(
       FILTERS.map(({ key }) => [key, rows.filter((row) => matchesBillingFilter(row, key)).length]),
     ) as Record<BillingCustomerFilter, number>;
+  });
+
+  protected readonly filterOptions = computed<SegmentedOption[]>(() => {
+    const counts = this.filterCounts();
+    return FILTERS.map(({ key, label }) => ({ value: key, label, count: counts[key] }));
   });
 
   readonly visibleRows = computed(() => {
