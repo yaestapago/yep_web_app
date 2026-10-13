@@ -47,13 +47,28 @@
       </yep-button>
     </yep-state>
   } @else if (bankAccounts().length === 0) {
-    <yep-state
-      kind="empty"
-      title="Sin cuentas bancarias"
-      description="Agrega una cuenta para asociar los pagos verificados de este negocio."
-    >
-      <svg slot="icon" lucideLandmark aria-hidden="true"></svg>
-    </yep-state>
+    <yep-card>
+      <yep-state
+        kind="empty"
+        title="Sin cuentas bancarias"
+        description="Agrega una cuenta para asociar los pagos verificados de este negocio."
+      >
+        <svg slot="icon" lucideLandmark aria-hidden="true"></svg>
+        @if (canManage()) {
+          <yep-button
+            slot="action"
+            variant="secondary"
+            size="sm"
+            [loading]="checkingBankAccountCreation()"
+            [disabled]="!canCreateBankAccount()"
+            (clicked)="openCreate()"
+          >
+            <svg lucidePlus aria-hidden="true"></svg>
+            Nueva cuenta
+          </yep-button>
+        }
+      </yep-state>
+    </yep-card>
   } @else {
     <yep-card padding="none" aria-label="Cuentas">
       <div class="yep-table-wrap">

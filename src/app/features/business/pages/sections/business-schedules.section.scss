@@ -271,8 +271,9 @@
   cursor: copy;
 }
 
+// Hoy: el encabezado lleva el verde suave; la columna, solo la mitad para no pintar un bloque entero.
 .week-board__col--today {
-  background-color: var(--color-primary-soft);
+  background-color: color-mix(in srgb, var(--color-primary-soft) 50%, transparent);
 }
 
 .week-board--empty .week-board__col {

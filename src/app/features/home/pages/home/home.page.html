@@ -53,43 +53,41 @@
     </section>
   }
 
-  <div class="home-bottom">
-    <yep-card class="home-news" title="Más novedades" subtitle="Lo último que llegó a YEP.">
-      <a
-        slot="actions"
-        class="home-link"
-        [href]="novedadesPostUrl"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Leer en el blog
-        <svg lucideArrowRight aria-hidden="true"></svg>
-      </a>
+  @if (shortcuts().employees; as employeesLink) {
+    <yep-banner
+      class="home-team"
+      tone="lime"
+      size="compact"
+      title="Invita a tu equipo"
+      text="Comparte el código del negocio y cada persona de la caja recibe sus avisos."
+    >
+      <yep-icon-tile slot="icon" [size]="48"
+        ><svg lucideUsers aria-hidden="true"></svg
+      ></yep-icon-tile>
+      <a slot="actions" yepButton tone="ink" [routerLink]="employeesLink">Ir a Empleados</a>
+    </yep-banner>
+  }
 
-      <ul class="home-news__list">
-        @for (novedad of moreNovedades; track novedad.title) {
-          <li class="home-news__item">
-            <yep-status-chip tone="neutral" [dot]="false" [label]="novedad.category" />
-            <h3 class="home-news__title">{{ novedad.title }}</h3>
-            <p class="home-news__text">{{ novedad.description }}</p>
-          </li>
-        }
-      </ul>
-    </yep-card>
+  <yep-card class="home-news" title="Más novedades" subtitle="Lo último que llegó a YEP.">
+    <a
+      slot="actions"
+      class="home-link"
+      [href]="novedadesPostUrl"
+      target="_blank"
+      rel="noreferrer"
+    >
+      Leer en el blog
+      <svg lucideArrowRight aria-hidden="true"></svg>
+    </a>
 
-    @if (shortcuts().employees; as employeesLink) {
-      <yep-banner
-        class="home-team"
-        tone="lime"
-        size="compact"
-        title="Invita a tu equipo"
-        text="Comparte el código del negocio y cada persona de la caja recibe sus avisos."
-      >
-        <yep-icon-tile slot="icon" [size]="48"
-          ><svg lucideUsers aria-hidden="true"></svg
-        ></yep-icon-tile>
-        <a slot="actions" yepButton tone="ink" [routerLink]="employeesLink">Ir a Empleados</a>
-      </yep-banner>
-    }
-  </div>
+    <ul class="home-news__list">
+      @for (novedad of moreNovedades; track novedad.title) {
+        <li class="home-news__item">
+          <yep-status-chip tone="neutral" [dot]="false" [label]="novedad.category" />
+          <h3 class="home-news__title">{{ novedad.title }}</h3>
+          <p class="home-news__text">{{ novedad.description }}</p>
+        </li>
+      }
+    </ul>
+  </yep-card>
 </section>

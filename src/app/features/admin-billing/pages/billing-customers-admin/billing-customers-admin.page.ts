@@ -22,8 +22,6 @@ import {
   Kpi,
   PageHeader,
   type KpiTone,
-  Segmented,
-  type SegmentedOption,
   State,
   StatusChip,
   type StatusChipTone,
@@ -303,7 +301,6 @@ export function toBillingCustomerView(row: BillingCustomerRow): BillingCustomerV
     Input,
     Kpi,
     PageHeader,
-    Segmented,
     State,
     StatusChip,
     Table,
@@ -331,35 +328,38 @@ export class BillingCustomersAdminPage implements OnInit {
   readonly kpis = computed(() => {
     const totals = this.response()?.totals;
     return [
-      { key: 'total', label: 'Total', value: totals?.total ?? 0, tone: 'neutral' },
-      { key: 'trial', label: 'En prueba', value: totals?.trial ?? 0, tone: 'neutral' },
-      { key: 'due_soon', label: 'Por vencer', value: totals?.dueSoon ?? 0, tone: 'warning' },
+      // `filter`: el filtro que aplica el indicador al pulsarlo (los mismos de las antiguas pestañas).
+      { key: 'total', filter: 'all', label: 'Total', value: totals?.total ?? 0, tone: 'neutral' },
+      { key: 'trial', filter: 'trial', label: 'En prueba', value: totals?.trial ?? 0, tone: 'neutral' },
+      {
+        key: 'due_soon',
+        filter: 'due_soon',
+        label: 'Por vencer',
+        value: totals?.dueSoon ?? 0,
+        tone: 'warning',
+      },
       {
         key: 'payment_review',
+        filter: 'payment_review',
         label: 'Pago en revisión',
         value: totals?.paymentReview ?? 0,
         tone: 'info',
       },
-      { key: 'blocked', label: 'Bloqueados', value: totals?.blocked ?? 0, tone: 'error' },
-      { key: 'ok', label: 'Al día', value: totals?.active ?? 0, tone: 'success' },
-    ];
+      {
+        key: 'blocked',
+        filter: 'blocked',
+        label: 'Bloqueados',
+        value: totals?.blocked ?? 0,
+        tone: 'error',
+      },
+      { key: 'ok', filter: 'ok', label: 'Al día', value: totals?.active ?? 0, tone: 'success' },
+    ] satisfies Array<{ key: string; filter: BillingCustomerFilter; label: string; value: number; tone: string }>;
   });
 
   private readonly views = computed(() =>
     [...(this.response()?.rows ?? [])].sort(compareBillingRows).map(toBillingCustomerView),
   );
 
-  readonly filterCounts = computed(() => {
-    const rows = this.views().map((view) => view.row);
-    return Object.fromEntries(
-      FILTERS.map(({ key }) => [key, rows.filter((row) => matchesBillingFilter(row, key)).length]),
-    ) as Record<BillingCustomerFilter, number>;
-  });
-
-  protected readonly filterOptions = computed<SegmentedOption[]>(() => {
-    const counts = this.filterCounts();
-    return FILTERS.map(({ key, label }) => ({ value: key, label, count: counts[key] }));
-  });
 
   readonly visibleRows = computed(() => {
     const filter = this.filter();

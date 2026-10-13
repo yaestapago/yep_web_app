@@ -173,6 +173,13 @@
   padding-top: var(--space-3);
 }
 
+/* Al final del menú (Administración) el pie ya pone su borde: sin línea doble. */
+.nav-section:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
 /* Ítem: 40 px, icono 20, texto 14/500 secundario */
 .nav-group a,
 .nav-subgroup__header,

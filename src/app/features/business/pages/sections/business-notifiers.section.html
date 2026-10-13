@@ -21,13 +21,15 @@
     </div>
   </div>
 
-  <!-- Resumen de estados -->
-  <section class="notifiers-summary" aria-label="Resumen de notificadores">
-    <yep-kpi size="sm" tone="success" label="En línea" [value]="counts().online + ''" />
-    <yep-kpi size="sm" tone="warning" label="Con retraso" [value]="counts().delayed + ''" />
-    <yep-kpi size="sm" tone="error" label="Fuera de línea" [value]="counts().offline + ''" />
-    <yep-kpi size="sm" label="Sin datos" [value]="counts().unknown + ''" />
-  </section>
+  <!-- Resumen de estados: solo cuando hay notificadores (cuatro ceros no dicen nada). -->
+  @if (statuses().length > 0) {
+    <section class="notifiers-summary" aria-label="Resumen de notificadores">
+      <yep-kpi size="sm" tone="success" label="En línea" [value]="counts().online + ''" />
+      <yep-kpi size="sm" tone="warning" label="Con retraso" [value]="counts().delayed + ''" />
+      <yep-kpi size="sm" tone="error" label="Fuera de línea" [value]="counts().offline + ''" />
+      <yep-kpi size="sm" label="Sin datos" [value]="counts().unknown + ''" />
+    </section>
+  }
 
   @if (error()) {
     <yep-alert variant="error">{{ error() }}</yep-alert>
@@ -44,7 +46,14 @@
         kind="empty"
         title="Aún no hay notificadores"
         description="Crea un notificador de correo para reenviar los avisos de tu banco y empezar a recibir tus pagos."
-      />
+      >
+        @if (canManage()) {
+          <yep-button slot="action" variant="secondary" size="sm" (clicked)="openCreate()">
+            <svg lucidePlus aria-hidden="true"></svg>
+            Nuevo notificador
+          </yep-button>
+        }
+      </yep-state>
     </yep-card>
   } @else {
     <div class="notifier-list">

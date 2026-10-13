@@ -16,271 +16,292 @@
     </div>
   </div>
 
-  @if (reconciliationError() && (bankWithoutReceipt().length > 0 || receiptWithoutBank().length > 0)) {
-    <yep-alert variant="error">{{ reconciliationError() }}</yep-alert>
+  <!-- Sin nada que conciliar: un solo estado en vez de tres tarjetas vacías. -->
+  @let allClear =
+    !loadingReconciliation() &&
+    !loadingDuplicates() &&
+    !reconciliationError() &&
+    !duplicatesError() &&
+    bankWithoutReceipt().length === 0 &&
+    receiptWithoutBank().length === 0 &&
+    duplicates().length === 0;
+  @if (allClear) {
+    <yep-card>
+      <yep-state
+        kind="empty"
+        title="Todo al día"
+        description="No hay eventos de banco sin comprobante, comprobantes sin respaldo bancario ni duplicados en el rango seleccionado."
+      >
+        <svg slot="icon" lucideCheck aria-hidden="true"></svg>
+      </yep-state>
+    </yep-card>
+  } @else {
+    @if (reconciliationError() && (bankWithoutReceipt().length > 0 || receiptWithoutBank().length > 0)) {
+      <yep-alert variant="error">{{ reconciliationError() }}</yep-alert>
+    }
+
+    <!-- Banco sin comprobante -->
+    <yep-card
+      padding="none"
+      title="Eventos de banco sin comprobante"
+      subtitle="Llegó la notificación del banco (correo, SMS o webhook), pero ningún comprobante se ha enlazado todavía."
+    >
+      @if (!loadingReconciliation() && !reconciliationError()) {
+        <yep-status-chip
+          slot="actions"
+          [tone]="bankWithoutReceipt().length > 0 ? 'warning' : 'success'"
+          label="{{ bankWithoutReceipt().length }}"
+        />
+      }
+
+      @if (loadingReconciliation()) {
+        <div class="insights-card__state">
+          <yep-state kind="loading" title="Cargando conciliación…" [rows]="3" />
+        </div>
+      } @else if (reconciliationError() && bankWithoutReceipt().length === 0) {
+        <yep-state kind="error" [title]="reconciliationError()">
+          <yep-button slot="action" variant="secondary" size="sm" (clicked)="refresh()">
+            Reintentar
+          </yep-button>
+        </yep-state>
+      } @else if (bankWithoutReceipt().length === 0) {
+        <yep-state
+          kind="empty"
+          title="Sin pendientes"
+          description="No hay eventos de banco sin comprobante en el rango seleccionado."
+        >
+          <svg slot="icon" lucideCheck aria-hidden="true"></svg>
+        </yep-state>
+      } @else {
+        <div class="yep-table-wrap">
+          <table yepTable>
+            <thead>
+              <tr>
+                <th>Banco · origen</th>
+                <th>Referencia</th>
+                <th class="num">Monto</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of bankWithoutReceipt(); track item.id) {
+                <tr>
+                  <td data-label="Banco · origen">
+                    <span class="insights-name">{{ item.normalized?.bankId || 'Banco desconocido' }}</span>
+                    <span class="insights-sub">{{ sourceTypeLabel(item.sourceType) }}</span>
+                  </td>
+                  <td data-label="Referencia">
+                    @if (item.normalized?.reference) {
+                      <span class="insights-mono">Ref. {{ item.normalized?.reference }}</span>
+                    } @else {
+                      <span class="insights-muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Monto" class="num">
+                    @if (item.normalized?.amount) {
+                      {{ item.normalized?.amount | currency: (item.normalized?.currency || 'COP') : 'symbol-narrow' : '1.0-0' }}
+                    } @else {
+                      <span class="insights-muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Fecha">
+                    <span class="insights-date">{{ item.createdAt | date: 'short' }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </yep-card>
+
+    <!-- Comprobante sin respaldo bancario -->
+    <yep-card
+      padding="none"
+      title="Comprobantes sin respaldo bancario"
+      subtitle="El cliente envió el comprobante hace más de 24h, pero el banco todavía no lo confirma."
+    >
+      @if (!loadingReconciliation() && !reconciliationError()) {
+        <yep-status-chip
+          slot="actions"
+          [tone]="receiptWithoutBank().length > 0 ? 'error' : 'success'"
+          label="{{ receiptWithoutBank().length }}"
+        />
+      }
+
+      @if (loadingReconciliation()) {
+        <div class="insights-card__state">
+          <yep-state kind="loading" title="Cargando conciliación…" [rows]="2" />
+        </div>
+      } @else if (reconciliationError() && receiptWithoutBank().length === 0) {
+        <yep-state kind="error" [title]="reconciliationError()">
+          <yep-button slot="action" variant="secondary" size="sm" (clicked)="refresh()">
+            Reintentar
+          </yep-button>
+        </yep-state>
+      } @else if (receiptWithoutBank().length === 0) {
+        <yep-state
+          kind="empty"
+          title="Sin pendientes"
+          description="No hay comprobantes esperando respaldo bancario en el rango seleccionado."
+        >
+          <svg slot="icon" lucideCheck aria-hidden="true"></svg>
+        </yep-state>
+      } @else {
+        <div class="yep-table-wrap">
+          <table yepTable>
+            <thead>
+              <tr>
+                <th>Banco</th>
+                <th>Referencia</th>
+                <th class="num">Monto</th>
+                <th>Fecha de transacción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of receiptWithoutBank(); track item.id) {
+                <tr>
+                  <td data-label="Banco">
+                    <span class="insights-name">{{ item.bankId }}</span>
+                  </td>
+                  <td data-label="Referencia">
+                    @if (item.reference) {
+                      <span class="insights-mono">Ref. {{ item.reference }}</span>
+                    } @else {
+                      <span class="insights-muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Monto" class="num">
+                    {{ item.amount | currency: item.currency : 'symbol-narrow' : '1.0-0' }}
+                  </td>
+                  <td data-label="Fecha de transacción">
+                    <span class="insights-date">{{ item.transactionDate | date: 'short' }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </yep-card>
+
+    <!-- Duplicados -->
+    @if (duplicatesError() && duplicates().length > 0) {
+      <yep-alert variant="error">{{ duplicatesError() }}</yep-alert>
+    }
+
+    <yep-card
+      padding="none"
+      title="Duplicados"
+      subtitle="Comprobantes que colisionaron con otro ya usado, y transacciones marcadas para revisión."
+    >
+      @if (!loadingDuplicates() && (!duplicatesError() || duplicates().length > 0)) {
+        <yep-status-chip
+          slot="actions"
+          [tone]="duplicates().length > 0 ? 'warning' : 'success'"
+          label="{{ duplicates().length }}{{ duplicatesCursor() ? '+' : '' }}"
+        />
+      }
+
+      @if (loadingDuplicates()) {
+        <div class="insights-card__state">
+          <yep-state kind="loading" title="Cargando duplicados…" [rows]="3" />
+        </div>
+      } @else if (duplicatesError() && duplicates().length === 0) {
+        <yep-state kind="error" [title]="duplicatesError()">
+          <yep-button slot="action" variant="secondary" size="sm" (clicked)="refresh()">
+            Reintentar
+          </yep-button>
+        </yep-state>
+      } @else if (duplicates().length === 0) {
+        <yep-state
+          kind="empty"
+          title="Sin duplicados"
+          description="No hay comprobantes duplicados ni transacciones en revisión en el rango seleccionado."
+        >
+          <svg slot="icon" lucideCheck aria-hidden="true"></svg>
+        </yep-state>
+      } @else {
+        <div class="yep-table-wrap">
+          <table yepTable>
+            <thead>
+              <tr>
+                <th>Banco</th>
+                <th>Referencia</th>
+                <th class="num">Monto</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th class="actions"><span class="insights-sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of duplicates(); track item.id) {
+                <tr>
+                  <td data-label="Banco">
+                    <span class="insights-name">{{ item.summary.bankId || 'banco desconocido' }}</span>
+                    @if (item.conflictWith) {
+                      <span class="insights-sub">{{ item.conflictWith }}</span>
+                    }
+                  </td>
+                  <td data-label="Referencia">
+                    @if (item.summary.reference) {
+                      <span class="insights-mono">Ref. {{ item.summary.reference }}</span>
+                    } @else {
+                      <span class="insights-muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Monto" class="num">
+                    @if (item.summary.amount) {
+                      {{ item.summary.amount | currency: (item.summary.currency || 'COP') : 'symbol-narrow' : '1.0-0' }}
+                    } @else {
+                      <span class="insights-muted">—</span>
+                    }
+                  </td>
+                  <td data-label="Fecha">
+                    <span class="insights-date">{{ item.createdAt | date: 'short' }}</span>
+                  </td>
+                  <td data-label="Estado">
+                    @if (item.type === 'support') {
+                      <yep-status-chip tone="warning" label="Comprobante duplicado" />
+                    } @else {
+                      <yep-status-chip tone="info" label="Transacción en revisión" />
+                    }
+                  </td>
+                  <td class="actions">
+                    @if (item.type === 'support') {
+                      <div class="insights-row-actions">
+                        <yep-button
+                          variant="ghost"
+                          size="sm"
+                          [loading]="resolvingId() === item.id"
+                          (clicked)="markNotDuplicate(item)"
+                        >
+                          <svg lucideShieldCheck aria-hidden="true"></svg>
+                          No es duplicado
+                        </yep-button>
+                        <yep-menu label="Más acciones" [disabled]="resolvingId() === item.id">
+                          <button yepMenuItem tone="danger" (click)="confirmFraud(item)">
+                            <svg lucideShieldAlert aria-hidden="true"></svg>
+                            Confirmar fraude
+                          </button>
+                        </yep-menu>
+                      </div>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (!loadingDuplicates() && duplicates().length > 0 && duplicatesCursor()) {
+        <div slot="footer" class="insights-card__more">
+          <yep-button variant="ghost" size="sm" [loading]="loadingMoreDuplicates()" (clicked)="loadMoreDuplicates()">
+            Cargar más
+          </yep-button>
+        </div>
+      }
+    </yep-card>
   }
-
-  <!-- Banco sin comprobante -->
-  <yep-card
-    padding="none"
-    title="Eventos de banco sin comprobante"
-    subtitle="Llegó la notificación del banco (correo, SMS o webhook), pero ningún comprobante se ha enlazado todavía."
-  >
-    @if (!loadingReconciliation() && !reconciliationError()) {
-      <yep-status-chip
-        slot="actions"
-        [tone]="bankWithoutReceipt().length > 0 ? 'warning' : 'success'"
-        label="{{ bankWithoutReceipt().length }}"
-      />
-    }
-
-    @if (loadingReconciliation()) {
-      <div class="insights-card__state">
-        <yep-state kind="loading" title="Cargando conciliación…" [rows]="3" />
-      </div>
-    } @else if (reconciliationError() && bankWithoutReceipt().length === 0) {
-      <yep-state kind="error" [title]="reconciliationError()">
-        <yep-button slot="action" variant="secondary" size="sm" (clicked)="refresh()">
-          Reintentar
-        </yep-button>
-      </yep-state>
-    } @else if (bankWithoutReceipt().length === 0) {
-      <yep-state
-        kind="empty"
-        title="Sin pendientes"
-        description="No hay eventos de banco sin comprobante en el rango seleccionado."
-      >
-        <svg slot="icon" lucideCheck aria-hidden="true"></svg>
-      </yep-state>
-    } @else {
-      <div class="yep-table-wrap">
-        <table yepTable>
-          <thead>
-            <tr>
-              <th>Banco · origen</th>
-              <th>Referencia</th>
-              <th class="num">Monto</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of bankWithoutReceipt(); track item.id) {
-              <tr>
-                <td data-label="Banco · origen">
-                  <span class="insights-name">{{ item.normalized?.bankId || 'Banco desconocido' }}</span>
-                  <span class="insights-sub">{{ sourceTypeLabel(item.sourceType) }}</span>
-                </td>
-                <td data-label="Referencia">
-                  @if (item.normalized?.reference) {
-                    <span class="insights-mono">Ref. {{ item.normalized?.reference }}</span>
-                  } @else {
-                    <span class="insights-muted">—</span>
-                  }
-                </td>
-                <td data-label="Monto" class="num">
-                  @if (item.normalized?.amount) {
-                    {{ item.normalized?.amount | currency: (item.normalized?.currency || 'COP') : 'symbol-narrow' : '1.0-0' }}
-                  } @else {
-                    <span class="insights-muted">—</span>
-                  }
-                </td>
-                <td data-label="Fecha">
-                  <span class="insights-date">{{ item.createdAt | date: 'short' }}</span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-  </yep-card>
-
-  <!-- Comprobante sin respaldo bancario -->
-  <yep-card
-    padding="none"
-    title="Comprobantes sin respaldo bancario"
-    subtitle="El cliente envió el comprobante hace más de 24h, pero el banco todavía no lo confirma."
-  >
-    @if (!loadingReconciliation() && !reconciliationError()) {
-      <yep-status-chip
-        slot="actions"
-        [tone]="receiptWithoutBank().length > 0 ? 'error' : 'success'"
-        label="{{ receiptWithoutBank().length }}"
-      />
-    }
-
-    @if (loadingReconciliation()) {
-      <div class="insights-card__state">
-        <yep-state kind="loading" title="Cargando conciliación…" [rows]="2" />
-      </div>
-    } @else if (reconciliationError() && receiptWithoutBank().length === 0) {
-      <yep-state kind="error" [title]="reconciliationError()">
-        <yep-button slot="action" variant="secondary" size="sm" (clicked)="refresh()">
-          Reintentar
-        </yep-button>
-      </yep-state>
-    } @else if (receiptWithoutBank().length === 0) {
-      <yep-state
-        kind="empty"
-        title="Sin pendientes"
-        description="No hay comprobantes esperando respaldo bancario en el rango seleccionado."
-      >
-        <svg slot="icon" lucideCheck aria-hidden="true"></svg>
-      </yep-state>
-    } @else {
-      <div class="yep-table-wrap">
-        <table yepTable>
-          <thead>
-            <tr>
-              <th>Banco</th>
-              <th>Referencia</th>
-              <th class="num">Monto</th>
-              <th>Fecha de transacción</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of receiptWithoutBank(); track item.id) {
-              <tr>
-                <td data-label="Banco">
-                  <span class="insights-name">{{ item.bankId }}</span>
-                </td>
-                <td data-label="Referencia">
-                  @if (item.reference) {
-                    <span class="insights-mono">Ref. {{ item.reference }}</span>
-                  } @else {
-                    <span class="insights-muted">—</span>
-                  }
-                </td>
-                <td data-label="Monto" class="num">
-                  {{ item.amount | currency: item.currency : 'symbol-narrow' : '1.0-0' }}
-                </td>
-                <td data-label="Fecha de transacción">
-                  <span class="insights-date">{{ item.transactionDate | date: 'short' }}</span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-  </yep-card>
-
-  <!-- Duplicados -->
-  @if (duplicatesError() && duplicates().length > 0) {
-    <yep-alert variant="error">{{ duplicatesError() }}</yep-alert>
-  }
-
-  <yep-card
-    padding="none"
-    title="Duplicados"
-    subtitle="Comprobantes que colisionaron con otro ya usado, y transacciones marcadas para revisión."
-  >
-    @if (!loadingDuplicates() && (!duplicatesError() || duplicates().length > 0)) {
-      <yep-status-chip
-        slot="actions"
-        [tone]="duplicates().length > 0 ? 'warning' : 'success'"
-        label="{{ duplicates().length }}{{ duplicatesCursor() ? '+' : '' }}"
-      />
-    }
-
-    @if (loadingDuplicates()) {
-      <div class="insights-card__state">
-        <yep-state kind="loading" title="Cargando duplicados…" [rows]="3" />
-      </div>
-    } @else if (duplicatesError() && duplicates().length === 0) {
-      <yep-state kind="error" [title]="duplicatesError()">
-        <yep-button slot="action" variant="secondary" size="sm" (clicked)="refresh()">
-          Reintentar
-        </yep-button>
-      </yep-state>
-    } @else if (duplicates().length === 0) {
-      <yep-state
-        kind="empty"
-        title="Sin duplicados"
-        description="No hay comprobantes duplicados ni transacciones en revisión en el rango seleccionado."
-      >
-        <svg slot="icon" lucideCheck aria-hidden="true"></svg>
-      </yep-state>
-    } @else {
-      <div class="yep-table-wrap">
-        <table yepTable>
-          <thead>
-            <tr>
-              <th>Banco</th>
-              <th>Referencia</th>
-              <th class="num">Monto</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th class="actions"><span class="insights-sr-only">Acciones</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of duplicates(); track item.id) {
-              <tr>
-                <td data-label="Banco">
-                  <span class="insights-name">{{ item.summary.bankId || 'banco desconocido' }}</span>
-                  @if (item.conflictWith) {
-                    <span class="insights-sub">{{ item.conflictWith }}</span>
-                  }
-                </td>
-                <td data-label="Referencia">
-                  @if (item.summary.reference) {
-                    <span class="insights-mono">Ref. {{ item.summary.reference }}</span>
-                  } @else {
-                    <span class="insights-muted">—</span>
-                  }
-                </td>
-                <td data-label="Monto" class="num">
-                  @if (item.summary.amount) {
-                    {{ item.summary.amount | currency: (item.summary.currency || 'COP') : 'symbol-narrow' : '1.0-0' }}
-                  } @else {
-                    <span class="insights-muted">—</span>
-                  }
-                </td>
-                <td data-label="Fecha">
-                  <span class="insights-date">{{ item.createdAt | date: 'short' }}</span>
-                </td>
-                <td data-label="Estado">
-                  @if (item.type === 'support') {
-                    <yep-status-chip tone="warning" label="Comprobante duplicado" />
-                  } @else {
-                    <yep-status-chip tone="info" label="Transacción en revisión" />
-                  }
-                </td>
-                <td class="actions">
-                  @if (item.type === 'support') {
-                    <div class="insights-row-actions">
-                      <yep-button
-                        variant="ghost"
-                        size="sm"
-                        [loading]="resolvingId() === item.id"
-                        (clicked)="markNotDuplicate(item)"
-                      >
-                        <svg lucideShieldCheck aria-hidden="true"></svg>
-                        No es duplicado
-                      </yep-button>
-                      <yep-menu label="Más acciones" [disabled]="resolvingId() === item.id">
-                        <button yepMenuItem tone="danger" (click)="confirmFraud(item)">
-                          <svg lucideShieldAlert aria-hidden="true"></svg>
-                          Confirmar fraude
-                        </button>
-                      </yep-menu>
-                    </div>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
-
-    @if (!loadingDuplicates() && duplicates().length > 0 && duplicatesCursor()) {
-      <div slot="footer" class="insights-card__more">
-        <yep-button variant="ghost" size="sm" [loading]="loadingMoreDuplicates()" (clicked)="loadMoreDuplicates()">
-          Cargar más
-        </yep-button>
-      </div>
-    }
-  </yep-card>
 </div>

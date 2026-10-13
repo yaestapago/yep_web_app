@@ -323,7 +323,8 @@ export class BusinessSchedulesSection implements OnInit {
       if (!body || this.hasAutoScrolled) {
         return;
       }
-      body.scrollTop = hour * HOUR_HEIGHT;
+      // 12 px menos: la etiqueta de la hora sube 7 px sobre su línea y quedaba cortada bajo la cabecera.
+      body.scrollTop = Math.max(0, hour * HOUR_HEIGHT - 12);
       this.hasAutoScrolled = true;
     });
   }

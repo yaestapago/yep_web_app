@@ -94,6 +94,9 @@
   --color-danger-hover: #931c13;
   --kpi-emphasis-bg: var(--brand-ink);
   --card-brand-border: var(--brand-ink);
+  /* Superficie tinta (tarjeta destacada) y borde del banner tinta: en oscuro se separan del fondo. */
+  --card-brand-bg: var(--brand-ink);
+  --banner-ink-border: var(--brand-ink);
   /* Colores por empleado en Horarios (iguales en ambos temas). */
   --employee-1: #2563eb;
   --employee-2: #16a34a;
@@ -179,10 +182,14 @@
   --color-focus: #09c18d;
   --color-on-danger: #012e31;
   --color-danger-hover: #ff6f5c;
-  --kpi-emphasis-bg: #09c18d;
   --card-brand-border: var(--brand-green);
-  --kpi-emphasis-fg: #012e31;
-  --kpi-emphasis-muted: #0a4043;
+  /* La tinta (#012e31) casi no se distingue del fondo oscuro (#01272a): tinte verde y borde visible. */
+  --card-brand-bg: color-mix(in srgb, #09c18d 16%, #012e31);
+  --banner-ink-border: #1f5f5a;
+  /* KPI destacado = la misma superficie que la tarjeta destacada (no un bloque verde brillante). */
+  --kpi-emphasis-bg: var(--card-brand-bg);
+  --kpi-emphasis-fg: var(--brand-on-ink);
+  --kpi-emphasis-muted: var(--brand-on-ink-muted);
   --color-overlay: rgba(0, 20, 22, 0.64);
   --color-gray-700: var(--color-text-primary);
 

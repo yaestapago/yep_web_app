@@ -115,20 +115,9 @@ a.home-link:focus-visible {
 
 // Más novedades + Invita a tu equipo
 
-.home-bottom {
-  align-items: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-}
-
+// "Invita a tu equipo" (banner lima compacto) y "Más novedades" van a todo el ancho, uno bajo otro.
 .home-news {
-  flex: 2 1 520px;
   min-width: 0;
-}
-
-.home-team {
-  flex: 1 1 300px;
 }
 
 .home-news__list {
@@ -185,9 +174,5 @@ a.home-link:focus-visible {
 
   .home-quick__card {
     padding: var(--space-4);
-  }
-
-  .home-news {
-    flex-basis: 100%;
   }
 }

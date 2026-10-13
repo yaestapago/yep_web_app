@@ -16,16 +16,24 @@
     <yep-alert variant="error">{{ error() }}</yep-alert>
   }
 
-  <div class="kpi-row" role="list" aria-label="Resumen de clientes">
+  <!-- Los indicadores son también el filtro de la tabla (antes había pestañas con los mismos conteos). -->
+  <div class="kpi-row" role="group" aria-label="Filtrar clientes por estado">
     @for (kpi of kpis(); track kpi.key) {
-      <yep-kpi
-        role="listitem"
-        size="sm"
-        [label]="kpi.label"
-        value="{{ kpi.value }}"
-        [tone]="kpiTones[kpi.tone] ?? 'default'"
-        [loading]="loading() && !response()"
-      />
+      <button
+        type="button"
+        class="kpi-filter"
+        [class.is-active]="filter() === kpi.filter"
+        [attr.aria-pressed]="filter() === kpi.filter"
+        (click)="filter.set(kpi.filter)"
+      >
+        <yep-kpi
+          size="sm"
+          [label]="kpi.label"
+          value="{{ kpi.value }}"
+          [tone]="kpiTones[kpi.tone] ?? 'default'"
+          [loading]="loading() && !response()"
+        />
+      </button>
     }
   </div>
 
@@ -37,13 +45,6 @@
       placeholder="Buscar por negocio o propietario"
       [ngModel]="search()"
       (ngModelChange)="search.set($event)"
-    />
-
-    <yep-segmented
-      aria-label="Filtrar por estado"
-      [options]="filterOptions()"
-      [value]="filter()"
-      (valueChange)="filter.set($any($event))"
     />
   </div>
 

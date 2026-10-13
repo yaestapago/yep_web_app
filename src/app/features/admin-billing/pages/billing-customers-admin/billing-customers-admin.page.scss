@@ -30,6 +30,38 @@
   grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
 }
 
+/* Indicador que filtra: botón sin piel propia; la tarjeta del KPI marca hover y selección. */
+.kpi-filter {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-lg);
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.kpi-filter yep-kpi {
+  height: 100%;
+}
+
+.kpi-filter:hover ::ng-deep .yep-kpi {
+  border-color: var(--color-border-strong);
+}
+
+.kpi-filter.is-active ::ng-deep .yep-kpi {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.kpi-filter:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 /* ---------- Búsqueda + filtros ---------- */
 .toolbar {
   display: grid;

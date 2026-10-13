@@ -26,7 +26,13 @@
     } @else if (error()) {
       <yep-state kind="error" [description]="error()" />
     } @else if (rows().length === 0) {
-      <yep-state kind="empty" description="Sin notificadores configurados." />
+      <yep-state kind="empty" description="Sin notificadores configurados.">
+        @if (notifiersLink(); as link) {
+          <a slot="action" yepButton variant="secondary" size="sm" [routerLink]="link">
+            Configurar notificadores
+          </a>
+        }
+      </yep-state>
     } @else {
       <ul class="nlist">
         @for (row of rows(); track row.notifier.id) {

@@ -24,13 +24,21 @@
   } @else if (error() && !locationOpen() && locations().length === 0) {
     <yep-state kind="error" [title]="error()" />
   } @else if (locations().length === 0) {
-    <yep-state
-      kind="empty"
-      title="Sin sedes"
-      description="Crea una sede para poder asociar cuentas bancarias y notificadores."
-    >
-      <svg slot="icon" lucideMapPin aria-hidden="true"></svg>
-    </yep-state>
+    <yep-card>
+      <yep-state
+        kind="empty"
+        title="Sin sedes"
+        description="Crea una sede para poder asociar cuentas bancarias y notificadores."
+      >
+        <svg slot="icon" lucideMapPin aria-hidden="true"></svg>
+        @if (canManage()) {
+          <yep-button slot="action" variant="secondary" size="sm" (clicked)="openLocation()">
+            <svg lucidePlus aria-hidden="true"></svg>
+            Nueva sede
+          </yep-button>
+        }
+      </yep-state>
+    </yep-card>
   } @else {
     <yep-card padding="none" aria-label="Sedes">
       <div class="yep-table-wrap">

@@ -14,7 +14,7 @@
 .yep-banner {
   // Colores por tono; el tono `ink` es el de referencia.
   --banner-bg: var(--brand-ink);
-  --banner-border: var(--brand-ink);
+  --banner-border: var(--banner-ink-border);
   --banner-eyebrow: var(--brand-green);
   --banner-title: var(--brand-on-ink);
   --banner-text: var(--brand-on-ink-muted);
@@ -273,4 +273,52 @@
   }
 
   @include stacked('.yep-banner');
+}
+
+// Compacto a todo el ancho (≥ 720 px; "Invita a tu equipo" del home): una franja en fila,
+// icono | título y texto | acciones. Más angosto sigue apilado como arriba.
+@container yep-banner (min-width: 720px) {
+  .yep-banner--compact {
+    --banner-pad-block: var(--space-4);
+    --banner-title-size: 1.5rem;
+  }
+
+  .yep-banner--compact .yep-banner__copy {
+    align-items: center;
+    column-gap: var(--space-5);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    margin-inline-end: calc(var(--banner-diag-w) - var(--banner-pad-inline));
+    row-gap: var(--space-1);
+  }
+
+  .yep-banner--compact .yep-banner__copy::before {
+    display: none;
+  }
+
+  .yep-banner--compact .yep-banner__copy > *,
+  .yep-banner--compact .yep-banner__copy > .yep-banner__actions {
+    margin-top: 0;
+  }
+
+  .yep-banner--compact .yep-banner__icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .yep-banner--compact .yep-banner__title {
+    align-self: end;
+    grid-column: 2;
+  }
+
+  .yep-banner--compact .yep-banner__text {
+    align-self: start;
+    grid-column: 2;
+    max-width: none;
+  }
+
+  .yep-banner--compact .yep-banner__actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
 }

@@ -173,7 +173,20 @@ svg {
   align-items: stretch;
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+// 4 columnas solo con ancho de sobra (contenido ≥ ~1040 px); si no, 2 × 2 (nunca 3 + 1), y 1 en celular.
+@media (max-width: 1359.98px) {
+  .plans-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639.98px) {
+  .plans-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 // La tarjeta llena el alto de la fila y su cuerpo es una columna: el botón queda al pie.
@@ -268,6 +281,7 @@ svg {
 
 .plan-card__amount span {
   font-family: var(--font-family-display);
+  white-space: nowrap;
   font-size: 2.5rem;
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-extrabold);

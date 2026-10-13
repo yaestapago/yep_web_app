@@ -22,6 +22,7 @@ import {
 import { finalize, interval } from 'rxjs';
 
 import {
+  canAccessBusinessSection,
   canViewDashboardIncomeTable,
   canViewDashboardSummary,
   canViewDashboardSummaryPart,
@@ -255,6 +256,18 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   });
   readonly businessName = computed(() => this.account()?.name?.trim() || 'Negocio sin nombre');
   readonly businessId = computed(() => this.session.activeBusinessAccountId());
+  /** Enlace "Configurar notificadores" del estado vacío, solo si el usuario puede entrar a esa sección. */
+  readonly notifiersLink = computed(() => {
+    const id = this.businessId();
+    const membership = this.session.activeMembership();
+    const allowed = canAccessBusinessSection(
+      'notifiers',
+      membership?.role,
+      this.session.isSuperUser(),
+      membership?.sectionAccess,
+    );
+    return id && allowed ? ['/businesses', id, 'notifiers'] : null;
+  });
   readonly invoiceReferenceLabel = computed(
     () => this.account()?.preferences?.invoiceReference?.label || 'Factura número',
   );

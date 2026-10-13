@@ -1,4 +1,5 @@
 import { Component, computed, input as defineInput, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { LucideChevronRight, LucideMail, LucideMonitor, LucideSmartphone } from '@lucide/angular';
 
 import {
@@ -10,6 +11,7 @@ import type { Notifier } from '../../../../shared/models/notifier.models';
 import type { DashboardAlert } from '../../../../shared/models/dashboard-summary.models';
 import {
   Alert,
+  ButtonLink,
   Card,
   IconTile,
   Modal,
@@ -40,6 +42,8 @@ export interface NotifierStatusRow {
 @Component({
   selector: 'app-dashboard-status',
   imports: [
+    RouterLink,
+    ButtonLink,
     LucideChevronRight,
     LucideMail,
     LucideMonitor,
@@ -61,6 +65,8 @@ export class DashboardStatusPanel {
   readonly alerts = defineInput<DashboardAlert[]>([]);
   readonly loading = defineInput(false);
   readonly error = defineInput('');
+  /** Ruta a Notificadores para el estado vacío; `null` si el usuario no puede entrar. */
+  readonly notifiersLink = defineInput<string[] | null>(null);
   readonly detailsOpen = signal(false);
 
   /** Presentación: tono del chip del estado global. */
