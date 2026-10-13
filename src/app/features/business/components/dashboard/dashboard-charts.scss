@@ -1,5 +1,5 @@
-/* Gráficas (S4): rejilla de 2 columnas dentro de una sola tarjeta; las celdas
-   se separan con divisores de 1 px, no con tarjetas (P1). */
+/* Gráficas (S4): una sola gráfica a todo el ancho de la tarjeta; las demás se
+   ven en el modal ampliado (en 2×2 a media columna no se leían). */
 
 .charts-body {
   border-top: var(--border-width) solid var(--color-border);
@@ -10,23 +10,13 @@
   overflow-y: auto;
 }
 
-/* El hueco de 1 px deja ver el fondo de borde: así se dibujan los divisores. */
-.charts-grid {
-  background: var(--color-border);
-  display: grid;
-  flex: 1;
-  gap: var(--border-width);
-  grid-auto-rows: minmax(150px, 1fr);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  min-height: 0;
-}
-
 .chart-cell {
   background: var(--color-surface);
   border: 0;
   color: inherit;
   cursor: pointer;
   display: flex;
+  flex: 1;
   flex-direction: column;
   font: inherit;
   gap: var(--space-2);
@@ -36,11 +26,6 @@
   padding: var(--space-3) var(--space-4) var(--space-4);
   text-align: left;
   transition: background-color var(--motion-fast);
-}
-
-/* Celda sobrante (número impar): ocupa el ancho completo. */
-.chart-cell:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
 }
 
 .chart-cell:hover {
@@ -80,6 +65,14 @@
   flex: 1;
   min-height: 0;
   position: relative;
+}
+
+.charts-footer {
+  /* Fuera del área que se encoge: el acceso al resto de gráficas siempre se ve. */
+  flex: 0 0 auto;
+  border-top: var(--border-width) solid var(--color-border);
+  display: flex;
+  padding: var(--space-3) var(--space-4);
 }
 
 .chart-expanded {
@@ -250,10 +243,4 @@
 
 .latency-table td:first-child {
   font-family: var(--font-family-base);
-}
-
-@media (max-width: 560px) {
-  .charts-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }

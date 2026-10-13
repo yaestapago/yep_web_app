@@ -23,25 +23,29 @@
       >
         <svg slot="icon" lucideChartPie aria-hidden="true"></svg>
       </yep-state>
-    } @else {
-      <div class="charts-grid">
-        @for (view of views(); track view.id) {
-          <button
-            type="button"
-            class="chart-cell"
-            (click)="expand(view.id)"
-            [attr.aria-label]="'Ampliar: ' + chartTitle(view.id)"
-          >
-            <span class="chart-cell__title">
-              {{ chartTitle(view.id) }}
-              <svg class="chart-cell__expand" lucideMaximize2 aria-hidden="true"></svg>
-            </span>
-            <span class="chart-cell__canvas">
-              <ng-container [ngTemplateOutlet]="chartView" [ngTemplateOutletContext]="{ $implicit: view }" />
-            </span>
-          </button>
-        }
-      </div>
+    } @else if (primaryView(); as view) {
+      <button
+        type="button"
+        class="chart-cell"
+        (click)="expand(view.id)"
+        [attr.aria-label]="'Ampliar: ' + chartTitle(view.id)"
+      >
+        <span class="chart-cell__title">
+          {{ chartTitle(view.id) }}
+          <svg class="chart-cell__expand" lucideMaximize2 aria-hidden="true"></svg>
+        </span>
+        <span class="chart-cell__canvas">
+          <ng-container [ngTemplateOutlet]="chartView" [ngTemplateOutletContext]="{ $implicit: view }" />
+        </span>
+      </button>
+
+      @if (views().length > 1) {
+        <div class="charts-footer">
+          <yep-button variant="secondary" size="sm" (clicked)="expand(views()[0].id)">
+            Ver todas las gráficas ({{ views().length }})
+          </yep-button>
+        </div>
+      }
     }
   </div>
 </yep-card>
@@ -142,6 +146,7 @@
 <yep-modal
   [open]="expandedView() !== null"
   [title]="expandedId() ? chartTitle(expandedId()!) : ''"
+  [subtitle]="expandedPosition()"
   size="lg"
   (closeRequested)="closeExpanded()"
 >

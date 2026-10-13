@@ -209,7 +209,8 @@
 
 .board__charts {
   flex: 1 1 0;
-  min-height: 280px;
+  // Cabecera + una gráfica legible (~180 px) + el botón "Ver todas".
+  min-height: 320px;
 }
 
 .board--status-only .board__status {
