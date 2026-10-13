@@ -297,82 +297,73 @@
           No hay cuentas bancarias activas. Crea una cuenta primero para poder monitorearla.
         </p>
       } @else {
-        <div class="account-picker">
+        <div class="notifier-account-list">
           @for (account of selectableAccounts(); track account.id) {
             @let blockedReason = accountBlockedReason(account);
-            <div
-              class="account-option"
-              [class.account-option--selected]="isSelected(account.id)"
-              [class.account-option--disabled]="!!blockedReason && !isSelected(account.id)"
+            @let accountSelected = isSelected(account.id);
+            @let showKeys = supportsBreBKeySelection() && accountSelected;
+            <yep-check-group
+              [label]="
+                bankName(account) +
+                ' · ' +
+                (account.displayName || '****' + account.accountNumberLast4)
+              "
+              [meta]="
+                '****' +
+                account.accountNumberLast4 +
+                (accountTypeLabel(account) ? ' · ' + accountTypeLabel(account) : '') +
+                ' · ' +
+                (account.isActive ? 'Activa' : 'Inactiva')
+              "
+              [count]="showKeys ? 'Llaves que escucha esta cuenta' : ''"
+              [checked]="accountSelected"
+              [disabled]="!!blockedReason && !accountSelected"
+              (checkedChange)="toggleAccount(account.id, $event)"
             >
-              <yep-checkbox
-                class="account-option__checkbox"
-                [checked]="isSelected(account.id)"
-                [disabled]="!!blockedReason && !isSelected(account.id)"
-                (checkedChange)="toggleAccount(account.id, $event)"
-              >
-                <span class="account-option__body">
-                  <span class="account-option__title">
-                    {{ bankName(account) }} ·
-                    {{ account.displayName || '****' + account.accountNumberLast4 }}
-                  </span>
-                  <span class="account-option__meta">
-                    ****{{ account.accountNumberLast4 }}
-                    @if (accountTypeLabel(account)) {
-                      · {{ accountTypeLabel(account) }}
-                    }
-                    · {{ account.isActive ? 'Activa' : 'Inactiva' }}
-                  </span>
-                  @if (blockedReason && !isSelected(account.id)) {
-                    <span class="field-error">{{ blockedReason }}</span>
-                  }
-                </span>
-              </yep-checkbox>
-
-              @if (supportsBreBKeySelection() && isSelected(account.id)) {
-                <div class="account-key-list" aria-label="Llaves Bre-B que escucha esta cuenta">
-                  <div class="account-key-list__header">
-                    <span class="account-key-hint">Llaves que escucha esta cuenta</span>
-                    <button
-                      type="button"
-                      class="inline-action"
-                      (click)="toggleAllBreBFiltersForAccount(account)"
-                    >
-                      {{
-                        areAllBreBFiltersSelectedForAccount(account)
-                          ? 'Deseleccionar todo'
-                          : 'Seleccionar todo'
-                      }}
-                    </button>
-                  </div>
-
-                  <yep-checkbox
-                    class="account-key-option"
-                    [checked]="isBreBKeySelected(directAccountFilterKey(account))"
-                    (checkedChange)="toggleBreBKey(directAccountFilterKey(account), $event)"
-                  >
-                    <span class="account-key-option__body">
-                      <span class="account-key-option__title">Cuenta directa</span>
-                      <span class="account-key-option__meta">Sin llave Bre-B</span>
-                    </span>
-                  </yep-checkbox>
-
-                  @for (key of account.breBKeys; track key; let i = $index) {
-                    <yep-checkbox
-                      class="account-key-option"
-                      [checked]="isBreBKeySelected(key)"
-                      (checkedChange)="toggleBreBKey(key, $event)"
-                    >
-                      <code class="account-key-option__value">{{ account.breBKeysDisplay[i] || key }}</code>
-                    </yep-checkbox>
-                  }
-
-                  @if (account.breBKeys.length === 0) {
-                    <span class="account-key-empty">Sin llaves Bre-B registradas.</span>
-                  }
-                </div>
+              @if (showKeys) {
+                <yep-button
+                  slot="actions"
+                  variant="ghost"
+                  size="sm"
+                  (clicked)="toggleAllBreBFiltersForAccount(account)"
+                >
+                  {{
+                    areAllBreBFiltersSelectedForAccount(account)
+                      ? 'Deseleccionar todo'
+                      : 'Seleccionar todo'
+                  }}
+                </yep-button>
               }
-            </div>
+
+              @if (blockedReason && !accountSelected) {
+                <span class="field-error notifier-account-note">{{ blockedReason }}</span>
+              }
+
+              @if (showKeys) {
+                <yep-check-option
+                  label="Cuenta directa"
+                  meta="Sin llave Bre-B"
+                  [checked]="isBreBKeySelected(directAccountFilterKey(account))"
+                  (checkedChange)="toggleBreBKey(directAccountFilterKey(account), $event)"
+                />
+
+                @for (key of account.breBKeys; track key; let i = $index) {
+                  <yep-check-option
+                    class="notifier-key-option"
+                    [label]="account.breBKeysDisplay[i] || key"
+                    meta="Llave Bre-B"
+                    [checked]="isBreBKeySelected(key)"
+                    (checkedChange)="toggleBreBKey(key, $event)"
+                  />
+                }
+
+                @if (account.breBKeys.length === 0) {
+                  <span class="notifier-account-note notifier-key-empty">
+                    Sin llaves Bre-B registradas.
+                  </span>
+                }
+              }
+            </yep-check-group>
           }
         </div>
       }

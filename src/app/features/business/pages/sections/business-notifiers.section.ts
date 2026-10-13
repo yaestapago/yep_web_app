@@ -22,6 +22,8 @@ import {
   Alert,
   Card,
   CardSection,
+  CheckGroup,
+  CheckOption,
   DescriptionItem,
   DescriptionList,
   IconButton,
@@ -34,7 +36,6 @@ import {
   type StatusChipTone,
 } from '../../../../shared/ui';
 import { Button } from '../../../../shared/ui/button/button';
-import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -99,7 +100,8 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     DatePipe,
     ReactiveFormsModule,
     Button,
-    Checkbox,
+    CheckGroup,
+    CheckOption,
     Input,
     Modal,
     RadioSelectionList,

@@ -228,7 +228,22 @@
   padding: 3px var(--space-3);
 }
 
-.account-option--disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+/* ---------- Selector de cuentas del notificador (S7b): un yep-check-group por cuenta ---------- */
+.notifier-account-list {
+  margin-top: var(--space-2);
+}
+
+/* Llaves Bre-B en mono, como en Alertas WhatsApp y el modal de empleados. */
+.notifier-key-option ::ng-deep .yep-check__label {
+  font-family: var(--font-family-mono);
+}
+
+/* Notas dentro de la rejilla de opciones (límite del plan, sin llaves): ocupan todo el ancho. */
+.notifier-account-note {
+  grid-column: 1 / -1;
+}
+
+.notifier-key-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
 }
