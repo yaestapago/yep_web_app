@@ -63,7 +63,7 @@
                 <td data-label="Estado">
                   <yep-status-chip
                     [tone]="statusTones[request.status]"
-                    [label]="request.status | titlecase"
+                    [label]="statusLabel(request.status)"
                   />
                 </td>
                 <td class="actions">

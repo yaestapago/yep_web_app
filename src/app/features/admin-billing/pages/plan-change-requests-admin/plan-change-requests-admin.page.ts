@@ -1,4 +1,4 @@
-import { DatePipe, TitleCasePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -51,7 +51,6 @@ const REQUEST_TYPE_LABELS: Record<PlanChangeRequestType, string> = {
   selector: 'app-plan-change-requests-admin-page',
   imports: [
     DatePipe,
-    TitleCasePipe,
     FormsModule,
     Alert,
     Button,
@@ -94,6 +93,11 @@ export class PlanChangeRequestsAdminPage implements OnInit {
     label: status === 'all' ? 'Todas' : status.charAt(0).toUpperCase() + status.slice(1),
   }));
   protected readonly statusTones = REQUEST_STATUS_TONES;
+
+  /** Etiqueta del chip: el estado con la primera letra en mayúscula (igual que el pipe `titlecase`). */
+  protected statusLabel(status: string): string {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
 
   readonly approvingRequest = signal<PlanChangeRequestSummary | null>(null);
   readonly approveNote = signal('');
