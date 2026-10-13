@@ -1,6 +1,9 @@
 import {
   DEFAULT_NOTIFIER_STATUS_THRESHOLDS,
+  LISTENING_LABEL,
+  NOT_LISTENING_LABEL,
   computeNotifierStatus,
+  effectiveThresholds,
   relativeFromMs,
 } from './notifier-status';
 
@@ -16,11 +19,15 @@ describe('computeNotifierStatus', () => {
     const status = computeNotifierStatus({ active: true, lastSeenAt: undefined }, thresholds, now);
     expect(status.level).toBe('unknown');
     expect(status.sinceMs).toBeNull();
+    expect(status.listening).toBeNull();
   });
 
   it('returns "online" within the delayed window', () => {
     const status = computeNotifierStatus(notifierSeenAgo(60_000), thresholds, now);
     expect(status.level).toBe('online');
+    // App vieja: no se sabe si captura, se conserva la etiqueta de siempre.
+    expect(status.listening).toBeNull();
+    expect(status.label).toBe('En línea');
   });
 
   it('returns "delayed" past the delayed threshold but before offline', () => {
@@ -44,6 +51,97 @@ describe('computeNotifierStatus', () => {
   it('returns "unknown" for an unparseable timestamp', () => {
     const status = computeNotifierStatus({ active: true, lastSeenAt: 'not-a-date' }, thresholds, now);
     expect(status.level).toBe('unknown');
+  });
+
+  describe('escucha real (app ≥ 1.0.6)', () => {
+    it('verde solo cuando late Y captura', () => {
+      const status = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(60_000),
+          lastCaptureAliveAt: new Date(now - 90_000).toISOString(),
+        },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('online');
+      expect(status.listening).toBe(true);
+      expect(status.label).toBe(LISTENING_LABEL);
+    });
+
+    it('late por WorkManager pero la captura murió ⇒ amarillo "sin escuchar"', () => {
+      const status = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(60_000),
+          lastCaptureAliveAt: new Date(now - 40 * 60_000).toISOString(),
+        },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      expect(status.listening).toBe(false);
+      expect(status.label).toBe(NOT_LISTENING_LABEL);
+      // El "hace X" sigue siendo el del heartbeat.
+      expect(status.sinceMs).toBe(60_000);
+    });
+
+    it('fuera de línea manda sobre la escucha', () => {
+      const status = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(thresholds.offlineAfterMs + 1),
+          lastCaptureAliveAt: new Date(now - 60_000).toISOString(),
+        },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('offline');
+      expect(status.label).toBe('Fuera de línea');
+    });
+
+    it('null explícito (backend nuevo, app vieja) = no se sabe', () => {
+      const status = computeNotifierStatus(
+        { ...notifierSeenAgo(60_000), lastCaptureAliveAt: null },
+        thresholds,
+        now,
+      );
+      expect(status.listening).toBeNull();
+      expect(status.level).toBe('online');
+    });
+  });
+
+  describe('cadencias propias', () => {
+    it('un heartbeat espaciado no pinta amarillo entre latidos sanos', () => {
+      const notifier = {
+        ...notifierSeenAgo(10 * 60_000),
+        runtimeConfig: {
+          heartbeatIntervalSeconds: 600,
+          flushIntervalSeconds: 30,
+          workManagerFallbackMinutes: 15,
+          onlineWindowSeconds: 1500,
+          featureFlags: {},
+          configVersion: 'x',
+        },
+      };
+      expect(computeNotifierStatus(notifier, thresholds, now).level).toBe('online');
+      const eff = effectiveThresholds(notifier, thresholds);
+      expect(eff.delayedAfterMs).toBe(1500 * 1000);
+      expect(eff.offlineAfterMs).toBe(4500 * 1000);
+      expect(eff.refreshIntervalMs).toBe(thresholds.refreshIntervalMs);
+    });
+
+    it('una ventana menor que la de flota no endurece los umbrales', () => {
+      const notifier = {
+        ...notifierSeenAgo(60_000),
+        runtimeConfig: {
+          heartbeatIntervalSeconds: 60,
+          flushIntervalSeconds: 30,
+          workManagerFallbackMinutes: 15,
+          onlineWindowSeconds: 30,
+          featureFlags: {},
+          configVersion: 'x',
+        },
+      };
+      expect(effectiveThresholds(notifier, thresholds)).toEqual(thresholds);
+    });
   });
 });
 
