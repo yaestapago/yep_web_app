@@ -1,22 +1,26 @@
+// A5 · Reglas de notificadores (superadmin) · docs/rediseno-web/04-pantallas.md#vistas-de-administración-fase-4
+// Sin rediseño de composición: tokens (V3–V5), yep-page-header, yep-state, controles compartidos y P3.
+// P1: el editor es la única tarjeta; dentro se agrupa con divisores o con fondo --color-surface-muted.
+
 :host {
   display: block;
-  min-height: 100vh;
-  background: var(--color-background, var(--color-surface));
 }
 
 .bank-admin {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--space-6, 2rem) var(--space-4, 1rem);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4, 1rem);
+  gap: var(--space-5);
+
+  // El ritmo entre bloques lo da `.bank-admin`.
+  > yep-page-header {
+    margin-block-end: 0;
+  }
 
   /* Master-detail: menú lateral de bancos + panel de edición. */
   &__layout {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
-    gap: var(--space-4, 1rem);
+    gap: var(--space-4);
     align-items: start;
 
     @media (max-width: 860px) {
@@ -27,9 +31,9 @@
   &__sidebar {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
     position: sticky;
-    top: var(--space-4, 1rem);
+    top: var(--space-4);
     max-height: calc(100vh - 8rem);
     overflow-y: auto;
 
@@ -43,122 +47,25 @@
     align-self: stretch;
   }
 
-  &__sidenote {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    margin: 0;
-  }
-
   &__editor {
     min-width: 0;
   }
 
   &__editorempty {
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-lg, 0.75rem);
-    padding: var(--space-8, 3rem) var(--space-4, 1rem);
-    text-align: center;
-    color: var(--color-text-secondary);
-
-    h3 {
-      margin: 0 0 var(--space-1, 0.25rem);
-      color: var(--color-text-primary);
-    }
-  }
-
-  &__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-3, 0.75rem);
-    flex-wrap: wrap;
-  }
-
-  &__back {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1, 0.25rem);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    text-decoration: none;
-    margin-bottom: var(--space-2, 0.5rem);
-    border: none;
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-
-    &:hover {
-      color: var(--color-text-primary);
-    }
-
-    svg {
-      width: 1rem;
-      height: 1rem;
-    }
-  }
-
-  &__title {
-    font-size: var(--font-size-2xl, 1.5rem);
-    font-weight: var(--font-weight-bold, 700);
-    margin: 0;
-  }
-
-  &__subtitle {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    margin: var(--space-1, 0.25rem) 0 0;
-    max-width: 60ch;
-  }
-
-  &__loading {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2, 0.5rem);
-    color: var(--color-text-secondary);
-
-    svg {
-      width: 1.1rem;
-      height: 1.1rem;
-      animation: bank-admin-spin 1s linear infinite;
-    }
+    display: block;
+    border: var(--border-width, 1px) dashed var(--color-border);
+    border-radius: var(--radius-lg);
   }
 }
 
 .bank-card {
   &__code {
-    font-size: var(--font-size-xs, 0.75rem);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
-    background: var(--color-border);
-    padding: 0 var(--space-1, 0.25rem);
-    border-radius: var(--radius-sm, 0.25rem);
-  }
-
-  &__ready {
-    font-size: var(--font-size-xs, 0.75rem);
-    font-weight: var(--font-weight-semibold, 600);
-    padding: 2px var(--space-2, 0.5rem);
-    border-radius: var(--radius-full, 999px);
-    border: 1px solid transparent;
-
-    &--muted {
-      background: var(--color-border);
-      color: var(--color-text-secondary);
-    }
-
-    &--warn {
-      background: color-mix(in srgb, var(--color-warning, #e0a800) 18%, transparent);
-      color: var(--color-warning-strong, var(--color-warning, #b45309));
-    }
-
-    &--info {
-      background: color-mix(in srgb, var(--color-accent) 15%, transparent);
-      color: var(--color-accent);
-    }
-
-    &--ok {
-      background: color-mix(in srgb, var(--color-success, #16a34a) 18%, transparent);
-      color: var(--color-success-strong, #15803d);
-    }
+    background: var(--color-surface-muted);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-sm);
   }
 }
 
@@ -169,28 +76,32 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1, 0.25rem);
+  gap: var(--space-1);
 
   &__item {
     width: 100%;
     text-align: left;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-family-base);
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
+    border: var(--border-width, 1px) solid var(--color-border);
+    border-radius: var(--radius-md);
     cursor: pointer;
     color: var(--color-text-primary);
+    transition:
+      border-color var(--motion-fast) ease,
+      background-color var(--motion-fast) ease;
 
     &:hover {
-      border-color: var(--color-accent);
+      border-color: var(--color-border-strong);
     }
 
     &.is-active {
-      border-color: var(--color-accent);
-      background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+      border-color: var(--color-primary);
+      background: var(--color-primary-soft);
     }
 
     &--inactive {
@@ -202,11 +113,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
   }
 
   &__name {
-    font-weight: var(--font-weight-semibold, 600);
+    font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-sm);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -216,35 +127,40 @@
   &__metarow {
     display: flex;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
     flex-wrap: wrap;
   }
 }
 
-/* Panel de edición del banco (reemplaza al modal). */
+/* Panel de edición del banco (la tarjeta de la vista). */
 .bank-editor {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg, 0.75rem);
+  border: var(--border-width, 1px) solid var(--color-border);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-xs);
   display: flex;
   flex-direction: column;
 
   &__head {
-    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: var(--border-width, 1px) solid var(--color-border);
+
+    .bank-form__hint {
+      display: block;
+      margin: var(--space-1) 0 0;
+    }
   }
 
   &__title {
     margin: 0;
-    font-size: var(--font-size-lg, 1.125rem);
-    font-weight: var(--font-weight-bold, 700);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
   }
 
   /* Nav de secciones (sticky) + contenido del form. */
   &__layout {
     display: grid;
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: 160px minmax(0, 1fr);
     align-items: start;
 
     @media (max-width: 1000px) {
@@ -254,32 +170,33 @@
 
   &__nav {
     position: sticky;
-    top: var(--space-3, 0.75rem);
+    top: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: var(--space-3, 0.75rem);
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-3);
 
     button {
       text-align: left;
       border: none;
       background: transparent;
       color: var(--color-text-secondary);
+      font-family: var(--font-family-base);
       font-size: var(--font-size-sm);
-      padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+      padding: var(--space-1) var(--space-2);
       border-left: 2px solid var(--color-border);
-      border-radius: 0 var(--radius-sm, 0.25rem) var(--radius-sm, 0.25rem) 0;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       cursor: pointer;
 
       &:hover {
         color: var(--color-text-primary);
-        background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+        background: var(--color-surface-muted);
       }
 
       &.is-active {
-        color: var(--color-accent);
-        border-left-color: var(--color-accent);
-        font-weight: var(--font-weight-semibold, 600);
+        color: var(--color-primary-strong);
+        border-left-color: var(--color-primary);
+        font-weight: var(--font-weight-semibold);
       }
     }
 
@@ -290,10 +207,9 @@
       z-index: 2;
       flex-direction: row;
       overflow-x: auto;
-      gap: var(--space-1, 0.25rem);
-      padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+      padding: var(--space-2) var(--space-3);
       background: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
+      border-bottom: var(--border-width, 1px) solid var(--color-border);
 
       button {
         white-space: nowrap;
@@ -302,7 +218,7 @@
         border-radius: 0;
 
         &.is-active {
-          border-bottom-color: var(--color-accent);
+          border-bottom-color: var(--color-primary);
         }
       }
     }
@@ -313,7 +229,11 @@
   }
 
   .bank-form {
-    padding: var(--space-4, 1rem);
+    padding: var(--space-5);
+
+    @media (max-width: 768px) {
+      padding: var(--space-4);
+    }
   }
 
   &__toolbar {
@@ -321,42 +241,43 @@
     bottom: 0;
     display: flex;
     justify-content: flex-end;
-    gap: var(--space-2, 0.5rem);
-    padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
-    border-top: 1px solid var(--color-border);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    border-top: var(--border-width, 1px) solid var(--color-border);
     background: var(--color-surface);
-    border-bottom-left-radius: var(--radius-lg, 0.75rem);
-    border-bottom-right-radius: var(--radius-lg, 0.75rem);
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
   }
 }
 
 .bank-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5, 1.5rem);
+  gap: var(--space-6);
 
   /* Sección navegable del editor (ancla del nav sticky). */
   &__block {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3, 0.75rem);
+    gap: var(--space-3);
     /* Que el scrollIntoView no esconda el título bajo la barra sticky (móvil). */
     scroll-margin-top: 3.5rem;
   }
 
   &__blocktitle {
     margin: 0;
-    font-size: var(--font-size-md, 1rem);
-    font-weight: var(--font-weight-bold, 700);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
-    padding-bottom: var(--space-1, 0.25rem);
-    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-2);
+    border-bottom: var(--border-width, 1px) solid var(--color-border);
   }
 
   &__row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-3, 0.75rem);
+    gap: var(--space-3);
 
     @media (max-width: 640px) {
       grid-template-columns: 1fr;
@@ -366,34 +287,29 @@
   &__switch {
     display: flex;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
     font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
   }
 
+  /* Campos del canal activo: sin caja propia (P1), solo el ritmo vertical. */
   &__channel {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg, 0.75rem);
-    padding: var(--space-3, 0.75rem);
+    border: none;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-3, 0.75rem);
+    gap: var(--space-4);
     margin: 0;
-
-    legend {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2, 0.5rem);
-      font-weight: var(--font-weight-bold, 700);
-      padding: 0 var(--space-1, 0.25rem);
-    }
+    min-width: 0;
   }
 
   &__field {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
     font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
 
     textarea {
       resize: vertical;
@@ -403,164 +319,178 @@
 
   &__hint {
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs, 0.75rem);
-  }
-
-  &__hint-btn {
-    border: none;
-    background: none;
-    padding: 0;
-    margin-left: var(--space-1, 0.25rem);
-    color: var(--color-accent);
-    font-size: inherit;
-    text-decoration: underline;
-    cursor: pointer;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-regular, 400);
+    line-height: 1.45;
   }
 
   &__tabs {
     display: flex;
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
 
     button {
       display: inline-flex;
       align-items: center;
-      gap: var(--space-1, 0.25rem);
+      gap: var(--space-1);
     }
   }
 
   &__tabdot {
     width: 6px;
     height: 6px;
-    border-radius: 50%;
-    background: var(--color-success-strong, #16a34a);
+    border-radius: var(--radius-full);
+    background: var(--color-success);
     display: inline-block;
   }
 
   &__error {
-    color: var(--color-error, #d33);
-    font-size: var(--font-size-xs, 0.75rem);
+    color: var(--color-error-strong);
+    font-size: var(--font-size-xs);
   }
 
+  /* Parser de extracción: desplegable separado por divisores, sin caja (P1). */
   &__advanced {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg, 0.75rem);
-    padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
+    border-top: var(--border-width, 1px) solid var(--color-border);
+    border-bottom: var(--border-width, 1px) solid var(--color-border);
+    padding: var(--space-3) 0;
 
     summary {
       cursor: pointer;
-      font-weight: var(--font-weight-semibold, 600);
+      font-weight: var(--font-weight-semibold);
       font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
     }
 
     > * + * {
-      margin-top: var(--space-2, 0.5rem);
+      margin-top: var(--space-3);
     }
   }
 
   &__code {
     width: 100%;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: var(--font-size-xs, 0.75rem);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
     color: var(--color-text-primary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
-    padding: var(--space-2, 0.5rem);
+    background: var(--color-surface-muted);
+    border: var(--border-width, 1px) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
     resize: vertical;
     white-space: pre;
   }
 
   &__clarity {
     margin: 0;
-    padding-left: var(--space-4, 1rem);
+    padding-left: var(--space-4);
     display: flex;
     flex-direction: column;
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
     font-size: var(--font-size-sm);
   }
 
+  /* Grupo dentro de la tarjeta: fondo atenuado sin borde (P1). */
   &__section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2, 0.5rem);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg, 0.75rem);
-    padding: var(--space-3, 0.75rem);
+    gap: var(--space-3);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    background: var(--color-surface-muted);
   }
 
   &__sectiontitle {
     margin: 0;
     display: flex;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-1);
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold, 700);
+    font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
-  }
-
-  &__infobtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    padding: 0;
-    line-height: 0;
-
-    svg {
-      width: 1rem;
-      height: 1rem;
-    }
-
-    &:hover {
-      color: var(--color-accent);
-    }
   }
 
   &__checks {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2, 0.5rem) var(--space-4, 1rem);
+    gap: var(--space-2) var(--space-4);
   }
 
-  &__check {
+  &__ruleactions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  &__uploadrow {
     display: flex;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-primary);
-    cursor: pointer;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
 
-    input {
-      accent-color: var(--color-accent);
+  /* Etiqueta del input de archivo con la piel de un botón secundario pequeño. */
+  &__uploadbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--control-height-sm, 32px);
+    padding: 0 var(--space-3);
+    border: var(--border-width, 1px) solid var(--color-text-primary);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    background: transparent;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      background: var(--color-surface-muted);
+    }
+
+    &:has(:focus-visible) {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
     }
   }
 }
 
 /* Pill de canal, compartida por las tabs del form y el selector del probador. */
-.bank-form__tabs button,
-.bank-tester__channel button {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-full, 999px);
-  padding: 2px var(--space-3, 0.75rem);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
+.bank-form__tabs,
+.bank-tester__channel {
+  align-self: flex-start;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
 
-  &.is-active {
-    background: var(--color-accent);
-    color: #fff;
-    border-color: var(--color-accent);
+  button {
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-3);
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--color-text-primary);
+    }
+
+    &.is-active {
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+    }
   }
 }
 
 .bank-tester {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 0.5rem);
+  gap: var(--space-3);
 
   input,
   textarea {
@@ -569,30 +499,16 @@
 
   &__channel {
     display: flex;
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
   }
 
   &__result {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2, 0.5rem);
-  }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 2px var(--space-3, 0.75rem);
-    margin: 0;
-    font-size: var(--font-size-sm);
-
-    dt {
-      color: var(--color-text-secondary);
-    }
-
-    dd {
-      margin: 0;
-      color: var(--color-text-primary);
-    }
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
   }
 
   &__recentbar {
@@ -606,29 +522,33 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-1, 0.25rem);
     max-height: 220px;
     overflow-y: auto;
+    border: var(--border-width, 1px) solid var(--color-border);
+    border-radius: var(--radius-md);
 
     li {
       display: flex;
       align-items: center;
-      gap: var(--space-2, 0.5rem);
-      padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md, 0.5rem);
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
       font-size: var(--font-size-sm);
       cursor: pointer;
 
+      & + li {
+        border-top: var(--border-width, 1px) solid var(--color-border);
+      }
+
       &:hover {
-        background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+        background: var(--color-surface-muted);
       }
     }
   }
 
   &__recent-date {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs, 0.75rem);
+    color: var(--color-text-muted);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
     white-space: nowrap;
   }
 
@@ -641,63 +561,21 @@
   }
 }
 
-.bank-form__ruleactions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm, 0.5rem);
-  margin: var(--spacing-sm, 0.5rem) 0;
-}
-
-.bank-form__uploadrow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 0.5rem);
-  flex-wrap: wrap;
-}
-
-.bank-form__uploadbtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1, 0.25rem);
-  padding: 4px var(--space-3, 0.75rem);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 0.5rem);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-  }
-}
-
-.bank-form__prompt-btn {
-  border: 1px solid var(--color-border, #ddd);
-  background: transparent;
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm, 4px);
-  padding: 0 var(--spacing-sm, 0.5rem);
-  font-size: var(--font-size-xs, 0.75rem);
-  cursor: pointer;
-
-  &:hover,
-  &.is-active {
-    color: var(--color-text-primary);
-    border-color: var(--color-primary, #3b82f6);
-  }
-}
-
+/* Resultado del copiloto / prueba contra el editor: grupo atenuado con borde de estado. */
 .bank-copilot {
-  margin-top: var(--spacing-md, 0.75rem);
-  padding: var(--spacing-md, 0.75rem);
-  border: 1px solid var(--color-border, #ddd);
-  border-left: 3px solid var(--color-warning, #e0a800);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-surface-muted, rgba(0, 0, 0, 0.02));
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 
   &--ok {
-    border-left-color: var(--color-success, #2e7d32);
+    border-left-color: var(--color-success);
+  }
+
+  > * + * {
+    margin-top: var(--space-2);
   }
 
   &__head {
@@ -705,45 +583,55 @@
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
-    gap: var(--spacing-xs, 0.25rem);
-    margin-bottom: var(--spacing-sm, 0.5rem);
+    gap: var(--space-1) var(--space-2);
   }
 
   &__results {
     list-style: none;
-    margin: 0 0 var(--spacing-sm, 0.5rem);
+    margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs, 0.25rem);
+    gap: var(--space-1);
 
     li {
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
-      gap: var(--spacing-xs, 0.25rem);
-      font-size: var(--font-size-xs, 0.75rem);
+      gap: var(--space-1) var(--space-2);
+      font-size: var(--font-size-xs);
     }
   }
 
   &__expected,
   &__got {
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs, 0.75rem);
+    font-size: var(--font-size-xs);
   }
 
   &__json {
-    margin: var(--spacing-sm, 0.5rem) 0;
+    summary {
+      cursor: pointer;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+    }
 
     pre {
       max-height: 220px;
       overflow: auto;
-      padding: var(--spacing-sm, 0.5rem);
-      border-radius: var(--radius-sm, 4px);
-      background: var(--color-surface, #111);
+      margin: var(--space-2) 0 0;
+      padding: var(--space-2) var(--space-3);
+      border: var(--border-width, 1px) solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
       color: var(--color-text-primary);
-      font-size: var(--font-size-xs, 0.7rem);
+      font-family: var(--font-family-mono);
+      font-size: var(--font-size-xs);
     }
+  }
+
+  textarea.bank-form__code {
+    background: var(--color-input-bg);
   }
 }
 
@@ -751,16 +639,18 @@
   &__intro {
     display: flex;
     justify-content: space-between;
-    gap: var(--space-3, 0.75rem);
-    padding: var(--space-3, 0.75rem);
-    border-radius: var(--radius-md, 0.5rem);
-    background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
 
     p {
       max-width: 62ch;
-      margin: 2px 0 0;
+      margin: var(--space-1) 0 0;
       color: var(--color-text-secondary);
-      font-size: var(--font-size-xs, 0.75rem);
+      font-size: var(--font-size-xs);
       line-height: 1.5;
     }
 
@@ -775,25 +665,25 @@
     flex-shrink: 0;
     gap: 2px;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs, 0.75rem);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
   }
 
   &__flow {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-2, 0.5rem);
-    margin: var(--space-3, 0.75rem) 0;
+    gap: var(--space-3);
+    margin: 0;
     padding: 0;
     list-style: none;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
 
     li {
       display: grid;
       grid-template-columns: 1.5rem 1fr;
-      gap: var(--space-2, 0.5rem);
+      gap: var(--space-2);
       align-items: start;
-      padding: var(--space-2, 0.5rem);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md, 0.5rem);
 
       > span {
         display: inline-flex;
@@ -801,17 +691,18 @@
         height: 1.5rem;
         align-items: center;
         justify-content: center;
-        border-radius: var(--radius-full, 999px);
-        color: var(--color-accent);
-        background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-        font-size: var(--font-size-xs, 0.75rem);
-        font-weight: var(--font-weight-bold, 700);
+        border-radius: var(--radius-full);
+        color: var(--color-text-primary);
+        background: var(--color-surface-muted);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-semibold);
       }
 
       small {
         display: block;
         margin-top: 2px;
         color: var(--color-text-secondary);
+        font-size: var(--font-size-xs);
         line-height: 1.4;
       }
     }
@@ -824,47 +715,42 @@
   &__empty {
     display: flex;
     align-items: center;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
     flex-wrap: wrap;
-    padding: var(--space-3, 0.75rem);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-md, 0.5rem);
+    padding: var(--space-3);
+    border: var(--border-width, 1px) dashed var(--color-border);
+    border-radius: var(--radius-md);
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs, 0.75rem);
+    font-size: var(--font-size-xs);
   }
-}
-
-.bank-admin__headeractions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm, 0.5rem);
-  align-items: center;
 }
 
 .bank-examples__group {
   & + & {
-    margin-top: var(--space-3, 0.75rem);
+    margin-top: var(--space-4);
   }
 }
 
 .bank-examples__grouphead {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2, 0.5rem);
-  margin: var(--space-2, 0.5rem) 0 var(--space-1, 0.25rem);
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
 }
 
 .bank-examples__grouptitle {
-  font-weight: var(--font-weight-bold, 700);
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 }
 
 .bank-examples__groupcount {
-  font-size: var(--font-size-xs, 0.75rem);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
 
   &.is-ok {
-    color: var(--color-success-strong, #15803d);
+    color: var(--color-success-strong);
   }
 }
 
@@ -873,49 +759,54 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2, 0.5rem);
+  gap: var(--space-2);
   flex-wrap: wrap;
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-width, 1px) solid var(--color-border);
 
   .bank-form__blocktitle {
     flex: 1;
+    padding-bottom: 0;
+    border-bottom: none;
   }
 }
 
-/* Grid de cards de ejemplos: TODO visible, sin scroll interno. */
+/* Grid de ejemplos: TODO visible, sin scroll interno. */
 .bank-examples__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-2, 0.5rem);
+  gap: var(--space-2);
   align-items: stretch;
 }
 
+/* Ejemplo: fila clicable (no tarjeta) con borde de estado a la izquierda. */
 .example-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1, 0.25rem);
+  gap: var(--space-1);
   text-align: left;
-  padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem);
-  border: 1px solid var(--color-border);
-  border-left: 3px solid var(--color-success, #16a34a);
-  border-radius: var(--radius-md, 0.5rem);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width, 1px) solid var(--color-border);
+  border-left: 3px solid var(--color-success);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   cursor: pointer;
 
-  &:hover,
-  &:focus-visible {
-    border-color: var(--color-accent);
-    box-shadow: var(--shadow-xs);
-    outline: none;
+  &:hover {
+    border-color: var(--color-border-strong);
+    border-left-color: var(--color-success);
+    background: var(--color-surface-muted);
   }
 
-  &--fail {
-    border-left-color: var(--color-error, #d33);
+  &--fail,
+  &--fail:hover {
+    border-left-color: var(--color-error);
   }
 
   &__row {
     display: flex;
     align-items: baseline;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
   }
 
   &__status {
@@ -924,7 +815,7 @@
 
   &__name {
     flex: 1;
-    font-weight: var(--font-weight-semibold, 600);
+    font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-sm);
     color: var(--color-text-primary);
     overflow: hidden;
@@ -937,29 +828,25 @@
 
   &__badge {
     flex-shrink: 0;
-    font-size: var(--font-size-xs, 0.75rem);
-    padding: 1px var(--space-2, 0.5rem);
-    border-radius: var(--radius-full, 999px);
-    background: color-mix(in srgb, var(--color-warning, #e0a800) 18%, transparent);
-    color: var(--color-warning-strong, #b45309);
   }
 
   &__chips {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1, 0.25rem);
+    gap: var(--space-1);
   }
 
   &__chip {
-    font-size: var(--font-size-xs, 0.75rem);
-    padding: 1px var(--space-2, 0.5rem);
-    border-radius: var(--radius-sm, 0.25rem);
-    background: var(--color-surface-muted, rgba(0, 0, 0, 0.04));
+    font-size: var(--font-size-xs);
+    padding: 1px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-muted);
     color: var(--color-text-secondary);
     overflow-wrap: anywhere;
 
     &.is-fail {
-      color: var(--color-error, #d33);
+      color: var(--color-error-strong);
+      background: var(--color-error-soft);
     }
   }
 
@@ -967,10 +854,10 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--spacing-sm, 0.5rem);
-    padding: var(--spacing-xs, 0.25rem) var(--spacing-sm, 0.5rem);
-    border-left: 2px solid var(--color-error, #d33);
-    font-size: var(--font-size-xs, 0.75rem);
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-left: 2px solid var(--color-error);
+    font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
   }
 }
@@ -978,7 +865,7 @@
 .bank-help {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3, 0.75rem);
+  gap: var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 
@@ -994,18 +881,18 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
 
     li {
       display: grid;
       grid-template-columns: max-content 1fr;
       align-items: start;
-      gap: var(--space-3, 0.75rem);
+      gap: var(--space-3);
 
       > span:first-child {
         white-space: nowrap;
         color: var(--color-text-secondary);
-        font-weight: var(--font-weight-semibold, 600);
+        font-weight: var(--font-weight-semibold);
       }
     }
   }
@@ -1014,38 +901,54 @@
     margin: 0;
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-2, 0.5rem);
+    gap: var(--space-2);
 
     dt {
-      font-weight: var(--font-weight-bold, 700);
+      font-weight: var(--font-weight-semibold);
       color: var(--color-text-primary);
     }
 
     dd {
-      margin: 0 0 var(--space-1, 0.25rem);
+      margin: 0 0 var(--space-1);
       color: var(--color-text-secondary);
       line-height: 1.5;
     }
   }
 }
 
-/* Estilo común de todos los controles del panel (consolidado para no repetir). */
-.bank-form__field textarea,
-.bank-form__select,
-.bank-form__field input[type='number'],
-.bank-tester input,
-.bank-tester textarea {
-  font-family: inherit;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 0.5rem);
-  padding: var(--space-2, 0.5rem);
+code {
+  font-family: var(--font-family-mono);
+  font-size: 0.92em;
 }
 
-@keyframes bank-admin-spin {
-  to {
-    transform: rotate(360deg);
+/* Controles nativos que quedan (textareas y campos del probador ligados a señales): piel de P6. */
+.bank-form__field textarea,
+.bank-tester input,
+.bank-tester textarea {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular, 400);
+  color: var(--color-text-primary);
+  background: var(--color-input-bg);
+  border: var(--border-width, 1px) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+
+  &::placeholder {
+    color: var(--color-text-muted);
   }
+
+  &:focus-visible {
+    outline-color: var(--color-focus);
+  }
+}
+
+.bank-tester input {
+  min-height: var(--control-height-md, 40px);
+}
+
+.bank-form__field textarea.bank-form__code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  background: var(--color-surface-muted);
 }

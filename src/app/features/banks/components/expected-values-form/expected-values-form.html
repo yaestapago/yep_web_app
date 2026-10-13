@@ -136,13 +136,15 @@
         @if (detectedLlave(); as detected) {
           <small class="bank-form__hint">
             Detectada: <code>{{ detected }}</code>
-            <button
+            <yep-button
+              variant="ghost"
+              size="sm"
               type="button"
               class="bank-form__hint-btn"
-              (click)="setExpectedField('llave', detected)"
+              (clicked)="setExpectedField('llave', detected)"
             >
               usar detectada
-            </button>
+            </yep-button>
           </small>
         }
       </label>
