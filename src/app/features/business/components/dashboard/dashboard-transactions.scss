@@ -58,7 +58,7 @@
 }
 
 .txtable tbody tr:hover {
-  background: color-mix(in srgb, var(--color-secondary) 6%, transparent);
+  background: color-mix(in srgb, var(--color-primary-strong) 6%, transparent);
 }
 
 /* Toda la fila abre el detalle (como la lista de eventos de ingreso). */
@@ -111,7 +111,7 @@
 }
 
 .tx-row:hover .actions-col {
-  background: color-mix(in srgb, var(--color-secondary) 6%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-primary-strong) 6%, var(--color-surface));
 }
 
 .row-actions {
@@ -129,12 +129,12 @@
 }
 
 .icon-btn--invoice {
-  border-color: color-mix(in srgb, var(--color-secondary) 40%, var(--color-border));
-  color: var(--color-secondary);
+  border-color: color-mix(in srgb, var(--color-primary-strong) 40%, var(--color-border));
+  color: var(--color-primary-strong);
 }
 
 .icon-btn--invoice:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-secondary) 12%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-primary-strong) 12%, var(--color-surface));
 }
 
 @media (max-width: 560px) {

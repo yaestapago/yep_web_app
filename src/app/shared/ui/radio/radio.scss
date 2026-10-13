@@ -11,7 +11,7 @@
 
 .yep-radio--disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 .yep-radio__input {
@@ -25,33 +25,41 @@
 .yep-radio__dot {
   align-items: center;
   background: var(--color-input-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-focus) solid var(--color-border-strong);
   border-radius: var(--radius-full);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 1.15rem;
+  height: 18px;
   justify-content: center;
   position: relative;
   transition:
-    border-color var(--motion-fast),
-    box-shadow var(--motion-fast);
-  width: 1.15rem;
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+  width: 18px;
 }
 
-.yep-radio--checked .yep-radio__dot {
+.yep-radio:hover:not(.yep-radio--disabled) .yep-radio__dot {
+  border-color: var(--color-text-secondary);
+}
+
+.yep-radio--checked .yep-radio__dot,
+.yep-radio--checked:hover:not(.yep-radio--disabled) .yep-radio__dot {
+  background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
 .yep-radio--checked .yep-radio__dot::after {
-  background: var(--color-primary);
+  background: var(--color-on-primary);
   border-radius: var(--radius-full);
   content: '';
-  height: 0.6rem;
-  width: 0.6rem;
+  height: 6px;
+  width: 6px;
 }
 
+/* Foco de teclado: anillo plano (P7), sin halo. */
 .yep-radio__input:focus-visible + .yep-radio__dot {
-  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .yep-radio__label {

@@ -1,32 +1,28 @@
-<div class="zone">
-  <div class="zone__head">
-    <h3 class="zone__title"><svg lucideChartPie aria-hidden="true"></svg> Graficas</h3>
-    <div class="zone__actions">
-      <button
-        type="button"
-        class="icon-btn"
-        (click)="openConfig()"
-        aria-label="Configurar graficas"
-        title="Elegir graficas"
-      >
-        <svg lucideSettings2 aria-hidden="true"></svg>
-      </button>
-    </div>
-  </div>
+<yep-card class="zone" title="Gráficas" padding="none">
+  <yep-icon-button
+    slot="actions"
+    label="Configurar gráficas"
+    [icon]="settingsIcon"
+    (clicked)="openConfig()"
+  />
 
-  <div class="zone__body charts-body">
+  <div class="charts-body">
     @if (!hasData()) {
-      <div class="state">
-        <svg lucideChartPie aria-hidden="true"></svg>
-        <h4>Sin datos todavia</h4>
-        <p>Cuando registres transacciones y eventos veras aqui tus graficas.</p>
-      </div>
+      <yep-state
+        kind="empty"
+        title="Sin datos todavía"
+        description="Cuando registres transacciones y eventos verás aquí tus gráficas."
+      >
+        <svg slot="icon" lucideChartPie aria-hidden="true"></svg>
+      </yep-state>
     } @else if (views().length === 0) {
-      <div class="state">
-        <svg lucideChartPie aria-hidden="true"></svg>
-        <h4>Ninguna grafica seleccionada</h4>
-        <p>Usa el boton de configurar para elegir que graficas mostrar.</p>
-      </div>
+      <yep-state
+        kind="empty"
+        title="Ninguna gráfica seleccionada"
+        description="Usa el botón de configurar para elegir qué gráficas mostrar."
+      >
+        <svg slot="icon" lucideChartPie aria-hidden="true"></svg>
+      </yep-state>
     } @else {
       <div class="charts-grid">
         @for (view of views(); track view.id) {
@@ -48,7 +44,7 @@
       </div>
     }
   </div>
-</div>
+</yep-card>
 
 <ng-template #chartView let-view>
   @if (view.kind === 'canvas') {
@@ -115,8 +111,8 @@
 
 <yep-modal
   [open]="configOpen()"
-  title="Configurar graficas"
-  subtitle="Elige que graficas quieres ver en el panel."
+  title="Configurar gráficas"
+  subtitle="Elige qué gráficas quieres ver en el panel."
   size="sm"
   (closeRequested)="closeConfig()"
 >

@@ -4,12 +4,13 @@
   gap: var(--space-2);
 }
 
+/* Punto de 8 px; sin halo de color (03 · yep-status-dot). */
 .yep-status__dot {
+  background: var(--color-text-muted);
   border-radius: var(--radius-full);
   flex: 0 0 auto;
-  height: 0.625rem;
-  position: relative;
-  width: 0.625rem;
+  height: 8px;
+  width: 8px;
 }
 
 .yep-status__text {
@@ -22,64 +23,56 @@
 
 .yep-status__label {
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-size: 13px;
   font-weight: var(--font-weight-semibold);
+  line-height: 1.45;
 }
 
 .yep-status__label--muted {
   color: var(--color-text-secondary);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-medium);
 }
 
 .yep-status__detail {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
 }
 
 /* Verde: reportando normalmente */
-.yep-status--online .yep-status__dot {
+:host(.yep-status--online) .yep-status__dot {
   background: var(--color-success);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 22%, transparent);
 }
 
-/* Amarillo: lleva tiempo sin heartbeat */
-.yep-status--delayed .yep-status__dot {
+/* Ámbar: lleva tiempo sin heartbeat */
+:host(.yep-status--delayed) .yep-status__dot {
   background: var(--color-warning);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-warning) 22%, transparent);
 }
 
 /* Rojo: dejó de reportar / superó el máximo */
-.yep-status--offline .yep-status__dot {
+:host(.yep-status--offline) .yep-status__dot {
   background: var(--color-error);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-error) 20%, transparent);
 }
 
 /* Gris: nunca reportó o sin datos */
-.yep-status--unknown .yep-status__dot {
+:host(.yep-status--unknown) .yep-status__dot {
   background: var(--color-text-muted);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-text-muted) 18%, transparent);
 }
 
-/* Pulso sutil solo para "en línea" (energía en tiempo real, sin exagerar) */
+/* "En línea": pulso de opacidad, sin halo ni escala. */
 @media (prefers-reduced-motion: no-preference) {
-  .yep-status--online .yep-status__dot::after {
-    animation: yep-status-pulse 2s ease-out infinite;
-    background: var(--color-success);
-    border-radius: var(--radius-full);
-    content: '';
-    inset: 0;
-    position: absolute;
+  :host(.yep-status--online) .yep-status__dot {
+    animation: yep-status-pulse 2s ease-in-out infinite;
   }
 }
 
 @keyframes yep-status-pulse {
-  0% {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-  70%,
+  0%,
   100% {
-    opacity: 0;
-    transform: scale(2.4);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
   }
 }

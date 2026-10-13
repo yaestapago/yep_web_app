@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { AddressLocationValue } from '../../../../shared/models/geo.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
@@ -27,8 +28,9 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-create-business-modal',
-  imports: [ReactiveFormsModule, AddressLocationSelect, Button, Input, Modal, PhoneInput, Select],
+  imports: [ReactiveFormsModule, Alert, AddressLocationSelect, Button, Input, Modal, PhoneInput, Select],
   templateUrl: './create-business-modal.html',
+  styleUrl: './create-business-modal.scss',
 })
 export class CreateBusinessModal {
   private readonly businessApi = inject(BusinessAccountsApiService);

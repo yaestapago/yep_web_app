@@ -1,3 +1,8 @@
+// yep-button · docs/rediseno-web/03-componentes.md#yep-button
+// Plano (P7): sin sombras, degradados ni filtros. Solo tokens.
+
+@use 'button-skin' as skin;
+
 :host {
   display: inline-flex;
 }
@@ -7,88 +12,43 @@
   width: 100%;
 }
 
-.yep-button {
-  align-items: center;
-  background: var(--color-primary);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: #ffffff;
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  gap: var(--space-2);
-  justify-content: center;
-  min-height: var(--control-height-lg);
-  padding: 0 var(--space-4);
-  transition:
-    background-color var(--motion-base),
-    border-color var(--motion-base),
-    box-shadow var(--motion-base),
-    color var(--motion-base),
-    filter var(--motion-base),
-    transform var(--motion-base);
-  width: auto;
-}
-
-.yep-button:hover:not(:disabled) {
-  filter: brightness(0.96);
-  transform: translateY(-1px);
-}
+@include skin.skin;
 
 .yep-button:disabled {
   cursor: not-allowed;
-  opacity: 0.64;
+  opacity: 0.45;
 }
 
-.yep-button--secondary {
-  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-secondary) 35%, transparent);
-  color: var(--color-secondary);
-}
-
-.yep-button--ghost {
-  background: transparent;
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.yep-button--danger {
-  background: var(--color-error);
-  color: #ffffff;
-}
-
-.yep-button--sm {
-  font-size: var(--font-size-sm);
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-3);
-}
-
-.yep-button--lg {
-  font-size: var(--font-size-md);
-  min-height: 3.25rem;
-  padding: 0 var(--space-5);
-}
-
-.yep-button--full {
-  width: 100%;
-}
+// Contenido e icono (16 px, separación 8 px)
 
 .yep-button__content {
   align-items: center;
   display: inline-flex;
   gap: var(--space-2);
   justify-content: center;
+  min-width: 0;
+}
+
+:host ::ng-deep .yep-button__content > svg {
+  flex-shrink: 0;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+// loading: el spinner ocupa el lugar del icono inicial
+:host ::ng-deep .yep-button--loading .yep-button__content > svg:first-child {
+  display: none;
 }
 
 .yep-button__loader {
   animation: yep-button-spin 800ms linear infinite;
   border: 2px solid currentColor;
-  border-right-color: transparent;
   border-radius: var(--radius-full);
-  height: var(--space-4);
-  width: var(--space-4);
+  border-right-color: transparent;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 @keyframes yep-button-spin {

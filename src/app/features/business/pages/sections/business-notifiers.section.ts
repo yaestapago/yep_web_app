@@ -6,19 +6,36 @@ import {
   LucideClipboardCheck,
   LucideClipboardCopy,
   LucideLink,
-  LucideLoaderCircle,
-  LucidePencil,
+  LucideMail,
+  LucideMonitor,
   LucidePlus,
   LucideRefreshCw,
   LucideSettings,
+  LucideSmartphone,
   LucideTrash2,
   LucideUnlink,
 } from '@lucide/angular';
 import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import {
+  Alert,
+  Card,
+  CardSection,
+  CheckGroup,
+  CheckOption,
+  DescriptionItem,
+  DescriptionList,
+  IconButton,
+  IconTile,
+  Kpi,
+  Menu,
+  MenuItem,
+  State,
+  StatusChip,
+  type StatusChipTone,
+} from '../../../../shared/ui';
 import { Button } from '../../../../shared/ui/button/button';
-import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -26,7 +43,6 @@ import {
   RadioSelectionList,
   type RadioSelectionOption,
 } from '../../../../shared/ui/radio-selection-list/radio-selection-list';
-import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { NotifierRuntimeConfigModal } from './notifier-runtime-config-modal';
 import { NotifierDeviceDiagnostics } from '../../../notifiers/components/notifier-device-diagnostics/notifier-device-diagnostics';
@@ -84,28 +100,41 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     DatePipe,
     ReactiveFormsModule,
     Button,
-    Checkbox,
+    CheckGroup,
+    CheckOption,
     Input,
     Modal,
     RadioSelectionList,
-    StatusDot,
     Toggle,
+    Alert,
+    Card,
+    CardSection,
+    DescriptionItem,
+    DescriptionList,
+    IconButton,
+    IconTile,
+    Kpi,
+    Menu,
+    MenuItem,
+    State,
+    StatusChip,
     NotifierRuntimeConfigModal,
     NotifierDeviceDiagnostics,
     NotifierSmsRelay,
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLink,
-    LucideLoaderCircle,
-    LucidePencil,
+    LucideMail,
+    LucideMonitor,
     LucidePlus,
     LucideRefreshCw,
     LucideSettings,
+    LucideSmartphone,
     LucideTrash2,
     LucideUnlink,
   ],
   templateUrl: './business-notifiers.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-notifiers.section.scss'],
 })
 export class BusinessNotifiersSection implements OnInit {
   private readonly notifiersApi = inject(NotifiersApiService);
@@ -116,6 +145,16 @@ export class BusinessNotifiersSection implements OnInit {
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notifications = inject(NotificationModalService);
   readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
+
+  /** Tono del chip de estado por nivel del semáforo (solo presentación). */
+  protected readonly statusChipTone: Record<NotifierStatusLevel, StatusChipTone> = {
+    online: 'success',
+    delayed: 'warning',
+    offline: 'error',
+    unknown: 'neutral',
+  };
+  protected readonly copyIcon = LucideClipboardCopy;
+  protected readonly copiedIcon = LucideClipboardCheck;
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly notifiers = signal<Notifier[]>([]);
@@ -905,7 +944,7 @@ export class BusinessNotifiersSection implements OnInit {
   async remove(notifier: Notifier): Promise<void> {
     const confirmed = await this.notifications.confirm({
       title: 'Eliminar notificador',
-      message: 'Esta accion no se puede deshacer.',
+      message: 'Esta acción no se puede deshacer.',
       type: 'error',
       confirmText: 'Eliminar',
     });

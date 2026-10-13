@@ -32,35 +32,29 @@
   </div>
 
   <div class="sidebar-main" id="sidebar-main">
-    <a
-      class="user-card"
-      routerLink="/settings"
-      (click)="onNavigate()"
-      aria-label="Perfil y configuración"
-      title="Perfil y configuración"
-    >
-      <span class="avatar" aria-hidden="true">{{ initials() }}</span>
-      <span class="user-meta">
-        <span class="user-name">{{ fullName() }}</span>
-        <span class="user-email">{{ user()?.email }}</span>
-      </span>
-    </a>
-
     <!-- Negocio activo: contexto siempre visible + única fuente visual de cambio -->
     @if (!isSupportUser()) {
-      <div class="business-select">
-        <span class="business-select__icon" aria-hidden="true"><svg lucideBuilding2></svg></span>
-        <yep-select
-          class="business-select__control"
-          label="Negocio"
-          placeholder="Selecciona un negocio"
-          size="sm"
-          [options]="businessOptions()"
-          [ngModel]="activeBusinessAccountId()"
-          [ngModelOptions]="{ standalone: true }"
-          [searchable]="memberships().length > 5"
-          (ngModelChange)="switchBusinessId($event)"
-        />
+      <div class="business-select" role="group" aria-labelledby="sidebar-business-label">
+        <span class="nav-label business-select__label" id="sidebar-business-label">Negocio activo</span>
+        <div class="business-select__row">
+          @if (activeMembership()) {
+            <yep-avatar
+              class="business-select__avatar"
+              [name]="activeBusinessName()"
+            />
+          }
+          <yep-select
+            class="business-select__control"
+            placeholder="Selecciona un negocio"
+            size="sm"
+            [embedded]="true"
+            [options]="businessOptions()"
+            [ngModel]="activeBusinessAccountId()"
+            [ngModelOptions]="{ standalone: true }"
+            [searchable]="memberships().length > 5"
+            (ngModelChange)="switchBusinessId($event)"
+          />
+        </div>
       </div>
     }
 
@@ -69,57 +63,6 @@
         <svg lucideHouse aria-hidden="true"></svg>
         <span>Novedades</span>
       </a>
-
-      @if (isInternalOpsUser()) {
-        <a
-          routerLink="/__ops/support"
-          routerLinkActive="active"
-          (click)="onNavigate()"
-          title="Soporte operativo"
-        >
-          <svg lucideLifeBuoy aria-hidden="true"></svg>
-          <span>Soporte operativo</span>
-        </a>
-        <a
-          routerLink="/__ops/billing"
-          routerLinkActive="active"
-          (click)="onNavigate()"
-          title="Clientes y cobros"
-        >
-          <svg lucideWallet aria-hidden="true"></svg>
-          <span>Clientes y cobros</span>
-        </a>
-        <a
-          routerLink="/__ops/subscriptions/invoices"
-          routerLinkActive="active"
-          (click)="onNavigate()"
-          title="Gestión de cuentas de cobro"
-        >
-          <svg lucideReceipt aria-hidden="true"></svg>
-          <span>Gestión de cuentas de cobro</span>
-        </a>
-        <a
-          routerLink="/__ops/subscriptions/change-requests"
-          routerLinkActive="active"
-          (click)="onNavigate()"
-          title="Solicitudes de planes"
-        >
-          <svg lucideClipboardList aria-hidden="true"></svg>
-          <span>Solicitudes de planes</span>
-        </a>
-      }
-
-      @if (isSuperUser()) {
-        <a
-          routerLink="/__ops/notifier-rules"
-          routerLinkActive="active"
-          (click)="onNavigate()"
-          title="Gestión de bancos"
-        >
-          <svg lucideLandmark aria-hidden="true"></svg>
-          <span>Gestión de bancos</span>
-        </a>
-      }
 
       @if (!isSupportUser()) {
         @if (canViewDashboard()) {
@@ -170,6 +113,63 @@
                 <p class="nav-subgroup__empty">Selecciona un negocio para ver sus secciones.</p>
               }
             </div>
+          }
+        </div>
+      }
+
+      <!-- Administración: mismas condiciones de hoy; va al final para que lo del cliente quede arriba. -->
+      @if (isInternalOpsUser() || isSuperUser()) {
+        <div class="nav-section" role="group" aria-labelledby="sidebar-admin-label">
+          <span class="nav-label" id="sidebar-admin-label">Administración</span>
+          @if (isInternalOpsUser()) {
+            <a
+              routerLink="/__ops/support"
+              routerLinkActive="active"
+              (click)="onNavigate()"
+              title="Soporte operativo"
+            >
+              <svg lucideLifeBuoy aria-hidden="true"></svg>
+              <span>Soporte operativo</span>
+            </a>
+            <a
+              routerLink="/__ops/billing"
+              routerLinkActive="active"
+              (click)="onNavigate()"
+              title="Clientes y cobros"
+            >
+              <svg lucideWallet aria-hidden="true"></svg>
+              <span>Clientes y cobros</span>
+            </a>
+            <a
+              routerLink="/__ops/subscriptions/invoices"
+              routerLinkActive="active"
+              (click)="onNavigate()"
+              title="Cuentas de cobro"
+            >
+              <svg lucideReceipt aria-hidden="true"></svg>
+              <span>Cuentas de cobro</span>
+            </a>
+            <a
+              routerLink="/__ops/subscriptions/change-requests"
+              routerLinkActive="active"
+              (click)="onNavigate()"
+              title="Solicitudes de planes"
+            >
+              <svg lucideClipboardList aria-hidden="true"></svg>
+              <span>Solicitudes de planes</span>
+            </a>
+          }
+
+          @if (isSuperUser()) {
+            <a
+              routerLink="/__ops/notifier-rules"
+              routerLinkActive="active"
+              (click)="onNavigate()"
+              title="Gestión de bancos"
+            >
+              <svg lucideLandmark aria-hidden="true"></svg>
+              <span>Gestión de bancos</span>
+            </a>
           }
         </div>
       }
@@ -227,11 +227,11 @@
             routerLink="/subscription"
             routerLinkActive="active"
             role="menuitem"
-            title="Suscripcion"
+            title="Suscripción"
             (click)="onNavigate()"
           >
             <svg lucideCreditCard aria-hidden="true"></svg>
-            <span>Suscripcion</span>
+            <span>Suscripción</span>
           </a>
         }
 
@@ -261,6 +261,21 @@
         </button>
       </div>
     }
+
+    <a
+      class="user-card"
+      routerLink="/settings"
+      (click)="onNavigate()"
+      aria-label="Perfil y configuración"
+      title="Perfil y configuración"
+    >
+      <!-- Se pasan las iniciales ya calculadas para conservar las de hoy (nombre + apellido). -->
+      <yep-avatar class="user-card__avatar" [name]="initials()" />
+      <span class="user-meta">
+        <span class="user-name">{{ fullName() }}</span>
+        <span class="user-email">{{ user()?.email }}</span>
+      </span>
+    </a>
 
     <button
       class="sidebar-actions__trigger"

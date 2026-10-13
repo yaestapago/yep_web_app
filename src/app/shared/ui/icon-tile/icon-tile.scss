@@ -1,0 +1,39 @@
+// yep-icon-tile · docs/rediseno-web/03-componentes.md#yep-avatar--yep-icon-tile · P5
+// 36 × 36 px (icono 20) o 48 × 48 px (icono 24), radio 8, fondo `--color-surface-muted`.
+
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.yep-icon-tile {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.yep-icon-tile ::ng-deep svg {
+  flex-shrink: 0;
+  height: var(--icon-md);
+  width: var(--icon-md);
+}
+
+.yep-icon-tile--48 {
+  height: 48px;
+  width: 48px;
+}
+
+.yep-icon-tile--48 ::ng-deep svg {
+  height: var(--icon-lg);
+  width: var(--icon-lg);
+}
+
+.yep-icon-tile--active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+}

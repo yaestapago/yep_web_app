@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { LucideClock } from '@lucide/angular';
+import { LucideCircleAlert, LucideClock } from '@lucide/angular';
 
 /** Alto en px de cada número de la rueda; debe coincidir con `--yep-tp-item-height` en el scss. */
 const ITEM_HEIGHT = 36;
@@ -38,7 +38,7 @@ function clamp(value: number, min: number, max: number): number {
  */
 @Component({
   selector: 'yep-time-picker',
-  imports: [LucideClock],
+  imports: [LucideCircleAlert, LucideClock],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

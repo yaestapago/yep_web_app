@@ -1,0 +1,249 @@
+/* ---------- Cabecera de la sección ---------- */
+.notifiers-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Resumen: 4 KPI sobre el fondo, sin tarjeta contenedora ---------- */
+.notifiers-summary {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+  .notifiers-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Lista de notificadores: una tarjeta por notificador ---------- */
+.notifier-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.notifier-card__head {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-bottom: calc(var(--space-4) + var(--space-1));
+}
+
+.notifier-card__identity {
+  align-items: center;
+  display: flex;
+  flex: 1 1 16rem;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.notifier-card__identity yep-icon-tile {
+  flex: 0 0 auto;
+}
+
+.notifier-card__heading {
+  min-width: 0;
+}
+
+.notifier-card__titlerow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) calc(var(--space-2) + 2px);
+}
+
+.notifier-card__title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.35;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.notifier-card__subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 2px 0 0;
+}
+
+.notifier-card__actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.notifier-card__muted {
+  color: var(--color-text-secondary);
+}
+
+.notifier-card__diagnostics {
+  margin-top: var(--space-4);
+}
+
+/* Código de emparejamiento con anillo de cuenta regresiva */
+.pair-code {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  color: var(--brand-ink);
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: 2px var(--space-3) 2px 2px;
+}
+
+.pair-code__ring {
+  height: 24px;
+  width: 24px;
+}
+
+.pair-code__ring-bg {
+  fill: none;
+  stroke: color-mix(in srgb, currentColor 15%, transparent);
+  stroke-width: 3;
+}
+
+.pair-code__ring-fg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 1s linear;
+}
+
+.pair-code__value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.1em;
+}
+
+/* Remitentes del banco a declarar en el filtro de correo */
+.sender-row {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sender-row__label {
+  // Alto del chip: "De:" queda centrado con el primer correo.
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  min-height: 2rem;
+}
+
+.sender-row__values {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sender-chip {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  gap: var(--space-1);
+  max-width: 100%;
+  min-height: 2rem;
+  min-width: 0;
+  padding: 0 2px 0 var(--space-3);
+}
+
+.sender-chip__value {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Modal de crear / editar ---------- */
+.field-heading-row {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.notifier-warning {
+  background: var(--color-warning-soft);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  margin: 0;
+  padding: var(--space-3);
+}
+
+.email-forwarding-help {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.email-forwarding-help__header {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.sender-pattern-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sender-pattern-list__item {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 3px var(--space-3);
+}
+
+/* ---------- Selector de cuentas del notificador (S7b): un yep-check-group por cuenta ---------- */
+.notifier-account-list {
+  margin-top: var(--space-2);
+}
+
+/* Llaves Bre-B en mono, como en Alertas WhatsApp y el modal de empleados. */
+.notifier-key-option ::ng-deep .yep-check__label {
+  font-family: var(--font-family-mono);
+}
+
+/* Notas dentro de la rejilla de opciones (límite del plan, sin llaves): ocupan todo el ancho. */
+.notifier-account-note {
+  grid-column: 1 / -1;
+}
+
+.notifier-key-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}

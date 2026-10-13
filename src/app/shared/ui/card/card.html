@@ -1,0 +1,27 @@
+<section
+  class="yep-card"
+  [class.yep-card--flush]="padding() === 'none'"
+  [class.yep-card--brand]="tone() === 'brand'"
+  [attr.aria-labelledby]="title() ? titleId : null"
+>
+  <div class="yep-card__header">
+    <div class="yep-card__icon"><ng-content select="[slot=icon]"></ng-content></div>
+
+    @if (title() || subtitle()) {
+      <div class="yep-card__heading">
+        @if (title()) {
+          <h2 class="yep-card__title" [id]="titleId">{{ title() }}</h2>
+        }
+        @if (subtitle()) {
+          <p class="yep-card__subtitle">{{ subtitle() }}</p>
+        }
+      </div>
+    }
+
+    <div class="yep-card__actions"><ng-content select="[slot=actions]"></ng-content></div>
+  </div>
+
+  <div class="yep-card__body"><ng-content></ng-content></div>
+
+  <div class="yep-card__footer"><ng-content select="[slot=footer]"></ng-content></div>
+</section>

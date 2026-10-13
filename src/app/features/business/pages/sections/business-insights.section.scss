@@ -1,0 +1,78 @@
+// S11 · Conciliación · docs/rediseno-web/04-pantallas.md#s11--informes-y-conciliación
+// Encabezado de sección (h2) con rango y "Actualizar"; cada lista en una yep-card a sangre con su conteo
+// en yep-status-chip y su tabla.
+
+.insights-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Tarjetas ---------- */
+// El esqueleto no trae relleno propio: dentro de la tarjeta a sangre se alinea con la cabecera.
+.insights-card__state {
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.insights-card__more {
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Tablas ---------- */
+.insights-name {
+  color: var(--color-text-primary);
+  display: block;
+  font-weight: var(--font-weight-semibold);
+}
+
+.insights-sub {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.insights-mono {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.insights-date {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.insights-muted {
+  color: var(--color-text-muted);
+  font-family: var(--font-family-base);
+}
+
+.insights-row-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+
+.insights-sr-only {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 768px) {
+  .insights-card__state {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+}

@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
+import { Alert, DescriptionItem, DescriptionList } from '../../../../shared/ui';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -24,7 +25,16 @@ import { TransactionsApiService } from '../../../transactions/services/transacti
  */
 @Component({
   selector: 'app-apply-invoice-modal',
-  imports: [CurrencyPipe, ReactiveFormsModule, Button, Input, Modal],
+  imports: [
+    CurrencyPipe,
+    ReactiveFormsModule,
+    Alert,
+    Button,
+    DescriptionItem,
+    DescriptionList,
+    Input,
+    Modal,
+  ],
   templateUrl: './apply-invoice-modal.html',
   styleUrls: ['./verify-transaction-modal.scss', './apply-invoice-modal.scss'],
 })
@@ -34,8 +44,8 @@ export class ApplyInvoiceModal {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput<PaymentTransaction | null>(null);
-  /** Label configurado por el owner para el campo (ej. "Factura Numero"). */
-  readonly label = defineInput('Factura Numero');
+  /** Label configurado por el owner para el campo (ej. "Factura número"). */
+  readonly label = defineInput('Factura número');
   /** True cuando este modal además debe confirmar el pago pendiente. */
   readonly required = defineInput(false);
 

@@ -13,14 +13,12 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   LucideBell,
-  LucideCircleCheck,
   LucideLoaderCircle,
   LucideMail,
   LucideMonitor,
   LucideReceipt,
   LucideSearch,
   LucideSmartphone,
-  LucideTriangleAlert,
   LucideVolume2,
   LucideVolumeX,
 } from '@lucide/angular';
@@ -38,6 +36,7 @@ import {
   sourceEventReporterKey,
 } from '../../../../shared/utils/source-event-groups';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
+import { Card, State, StatusChip, Table } from '../../../../shared/ui';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { TtsPlaybackService } from '../../../source-events/services/tts-playback.service';
@@ -102,17 +101,19 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     DatePipe,
     FormsModule,
     LucideBell,
-    LucideCircleCheck,
     LucideLoaderCircle,
     LucideMail,
     LucideMonitor,
     LucideReceipt,
     LucideSearch,
     LucideSmartphone,
-    LucideTriangleAlert,
     LucideVolume2,
     LucideVolumeX,
+    Card,
     Select,
+    State,
+    StatusChip,
+    Table,
     Toggle,
     AutoFitRowsDirective,
     DashboardPager,
@@ -160,6 +161,12 @@ export class DashboardEventsPanel {
   readonly bankFilter = signal<string>('');
 
   readonly typeOptions = SOURCE_OPTIONS;
+
+  /** Presentación: opciones del select de banco a partir de `bankOptions`. */
+  readonly bankSelectOptions = computed<SelectOption[]>(() => [
+    { id: '', label: 'Todo banco' },
+    ...this.bankOptions().map((bank) => ({ id: bank, label: bank })),
+  ]);
 
   /** Filtros normalizados que se envían al servidor. */
   private readonly filterValue = computed<SourceEventFilters>(() => ({

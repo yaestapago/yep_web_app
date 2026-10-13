@@ -6,13 +6,13 @@
   (closeRequested)="close()"
 >
   @if (error()) {
-    <div class="field-error" role="alert" style="color: var(--color-error)">{{ error() }}</div>
+    <yep-alert class="modal-alert" variant="error">{{ error() }}</yep-alert>
   }
 
   @if (success()) {
-    <div role="status" style="color: var(--color-success); display: grid; gap: var(--space-2)">
+    <yep-alert variant="success">
       <p>{{ success() }}</p>
-    </div>
+    </yep-alert>
   } @else {
     <form [formGroup]="form" (ngSubmit)="submit()" class="request-form">
       <div class="lookup-row">
@@ -44,20 +44,12 @@
       }
 
       @if (selected()) {
-        <div
-          class="field-hint"
-          role="status"
-          style="
-            color: var(--color-success);
-            display: flex;
-            gap: var(--space-2);
-            align-items: center;
-          "
-        >
+        <p class="selected-business" role="status">
+          <svg lucideCircleCheck aria-hidden="true"></svg>
           <span
             >Negocio: <strong>{{ selectedLabel() }}</strong></span
           >
-        </div>
+        </p>
       }
 
       <yep-select

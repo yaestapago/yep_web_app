@@ -1,0 +1,89 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  grid-column: span var(--yep-dl-span, 1);
+  min-width: 0;
+}
+
+.yep-description-item__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  margin-bottom: var(--space-1);
+}
+
+.yep-description-item__body {
+  min-width: 0;
+}
+
+.yep-description-item__value-row {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.yep-description-item__value {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-body);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.yep-description-item__value--mono {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.yep-description-item__hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* Botón copiar (yep-icon-button sm, objetivo táctil de 40 px incluido). */
+.yep-description-item__copy {
+  flex: 0 0 auto;
+}
+
+/* Inline: etiqueta a la izquierda, valor a la derecha, divisor entre filas. */
+:host(.yep-description-item--inline) {
+  align-items: baseline;
+  border-top: var(--border-width) solid var(--color-border);
+  flex-direction: row;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+}
+
+:host(.yep-description-item--inline:first-child) {
+  border-top: 0;
+  padding-top: 0;
+}
+
+:host(.yep-description-item--inline:last-child) {
+  padding-bottom: 0;
+}
+
+:host(.yep-description-item--inline) .yep-description-item__label {
+  flex: 0 1 auto;
+  margin-bottom: 0;
+}
+
+:host(.yep-description-item--inline) .yep-description-item__body {
+  text-align: right;
+}
+
+:host(.yep-description-item--inline) .yep-description-item__value-row {
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  :host {
+    grid-column: auto;
+  }
+}

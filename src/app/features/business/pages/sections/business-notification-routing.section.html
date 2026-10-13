@@ -6,108 +6,112 @@
         Selecciona qué empleados reciben notificaciones bancarias y de qué cuentas.
       </p>
     </div>
-    <div class="list-card__actions">
-      <yep-button variant="ghost" size="sm" (clicked)="load()">
-        <svg lucideRefreshCw aria-hidden="true"></svg>
-        Actualizar
-      </yep-button>
-    </div>
+    <yep-button variant="ghost" size="sm" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
   </div>
 
-  @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
-  }
-
   @if (loading()) {
-    <div class="loading-row">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando empleados…
-    </div>
+    <yep-state kind="loading" title="Cargando empleados…" [rows]="3" />
+  } @else if (error() && employeeViews().length === 0) {
+    <yep-state kind="error" [title]="error()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()">
+        Reintentar
+      </yep-button>
+    </yep-state>
   } @else if (employeeViews().length === 0) {
-    <div class="empty-state">
-      <svg lucideUsers aria-hidden="true"></svg>
-      <h3>No hay empleados registrados</h3>
-      <p>Agrega empleados desde la sección de Empleados para configurar el reenvío de notificaciones.</p>
-    </div>
+    <yep-state
+      kind="empty"
+      title="No hay empleados registrados"
+      description="Agrega empleados desde la sección de Empleados para configurar el reenvío de notificaciones."
+    >
+      <svg slot="icon" lucideUsers aria-hidden="true"></svg>
+    </yep-state>
   } @else {
-    <div class="card-list">
+    @if (error()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
+    <div class="routing-list">
       @for (view of employeeViews(); track view.member.id) {
-        <article class="list-card">
-          <div
-            class="list-card__main list-card__clickable"
-            (click)="toggleExpand(view.member.id)"
-          >
-            <div class="list-card__titlerow">
-              <div class="routing-employee-info">
-                <svg
-                  [attr.data-expanded]="expandedEmployeeIds().has(view.member.id)"
-                  class="routing-chevron"
-                  lucideChevronRight
-                  aria-hidden="true"
-                ></svg>
-                <div>
-                  <h3 class="list-card__title">{{ employeeName(view.member) }}</h3>
-                  <span class="list-card__meta">
-                    {{ formatPhone(view.member.cellphoneNumber ?? '') }}
-                    · {{ view.member.role === 'account_owner' ? 'Propietario' : 'Staff' }}
-                  </span>
-                </div>
-              </div>
-              <div class="routing-summary" (click)="$event.stopPropagation()">
-                @if (actingId() === view.member.id) {
-                  <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
+        @let expanded = expandedEmployeeIds().has(view.member.id);
+        <yep-card class="routing-employee" [class.routing-employee--open]="expanded">
+          <div class="routing-head">
+            <button
+              type="button"
+              class="routing-toggle"
+              [attr.aria-expanded]="expanded"
+              (click)="toggleExpand(view.member.id)"
+            >
+              <svg
+                [attr.data-expanded]="expanded"
+                class="routing-chevron"
+                lucideChevronRight
+                aria-hidden="true"
+              ></svg>
+              <yep-avatar [name]="employeeName(view.member)" [size]="40" />
+              <span class="routing-employee-info">
+                <span class="routing-employee-name">{{ employeeName(view.member) }}</span>
+                <span class="routing-employee-meta">
+                  {{ formatPhone(view.member.cellphoneNumber ?? '') }}
+                  · {{ view.member.role === 'account_owner' ? 'Propietario' : 'Staff' }}
+                </span>
+              </span>
+            </button>
+            <div class="routing-summary">
+              @if (actingId() === view.member.id) {
+                <svg class="routing-spin" lucideLoaderCircle aria-hidden="true"></svg>
+              } @else {
+                @let count = activeAccountCount(view.member);
+                @let total = totalAccountCount();
+                @if (count > 0) {
+                  <yep-status-chip tone="success" [label]="count + ' de ' + total + (total === 1 ? ' cuenta' : ' cuentas')" />
                 } @else {
-                  @let count = activeAccountCount(view.member);
-                  @let total = totalAccountCount();
-                  @if (count > 0) {
-                    <span class="routing-badge routing-badge--active">
-                      {{ count }}/{{ total }} cuentas
-                    </span>
-                  } @else {
-                    <span class="routing-badge routing-badge--inactive">
-                      Sin cuentas
-                    </span>
-                  }
+                  <yep-status-chip tone="neutral" label="Sin cuentas" />
                 }
-              </div>
+              }
             </div>
           </div>
 
-          @if (expandedEmployeeIds().has(view.member.id)) {
+          @if (expanded) {
             <div class="routing-accounts">
               @for (entry of bankAccountsByBank(); track entry[0]) {
-                <div class="routing-bank-group">
-                  <div class="routing-bank-label">{{ bankName(entry[0]) }}</div>
+                <yep-card-section [title]="bankName(entry[0])">
                   @for (account of entry[1]; track account.id) {
-                    <div class="routing-account-row">
-                      <yep-checkbox
-                        [checked]="isBankAccountEnabled(view.member, account.id, entry[0])"
-                        [disabled]="!canManage()"
-                        [label]="accountDisplayName(account)"
-                        (checkedChange)="toggleBankAccount(view.member, account.id, entry[0])"
-                      />
+                    <yep-check-group
+                      [label]="accountDisplayName(account)"
+                      [meta]="
+                        '****' +
+                        account.accountNumberLast4 +
+                        ' · ' +
+                        accountTypeLabel(account.accountType) +
+                        ' · Activa'
+                      "
+                      [checked]="isBankAccountEnabled(view.member, account.id, entry[0])"
+                      [disabled]="!canManage()"
+                      (checkedChange)="toggleBankAccount(view.member, account.id, entry[0])"
+                    >
                       @for (key of getBreBKeysForAccount(account); track key) {
-                        <div class="routing-bre-b-key-row">
-                          <yep-checkbox
-                            [checked]="isBreBKeyEnabled(view.member, entry[0], key)"
-                            [disabled]="!canManage()"
-                            [label]="breBKeyLabel(account, key)"
-                            (checkedChange)="toggleBreBKey(view.member, entry[0], key)"
-                          />
-                        </div>
+                        <yep-check-option
+                          [label]="breBKeyLabel(account, key)"
+                          meta="Llave Bre-B"
+                          [checked]="isBreBKeyEnabled(view.member, entry[0], key)"
+                          [disabled]="!canManage()"
+                          (checkedChange)="toggleBreBKey(view.member, entry[0], key)"
+                        />
                       }
-                    </div>
+                    </yep-check-group>
                   }
-                </div>
+                </yep-card-section>
               }
               @if (bankAccountsByBank().length === 0) {
-                <div class="routing-no-accounts">
+                <p class="routing-no-accounts">
                   No hay cuentas bancarias registradas para este negocio.
-                </div>
+                </p>
               }
             </div>
           }
-        </article>
+        </yep-card>
       }
     </div>
   }

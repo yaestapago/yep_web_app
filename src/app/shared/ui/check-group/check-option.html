@@ -1,0 +1,25 @@
+<label
+  class="yep-check yep-check-option"
+  [class.yep-check--on]="checked()"
+  [class.yep-check--disabled]="disabled()"
+>
+  <input
+    class="yep-check__input"
+    type="checkbox"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    [attr.data-cy]="dataCy() || null"
+    (change)="onChange($event)"
+  />
+  <span class="yep-check__box" aria-hidden="true">
+    @if (checked()) {
+      <svg lucideCheck></svg>
+    }
+  </span>
+  <span class="yep-check__text">
+    <span class="yep-check__label">{{ label() }}</span>
+    @if (meta()) {
+      <span class="yep-check__meta">{{ meta() }}</span>
+    }
+  </span>
+</label>

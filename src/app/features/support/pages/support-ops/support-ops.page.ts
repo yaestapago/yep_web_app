@@ -2,16 +2,22 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  LucideArrowLeft,
-  LucideBuilding2,
-  LucideChevronLeft,
-  LucideChevronRight,
-  LucideSearch,
-  LucideUsers,
-} from '@lucide/angular';
+import { LucideArrowLeft, LucideSearch } from '@lucide/angular';
 import { finalize, Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Alert } from '../../../../shared/ui/alert/alert';
+import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
+import { Input } from '../../../../shared/ui/input/input';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
+import { Pagination } from '../../../../shared/ui/pagination/pagination';
+import { Segmented, type SegmentedOption } from '../../../../shared/ui/segmented/segmented';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   SupportBusiness,
@@ -38,12 +44,20 @@ const RESOURCE_LABELS: Record<SupportResource, string> = {
   imports: [
     CommonModule,
     FormsModule,
-    LucideArrowLeft,
-    LucideBuilding2,
-    LucideChevronLeft,
-    LucideChevronRight,
     LucideSearch,
-    LucideUsers,
+    Alert,
+    Button,
+    Card,
+    DescriptionItem,
+    DescriptionList,
+    IconButton,
+    Input,
+    PageHeader,
+    Pagination,
+    Segmented,
+    State,
+    StatusChip,
+    Table,
   ],
   templateUrl: './support-ops.page.html',
   styleUrl: './support-ops.page.scss',
@@ -55,6 +69,20 @@ export class SupportOpsPage {
 
   readonly resourceLabels = RESOURCE_LABELS;
   readonly resources = Object.keys(RESOURCE_LABELS) as SupportResource[];
+  readonly resourceOptions: readonly SegmentedOption[] = this.resources.map((value) => ({
+    value,
+    label: RESOURCE_LABELS[value],
+  }));
+  readonly viewOptions: readonly SegmentedOption[] = [
+    { value: 'businesses', label: 'Negocios' },
+    { value: 'users', label: 'Usuarios' },
+  ];
+  protected readonly backIcon = LucideArrowLeft;
+
+  /** `Ciudad, Departamento` sin comas sueltas; `—` si no hay ninguno. */
+  protected locationLabel(business: { cityName?: string | null; departmentName?: string | null }): string {
+    return [business.cityName, business.departmentName].filter(Boolean).join(', ') || '—';
+  }
   readonly view = signal<MainView>('businesses');
   readonly search = signal('');
   readonly loading = signal(false);

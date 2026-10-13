@@ -1,10 +1,6 @@
-import { Component, input as defineInput, signal } from '@angular/core';
-import {
-  LucideBellRing,
-  LucideCircleCheck,
-  LucideLoaderCircle,
-  LucideTriangleAlert,
-} from '@lucide/angular';
+import { Component, computed, input as defineInput, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { LucideChevronRight, LucideMail, LucideMonitor, LucideSmartphone } from '@lucide/angular';
 
 import {
   relativeFromMs,
@@ -13,7 +9,17 @@ import {
 } from '../../../../shared/utils/notifier-status';
 import type { Notifier } from '../../../../shared/models/notifier.models';
 import type { DashboardAlert } from '../../../../shared/models/dashboard-summary.models';
-import { Modal } from '../../../../shared/ui/modal/modal';
+import {
+  Alert,
+  ButtonLink,
+  Card,
+  IconTile,
+  Modal,
+  State,
+  StatusChip,
+  StatusDot,
+  type StatusChipTone,
+} from '../../../../shared/ui';
 
 export type SemaphoreLevel = 'green' | 'yellow' | 'red';
 
@@ -35,7 +41,21 @@ export interface NotifierStatusRow {
  */
 @Component({
   selector: 'app-dashboard-status',
-  imports: [LucideBellRing, LucideCircleCheck, LucideLoaderCircle, LucideTriangleAlert, Modal],
+  imports: [
+    RouterLink,
+    ButtonLink,
+    LucideChevronRight,
+    LucideMail,
+    LucideMonitor,
+    LucideSmartphone,
+    Alert,
+    Card,
+    IconTile,
+    Modal,
+    State,
+    StatusChip,
+    StatusDot,
+  ],
   templateUrl: './dashboard-status.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-status.scss'],
 })
@@ -45,7 +65,15 @@ export class DashboardStatusPanel {
   readonly alerts = defineInput<DashboardAlert[]>([]);
   readonly loading = defineInput(false);
   readonly error = defineInput('');
+  /** Ruta a Notificadores para el estado vacío; `null` si el usuario no puede entrar. */
+  readonly notifiersLink = defineInput<string[] | null>(null);
   readonly detailsOpen = signal(false);
+
+  /** Presentación: tono del chip del estado global. */
+  readonly semaphoreTone = computed<StatusChipTone>(() => {
+    const level = this.semaphore().level;
+    return level === 'red' ? 'error' : level === 'yellow' ? 'warning' : 'success';
+  });
 
   openDetails(): void {
     this.detailsOpen.set(true);

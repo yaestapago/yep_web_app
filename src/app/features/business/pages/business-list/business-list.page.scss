@@ -2,110 +2,68 @@
   display: block;
 }
 
-.page-header {
-  align-items: center;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  justify-content: space-between;
-  margin-bottom: var(--space-5);
-}
-
-.page-header__text {
-  flex: 1 1 320px;
-  min-width: 0;
-}
-
-.page-header__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  justify-content: flex-end;
-  margin-left: auto;
-}
-
-.page-header__actions svg {
-  height: 18px;
-  width: 18px;
-}
-
-.business-grid {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-}
-
-yep-alert {
+.plan-alert {
+  display: block;
   margin-bottom: var(--space-4);
 }
 
+/* Rejilla de 3 columnas en escritorio, 2 en tableta y 1 en celular (04 · S2). */
+.business-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Tarjeta completa clicable: plana, el hover solo refuerza el borde (P7). */
 .business-card {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xs);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
   color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  min-height: 168px;
+  min-width: 0;
   padding: var(--space-5);
   text-decoration: none;
-  transition:
-    border-color var(--motion-fast),
-    box-shadow var(--motion-base),
-    transform var(--motion-base);
+  transition: border-color var(--motion-fast);
 }
 
 .business-card:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
 }
 
-.card-top {
-  align-items: center;
+.business-card__text {
   display: flex;
-  justify-content: space-between;
-}
-
-.business-avatar {
-  align-items: center;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-radius: var(--radius-md);
-  color: #ffffff;
-  display: flex;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  height: 44px;
-  justify-content: center;
-  width: 44px;
-}
-
-.badge-active {
-  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 2px var(--space-2);
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .business-name {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
 }
 
 .business-location {
   align-items: center;
   color: var(--color-text-secondary);
   display: flex;
-  font-size: var(--font-size-sm);
+  font-size: 0.8125rem;
   gap: var(--space-2);
+  min-width: 0;
 }
 
-.business-location svg {
+.business-location span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-location svg,
+.chevron {
+  flex-shrink: 0;
   height: 16px;
   width: 16px;
 }
@@ -113,65 +71,33 @@ yep-alert {
 .card-footer {
   align-items: center;
   display: flex;
+  gap: var(--space-2);
   justify-content: space-between;
   margin-top: auto;
 }
 
-.role-chip {
-  background: color-mix(in srgb, var(--color-secondary) 12%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  padding: 2px var(--space-3);
+.card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .chevron {
   color: var(--color-text-secondary);
-  height: 18px;
-  width: 18px;
+}
+
+@media (max-width: 1024px) {
+  .business-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
-  .page-header {
-    align-items: stretch;
-    display: grid;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
+  .business-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .page-header__text {
-    flex: none;
-  }
-
-  .page-header__actions {
-    display: grid;
-    gap: var(--space-2);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: stretch;
-    margin-left: 0;
-    width: 100%;
-  }
-
-  .page-header__actions yep-button {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .page-header__actions ::ng-deep .yep-button {
-    font-size: var(--font-size-xs);
-    min-height: var(--control-height-md);
-    padding: 0 var(--space-2);
-    width: 100%;
-  }
-
-  .page-header__actions ::ng-deep .yep-button__content {
-    min-width: 0;
-  }
-
-  .page-header__actions ::ng-deep .yep-button__content span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .business-card {
+    padding: var(--space-4);
   }
 }

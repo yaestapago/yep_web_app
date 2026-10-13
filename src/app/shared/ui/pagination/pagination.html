@@ -1,0 +1,22 @@
+<nav class="yep-pagination__nav" aria-label="Paginación">
+  <yep-icon-button
+    class="yep-pagination__button"
+    label="Página anterior"
+    [icon]="prevIcon"
+    [disabled]="!canPrev()"
+    (clicked)="go(current() - 1)"
+  />
+
+  <span class="yep-pagination__status" aria-live="polite">
+    Página <b class="yep-pagination__number">{{ current() }}</b> de
+    <span class="yep-pagination__number">{{ total() }}</span>
+  </span>
+
+  <yep-icon-button
+    class="yep-pagination__button"
+    label="Página siguiente"
+    [icon]="nextIcon"
+    [disabled]="!canNext()"
+    (clicked)="go(current() + 1)"
+  />
+</nav>

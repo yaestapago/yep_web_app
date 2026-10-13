@@ -1,11 +1,12 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { LucideArrowLeft, LucideClock, LucideTriangleAlert } from '@lucide/angular';
+import { LucideArrowLeft, LucideClock, LucideStore, LucideTriangleAlert } from '@lucide/angular';
 import { filter, startWith } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { BillingStatusService } from '../../../../core/services/billing-status.service';
+import { Avatar, PageHeader, State, StatusChip } from '../../../../shared/ui';
 import { formatDaysLeft, formatLongDate } from '../../../../shared/utils/billing-format';
 
 interface BillingBanner {
@@ -16,7 +17,18 @@ interface BillingBanner {
 
 @Component({
   selector: 'app-business-shell-page',
-  imports: [RouterLink, RouterOutlet, LucideArrowLeft, LucideClock, LucideTriangleAlert],
+  imports: [
+    RouterLink,
+    RouterOutlet,
+    LucideArrowLeft,
+    LucideClock,
+    LucideStore,
+    LucideTriangleAlert,
+    PageHeader,
+    Avatar,
+    StatusChip,
+    State,
+  ],
   templateUrl: './business-shell.page.html',
   styleUrl: './business-shell.page.scss',
 })
@@ -105,9 +117,5 @@ export class BusinessShellPage {
 
   roleLabel(): string {
     return this.membership()?.role === 'account_owner' ? 'Propietario' : 'Staff';
-  }
-
-  initials(): string {
-    return this.businessName().slice(0, 2).toUpperCase() || 'NN';
   }
 }

@@ -10,7 +10,9 @@ import {
   LucideClipboardCopy,
   LucideLoaderCircle,
   LucideSettings,
+  LucideTrash2,
   LucideUserPlus,
+  LucideUsers,
 } from '@lucide/angular';
 import * as QRCode from 'qrcode';
 import { finalize } from 'rxjs';
@@ -19,12 +21,22 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import type { BusinessMembershipRole, SectionAccess } from '../../../../shared/models/auth.models';
 import type { BankAccount, BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type { ApprovedMember } from '../../../../shared/models/schedule.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
+import { Avatar } from '../../../../shared/ui/avatar/avatar';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
+import { CheckGroup } from '../../../../shared/ui/check-group/check-group';
+import { CheckOption } from '../../../../shared/ui/check-group/check-option';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
+import { Menu } from '../../../../shared/ui/menu/menu';
+import { MenuItem } from '../../../../shared/ui/menu/menu-item';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
@@ -54,21 +66,31 @@ const DEFAULT_SECTION_ACCESS: SectionAccess = {
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    Alert,
+    Avatar,
     Button,
+    Card,
+    CheckGroup,
+    CheckOption,
     Checkbox,
     IconButton,
+    Menu,
+    MenuItem,
     Modal,
     Select,
-    LucideBell,
-    LucideCalendarClock,
+    State,
+    StatusChip,
+    Table,
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLoaderCircle,
     LucideSettings,
+    LucideTrash2,
     LucideUserPlus,
+    LucideUsers,
   ],
   templateUrl: './business-employees.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-employees.section.scss'],
 })
 export class BusinessEmployeesSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
@@ -110,6 +132,10 @@ export class BusinessEmployeesSection implements OnInit {
   readonly savingSectionAccess = signal(false);
   readonly sectionAccessMember = signal<ApprovedMember | null>(null);
   readonly selectedSectionAccess = signal<SectionAccess>(DEFAULT_SECTION_ACCESS);
+
+  /** Iconos de las acciones de fila (yep-icon-button con icono libre). */
+  protected readonly scheduleIcon = LucideCalendarClock;
+  protected readonly accessIcon = LucideBell;
 
   readonly roleOptions: readonly SelectOption[] = [
     { id: 'account_staff', label: 'Staff' },

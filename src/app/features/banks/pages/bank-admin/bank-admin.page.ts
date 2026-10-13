@@ -3,7 +3,7 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { LucideArrowLeft, LucideInfo, LucideLoaderCircle, LucidePlus } from '@lucide/angular';
+import { LucideArrowLeft, LucideInfo, LucidePlus, LucideSettings } from '@lucide/angular';
 import {
   Subject,
   catchError,
@@ -19,8 +19,16 @@ import {
 
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
+import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip, type StatusChipTone } from '../../../../shared/ui/status-chip/status-chip';
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -112,16 +120,24 @@ const ACCOUNT_TYPES: { key: SupportedAccountType; label: string }[] = [
     ReactiveFormsModule,
     Alert,
     Button,
+    Checkbox,
+    DescriptionItem,
+    DescriptionList,
+    IconButton,
     Input,
     Modal,
+    PageHeader,
+    Select,
+    State,
+    StatusChip,
     StatusDot,
     Toggle,
     ExampleEditorModal,
     SmsGatewaysStatus,
     LucideArrowLeft,
     LucideInfo,
-    LucideLoaderCircle,
     LucidePlus,
+    LucideSettings,
   ],
   templateUrl: './bank-admin.page.html',
   styleUrl: './bank-admin.page.scss',
@@ -137,6 +153,19 @@ export class BankAdminPage {
   readonly channels = CHANNELS;
   readonly resolutionStrategies = RESOLUTION_STRATEGIES;
   readonly accountTypes = ACCOUNT_TYPES;
+  /** Opciones de `yep-select` para la estrategia de resolución (mismos valores que el form). */
+  protected readonly strategyOptions: SelectOption[] = RESOLUTION_STRATEGIES.map((opt) => ({
+    id: opt.value,
+    label: opt.label,
+  }));
+  /** Tono del chip de preparación móvil (solo presentación). */
+  protected readonly readinessChipTone: Record<MobileReadiness['tone'], StatusChipTone> = {
+    muted: 'neutral',
+    warn: 'warning',
+    info: 'info',
+    ok: 'success',
+  };
+  protected readonly infoIcon = LucideInfo;
   /** Reusados en el template para mostrar la fecha/origen extraídos de un ejemplo. */
   readonly formatTransactionDate = formatTransactionDate;
   readonly transactionDateSourceLabel = transactionDateSourceLabel;

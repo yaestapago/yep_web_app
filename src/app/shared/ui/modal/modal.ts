@@ -2,6 +2,8 @@ import { DOCUMENT } from '@angular/common';
 import { Component, OnDestroy, effect, inject, input as defineInput, output } from '@angular/core';
 import { LucideX } from '@lucide/angular';
 
+import { IconButton } from '../icon-button/icon-button';
+
 type ModalSize = 'sm' | 'md' | 'lg';
 
 let bodyScrollLockCount = 0;
@@ -26,7 +28,7 @@ let previousBodyOverflow: string | null = null;
  */
 @Component({
   selector: 'yep-modal',
-  imports: [LucideX],
+  imports: [IconButton],
   templateUrl: './modal.html',
   styleUrl: './modal.scss',
 })
@@ -46,6 +48,8 @@ export class Modal implements OnDestroy {
 
   /** Solicitud de cierre (cancelar, ESC, fondo o botón X). El padre decide. */
   readonly closeRequested = output<void>();
+
+  protected readonly closeIcon = LucideX;
 
   constructor() {
     // Bloquea el scroll del body mientras el modal está abierto.

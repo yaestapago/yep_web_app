@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+
+import { environment } from '../../../environments/environment';
 
 import { AuthResponse, BusinessMembership, User } from '../../shared/models/auth.models';
 import { AuthSessionService } from './auth-session.service';
@@ -168,5 +171,51 @@ describe('AuthSessionService', () => {
     const service = TestBed.inject(AuthSessionService);
 
     expect(service.activeBusinessAccountId()).toBe('business-1');
+  });
+});
+
+describe('AuthSessionService · refreshAccessToken', () => {
+  const refreshUrl = `${environment.apiUrl}/auth/refresh`;
+  let httpMock: HttpTestingController;
+  let service: AuthSessionService;
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    httpMock = TestBed.inject(HttpTestingController);
+    service = TestBed.inject(AuthSessionService);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it('comparte una sola petición entre llamadas simultáneas y guarda la sesión', async () => {
+    const first = service.refreshAccessToken();
+    const second = service.refreshAccessToken();
+    expect(second).toBe(first);
+
+    await new Promise((resolve) => setTimeout(resolve));
+    httpMock.expectOne(refreshUrl).flush({ accessToken: 'fresh', user, memberships: [] });
+
+    await expect(first).resolves.toMatchObject({ accessToken: 'fresh' });
+    expect(service.accessToken()).toBe('fresh');
+  });
+
+  it('serializa la renovación entre pestañas con un Web Lock', async () => {
+    const request = vi.fn((_name: string, task: () => Promise<unknown>) => task());
+    vi.stubGlobal('navigator', { ...navigator, locks: { request } });
+
+    const pending = service.refreshAccessToken();
+    await new Promise((resolve) => setTimeout(resolve));
+    httpMock.expectOne(refreshUrl).flush({ accessToken: 'fresh', user, memberships: [] });
+    await pending;
+
+    expect(request).toHaveBeenCalledWith('yep_web.auth_refresh', expect.any(Function));
   });
 });

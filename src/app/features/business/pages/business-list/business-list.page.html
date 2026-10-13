@@ -1,13 +1,13 @@
 <section class="page">
-  <header class="page-header">
-    <div class="page-header__text">
-      <h1 class="page-title">Negocios</h1>
-      <p class="page-subtitle">
-        Administra tus negocios. Selecciona uno para ver su información, métricas, usuarios e
-        integraciones.
-      </p>
-    </div>
-    <div class="page-header__actions">
+  <yep-page-header
+    title="Negocios"
+    subtitle="Administra tus negocios. Selecciona uno para ver su información, métricas, usuarios e integraciones."
+  >
+    <ng-container slot="actions">
+      <yep-button variant="secondary" (clicked)="openRequest()">
+        <svg lucideUserPlus aria-hidden="true"></svg>
+        <span>Unirme a un negocio</span>
+      </yep-button>
       <yep-button
         [loading]="checkingBusinessCreation()"
         [disabled]="!canCreateBusiness()"
@@ -16,15 +16,11 @@
         <svg lucidePlus aria-hidden="true"></svg>
         <span>Nuevo negocio</span>
       </yep-button>
-      <yep-button variant="secondary" (clicked)="openRequest()">
-        <svg lucideUserPlus aria-hidden="true"></svg>
-        <span>Unirme a un negocio</span>
-      </yep-button>
-    </div>
-  </header>
+    </ng-container>
+  </yep-page-header>
 
   @if (planAlert()) {
-    <yep-alert variant="warning" title="Limite del plan">
+    <yep-alert class="plan-alert" variant="warning" title="Limite del plan">
       <p>
         {{ planAlert() }}
         <a routerLink="/subscription">Actualizar plan</a>
@@ -32,30 +28,41 @@
     </yep-alert>
   }
 
-  <div class="business-grid">
-    @for (membership of memberships(); track membership.businessAccountId) {
-      <a class="business-card" [routerLink]="['/businesses', membership.businessAccountId]">
-        <span class="card-top">
-          <span class="business-avatar" aria-hidden="true">{{ initials(membership) }}</span>
-          @if (membership.businessAccountId === activeBusinessAccountId()) {
-            <span class="badge-active">Activo</span>
-          }
-        </span>
-        <span class="business-name">{{ businessName(membership) }}</span>
-        @if (businessLocation(membership)) {
-          <span class="business-location">
-            <svg lucideMapPin aria-hidden="true"></svg>
-            {{ businessLocation(membership) }}
+  @if (hasBusinesses()) {
+    <section class="business-grid" aria-label="Lista de negocios">
+      @for (membership of memberships(); track membership.businessAccountId) {
+        <a class="business-card" [routerLink]="['/businesses', membership.businessAccountId]">
+          <yep-avatar [name]="businessName(membership)" [size]="40" />
+          <span class="business-card__text">
+            <span class="business-name">{{ businessName(membership) }}</span>
+            @if (businessLocation(membership)) {
+              <span class="business-location">
+                <svg lucideMapPin aria-hidden="true"></svg>
+                <span>{{ businessLocation(membership) }}</span>
+              </span>
+            }
           </span>
-        }
-        <span class="card-footer">
-          <span class="role-chip">{{ roleLabel(membership) }}</span>
-          <svg class="chevron" lucideChevronRight aria-hidden="true"></svg>
-        </span>
-      </a>
-    }
-
-  </div>
+          <span class="card-footer">
+            <span class="card-chips">
+              <yep-status-chip tone="neutral" [label]="roleLabel(membership)" />
+              @if (membership.businessAccountId === activeBusinessAccountId()) {
+                <yep-status-chip tone="success" label="Activo" />
+              }
+            </span>
+            <svg class="chevron" lucideChevronRight aria-hidden="true"></svg>
+          </span>
+        </a>
+      }
+    </section>
+  } @else {
+    <yep-state
+      kind="empty"
+      title="Aún no tienes negocios"
+      description="Crea un negocio o únete a uno existente con el código que te comparta su propietario."
+    >
+      <svg slot="icon" lucideStore aria-hidden="true"></svg>
+    </yep-state>
+  }
 
   <app-create-business-modal
     [open]="createOpen()"

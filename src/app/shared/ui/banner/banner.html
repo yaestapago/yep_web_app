@@ -1,0 +1,33 @@
+<section
+  class="yep-banner"
+  [class.yep-banner--ink]="tone() === 'ink'"
+  [class.yep-banner--lime]="tone() === 'lime'"
+  [class.yep-banner--paper]="tone() === 'paper'"
+  [class.yep-banner--compact]="size() === 'compact'"
+  [class.yep-banner--with-image]="!!imageSrc()"
+  [attr.aria-labelledby]="titleId"
+>
+  <!-- Diagonal de marca: pendiente 0,633 (docs/design-system), entra desde arriba a la derecha. -->
+  <svg class="yep-banner__diagonal" viewBox="0 0 260 200" aria-hidden="true" focusable="false">
+    <polygon class="yep-banner__band" points="118,0 238,0 112,200 -8,200" />
+    <polygon class="yep-banner__stroke" points="214,0 260,0 260,12 150,186 128,152" />
+  </svg>
+
+  <div class="yep-banner__copy">
+    <div class="yep-banner__icon"><ng-content select="[slot=icon]"></ng-content></div>
+    @if (eyebrow()) {
+      <span class="yep-banner__eyebrow">{{ eyebrow() }}</span>
+    }
+    <h2 class="yep-banner__title" [id]="titleId">{{ title() }}</h2>
+    @if (text()) {
+      <p class="yep-banner__text">{{ text() }}</p>
+    }
+    <div class="yep-banner__actions"><ng-content select="[slot=actions]"></ng-content></div>
+  </div>
+
+  @if (imageSrc()) {
+    <div class="yep-banner__art">
+      <img class="yep-banner__image" [src]="imageSrc()" alt="" />
+    </div>
+  }
+</section>

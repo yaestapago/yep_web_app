@@ -18,9 +18,10 @@
     @if (groups().length > 0) {
       <details class="device-diagnostics__discards" data-testid="discards">
         <summary class="device-diagnostics__summary">
-          <svg lucideTriangleAlert aria-hidden="true"></svg>
+          <svg class="device-diagnostics__warn" lucideTriangleAlert aria-hidden="true"></svg>
           Avisos descartados
           <span class="device-diagnostics__total">· {{ totalLabel() }}</span>
+          <svg class="device-diagnostics__chevron" lucideChevronDown aria-hidden="true"></svg>
         </summary>
 
         @for (group of groups(); track group.reason) {

@@ -1,0 +1,26 @@
+// S11 · Informes · docs/rediseno-web/04-pantallas.md#s11--informes-y-conciliación
+// Una yep-card: filtros en una fila (rango, sede) y, al pie, "Generar CSV" (secundario) y "Generar PDF" (primario).
+
+// La cabecera de yep-card ya separa el cuerpo: sin el margen superior común de .report-filters.
+.reports-card__filters {
+  margin-top: 0;
+}
+
+.report-filters__location {
+  min-width: 250px;
+}
+
+.reports-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+@media (max-width: 520px) {
+  .report-filters__location {
+    min-width: 0;
+    width: 100%;
+  }
+}

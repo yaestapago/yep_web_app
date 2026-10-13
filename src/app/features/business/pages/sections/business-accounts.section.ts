@@ -2,19 +2,31 @@ import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from 
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { LucideLoaderCircle, LucidePlus, LucideRefreshCw } from '@lucide/angular';
+import {
+  LucideLandmark,
+  LucidePlus,
+  LucidePower,
+  LucidePowerOff,
+  LucideRefreshCw,
+} from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { SubscriptionCreationPermissionResponse } from '../../../../shared/models/auth.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Input } from '../../../../shared/ui/input/input';
+import { Menu } from '../../../../shared/ui/menu/menu';
+import { MenuItem } from '../../../../shared/ui/menu/menu-item';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import type {
   BankAccount,
   BankAccountType,
@@ -33,17 +45,25 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     RouterLink,
     Alert,
     Button,
+    Card,
     Checkbox,
     IconButton,
     Input,
+    Menu,
+    MenuItem,
     Modal,
     Select,
-    LucideLoaderCircle,
+    State,
+    StatusChip,
+    Table,
+    LucideLandmark,
     LucidePlus,
+    LucidePower,
+    LucidePowerOff,
     LucideRefreshCw,
   ],
   templateUrl: './business-accounts.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-accounts.section.scss'],
 })
 export class BusinessAccountsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
@@ -81,6 +101,10 @@ export class BusinessAccountsSection implements OnInit {
     { id: 'checking', label: 'Corriente' },
     { id: 'other', label: 'Otro' },
   ];
+  /** Etiqueta legible del tipo de cuenta para la tabla (solo presentación). */
+  protected readonly accountTypeLabels: Readonly<Record<string, string>> = Object.fromEntries(
+    this.allAccountTypeOptions.map((option) => [option.id, option.label]),
+  );
   readonly currencyOptions: readonly SelectOption[] = [{ id: 'COP', label: 'COP' }];
 
   readonly canManage = computed(

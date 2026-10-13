@@ -1,15 +1,24 @@
-<div class="date-range" [class.date-range--open]="open()">
+<div
+  class="date-range"
+  [class.date-range--open]="open()"
+  [class.date-range--labeled]="!!fieldLabel()"
+>
+  @if (fieldLabel()) {
+    <span class="date-range__field-label" aria-hidden="true">{{ fieldLabel() }}</span>
+  }
   <button
     type="button"
     class="date-range__button"
     (click)="toggle()"
-    aria-label="Rango del resumen"
+    [attr.aria-label]="fieldLabel() || 'Rango del resumen'"
     aria-haspopup="dialog"
     [attr.aria-expanded]="open()"
   >
     <svg lucideCalendarDays aria-hidden="true"></svg>
     <span class="date-range__button-text">
-      <span class="date-range__button-label">Rango</span>
+      @if (!fieldLabel()) {
+        <span class="date-range__button-label">Rango</span>
+      }
       <span class="date-range__button-value">{{ label() }}</span>
     </span>
     <svg class="date-range__chevron" lucideChevronDown aria-hidden="true"></svg>

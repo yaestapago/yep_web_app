@@ -2,44 +2,53 @@
   display: block;
 }
 
+/* P6 · Inputs sobrios: borde fuerte, foco = borde 1,5 px sin halo, error con borde rojo. */
 .yep-input {
   display: grid;
-  gap: var(--space-2);
+  gap: 0.375rem;
 }
 
 .yep-input__label {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
   line-height: var(--line-height-snug);
+}
+
+.yep-input__required {
+  color: var(--color-text-muted);
 }
 
 .yep-input__control {
   align-items: center;
   background: var(--color-input-bg);
   background-clip: padding-box;
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border-strong);
   border-radius: var(--radius-md);
   display: flex;
-  min-height: var(--control-height-lg);
+  min-height: var(--control-height-md);
   overflow: hidden;
-  transition:
-    border-color var(--motion-base),
-    box-shadow var(--motion-base);
+  transition: border-color var(--motion-fast);
+}
+
+.yep-input__control:hover:not(:focus-within) {
+  border-color: var(--color-text-secondary);
 }
 
 .yep-input__control:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus);
+  border-color: var(--color-focus);
+  border-width: var(--border-width-focus);
 }
 
-.yep-input__control--invalid {
-  border-color: var(--color-error);
-}
-
+.yep-input__control--invalid,
+.yep-input__control--invalid:hover:not(:focus-within),
 .yep-input__control--invalid:focus-within {
   border-color: var(--color-error);
-  box-shadow: var(--shadow-focus-error);
+}
+
+.yep-input__control:has(input:disabled) {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border-strong);
 }
 
 input {
@@ -49,7 +58,8 @@ input {
   color: var(--color-text-primary);
   flex: 1 1 auto;
   font: inherit;
-  min-height: calc(var(--control-height-lg) - 2px);
+  font-size: var(--font-size-sm);
+  min-height: calc(var(--control-height-md) - 2px);
   min-width: 0;
   outline: none;
   padding: 0 var(--space-3);
@@ -60,77 +70,96 @@ input {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   cursor: pointer;
   display: inline-flex;
   flex: 0 0 auto;
-  height: 2.25rem;
+  height: 1.75rem;
   justify-content: center;
-  margin-right: var(--space-1);
+  margin-right: var(--space-2);
   padding: 0;
   transition:
-    background-color 160ms ease,
-    color 160ms ease;
-  width: 2.25rem;
+    background-color var(--motion-fast),
+    color var(--motion-fast);
+  width: 1.75rem;
 }
 
 .yep-input__password-toggle:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
-  color: var(--color-secondary);
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+}
+
+.yep-input__password-toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
 }
 
 .yep-input__password-toggle:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 .yep-input__password-toggle svg {
-  height: 18px;
-  width: 18px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 input::placeholder {
   color: var(--color-text-muted);
 }
 
+/*
+ * El autocompletado del navegador pinta su propio fondo. En vez del truco de sombra interior (P7),
+ * se aplaza indefinidamente la transición de ese fondo para que se vea el del input.
+ */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--color-text-primary);
-  box-shadow: 0 0 0 1000px var(--color-input-bg) inset;
   caret-color: var(--color-text-primary);
+  transition: background-color 600000s 0s;
 }
 
 input:disabled {
+  color: var(--color-text-muted);
   cursor: not-allowed;
-  opacity: 0.72;
+  -webkit-text-fill-color: var(--color-text-muted);
 }
 
 .yep-input__message {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   line-height: var(--line-height-snug);
 }
 
 .yep-input__message--error {
-  color: var(--color-error);
+  align-items: center;
+  color: var(--color-error-strong);
+  display: flex;
+  gap: 0.375rem;
+}
+
+.yep-input__message--error svg {
+  flex: 0 0 auto;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 .yep-input--sm .yep-input__control {
-  min-height: var(--control-height-md);
+  min-height: var(--control-height-sm);
 }
 
 .yep-input--sm input {
-  min-height: calc(var(--control-height-md) - 2px);
-  padding: 0 var(--space-3);
+  min-height: calc(var(--control-height-sm) - 2px);
 }
 
 .yep-input--lg .yep-input__control {
-  min-height: 3.375rem;
+  min-height: var(--control-height-lg);
 }
 
 .yep-input--lg input {
-  min-height: 3.25rem;
+  min-height: calc(var(--control-height-lg) - 2px);
   padding: 0 var(--space-4);
 }

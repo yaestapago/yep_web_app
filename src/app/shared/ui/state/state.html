@@ -1,0 +1,34 @@
+@if (kind() === 'loading') {
+  <div class="yep-state yep-state--loading" role="status" aria-busy="true">
+    <span class="yep-state__sr-only">{{ title() || 'Cargando' }}</span>
+    @for (width of skeletonRows(); track $index) {
+      <span class="yep-state__skeleton" [style.width]="width" aria-hidden="true"></span>
+    }
+  </div>
+} @else {
+  <div
+    class="yep-state"
+    [class.yep-state--empty]="kind() === 'empty'"
+    [class.yep-state--error]="kind() === 'error'"
+    [attr.role]="kind() === 'error' ? 'alert' : null"
+  >
+    <yep-icon-tile class="yep-state__icon" [size]="48" aria-hidden="true">
+      <ng-content select="[slot=icon]">
+        @if (kind() === 'error') {
+          <svg lucideCircleAlert></svg>
+        } @else {
+          <svg lucideInbox></svg>
+        }
+      </ng-content>
+    </yep-icon-tile>
+
+    @if (title()) {
+      <p class="yep-state__title">{{ title() }}</p>
+    }
+    @if (description()) {
+      <p class="yep-state__description">{{ description() }}</p>
+    }
+
+    <div class="yep-state__action"><ng-content select="[slot=action]"></ng-content></div>
+  </div>
+}

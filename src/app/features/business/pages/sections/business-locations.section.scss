@@ -1,0 +1,26 @@
+// S10 · Sedes · docs/rediseno-web/04-pantallas.md#s10--sedes-y-horarios
+// Encabezado de sección (h2) con "Nueva sede"; tabla en una yep-card a sangre.
+
+.locations-name {
+  align-items: center;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-3);
+}
+
+.locations-sr-only {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+td.actions yep-menu {
+  margin-left: var(--space-1);
+}

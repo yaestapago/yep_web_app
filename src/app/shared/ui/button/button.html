@@ -1,13 +1,20 @@
 <button
   class="yep-button"
+  [class.yep-button--primary]="variant() === 'primary'"
   [class.yep-button--secondary]="variant() === 'secondary'"
   [class.yep-button--ghost]="variant() === 'ghost'"
   [class.yep-button--danger]="variant() === 'danger'"
   [class.yep-button--sm]="size() === 'sm'"
+  [class.yep-button--md]="size() === 'md'"
   [class.yep-button--lg]="size() === 'lg'"
+  [class.yep-button--tone-danger]="appliedTone() === 'danger'"
+  [class.yep-button--tone-on-brand]="appliedTone() === 'on-brand'"
+  [class.yep-button--tone-ink]="appliedTone() === 'ink'"
+  [class.yep-button--loading]="loading()"
   [class.yep-button--full]="fullWidth()"
   [type]="type()"
   [disabled]="disabled() || loading()"
+  [attr.aria-busy]="loading() ? 'true' : null"
   (click)="onClick($event)"
 >
   @if (loading()) {

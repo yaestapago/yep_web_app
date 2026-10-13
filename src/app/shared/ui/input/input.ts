@@ -1,6 +1,6 @@
 import { Component, computed, forwardRef, input as defineInput, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { LucideEye, LucideEyeOff } from '@lucide/angular';
+import { LucideCircleAlert, LucideEye, LucideEyeOff } from '@lucide/angular';
 
 type InputType = 'email' | 'number' | 'password' | 'search' | 'tel' | 'text' | 'url';
 type InputSize = 'sm' | 'md' | 'lg';
@@ -9,7 +9,7 @@ let nextInputId = 0;
 
 @Component({
   selector: 'yep-input',
-  imports: [LucideEye, LucideEyeOff],
+  imports: [LucideCircleAlert, LucideEye, LucideEyeOff],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

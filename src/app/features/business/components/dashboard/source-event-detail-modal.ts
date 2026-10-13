@@ -12,9 +12,11 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   LucideChevronDown,
+  LucideChevronRight,
   LucideChevronUp,
   LucideMail,
   LucideMonitor,
+  LucideShieldCheck,
   LucideSmartphone,
 } from '@lucide/angular';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
@@ -25,8 +27,16 @@ import type {
   SourceEventType,
 } from '../../../../shared/models/source-event.models';
 import type { PaymentTransaction } from '../../../../shared/models/transaction.models';
-import { Button } from '../../../../shared/ui/button/button';
-import { Modal } from '../../../../shared/ui/modal/modal';
+import {
+  Alert,
+  Button,
+  CardSection,
+  DescriptionItem,
+  DescriptionList,
+  IconTile,
+  Modal,
+  StatusChip,
+} from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   isTransactionInvoiceable,
@@ -63,13 +73,21 @@ const BOGOTA_TIME_ZONE = 'America/Bogota';
     CurrencyPipe,
     DatePipe,
     JsonPipe,
+    Alert,
     Button,
+    CardSection,
+    DescriptionItem,
+    DescriptionList,
+    IconTile,
     Modal,
+    StatusChip,
     TransactionSupportsPanel,
     LucideChevronDown,
+    LucideChevronRight,
     LucideChevronUp,
     LucideMail,
     LucideMonitor,
+    LucideShieldCheck,
     LucideSmartphone,
   ],
   templateUrl: './source-event-detail-modal.html',

@@ -93,6 +93,9 @@
   }
 
   @if (error()) {
-    <small class="yep-time-picker__message yep-time-picker__message--error">{{ error() }}</small>
+    <small class="yep-time-picker__message yep-time-picker__message--error">
+      <svg lucideCircleAlert aria-hidden="true"></svg>
+      <span>{{ error() }}</span>
+    </small>
   }
 </div>

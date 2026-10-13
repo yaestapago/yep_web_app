@@ -9,8 +9,17 @@ import {
 } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
-import { Button } from '../../../../shared/ui/button/button';
-import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import {
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  CardSection,
+  CheckGroup,
+  CheckOption,
+  State,
+  StatusChip,
+} from '../../../../shared/ui';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import type { BankPickerEntry } from '../../../../shared/models/bank.models';
 import type { BankAccount } from '../../../../shared/models/bank-account.models';
@@ -29,15 +38,22 @@ interface EmployeeRoutingView {
 @Component({
   selector: 'app-business-notification-routing-section',
   imports: [
+    Alert,
+    Avatar,
     Button,
-    Checkbox,
+    Card,
+    CardSection,
+    CheckGroup,
+    CheckOption,
+    State,
+    StatusChip,
     LucideChevronRight,
     LucideLoaderCircle,
     LucideRefreshCw,
     LucideUsers,
   ],
   templateUrl: './business-notification-routing.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-notification-routing.section.scss'],
 })
 export class BusinessNotificationRoutingSection implements OnInit {
   private readonly routingApi = inject(NotificationRoutingApiService);

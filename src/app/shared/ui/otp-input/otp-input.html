@@ -33,7 +33,7 @@
   <div class="yep-otp__feedback" aria-live="polite">
     @if (status() === 'error') {
       <p class="yep-otp__message yep-otp__message--error">
-        <svg lucideCircleX aria-hidden="true"></svg>
+        <svg lucideCircleAlert aria-hidden="true"></svg>
         <span>{{ errorMessage() || 'El código no es válido.' }}</span>
       </p>
     } @else if (status() === 'validating') {

@@ -10,13 +10,19 @@
 
 .yep-radio-list__search {
   align-items: center;
-  background: color-mix(in srgb, var(--color-border) 22%, var(--color-surface));
-  border: 1px solid var(--color-border);
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   display: flex;
   gap: var(--space-2);
+  min-height: var(--control-height-md);
   padding: 0 var(--space-3);
+  transition: border-color var(--motion-fast);
+}
+
+.yep-radio-list__search:hover {
+  border-color: var(--color-text-secondary);
 }
 
 .yep-radio-list__search svg {
@@ -31,22 +37,29 @@
   color: var(--color-text-primary);
   flex: 1;
   min-width: 0;
+  font: inherit;
+  font-size: var(--font-size-sm);
   padding: var(--space-2) 0;
+}
+
+.yep-radio-list__search input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .yep-radio-list__search input:focus {
   outline: none;
 }
 
+/* Foco (P6): borde 1,5 px, sin halo; el relleno compensa el medio píxel extra. */
 .yep-radio-list__search:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus);
+  border: var(--border-width-focus) solid var(--color-focus);
+  padding: 0 calc(var(--space-3) - 0.5px);
 }
 
 .yep-radio-list__options {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .yep-radio-list__empty {
@@ -57,39 +70,39 @@
 .yep-radio-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
-  padding: var(--space-4);
+  padding: 14px var(--space-4);
   position: relative;
   transition:
-    background var(--motion-base),
-    border-color var(--motion-base),
-    box-shadow var(--motion-base),
-    opacity var(--motion-base);
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
   width: 100%;
 }
 
 .yep-radio-card--half {
-  width: calc(50% - var(--space-2));
+  width: calc(50% - var(--space-3) / 2);
 }
 
 .yep-radio-card:hover:not(.yep-radio-card--disabled) {
-  border-color: var(--color-primary);
+  border-color: var(--color-border-strong);
 }
 
-.yep-radio-card--selected {
-  background: color-mix(in srgb, var(--color-primary) 9%, var(--color-surface));
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 1px var(--color-primary);
+/* Seleccionada: borde 1,5 px y fondo suave, sin sombra; el relleno compensa el medio píxel extra. */
+.yep-radio-card--selected,
+.yep-radio-card--selected:hover:not(.yep-radio-card--disabled) {
+  background: var(--color-primary-soft);
+  border: var(--border-width-focus) solid var(--color-primary);
+  padding: calc(14px - 0.5px) calc(var(--space-4) - 0.5px);
 }
 
 .yep-radio-card--disabled {
   cursor: not-allowed;
-  opacity: 0.56;
+  opacity: 0.45;
 }
 
 .yep-radio-card__input {
@@ -98,16 +111,16 @@
   position: absolute;
 }
 
-.yep-radio-card__input:focus-visible + .yep-radio-card__tag + .yep-radio-card__content,
-.yep-radio-card__input:focus-visible + .yep-radio-card__content {
-  outline: 3px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
-  outline-offset: 4px;
+/* Foco de teclado: anillo plano (P7) sobre la fila completa, sin halo. */
+.yep-radio-card:has(.yep-radio-card__input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .yep-radio-card__tag {
-  background: var(--color-success-strong);
+  background: var(--color-primary);
   border-radius: var(--radius-full);
-  color: #fff;
+  color: var(--color-on-primary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-snug);
@@ -117,7 +130,7 @@
   position: absolute;
   right: var(--space-4);
   text-overflow: ellipsis;
-  top: var(--space-3);
+  top: 14px;
   white-space: nowrap;
 }
 
@@ -130,32 +143,36 @@
 
 .yep-radio-card__radio {
   align-items: center;
-  border: 2px solid var(--color-border);
+  background: var(--color-input-bg);
+  border: var(--border-width-focus) solid var(--color-border-strong);
   border-radius: var(--radius-full);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 20px;
+  height: 18px;
   justify-content: center;
-  margin-top: 2px;
-  transition: border-color var(--motion-base);
-  width: 20px;
+  margin-top: 1px;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+  width: 18px;
 }
 
 .yep-radio-card--selected .yep-radio-card__radio {
+  background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
 .yep-radio-card__dot {
-  background: var(--color-primary);
+  background: var(--color-on-primary);
   border-radius: var(--radius-full);
   display: block;
-  height: 10px;
+  height: 6px;
   opacity: 0;
   transform: scale(0.72);
   transition:
     opacity var(--motion-fast),
     transform var(--motion-fast);
-  width: 10px;
+  width: 6px;
 }
 
 .yep-radio-card--selected .yep-radio-card__dot {
@@ -173,6 +190,7 @@
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
   padding-right: var(--space-5);
 }
 
@@ -196,7 +214,7 @@
 
 .yep-radio-card__icon {
   align-items: center;
-  background: color-mix(in srgb, var(--color-border) 35%, transparent);
+  background: var(--color-surface-muted);
   border-radius: var(--radius-full);
   display: inline-flex;
   height: 30px;
@@ -234,7 +252,7 @@
 .yep-radio-card__table {
   display: grid;
   gap: var(--space-2);
-  padding-left: calc(20px + var(--space-3));
+  padding-left: calc(18px + var(--space-3));
 }
 
 .yep-radio-card__table-row {
@@ -248,7 +266,7 @@
 
 .yep-radio-card__table-row strong {
   color: var(--color-text-primary);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
 }
 
 @media (max-width: 520px) {

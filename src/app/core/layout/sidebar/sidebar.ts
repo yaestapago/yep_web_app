@@ -22,6 +22,7 @@ import {
 
 import { AuthSessionService } from '../../services/auth-session.service';
 import { ThemeService } from '../../services/theme.service';
+import { Avatar } from '../../../shared/ui/avatar/avatar';
 import { Select, type SelectOption } from '../../../shared/ui/select/select';
 import {
   canAccessBusinessSection,
@@ -55,6 +56,7 @@ const ALL_BUSINESS_SECTIONS: BusinessNavItem[] = [
     FormsModule,
     RouterLink,
     RouterLinkActive,
+    Avatar,
     Select,
     LucideBuilding2,
     LucideClipboardList,

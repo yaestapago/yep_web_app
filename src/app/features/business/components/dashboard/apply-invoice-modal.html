@@ -11,23 +11,23 @@
   (closeRequested)="close()"
 >
   @if (transaction(); as tx) {
-    <dl class="verify-summary">
-      <div class="verify-row">
-        <dt>Referencia</dt>
-        <dd>{{ tx.reference || 'Sin referencia' }}</dd>
-      </div>
-      <div class="verify-row">
-        <dt>Monto</dt>
-        <dd class="verify-amount">{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
-      </div>
-    </dl>
+    <yep-description-list layout="inline">
+      <yep-description-item label="Referencia" [mono]="!!tx.reference">{{
+        tx.reference || 'Sin referencia'
+      }}</yep-description-item>
+      <yep-description-item label="Monto" [mono]="true">
+        <span class="verify-amount">{{
+          tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0'
+        }}</span>
+      </yep-description-item>
+    </yep-description-list>
   }
 
   @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
+    <yep-alert class="field-error" variant="error">{{ error() }}</yep-alert>
   }
 
-  <form [formGroup]="form" (ngSubmit)="save()" id="apply-invoice-form">
+  <form class="invoice-form" [formGroup]="form" (ngSubmit)="save()" id="apply-invoice-form">
     <yep-input
       formControlName="invoiceReference"
       [label]="label()"

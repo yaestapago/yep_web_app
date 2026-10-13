@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  margin-block-end: var(--space-5);
+}
+
+.yep-page-header {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.yep-page-header__main {
+  align-items: flex-end;
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.yep-page-header__leading {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.yep-page-header__heading {
+  min-width: 0;
+}
+
+.yep-page-header__back,
+.yep-page-header__eyebrow {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+  gap: 6px;
+  line-height: 1.45;
+  margin: 0 0 6px;
+}
+
+/* El enlace de volver ocupa el lugar del eyebrow. */
+.yep-page-header__back:not(:empty) + .yep-page-header__eyebrow {
+  display: none;
+}
+
+.yep-page-header__back ::ng-deep a {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  display: inline-flex;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.yep-page-header__back ::ng-deep a:hover {
+  color: var(--color-text-primary);
+}
+
+.yep-page-header__back ::ng-deep a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.yep-page-header__back ::ng-deep svg {
+  flex: 0 0 auto;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+.yep-page-header__title-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.yep-page-header__title {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-display);
+  font-size: 2rem;
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.yep-page-header__meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.yep-page-header__subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  margin: var(--space-2) 0 0;
+  max-width: 640px;
+}
+
+.yep-page-header__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.yep-page-header__leading:empty,
+.yep-page-header__back:empty,
+.yep-page-header__meta:empty,
+.yep-page-header__actions:empty {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .yep-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .yep-page-header__title {
+    font-size: 1.625rem;
+  }
+}

@@ -1,0 +1,304 @@
+// yep-file-drop · docs/rediseno-web/03-componentes.md#yep-file-drop
+// Plano (P7): sin sombras, degradados ni filtros. Solo tokens.
+
+// Zona como botón secundario (borde tinta + texto tinta, 40 px): en celular y con `allowDrop=false`.
+@mixin button-mode {
+  .yep-file-drop__zone {
+    border: var(--border-width) solid var(--color-text-primary);
+    border-radius: var(--radius-md);
+    flex-direction: row;
+    font-weight: var(--font-weight-semibold);
+    gap: var(--space-2);
+    min-height: 2.5rem;
+    padding: 0 var(--space-4);
+  }
+
+  .yep-file-drop__zone:hover:not(.yep-file-drop__zone--disabled) {
+    background: var(--color-surface-muted);
+  }
+
+  .yep-file-drop__zone--error {
+    border-color: var(--color-error);
+  }
+
+  .yep-file-drop__tile,
+  .yep-file-drop__label,
+  .yep-file-drop__hint--inside {
+    display: none;
+  }
+
+  .yep-file-drop__button-icon,
+  .yep-file-drop__button-label,
+  .yep-file-drop__hint--outside {
+    display: block;
+  }
+}
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.yep-file-drop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+// Input nativo oculto a la vista pero presente y funcional (no `display: none`).
+.yep-file-drop__input {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.yep-file-drop__zone {
+  align-items: center;
+  background: transparent;
+  border: var(--border-width-focus) dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-family-base);
+  font-size: 0.8125rem;
+  gap: var(--space-2);
+  justify-content: center;
+  line-height: 1.45;
+  min-height: 160px;
+  padding: var(--space-5);
+  text-align: center;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+
+.yep-file-drop__zone:hover:not(.yep-file-drop__zone--disabled) {
+  border-color: var(--color-text-primary);
+}
+
+.yep-file-drop__zone:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.yep-file-drop__zone--dragging,
+.yep-file-drop__zone--dragging:hover:not(.yep-file-drop__zone--disabled) {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.yep-file-drop__zone--error,
+.yep-file-drop__zone--error:hover:not(.yep-file-drop__zone--disabled) {
+  border-color: var(--color-error);
+}
+
+.yep-file-drop__zone--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.yep-file-drop__tile svg,
+.yep-file-drop__button-icon,
+.yep-file-drop__thumb svg,
+.yep-file-drop__remove svg {
+  stroke-width: 1.75;
+}
+
+.yep-file-drop__label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-body);
+}
+
+.yep-file-drop__hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.yep-file-drop__button-icon {
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+.yep-file-drop__button-label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+// Solo en modo botón.
+.yep-file-drop__button-icon,
+.yep-file-drop__button-label,
+.yep-file-drop__hint--outside {
+  display: none;
+}
+
+.yep-file-drop__error {
+  color: var(--color-error-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  margin: 0;
+}
+
+// Archivos elegidos
+
+.yep-file-drop__files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.yep-file-drop__file {
+  align-items: center;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 10px var(--space-3);
+}
+
+.yep-file-drop__thumb {
+  align-items: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 40px;
+  justify-content: center;
+  overflow: hidden;
+  width: 40px;
+}
+
+.yep-file-drop__thumb svg {
+  height: var(--icon-md);
+  width: var(--icon-md);
+}
+
+.yep-file-drop__thumb-img {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.yep-file-drop__file-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.yep-file-drop__file-meta {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.yep-file-drop__file-name {
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-semibold);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yep-file-drop__file-size {
+  color: var(--color-text-muted);
+  flex: 0 0 auto;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+}
+
+.yep-file-drop__progress {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-full);
+  height: 4px;
+  overflow: hidden;
+}
+
+.yep-file-drop__progress-bar {
+  background: var(--color-primary);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  transition: width var(--motion-base);
+}
+
+.yep-file-drop__remove {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.5rem;
+  justify-content: center;
+  padding: 0;
+  transition: background-color var(--motion-fast);
+  width: 2.5rem;
+}
+
+.yep-file-drop__remove:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.yep-file-drop__remove:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.yep-file-drop__remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.yep-file-drop__remove svg {
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+// Modo botón: sin arrastre posible (`allowDrop=false`) o en celular / puntero táctil.
+
+.yep-file-drop--button {
+  @include button-mode;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+  @include button-mode;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yep-file-drop__zone,
+  .yep-file-drop__progress-bar,
+  .yep-file-drop__remove {
+    transition: none;
+  }
+}

@@ -1,50 +1,44 @@
 <div class="section">
   @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
+    <yep-alert variant="error">{{ error() }}</yep-alert>
   }
 
-  <article class="list-card reports-card">
-    <div class="list-card__main reports-card__main">
-      <h3 class="list-card__title">Reporte de movimientos</h3>
-      <p class="section-subtitle">
-        Movimientos del panel de control para el rango de fechas y la sede seleccionados,
-        con detalle de monto, origen, banco, estado, cuentas y fecha de transferencia.
-      </p>
-      <div class="report-filters">
-        <yep-date-range-picker
-          [range]="range()"
-          [preset]="preset()"
-          (rangeChange)="onRangeChange($event)"
-        />
-        <yep-select
-          class="report-filters__location"
-          label="Sede"
-          size="sm"
-          [options]="locationOptions()"
-          [ngModel]="locationId()"
-          [ngModelOptions]="{ standalone: true }"
-          (ngModelChange)="onLocationChange($event)"
-        />
-      </div>
+  <yep-card
+    class="reports-card"
+    title="Reporte de movimientos"
+    subtitle="Movimientos del panel de control para el rango de fechas y la sede seleccionados, con detalle de monto, origen, banco, estado, cuentas y fecha de transferencia."
+  >
+    <div class="report-filters reports-card__filters">
+      <yep-date-range-picker
+        fieldLabel="Rango"
+        [range]="range()"
+        [preset]="preset()"
+        (rangeChange)="onRangeChange($event)"
+      />
+      <yep-select
+        class="report-filters__location"
+        label="Sede"
+        size="sm"
+        [options]="locationOptions()"
+        [ngModel]="locationId()"
+        [ngModelOptions]="{ standalone: true }"
+        (ngModelChange)="onLocationChange($event)"
+      />
     </div>
-    <div class="list-card__actions reports-card__actions">
+
+    <div slot="footer" class="reports-actions">
       <yep-button
         variant="secondary"
-        [fullWidth]="true"
         [loading]="generatingCsv()"
         (clicked)="generateCashSummaryCsv()"
       >
         <svg lucideFileDown aria-hidden="true"></svg>
         Generar CSV
       </yep-button>
-      <yep-button
-        [fullWidth]="true"
-        [loading]="generatingPdf()"
-        (clicked)="generateCashSummary()"
-      >
+      <yep-button [loading]="generatingPdf()" (clicked)="generateCashSummary()">
         <svg lucideFileDown aria-hidden="true"></svg>
         Generar PDF
       </yep-button>
     </div>
-  </article>
+  </yep-card>
 </div>

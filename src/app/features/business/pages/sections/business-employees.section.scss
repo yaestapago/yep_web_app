@@ -1,0 +1,192 @@
+/* ---------- Cabecera de la sección ---------- */
+.employees-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---------- Tabla de empleados ---------- */
+.person {
+  align-items: center;
+  display: inline-flex;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+}
+
+.person yep-avatar {
+  flex: 0 0 auto;
+}
+
+.person__text {
+  display: grid;
+  min-width: 0;
+}
+
+.person__name {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.person__meta {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.row-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+
+/* El enlace de horarios solo envuelve al botón de icono: no pinta nada propio. */
+.row-actions__link {
+  color: inherit;
+  display: inline-flex;
+  text-decoration: none;
+}
+
+/* Ocupa el lugar de "Configurar cuentas" en filas que no lo tienen (mismo ancho que yep-icon-button). */
+.row-actions__spacer {
+  flex: none;
+  width: 2rem;
+
+  /* Con la tabla apilada (≤ 768 px) no hay columna que alinear. */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+/* ---------- Modal de invitación ---------- */
+.invite-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invite-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.qr-panel {
+  align-items: center;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: var(--space-4);
+}
+
+.qr-panel__body {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* El QR se lee mejor sobre blanco fijo, también en tema oscuro. */
+.qr-panel__code {
+  align-items: center;
+  background: var(--brand-on-ink);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: center;
+  min-height: 236px;
+  padding: var(--space-2);
+  width: 236px;
+}
+
+.qr-panel__code img {
+  display: block;
+  height: 220px;
+  width: 220px;
+}
+
+@media (max-width: 520px) {
+  .invite-grid,
+  .qr-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-panel__code {
+    justify-self: center;
+    max-width: 100%;
+  }
+}
+
+/* ---------- Modales de acceso (cuentas y llaves, apartados) ---------- */
+.access-body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.access-member {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.access-member yep-avatar {
+  flex: 0 0 auto;
+}
+
+.access-member__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.access-member__name {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.access-member__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.access-group-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.access-heading {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.access-key-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  grid-column: 1 / -1;
+}
+
+/* Tercer nivel (resumen operativo dentro del panel de control): sangría bajo su padre. */
+.access-nested-group {
+  margin-left: 30px;
+}
+
+@media (max-width: 520px) {
+  .access-nested-group {
+    margin-left: var(--space-4);
+  }
+}
+
+/* Las llaves Bre-B son códigos: van en mono (P9). */
+.access-key-option ::ng-deep .yep-check__label {
+  font-family: var(--font-family-mono);
+}

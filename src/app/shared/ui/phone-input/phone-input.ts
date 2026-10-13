@@ -16,6 +16,8 @@ import {
   FormsModule,
 } from '@angular/forms';
 
+import { LucideCircleAlert } from '@lucide/angular';
+
 import { Select, type SelectOption } from '../select/select';
 
 type PhoneInputSize = 'sm' | 'md' | 'lg';
@@ -67,7 +69,7 @@ let nextPhoneInputId = 0;
 
 @Component({
   selector: 'yep-phone-input',
-  imports: [FormsModule, Select],
+  imports: [FormsModule, LucideCircleAlert, Select],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -87,7 +89,7 @@ export class PhoneInput implements ControlValueAccessor, Validator {
   readonly id = defineInput(`yep-phone-input-${nextPhoneInputId++}`);
   readonly label = defineInput('');
   readonly size = defineInput<PhoneInputSize>('md');
-  readonly placeholder = defineInput('Numero de telefono');
+  readonly placeholder = defineInput('Número de teléfono');
   readonly hint = defineInput('');
   readonly error = defineInput('');
   readonly disabled = defineInput(false);

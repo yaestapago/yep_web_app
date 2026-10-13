@@ -6,10 +6,8 @@ import { Router } from '@angular/router';
 import {
   LucideBuilding2,
   LucideCircleCheck,
-  LucideLoaderCircle,
   LucideLogOut,
   LucideRefreshCw,
-  LucideTriangleAlert,
 } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
@@ -17,8 +15,11 @@ import { AuthSessionService } from '../../../../core/services/auth-session.servi
 import { BusinessMembership, InvoiceRecipientType } from '../../../../shared/models/auth.models';
 import type { AddressLocationValue } from '../../../../shared/models/geo.models';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
 import { businessNitError, normalizeBusinessNit } from '../../../../shared/utils/business-nit';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -32,13 +33,14 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     ReactiveFormsModule,
     LucideBuilding2,
     LucideCircleCheck,
-    LucideLoaderCircle,
     LucideLogOut,
     LucideRefreshCw,
-    LucideTriangleAlert,
     AddressLocationSelect,
+    Alert,
     Button,
+    Input,
     Modal,
+    PageHeader,
     PhoneInput,
   ],
   templateUrl: './onboarding.page.html',

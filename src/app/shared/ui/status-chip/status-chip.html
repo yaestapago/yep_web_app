@@ -1,0 +1,6 @@
+<span class="yep-status-chip" [class]="'yep-status-chip--' + tone() + ' yep-status-chip--' + size()">
+  @if (dot()) {
+    <span class="yep-status-chip__dot" aria-hidden="true"></span>
+  }
+  <span class="yep-status-chip__label">{{ label() }}</span>
+</span>

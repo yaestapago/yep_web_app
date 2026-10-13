@@ -1,0 +1,23 @@
+// a[yepButton] · docs/rediseno-web/03-componentes.md#yep-button
+// Sin encapsulación: cada regla empieza por `a.yep-button` para no tocar otros elementos.
+
+@use 'button-skin' as skin;
+
+@include skin.skin('a');
+
+// Enlace: sin subrayado ni cambio de color en ningún estado.
+a.yep-button:hover,
+a.yep-button:visited {
+  text-decoration: none;
+}
+
+a.yep-button {
+  white-space: nowrap;
+}
+
+// Icono proyectado (16 px, separación 8 px).
+a.yep-button > svg {
+  flex-shrink: 0;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
