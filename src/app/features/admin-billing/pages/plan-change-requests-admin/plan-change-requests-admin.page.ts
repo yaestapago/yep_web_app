@@ -1,8 +1,8 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, TitleCasePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucideLoaderCircle, LucidePlus, LucideRefreshCw } from '@lucide/angular';
+import { LucidePlus, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type {
@@ -14,13 +14,30 @@ import type {
 } from '../../../../shared/models/billing.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
 import { Radio } from '../../../../shared/ui/radio/radio';
+import { Segmented, SegmentedOption } from '../../../../shared/ui/segmented/segmented';
 import { Select, SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip, StatusChipTone } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminPlanChangeRequestsApiService } from '../../services/admin-plan-change-requests-api.service';
+
+/** Tono del chip de estado de cada solicitud (solo presentación). */
+const REQUEST_STATUS_TONES: Record<PlanChangeRequestStatus, StatusChipTone> = {
+  pending: 'warning',
+  approved: 'info',
+  scheduled: 'info',
+  applied: 'success',
+  rejected: 'error',
+  cancelled: 'neutral',
+  blocked_by_usage: 'error',
+};
 
 const REQUEST_TYPE_LABELS: Record<PlanChangeRequestType, string> = {
   upgrade: 'Cambio de plan',
@@ -34,14 +51,20 @@ const REQUEST_TYPE_LABELS: Record<PlanChangeRequestType, string> = {
   selector: 'app-plan-change-requests-admin-page',
   imports: [
     DatePipe,
+    TitleCasePipe,
     FormsModule,
     Alert,
     Button,
+    Card,
     Input,
     Modal,
+    PageHeader,
     Radio,
+    Segmented,
     Select,
-    LucideLoaderCircle,
+    State,
+    StatusChip,
+    Table,
     LucidePlus,
     LucideRefreshCw,
   ],
@@ -65,6 +88,12 @@ export class PlanChangeRequestsAdminPage implements OnInit {
     'rejected',
     'all',
   ];
+  /** Opciones del filtro de estado, con los mismos textos que mostraban las pestañas. */
+  protected readonly statusSegments: SegmentedOption[] = this.statusOptions.map((status) => ({
+    value: status,
+    label: status === 'all' ? 'Todas' : status.charAt(0).toUpperCase() + status.slice(1),
+  }));
+  protected readonly statusTones = REQUEST_STATUS_TONES;
 
   readonly approvingRequest = signal<PlanChangeRequestSummary | null>(null);
   readonly approveNote = signal('');
