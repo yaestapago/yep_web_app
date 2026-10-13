@@ -1,24 +1,20 @@
 <div class="ops-shell">
   <main class="ops-main">
     @if (selectedBusiness(); as detail) {
-      <section class="business-heading">
-        <button
-          class="icon-button"
-          type="button"
-          title="Volver a negocios"
-          aria-label="Volver a negocios"
-          (click)="closeBusiness()"
-        >
-          <svg lucideArrowLeft aria-hidden="true"></svg>
-        </button>
-        <div>
-          <h1>{{ detail.business.name }}</h1>
-          <p>
-            {{ detail.business.cityName }}, {{ detail.business.departmentName }} ·
-            {{ detail.business.phone }}
-          </p>
-        </div>
-        <dl class="business-counts">
+      <yep-page-header
+        [title]="detail.business.name"
+        subtitle="{{ detail.business.cityName }}, {{ detail.business.departmentName }} · {{
+          detail.business.phone
+        }}"
+      >
+        <yep-icon-button
+          slot="leading"
+          size="md"
+          [icon]="backIcon"
+          label="Volver a negocios"
+          (clicked)="closeBusiness()"
+        />
+        <dl slot="actions" class="business-counts">
           <div>
             <dt>Miembros</dt>
             <dd>{{ detail.counts.members }}</dd>
@@ -32,9 +28,9 @@
             <dd>{{ detail.counts.events }}</dd>
           </div>
         </dl>
-      </section>
+      </yep-page-header>
 
-      <section class="subscription-panel" aria-labelledby="subscription-title">
+      <yep-card aria-labelledby="subscription-title">
         <div class="subscription-panel__heading">
           <div>
             <span class="eyebrow">Suscripción del negocio</span>
@@ -43,69 +39,56 @@
             </h2>
           </div>
           @if (detail.subscription.subscription; as subscription) {
-            <span class="status-badge">{{ subscription.status }}</span>
+            <yep-status-chip tone="neutral" [label]="subscription.status" />
           }
         </div>
 
-        <dl class="subscription-data">
+        <yep-description-list class="subscription-data" [columns]="2">
           @if (detail.subscription.owner; as owner) {
-            <div>
-              <dt>Contacto propietario</dt>
-              <dd>{{ owner.firstName }} {{ owner.lastName }}</dd>
-            </div>
-            <div>
-              <dt>Correo</dt>
-              <dd>{{ owner.email }}</dd>
-            </div>
+            <yep-description-item label="Contacto propietario">
+              {{ owner.firstName }} {{ owner.lastName }}
+            </yep-description-item>
+            <yep-description-item label="Correo">{{ owner.email }}</yep-description-item>
           }
-          <div>
-            <dt>Plan</dt>
-            <dd>{{ detail.subscription.subscription?.plan?.code || '-' }}</dd>
-          </div>
-          <div>
-            <dt>Fin del periodo</dt>
-            <dd>
-              {{ detail.subscription.subscription?.currentPeriodEnd | date: 'mediumDate' }}
-            </dd>
-          </div>
-        </dl>
+          <yep-description-item label="Plan">
+            {{ detail.subscription.subscription?.plan?.code || '-' }}
+          </yep-description-item>
+          <yep-description-item label="Fin del periodo">
+            {{ detail.subscription.subscription?.currentPeriodEnd | date: 'mediumDate' }}
+          </yep-description-item>
+        </yep-description-list>
 
         @for (warning of detail.subscription.warnings; track warning) {
-          <p class="subscription-warning">{{ warning }}</p>
+          <yep-alert class="subscription-warning" variant="warning">{{ warning }}</yep-alert>
         }
-      </section>
+      </yep-card>
 
-      <nav class="tabs" aria-label="Información del negocio">
-        @for (item of resources; track item) {
-          <button type="button" [class.active]="resource() === item" (click)="setResource(item)">
-            {{ resourceLabels[item] }}
-          </button>
-        }
-      </nav>
+      <yep-segmented
+        class="tabs"
+        aria-label="Información del negocio"
+        [options]="resourceOptions"
+        [value]="resource()"
+        (valueChange)="setResource($any($event))"
+      />
     } @else {
-      <section class="page-heading">
-        <div>
-          <h1>Control operativo</h1>
-          <p>Consulta centralizada de usuarios y negocios de YEP.</p>
-        </div>
-        <nav class="view-switch" aria-label="Vista principal">
-          <button
-            type="button"
-            [class.active]="view() === 'businesses'"
-            (click)="setView('businesses')"
-          >
-            <svg lucideBuilding2 aria-hidden="true"></svg> Negocios
-          </button>
-          <button type="button" [class.active]="view() === 'users'" (click)="setView('users')">
-            <svg lucideUsers aria-hidden="true"></svg> Usuarios
-          </button>
-        </nav>
-      </section>
+      <yep-page-header
+        title="Control operativo"
+        subtitle="Consulta centralizada de usuarios y negocios de YEP."
+      >
+        <yep-segmented
+          slot="actions"
+          class="view-switch"
+          aria-label="Vista principal"
+          [options]="viewOptions"
+          [value]="view()"
+          (valueChange)="setView($any($event))"
+        />
+      </yep-page-header>
     }
 
     <form class="search-bar" (ngSubmit)="submitSearch()">
-      <svg lucideSearch aria-hidden="true"></svg>
-      <input
+      <yep-input
+        class="search-bar__input"
         type="search"
         name="search"
         [ngModel]="search()"
@@ -116,251 +99,270 @@
             : 'Buscar por nombre, correo, identificación o teléfono'
         "
       />
-      <button type="submit">Buscar</button>
+      <yep-button type="submit" variant="secondary">
+        <svg lucideSearch aria-hidden="true"></svg>
+        Buscar
+      </yep-button>
     </form>
 
-    @if (error()) {
-      <p class="state state--error">{{ error() }}</p>
-    }
     @if (loading()) {
-      <p class="state">Cargando información...</p>
-    }
-
-    @if (!loading() && !error()) {
-      <div class="table-wrap">
-        @if (!selectedBusiness() && view() === 'users') {
-          <table>
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Correo</th>
-                <th>Identificación</th>
-                <th>Teléfono</th>
-                <th>Estado</th>
-                <th>Rol global</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (user of users(); track user.id) {
-                <tr>
-                  <td>
-                    <strong>{{ user.firstName }} {{ user.lastName }}</strong>
-                  </td>
-                  <td>{{ user.email }}</td>
-                  <td>{{ user.identificationNumber }}</td>
-                  <td>{{ user.cellphoneNumber }}</td>
-                  <td>{{ user.isActive ? 'Activo' : 'Inactivo' }}</td>
-                  <td>{{ user.globalRole || 'Usuario' }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="6" class="empty">No encontramos usuarios.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        } @else if (!selectedBusiness()) {
-          <table>
-            <thead>
-              <tr>
-                <th>Negocio</th>
-                <th>Ubicación</th>
-                <th>Dirección</th>
-                <th>Teléfono</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (business of businesses(); track business.id) {
-                <tr>
-                  <td>
-                    <strong>{{ business.name }}</strong
-                    ><small>{{ business.slug || business.id }}</small>
-                  </td>
-                  <td>{{ business.cityName }}, {{ business.departmentName }}</td>
-                  <td>{{ business.address }}</td>
-                  <td>{{ business.phone }}</td>
-                  <td>
-                    <button class="text-button" type="button" (click)="openBusiness(business)">
-                      Ver detalle
-                    </button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="5" class="empty">No encontramos negocios.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+      <yep-state kind="loading" title="Cargando información..." [rows]="4" />
+    } @else if (error()) {
+      <yep-state kind="error" [title]="error()">
+        <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()">
+          Reintentar
+        </yep-button>
+      </yep-state>
+    } @else {
+      @if (!selectedBusiness() && view() === 'users') {
+        @if (users().length === 0) {
+          <yep-state kind="empty" title="No encontramos usuarios." />
         } @else {
-          <table>
-            @switch (resource()) {
-              @case ('members') {
+          <yep-card padding="none" aria-label="Usuarios">
+            <div class="yep-table-wrap">
+              <table yepTable>
                 <thead>
                   <tr>
                     <th>Usuario</th>
                     <th>Correo</th>
-                    <th>Rol</th>
+                    <th>Identificación</th>
+                    <th>Teléfono</th>
                     <th>Estado</th>
-                    <th>Creado</th>
+                    <th>Rol global</th>
                   </tr>
                 </thead>
-              }
-              @case ('bank-accounts') {
-                <thead>
-                  <tr>
-                    <th>Cuenta</th>
-                    <th>Banco</th>
-                    <th>Tipo</th>
-                    <th>Moneda</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-              }
-              @case ('customers') {
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Banco</th>
-                    <th>Cuenta</th>
-                    <th>Transacciones</th>
-                    <th>Total pagado</th>
-                  </tr>
-                </thead>
-              }
-              @case ('source-events') {
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Origen</th>
-                    <th>Estado</th>
-                    <th>Banco</th>
-                    <th>Referencia</th>
-                  </tr>
-                </thead>
-              }
-              @case ('invoices') {
-                <thead>
-                  <tr>
-                    <th>Factura</th>
-                    <th>Concepto</th>
-                    <th>Valor</th>
-                    <th>Estado</th>
-                    <th>Fecha</th>
-                  </tr>
-                </thead>
-              }
-            }
-            <tbody>
-              @for (record of records(); track record.id) {
-                @switch (resource()) {
-                  @case ('members') {
+                <tbody>
+                  @for (user of users(); track user.id) {
                     <tr>
-                      <td>
-                        <strong
-                          >{{ display(record, 'userId.firstName') }}
-                          {{ display(record, 'userId.lastName') }}</strong
-                        >
+                      <td data-label="Usuario">
+                        <strong>{{ user.firstName }} {{ user.lastName }}</strong>
                       </td>
-                      <td>{{ display(record, 'userId.email') }}</td>
-                      <td>{{ display(record, 'role') }}</td>
-                      <td>{{ display(record, 'status') }}</td>
-                      <td>{{ display(record, 'createdAt') | date: 'medium' }}</td>
+                      <td data-label="Correo">{{ user.email }}</td>
+                      <td data-label="Identificación">{{ user.identificationNumber }}</td>
+                      <td data-label="Teléfono">{{ user.cellphoneNumber }}</td>
+                      <td data-label="Estado">
+                        <yep-status-chip
+                          [tone]="user.isActive ? 'success' : 'neutral'"
+                          [label]="user.isActive ? 'Activo' : 'Inactivo'"
+                        />
+                      </td>
+                      <td data-label="Rol global">{{ user.globalRole || 'Usuario' }}</td>
                     </tr>
                   }
-                  @case ('bank-accounts') {
+                </tbody>
+              </table>
+            </div>
+          </yep-card>
+        }
+      } @else if (!selectedBusiness()) {
+        @if (businesses().length === 0) {
+          <yep-state kind="empty" title="No encontramos negocios." />
+        } @else {
+          <yep-card padding="none" aria-label="Negocios">
+            <div class="yep-table-wrap">
+              <table yepTable>
+                <thead>
+                  <tr>
+                    <th>Negocio</th>
+                    <th>Ubicación</th>
+                    <th>Dirección</th>
+                    <th>Teléfono</th>
+                    <th class="actions"><span class="ops-sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (business of businesses(); track business.id) {
                     <tr>
-                      <td>
-                        <strong>{{ display(record, 'displayName') }}</strong
-                        ><small>Terminada en {{ display(record, 'accountNumberLast4') }}</small>
+                      <td data-label="Negocio">
+                        <strong>{{ business.name }}</strong
+                        ><small>{{ business.slug || business.id }}</small>
                       </td>
-                      <td>{{ display(record, 'bankId') }}</td>
-                      <td>{{ display(record, 'accountType') }}</td>
-                      <td>{{ display(record, 'currency') }}</td>
-                      <td>{{ display(record, 'isActive') === 'true' ? 'Activa' : 'Inactiva' }}</td>
-                    </tr>
-                  }
-                  @case ('customers') {
-                    <tr>
-                      <td>
-                        <strong>{{ display(record, 'displayName') }}</strong>
+                      <td data-label="Ubicación">
+                        {{ business.cityName }}, {{ business.departmentName }}
                       </td>
-                      <td>{{ display(record, 'bankId') }}</td>
-                      <td>{{ display(record, 'account') }}</td>
-                      <td>{{ display(record, 'transactionCount') }}</td>
-                      <td>
-                        {{
-                          display(record, 'totalPaidAmount')
-                            | currency: 'COP' : 'symbol-narrow' : '1.0-0'
-                        }}
+                      <td data-label="Dirección">{{ business.address }}</td>
+                      <td data-label="Teléfono">{{ business.phone }}</td>
+                      <td class="actions">
+                        <yep-button size="sm" variant="ghost" (clicked)="openBusiness(business)">
+                          Ver detalle
+                        </yep-button>
                       </td>
                     </tr>
                   }
-                  @case ('source-events') {
+                </tbody>
+              </table>
+            </div>
+          </yep-card>
+        }
+      } @else if (records().length === 0) {
+        <yep-state kind="empty" title="No hay información para mostrar." />
+      } @else {
+        <yep-card padding="none" [attr.aria-label]="resourceLabels[resource()]">
+          <div class="yep-table-wrap">
+            <table yepTable>
+              @switch (resource()) {
+                @case ('members') {
+                  <thead>
                     <tr>
-                      <td>{{ display(record, 'createdAt') | date: 'medium' }}</td>
-                      <td>{{ display(record, 'sourceType') }}</td>
-                      <td>{{ display(record, 'status') }}</td>
-                      <td>{{ display(record, 'normalized.bankId') }}</td>
-                      <td>{{ display(record, 'normalized.reference') }}</td>
+                      <th>Usuario</th>
+                      <th>Correo</th>
+                      <th>Rol</th>
+                      <th>Estado</th>
+                      <th>Creado</th>
                     </tr>
-                  }
-                  @case ('invoices') {
+                  </thead>
+                }
+                @case ('bank-accounts') {
+                  <thead>
                     <tr>
-                      <td>
-                        <button class="text-button" type="button" (click)="openInvoiceManagement()">
-                          {{ display(record, 'invoiceNumber') }}
-                        </button>
-                      </td>
-                      <td>{{ display(record, 'concept') }}</td>
-                      <td>
-                        {{
-                          display(record, 'totalCop') | currency: 'COP' : 'symbol-narrow' : '1.0-0'
-                        }}
-                      </td>
-                      <td>{{ display(record, 'status') }}</td>
-                      <td>{{ display(record, 'issuedAt') | date: 'medium' }}</td>
+                      <th>Cuenta</th>
+                      <th>Banco</th>
+                      <th>Tipo</th>
+                      <th>Moneda</th>
+                      <th>Estado</th>
                     </tr>
+                  </thead>
+                }
+                @case ('customers') {
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th>Banco</th>
+                      <th>Cuenta</th>
+                      <th class="num">Transacciones</th>
+                      <th class="num">Total pagado</th>
+                    </tr>
+                  </thead>
+                }
+                @case ('source-events') {
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Origen</th>
+                      <th>Estado</th>
+                      <th>Banco</th>
+                      <th>Referencia</th>
+                    </tr>
+                  </thead>
+                }
+                @case ('invoices') {
+                  <thead>
+                    <tr>
+                      <th>Factura</th>
+                      <th>Concepto</th>
+                      <th class="num">Valor</th>
+                      <th>Estado</th>
+                      <th>Fecha</th>
+                    </tr>
+                  </thead>
+                }
+              }
+              <tbody>
+                @for (record of records(); track record.id) {
+                  @switch (resource()) {
+                    @case ('members') {
+                      <tr>
+                        <td data-label="Usuario">
+                          <strong
+                            >{{ display(record, 'userId.firstName') }}
+                            {{ display(record, 'userId.lastName') }}</strong
+                          >
+                        </td>
+                        <td data-label="Correo">{{ display(record, 'userId.email') }}</td>
+                        <td data-label="Rol">{{ display(record, 'role') }}</td>
+                        <td data-label="Estado">{{ display(record, 'status') }}</td>
+                        <td data-label="Creado">
+                          {{ display(record, 'createdAt') | date: 'medium' }}
+                        </td>
+                      </tr>
+                    }
+                    @case ('bank-accounts') {
+                      <tr>
+                        <td data-label="Cuenta">
+                          <strong>{{ display(record, 'displayName') }}</strong
+                          ><small>Terminada en {{ display(record, 'accountNumberLast4') }}</small>
+                        </td>
+                        <td data-label="Banco">{{ display(record, 'bankId') }}</td>
+                        <td data-label="Tipo">{{ display(record, 'accountType') }}</td>
+                        <td data-label="Moneda">{{ display(record, 'currency') }}</td>
+                        <td data-label="Estado">
+                          <yep-status-chip
+                            [tone]="display(record, 'isActive') === 'true' ? 'success' : 'neutral'"
+                            [label]="display(record, 'isActive') === 'true' ? 'Activa' : 'Inactiva'"
+                          />
+                        </td>
+                      </tr>
+                    }
+                    @case ('customers') {
+                      <tr>
+                        <td data-label="Cliente">
+                          <strong>{{ display(record, 'displayName') }}</strong>
+                        </td>
+                        <td data-label="Banco">{{ display(record, 'bankId') }}</td>
+                        <td data-label="Cuenta">{{ display(record, 'account') }}</td>
+                        <td data-label="Transacciones" class="num">
+                          {{ display(record, 'transactionCount') }}
+                        </td>
+                        <td data-label="Total pagado" class="num">
+                          {{
+                            display(record, 'totalPaidAmount')
+                              | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+                          }}
+                        </td>
+                      </tr>
+                    }
+                    @case ('source-events') {
+                      <tr>
+                        <td data-label="Fecha">
+                          {{ display(record, 'createdAt') | date: 'medium' }}
+                        </td>
+                        <td data-label="Origen">{{ display(record, 'sourceType') }}</td>
+                        <td data-label="Estado">{{ display(record, 'status') }}</td>
+                        <td data-label="Banco">{{ display(record, 'normalized.bankId') }}</td>
+                        <td data-label="Referencia">
+                          {{ display(record, 'normalized.reference') }}
+                        </td>
+                      </tr>
+                    }
+                    @case ('invoices') {
+                      <tr>
+                        <td data-label="Factura">
+                          <yep-button
+                            size="sm"
+                            variant="ghost"
+                            (clicked)="openInvoiceManagement()"
+                          >
+                            {{ display(record, 'invoiceNumber') }}
+                          </yep-button>
+                        </td>
+                        <td data-label="Concepto">{{ display(record, 'concept') }}</td>
+                        <td data-label="Valor" class="num">
+                          {{
+                            display(record, 'totalCop')
+                              | currency: 'COP' : 'symbol-narrow' : '1.0-0'
+                          }}
+                        </td>
+                        <td data-label="Estado">{{ display(record, 'status') }}</td>
+                        <td data-label="Fecha">
+                          {{ display(record, 'issuedAt') | date: 'medium' }}
+                        </td>
+                      </tr>
+                    }
                   }
                 }
-              } @empty {
-                <tr>
-                  <td colspan="5" class="empty">No hay información para mostrar.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        }
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </yep-card>
+      }
 
       <footer class="pagination">
-        <span
-          >{{ pagination().total }} resultados · Página {{ pagination().page }} de
-          {{ pagination().pages || 1 }}</span
-        >
-        <div>
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Página anterior"
-            title="Página anterior"
-            [disabled]="pagination().page <= 1"
-            (click)="previous()"
-          >
-            <svg lucideChevronLeft aria-hidden="true"></svg>
-          </button>
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Página siguiente"
-            title="Página siguiente"
-            [disabled]="pagination().page >= pagination().pages"
-            (click)="next()"
-          >
-            <svg lucideChevronRight aria-hidden="true"></svg>
-          </button>
-        </div>
+        <span>{{ pagination().total }} resultados</span>
+        <yep-pagination
+          [page]="pagination().page"
+          [pageCount]="pagination().pages || 1"
+          (pageChange)="load($event)"
+        />
       </footer>
     }
   </main>
