@@ -127,7 +127,7 @@ yep-alert {
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   border-radius: var(--radius-md);
   color: var(--color-primary);
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-family-mono);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
   padding: 2px var(--space-2);
