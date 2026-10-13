@@ -103,32 +103,10 @@ td.actions yep-button + yep-button {
   display: grid;
   gap: var(--space-2);
   margin-top: var(--space-4);
+}
 
-  > span {
-    color: var(--color-text-primary);
-    font-size: 0.8125rem;
-    font-weight: var(--font-weight-medium);
-  }
-
-  // P6 · borde fuerte, foco = borde 1,5 px sin halo.
-  input {
-    background: var(--color-input-bg);
-    border: var(--border-width) solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    color: var(--color-text-primary);
-    font: inherit;
-    font-size: var(--font-size-sm);
-    outline: none;
-    padding: var(--space-2) var(--space-3);
-    width: 100%;
-  }
-
-  input:focus-visible {
-    border-color: var(--color-focus);
-  }
-
-  small {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
-  }
+.voucher-field__label {
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
 }

@@ -105,6 +105,7 @@ const CATALOG: CatalogItem[] = [
 ];
 
 const DEFAULT_SELECTION = CATALOG.map((item) => item.id);
+const PRIMARY_CHART_ID = 'weeklyTrend';
 const STORAGE_PREFIX = 'yep:dashboard:charts:';
 
 /**
@@ -193,6 +194,21 @@ export class DashboardChartsPanel {
     return id ? (this.views().find((view) => view.id === id) ?? null) : null;
   });
   readonly canNavigateExpanded = computed(() => this.views().length > 1);
+  /** "2 de 4" bajo el título del modal, para que se note que hay más gráficas. */
+  readonly expandedPosition = computed(() => {
+    const views = this.views();
+    const index = views.findIndex((view) => view.id === this.expandedId());
+    return index >= 0 && views.length > 1 ? `${index + 1} de ${views.length}` : '';
+  });
+  /**
+   * Única gráfica que se dibuja en la tarjeta: a media columna las cuatro no se leían. La tendencia
+   * semanal aguanta poco ancho; si el usuario la ocultó, va la primera que haya elegido. El resto se
+   * ve en el modal ampliado.
+   */
+  readonly primaryView = computed<ChartView | null>(() => {
+    const views = this.views();
+    return views.find((view) => view.id === PRIMARY_CHART_ID) ?? views[0] ?? null;
+  });
 
   chartTitle(id: string): string {
     return this.catalog().find((item) => item.id === id)?.title ?? id;
