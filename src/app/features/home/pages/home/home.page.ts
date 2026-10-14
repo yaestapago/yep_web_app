@@ -32,6 +32,8 @@ interface Novedad {
   description: string;
   /** En el banner es el botón primario; en "Más novedades", un enlace de texto. */
   action?: NovedadAction;
+  /** Nota del blog con el detalle: en el banner es el botón secundario. */
+  readMore?: NovedadAction;
 }
 
 interface QuickLink {
@@ -42,11 +44,14 @@ interface QuickLink {
   active: boolean;
 }
 
-/**
- * Recapitulación de las novedades de agosto (las de "Más novedades") en el blog del landing.
- * La nota de YEP Notifyer sigue en borrador: no se enlaza hasta que se publique.
- */
+/** Recapitulación de las novedades de agosto (las de "Más novedades") en el blog del landing. */
 const NOVEDADES_POST_URL = 'https://yaestapago.co/blog/novedades-agosto-2026';
+
+/**
+ * Nota de YEP Notifyer en el blog del landing. Es "no listada": no sale en el blog público y
+ * solo se llega a ella desde aquí (Novedades de la app web).
+ */
+const NOTIFYER_POST_URL = 'https://yaestapago.co/blog/yep-notifyer-nueva-version';
 
 /** Línea de WhatsApp de YEP con un mensaje listo para enviar. */
 function whatsappUrl(message: string): string {
@@ -158,6 +163,10 @@ export class HomePage {
           'Hola YEP, quiero el notificador YEP Notifyer para el celular de mi negocio',
         ),
         icon: LucideMessageCircle,
+      },
+      readMore: {
+        label: 'Leer la nota',
+        href: NOTIFYER_POST_URL,
       },
     },
     {

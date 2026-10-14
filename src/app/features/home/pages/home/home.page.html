@@ -19,6 +19,19 @@
         {{ action.label }}
       </a>
     }
+    @if (featured.readMore; as readMore) {
+      <a
+        slot="actions"
+        yepButton
+        variant="secondary"
+        tone="on-brand"
+        [href]="readMore.href"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ readMore.label }}
+      </a>
+    }
   </yep-banner>
 
   @if (shortcuts().quickLinks.length) {

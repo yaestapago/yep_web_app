@@ -50,10 +50,10 @@ describe('HomePage novedades', () => {
     );
   });
 
-  it('gives the featured novelty a single primary action to WhatsApp with a ready message', () => {
+  it('gives the featured novelty a primary action to WhatsApp with a ready message', () => {
     const actions = featuredBanner().querySelectorAll<HTMLAnchorElement>('a.yep-button');
 
-    expect(actions.length).toBe(1);
+    expect(actions.length).toBe(2);
     const action = actions[0];
     expect(action.classList).toContain('yep-button--primary');
     expect(action.textContent?.trim()).toBe('Pídela por WhatsApp');
@@ -65,10 +65,20 @@ describe('HomePage novedades', () => {
     expect(action.getAttribute('rel')).toContain('noopener');
   });
 
-  it('does not link the featured novelty to the blog (its post is still a draft)', () => {
-    const blogLinks = featuredBanner().querySelectorAll('a[href*="yaestapago.co/blog"]');
+  it('links the featured novelty to its unlisted blog post as a secondary action', () => {
+    const blogLinks = featuredBanner().querySelectorAll<HTMLAnchorElement>(
+      'a[href*="yaestapago.co/blog"]',
+    );
 
-    expect(blogLinks.length).toBe(0);
+    expect(blogLinks.length).toBe(1);
+    const link = blogLinks[0];
+    expect(link.getAttribute('href')).toBe(
+      'https://yaestapago.co/blog/yep-notifyer-nueva-version',
+    );
+    expect(link.textContent?.trim()).toBe('Leer la nota');
+    expect(link.classList).toContain('yep-button--secondary');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
   });
 
   it('keeps the August novelties under "Más novedades" with the link to their blog post', () => {
