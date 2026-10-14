@@ -73,14 +73,8 @@
   }
 
   <yep-card class="home-news" title="Más novedades" subtitle="Lo último que llegó a YEP.">
-    <a
-      slot="actions"
-      class="home-link"
-      [href]="novedadesPostUrl"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Leer en el blog
+    <a slot="actions" class="home-link" [href]="blogUrl" target="_blank" rel="noreferrer">
+      Ver el blog
       <svg lucideArrowRight aria-hidden="true"></svg>
     </a>
 
@@ -90,16 +84,31 @@
           <yep-status-chip tone="neutral" [dot]="false" [label]="novedad.category" />
           <h3 class="home-news__title">{{ novedad.title }}</h3>
           <p class="home-news__text">{{ novedad.description }}</p>
-          @if (novedad.action; as action) {
-            <a
-              class="home-link home-news__action"
-              [href]="action.href"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {{ action.label }}
-              <svg lucideArrowRight aria-hidden="true"></svg>
-            </a>
+          @if (novedad.action || novedad.readMore) {
+            <div class="home-news__actions">
+              @if (novedad.action; as action) {
+                <a
+                  class="home-link home-news__action"
+                  [href]="action.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ action.label }}
+                  <svg lucideArrowRight aria-hidden="true"></svg>
+                </a>
+              }
+              @if (novedad.readMore; as readMore) {
+                <a
+                  class="home-link home-news__action"
+                  [href]="readMore.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ readMore.label }}
+                  <svg lucideArrowRight aria-hidden="true"></svg>
+                </a>
+              }
+            </div>
           }
         </li>
       }

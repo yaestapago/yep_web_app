@@ -32,7 +32,10 @@ interface Novedad {
   description: string;
   /** En el banner es el botón primario; en "Más novedades", un enlace de texto. */
   action?: NovedadAction;
-  /** Nota del blog con el detalle: en el banner es el botón secundario. */
+  /**
+   * Nota del blog con el detalle: en el banner es el botón secundario; en "Más novedades",
+   * un enlace de texto.
+   */
   readMore?: NovedadAction;
 }
 
@@ -44,8 +47,11 @@ interface QuickLink {
   active: boolean;
 }
 
-/** Recapitulación de las novedades de agosto (las de "Más novedades") en el blog del landing. */
-const NOVEDADES_POST_URL = 'https://yaestapago.co/blog/novedades-agosto-2026';
+/** Listado del blog del landing ("Ver el blog" en "Más novedades"). */
+const BLOG_URL = 'https://yaestapago.co/blog';
+
+/** Nota publicada de la app de YEP para el celular. */
+const APP_POST_URL = 'https://yaestapago.co/blog/app-movil-yep';
 
 /**
  * Nota de YEP Notifyer en el blog del landing. Es "no listada": no sale en el blog público y
@@ -85,7 +91,7 @@ export class HomePage {
   private readonly session = inject(AuthSessionService);
 
   readonly user = this.session.user;
-  readonly novedadesPostUrl = NOVEDADES_POST_URL;
+  readonly blogUrl = BLOG_URL;
 
   /** Fecha de hoy en texto largo ("Lunes, 12 de octubre") para el eyebrow del encabezado. */
   readonly today = computed(() => {
@@ -153,10 +159,25 @@ export class HomePage {
 
   readonly novedades: Novedad[] = [
     {
+      category: 'App móvil',
+      title: 'La app de YEP llega a tu celular',
+      description:
+        'Tu panel de pagos en el bolsillo: ve en vivo cada transferencia que entra a tu negocio, escúchala en voz alta y maneja tu equipo, tus cuentas y tus notificadores desde el celular. Ya está para Android y muy pronto llega a iOS.',
+      action: {
+        label: 'Pídela por WhatsApp',
+        href: whatsappUrl('Hola YEP, quiero la app de YEP para mi celular'),
+        icon: LucideMessageCircle,
+      },
+      readMore: {
+        label: 'Leer la nota',
+        href: APP_POST_URL,
+      },
+    },
+    {
       category: 'Notificadores',
       title: 'YEP Notifyer estrena imagen',
       description:
-        'La app Android que le pasa a YEP los avisos de tu banco ahora se ve como tu panel, en modo claro y oscuro, y su aviso para celulares Xiaomi ya responde. Funciona igual: si ya la tienes, no tienes que volver a emparejarla.',
+        'La app Android que le pasa a YEP los avisos de tu banco ahora se ve como tu panel, en modo claro y oscuro, escucha con más confianza y su aviso para celulares Xiaomi ya responde. Si ya la tienes, no tienes que volver a emparejarla.',
       action: {
         label: 'Pídela por WhatsApp',
         href: whatsappUrl(

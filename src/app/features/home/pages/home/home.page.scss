@@ -155,9 +155,13 @@ a.home-link:focus-visible {
   margin: 2px 0 0;
 }
 
-// Acción propia de una novedad (si la tiene): enlace de texto, no compite con el primario.
-.home-news__action {
+// Acciones propias de una novedad (si las tiene): enlaces de texto, no compiten con el primario.
+.home-news__actions {
+  column-gap: var(--space-4);
+  display: flex;
+  flex-wrap: wrap;
   margin-top: var(--space-2);
+  row-gap: var(--space-1);
 }
 
 // Tableta y celular: accesos 2 × 2 (04-pantallas, S1).
