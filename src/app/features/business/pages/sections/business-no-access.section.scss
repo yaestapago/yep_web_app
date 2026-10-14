@@ -1,0 +1,14 @@
+// S17 · Sin acceso · docs/rediseno-web/04-pantallas.md#s17--bloqueado-y-sin-acceso
+// Estado grande con yep-state; el shell pinta el h1 del negocio. Solo tokens.
+
+.no-access-state {
+  margin-inline: auto;
+  max-width: 46rem;
+  padding-block: var(--space-7);
+}
+
+@media (max-width: 560px) {
+  .no-access-state {
+    padding-block: var(--space-5);
+  }
+}

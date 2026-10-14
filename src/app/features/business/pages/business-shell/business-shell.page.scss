@@ -45,80 +45,47 @@
   }
 }
 
-.back-link {
+/* El encabezado ya trae 24 px de separación propia; el `gap` del shell la da. */
+.business-head {
+  margin-block-end: 0;
+}
+
+/* Volver a Negocios cuando el negocio no existe o no hay acceso (sin encabezado). */
+.business-shell > .back-link {
   align-items: center;
   align-self: flex-start;
-  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
   display: inline-flex;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  gap: var(--space-1);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+  gap: 6px;
   text-decoration: none;
 }
 
-.back-link:hover {
+.business-shell > .back-link:hover {
   color: var(--color-text-primary);
 }
 
-.back-link svg {
-  height: 16px;
-  width: 16px;
+.business-shell > .back-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-.business-head {
-  align-items: center;
-  display: flex;
-  gap: var(--space-4);
+.business-shell > .back-link svg {
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
-
-.business-avatar {
-  align-items: center;
-  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
-  border-radius: var(--radius-lg);
-  color: var(--color-primary);
-  display: flex;
-  flex: 0 0 auto;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-extrabold);
-  height: 56px;
-  justify-content: center;
-  width: 56px;
-}
-
-.business-head-meta {
-  display: grid;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.business-sub {
-  align-items: center;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex-wrap: wrap;
-  font-size: var(--font-size-sm);
-  gap: var(--space-2);
-}
-
-.role-chip {
-  background: color-mix(in srgb, var(--color-secondary) 14%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--color-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  padding: 0.125rem var(--space-2);
-  text-transform: uppercase;
-}
-
 
 /* Aviso de cobro (por vencer / pago en revisión): una sola línea compacta,
-   sin cierre, encima de la sección activa. */
+   sin cierre, encima de la sección activa. Mismos tonos que `yep-alert`. */
 .billing-banner {
-  --banner-tone: var(--color-secondary);
+  --banner-tone: var(--color-info);
+  --banner-soft: var(--color-info-soft);
 
   align-items: center;
-  background: color-mix(in srgb, var(--banner-tone) 11%, transparent);
-  border: 1px solid color-mix(in srgb, var(--banner-tone) 42%, transparent);
+  background: var(--banner-soft);
+  border: 1px solid var(--banner-tone);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   display: flex;
@@ -131,17 +98,19 @@
 
 .billing-banner--warning {
   --banner-tone: var(--color-warning);
+  --banner-soft: var(--color-warning-soft);
 }
 
 .billing-banner--info {
-  --banner-tone: var(--color-secondary);
+  --banner-tone: var(--color-info);
+  --banner-soft: var(--color-info-soft);
 }
 
 .billing-banner__icon {
   color: var(--banner-tone);
   flex: 0 0 auto;
-  height: 18px;
-  width: 18px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 .billing-banner__text {
@@ -149,8 +118,9 @@
   min-width: 0;
 }
 
+/* Acción secundaria (P3): borde y texto tinta. */
 .billing-banner__cta {
-  border: 1px solid color-mix(in srgb, var(--banner-tone) 55%, var(--color-border));
+  border: 1px solid var(--color-text-primary);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   flex: 0 0 auto;
@@ -161,7 +131,12 @@
 }
 
 .billing-banner__cta:hover {
-  background: color-mix(in srgb, var(--banner-tone) 16%, transparent);
+  background: var(--color-surface-muted);
+}
+
+.billing-banner__cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 /* En el panel inmersivo el aviso deja un respiro antes de la vista. */

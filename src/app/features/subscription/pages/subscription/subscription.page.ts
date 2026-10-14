@@ -3,12 +3,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  LucideCheckCircle2,
-  LucideCreditCard,
-  LucideLoaderCircle,
-  LucideRefreshCw,
-} from '@lucide/angular';
+import { LucideCheck, LucideMinus, LucideRefreshCw } from '@lucide/angular';
 import { finalize, forkJoin } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -30,6 +25,18 @@ import type {
   RecurringAddOnMetric,
 } from '../../../../shared/models/billing.models';
 import type { BillingPeriod } from '../../../../shared/models/billing-status.models';
+import {
+  Card,
+  DescriptionItem,
+  DescriptionList,
+  PageHeader,
+  State,
+  StatusChip,
+  Table,
+  type ButtonTone,
+  type ButtonVariant,
+  type StatusChipTone,
+} from '../../../../shared/ui';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
@@ -47,7 +54,7 @@ import { SubscriptionsApiService } from '../../services/subscriptions-api.servic
 const REQUEST_TYPE_LABELS: Record<PlanChangeRequestType, string> = {
   upgrade: 'Cambio de plan',
   downgrade: 'Cambio de plan',
-  renew_trial: 'Renovacion de prueba',
+  renew_trial: 'Renovación de prueba',
   top_up: 'Toping de WhatsApp',
   add_on: 'Add-on',
 };
@@ -61,6 +68,23 @@ const REQUEST_STATUS_LABELS: Record<string, string> = {
   applied: 'Aplicada',
   blocked_by_usage: 'Bloqueada por uso',
 };
+
+/** Tono del chip de estado de cada solicitud (solo presentación). */
+const REQUEST_STATUS_TONES: Partial<Record<string, StatusChipTone>> = {
+  pending: 'warning',
+  approved: 'success',
+  applied: 'success',
+  scheduled: 'info',
+  rejected: 'error',
+  blocked_by_usage: 'error',
+  cancelled: 'neutral',
+};
+
+/**
+ * Plan destacado en "Planes disponibles" (decisión del equipo, 2026-10-12): Pro, con el código
+ * `pro` del catálogo (backend `subscription-plan.constants.ts`; `pro_plus` es Pro+, a la medida).
+ */
+const HIGHLIGHTED_PLAN_CODE = 'pro';
 
 function otherBillingPeriod(period: BillingPeriod): BillingPeriod {
   return period === 'annual' ? 'monthly' : 'annual';
@@ -96,9 +120,15 @@ export function billingPeriodChangeMessage(change: BillingPeriodChange): string 
     Button,
     Input,
     Modal,
-    LucideCheckCircle2,
-    LucideCreditCard,
-    LucideLoaderCircle,
+    Card,
+    DescriptionItem,
+    DescriptionList,
+    PageHeader,
+    State,
+    StatusChip,
+    Table,
+    LucideCheck,
+    LucideMinus,
     LucideRefreshCw,
   ],
   templateUrl: './subscription.page.html',
@@ -172,6 +202,79 @@ export class SubscriptionPage implements OnInit {
     }
     return plans;
   });
+
+  // --- Presentación (solo lectura) -------------------------------------------
+
+  /** Chip de estado junto al nombre del plan actual. */
+  readonly statusChip = computed<{ tone: StatusChipTone; label: string } | null>(() => {
+    const subscription = this.subscription();
+    if (!subscription) return null;
+    if (subscription.blockedAt) return { tone: 'error', label: 'Bloqueado' };
+    if (this.isTrialEnded()) return { tone: 'warning', label: 'Prueba terminada' };
+    switch (subscription.status) {
+      case 'trialing':
+        return { tone: 'info', label: 'Prueba gratis' };
+      case 'active':
+        return subscription.trialEndsAt
+          ? { tone: 'info', label: 'Prueba gratis' }
+          : { tone: 'success', label: 'Al día' };
+      case 'past_due':
+        return { tone: 'info', label: 'Pago en revisión' };
+      case 'suspended':
+        return { tone: 'error', label: 'Bloqueado' };
+      case 'cancelled':
+        return { tone: 'neutral', label: 'Cancelada' };
+      case 'expired':
+        return { tone: 'warning', label: 'Vencida' };
+      default:
+        return null;
+    }
+  });
+  /**
+   * Hay un aviso cuyo botón principal es pagar ("Ver cuentas de cobro"): ese queda como primario
+   * y el plan destacado pasa a secundario (P3, un solo primario por vista).
+   */
+  readonly paymentActionFirst = computed(() => {
+    if (this.blockedAt()) return this.paysInvoiceToUnblock();
+    return (
+      this.subscription()?.status !== 'past_due' &&
+      !this.isTrialEnded() &&
+      this.isPastDueOrSuspended()
+    );
+  });
+  /** Tarjetas de "Planes disponibles": destacado (Pro), plan actual, límites y botón. */
+  readonly planCards = computed(() =>
+    this.availablePlans().map((plan) => {
+      const highlighted = plan.code === HIGHLIGHTED_PLAN_CODE;
+      const current = this.isCurrentPlan(plan);
+      const quotas = plan.quotas;
+      const limit = (label: string, value: number) => ({
+        label,
+        value: this.formatPlanLimit(value),
+        included: value !== 0,
+      });
+      const variant: ButtonVariant =
+        highlighted && !current && !this.paymentActionFirst() ? 'primary' : 'secondary';
+      const tone: ButtonTone = highlighted ? 'on-brand' : 'neutral';
+      return {
+        plan,
+        highlighted,
+        current,
+        buttonVariant: variant,
+        buttonTone: tone,
+        limits: [
+          limit('Negocios', quotas.maxBusinesses),
+          limit('Sedes', quotas.maxLocations),
+          limit('Usuarios', quotas.maxUsers),
+          limit('Cuentas', quotas.maxBankAccounts),
+          limit('WhatsApp / mes', quotas.maxMonthlyWhatsappNotifications),
+          limit('OCR + IA / mes', quotas.maxMonthlyAiTransactionValidations),
+        ],
+      };
+    }),
+  );
+  /** Tono del chip de estado de cada solicitud en "Mis solicitudes". */
+  readonly requestStatusTones = REQUEST_STATUS_TONES;
 
   // --- Ciclo de pago (mensual / anual) ---------------------------------------
 
@@ -364,7 +467,7 @@ export class SubscriptionPage implements OnInit {
   }
 
   topUpTierLabel(tier: AddOnPricingTier): string {
-    return `${this.formatNumber(tier.quantity)} notificaciones — ${this.formatCop(tier.totalPriceCop)} (pago unico)`;
+    return `${this.formatNumber(tier.quantity)} notificaciones — ${this.formatCop(tier.totalPriceCop)} (pago único)`;
   }
 
   addOnTierLabel(tier: AddOnPricingTier): string {
@@ -622,13 +725,13 @@ export class SubscriptionPage implements OnInit {
       : '';
 
     if (result.type === 'downgrade') {
-      return `Tu plan cambiara a ${result.newPlan.name} a partir del ${periodEndLabel}, sin cobro ahora. Hasta entonces conservas tu plan actual.`;
+      return `Tu plan cambiará a ${result.newPlan.name} a partir del ${periodEndLabel}, sin cobro ahora. Hasta entonces conservas tu plan actual.`;
     }
 
     if (result.paymentRequired) {
       if (this.isReactivating()) {
         return (
-          `Se genero una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} (ciclo ${billingPeriodWord(requestedPeriod)}). ` +
+          `Se generó una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} (ciclo ${billingPeriodWord(requestedPeriod)}). ` +
           `Tu plan ${result.newPlan.name} se activara apenas confirmemos el pago.`
         );
       }
@@ -641,13 +744,13 @@ export class SubscriptionPage implements OnInit {
           ? (catalogPlan?.annualPriceCop ?? result.newPlan.priceCop * 10)
           : result.newPlan.priceCop;
       return (
-        `Se genero una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} por los dias restantes de tu periodo actual. ` +
-        `Tu plan cambiara a ${result.newPlan.name} apenas se confirme el pago. ` +
-        `Tu proxima renovacion sigue siendo el ${periodEndLabel}, por ${this.formatCop(renewalPriceCop)}.`
+        `Se generó una cuenta de cobro por ${this.formatCop(result.proratedAmountCop)} por los días restantes de tu periodo actual. ` +
+        `Tu plan cambiará a ${result.newPlan.name} apenas se confirme el pago. ` +
+        `Tu próxima renovación sigue siendo el ${periodEndLabel}, por ${this.formatCop(renewalPriceCop)}.`
       );
     }
 
-    return `Tu plan cambio a ${result.newPlan.name}.`;
+    return `Tu plan cambió a ${result.newPlan.name}.`;
   }
 
   private buildRequestPayload(): CreatePlanChangeRequestPayload | null {

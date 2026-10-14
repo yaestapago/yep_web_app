@@ -1,13 +1,13 @@
-<div class="section">
+<div class="section notifiers-section">
   <div class="section-toolbar">
     <div class="section-heading">
       <h2 class="section-title">Notificadores</h2>
       <p class="section-subtitle">
-        Estado operativo según el último heartbeat. Se actualiza solo cada
+        Estado de cada dispositivo según su último latido. Se actualiza solo cada
         {{ thresholds.refreshIntervalMs / 1000 }} s.
       </p>
     </div>
-    <div class="list-card__actions">
+    <div class="notifiers-toolbar__actions">
       <yep-button variant="ghost" size="sm" (clicked)="load()">
         <svg lucideRefreshCw aria-hidden="true"></svg>
         Actualizar
@@ -21,237 +21,248 @@
     </div>
   </div>
 
-  <!-- Resumen de estados -->
-  <div class="legend">
-    <yep-status-dot level="online" [detail]="counts().online + ''" />
-    <yep-status-dot level="delayed" [detail]="counts().delayed + ''" />
-    <yep-status-dot level="offline" [detail]="counts().offline + ''" />
-    <yep-status-dot level="unknown" [detail]="counts().unknown + ''" />
-  </div>
+  <!-- Resumen de estados: solo cuando hay notificadores (cuatro ceros no dicen nada). -->
+  @if (statuses().length > 0) {
+    <section class="notifiers-summary" aria-label="Resumen de notificadores">
+      <yep-kpi size="sm" tone="success" label="En línea" [value]="counts().online + ''" />
+      <yep-kpi size="sm" tone="warning" label="Con retraso" [value]="counts().delayed + ''" />
+      <yep-kpi size="sm" tone="error" label="Fuera de línea" [value]="counts().offline + ''" />
+      <yep-kpi size="sm" label="Sin datos" [value]="counts().unknown + ''" />
+    </section>
+  }
 
   @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
+    <yep-alert variant="error">{{ error() }}</yep-alert>
   }
   @if (success()) {
-    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+    <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
   @if (loading()) {
-    <div class="loading-row">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando notificadores…
-    </div>
+    <yep-state kind="loading" title="Cargando notificadores…" />
   } @else if (statuses().length === 0) {
-    <div class="empty-state">
-      <h3>Aún no hay notificadores</h3>
-      <p>
-        Crea un notificador de correo para reenviar los avisos de tu banco y empezar a recibir tus
-        pagos.
-      </p>
-    </div>
+    <yep-card>
+      <yep-state
+        kind="empty"
+        title="Aún no hay notificadores"
+        description="Crea un notificador de correo para reenviar los avisos de tu banco y empezar a recibir tus pagos."
+      >
+        @if (canManage()) {
+          <yep-button slot="action" variant="secondary" size="sm" (clicked)="openCreate()">
+            <svg lucidePlus aria-hidden="true"></svg>
+            Nuevo notificador
+          </yep-button>
+        }
+      </yep-state>
+    </yep-card>
   } @else {
-    <div class="card-list">
+    <div class="notifier-list">
       @for (row of statuses(); track row.notifier.id) {
-        <article class="list-card">
-          <div class="list-card__main">
-            <div class="list-card__titlerow">
-              <h3 class="list-card__title">
-                {{ row.notifier.displayName || row.notifier.identifier || row.notifier.id }}
-              </h3>
-              @if (isCodeVisible(row.notifier)) {
-                <span class="pair-code" title="Código de emparejamiento">
-                  <svg class="pair-code__ring" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle class="pair-code__ring-bg" cx="12" cy="12" r="9" />
-                    <circle
-                      class="pair-code__ring-fg"
-                      cx="12"
-                      cy="12"
-                      r="9"
-                      [style.stroke-dasharray]="ringCircumference"
-                      [style.stroke-dashoffset]="codeRingOffset(row.notifier)"
+        @let notifierName = row.notifier.displayName || row.notifier.identifier || row.notifier.id;
+        @let isEmail = row.notifier.type === 'email_gmail';
+        <yep-card class="notifier-card">
+          <div class="notifier-card__head">
+            <div class="notifier-card__identity">
+              <yep-icon-tile>
+                @switch (row.notifier.type) {
+                  @case ('email_gmail') {
+                    <svg lucideMail aria-hidden="true"></svg>
+                  }
+                  @case ('desktop_app') {
+                    <svg lucideMonitor aria-hidden="true"></svg>
+                  }
+                  @default {
+                    <svg lucideSmartphone aria-hidden="true"></svg>
+                  }
+                }
+              </yep-icon-tile>
+              <div class="notifier-card__heading">
+                <div class="notifier-card__titlerow">
+                  <h3 class="notifier-card__title">{{ notifierName }}</h3>
+                  @if (!isEmail || row.status.level !== 'unknown') {
+                    <yep-status-chip
+                      [tone]="statusChipTone[row.status.level]"
+                      [label]="row.status.label"
                     />
-                  </svg>
-                  <span class="pair-code__value">{{ row.notifier.accessCode }}</span>
-                </span>
-              }
+                  }
+                  @if (isCodeVisible(row.notifier)) {
+                    <span class="pair-code" title="Código de emparejamiento">
+                      <svg class="pair-code__ring" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="pair-code__ring-bg" cx="12" cy="12" r="9" />
+                        <circle
+                          class="pair-code__ring-fg"
+                          cx="12"
+                          cy="12"
+                          r="9"
+                          [style.stroke-dasharray]="ringCircumference"
+                          [style.stroke-dashoffset]="codeRingOffset(row.notifier)"
+                        />
+                      </svg>
+                      <span class="pair-code__value">{{ row.notifier.accessCode }}</span>
+                    </span>
+                  }
+                </div>
+                @if (isEmail) {
+                  <p class="notifier-card__subtitle">{{ emailProviderLabel(row.notifier) }}</p>
+                }
+              </div>
             </div>
-            <yep-status-dot
-              [level]="row.status.level"
-              [label]="
-                row.notifier.type === 'email_gmail' ? emailProviderLabel(row.notifier) : row.status.label
-              "
-              [labelMuted]="row.notifier.type === 'email_gmail'"
-              [detail]="
-                row.notifier.type === 'email_gmail'
-                  ? ''
-                  : row.status.lastSeenAt
-                    ? relative(row.status) + ' · ' + (row.status.lastSeenAt | date: 'short')
-                    : 'sin heartbeat'
-              "
-            />
-            @if (usesPairing(row.notifier)) {
-              <span class="list-card__meta">
-                {{ deviceLabel(row.notifier) }} ·
-                {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
-              </span>
-              <!-- App de SMS del teléfono y avisos que descartó (solo celular emparejado). -->
-              <app-notifier-device-diagnostics [notifier]="row.notifier" />
-              <!-- Respaldo por SMS cuando el celular no tiene internet (solo celular). -->
-              <app-notifier-sms-relay
-                [notifier]="row.notifier"
-                [canManage]="canManage()"
-                (updated)="onSmsRelayUpdated($event)"
-              />
-            } @else {
-              <span class="list-card__meta">
-                {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
-              </span>
-              <span class="list-card__meta">
-                Direcciones de correo a declarar dentro del filtro:
-              </span>
-              @let bankSenderPatterns = notifierEmailSenderPatterns(row.notifier);
-              @if (bankSenderPatterns.length > 0) {
-                <span class="list-card__meta notifier-email-row">
-                  <span class="notifier-email-row__label">De:</span>
-                  <span class="notifier-email-row__values">
-                    @for (sender of bankSenderPatterns; track sender; let senderIndex = $index) {
-                      <span class="notifier-email-row__copy-group">
-                        <code class="notifier-email-row__value">{{ sender }}</code>
-                        <button
-                          type="button"
-                          class="code-copy"
-                          (click)="copyNotifierEmail(sender, row.notifier.id, 'from-' + senderIndex)"
-                          [attr.aria-label]="
-                            isNotifierEmailCopied(row.notifier.id, 'from-' + senderIndex)
-                              ? 'Remitente De copiado'
-                              : 'Copiar remitente De'
-                          "
-                          [title]="
-                            isNotifierEmailCopied(row.notifier.id, 'from-' + senderIndex)
-                              ? 'Remitente De copiado'
-                              : 'Copiar remitente De'
-                          "
-                        >
-                          @if (isNotifierEmailCopied(row.notifier.id, 'from-' + senderIndex)) {
-                            <svg lucideClipboardCheck aria-hidden="true"></svg>
-                          } @else {
-                            <svg lucideClipboardCopy aria-hidden="true"></svg>
-                          }
-                        </button>
-                      </span>
-                    }
-                  </span>
-                </span>
-              }
-              @if (row.notifier.inboundAlias) {
-                <span class="list-card__meta notifier-email-row">
-                  <span class="notifier-email-row__label">Reenviar a:</span>
-                  <code class="notifier-email-row__value">{{ row.notifier.inboundAlias }}</code>
-                  <button
-                    type="button"
-                    class="code-copy"
-                    (click)="
-                      copyNotifierEmail(row.notifier.inboundAlias, row.notifier.id, 'forwardTo')
+
+            @if (canManage() || hasDiagnostics(row.notifier)) {
+              <div class="notifier-card__actions">
+                <!-- Diagnóstico de escucha: qué ve el celular y si Android lo dejó sordo. -->
+                @if (hasDiagnostics(row.notifier)) {
+                  <yep-icon-button
+                    [icon]="diagnosticsIcon"
+                    label="Diagnóstico de escucha"
+                    data-cy="notifier-diagnostics"
+                    (clicked)="openDiagnostics(row.notifier)"
+                  />
+                }
+
+                @if (canManage()) {
+                  <!-- Activar / desactivar (interruptor) -->
+                  <yep-toggle
+                    appearance="switch"
+                    [pressed]="row.notifier.active"
+                    [ariaLabel]="
+                      row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'
                     "
-                    [attr.aria-label]="
-                      isNotifierEmailCopied(row.notifier.id, 'forwardTo')
-                        ? 'Correo Reenviar a copiado'
-                        : 'Copiar correo Reenviar a'
-                    "
+                    [disabled]="actingId() === row.notifier.id"
                     [title]="
-                      isNotifierEmailCopied(row.notifier.id, 'forwardTo')
-                        ? 'Correo Reenviar a copiado'
-                        : 'Copiar correo Reenviar a'
+                      row.notifier.active
+                        ? 'Activo — toca para desactivar'
+                        : 'Inactivo — toca para activar'
                     "
+                    (toggled)="toggleActive(row.notifier)"
+                  />
+
+                  <yep-icon-button
+                    action="edit"
+                    label="Editar"
+                    [disabled]="actingId() === row.notifier.id"
+                    (clicked)="openEdit(row.notifier)"
+                  />
+
+                  <yep-menu
+                    label="Más acciones"
+                    [disabled]="actingId() === row.notifier.id"
                   >
-                    @if (isNotifierEmailCopied(row.notifier.id, 'forwardTo')) {
-                      <svg lucideClipboardCheck aria-hidden="true"></svg>
-                    } @else {
-                      <svg lucideClipboardCopy aria-hidden="true"></svg>
+                    @if (
+                      usesPairing(row.notifier) &&
+                      row.notifier.active &&
+                      !row.notifier.pairedDevice &&
+                      !isCodeVisible(row.notifier)
+                    ) {
+                      <button yepMenuItem (click)="revealCode(row.notifier)">
+                        <svg lucideLink aria-hidden="true"></svg>
+                        Emparejar
+                      </button>
                     }
-                  </button>
-                </span>
-              }
+                    @if (hasDiagnostics(row.notifier)) {
+                      <button yepMenuItem (click)="openDiagnostics(row.notifier)">
+                        <svg lucideActivity aria-hidden="true"></svg>
+                        Diagnóstico de escucha
+                      </button>
+                    }
+                    <button yepMenuItem (click)="openConfig(row.notifier)">
+                      <svg lucideSettings aria-hidden="true"></svg>
+                      Cadencias (consumo de datos)
+                    </button>
+                    @if (row.notifier.pairedDevice) {
+                      <button yepMenuItem (click)="unpair(row.notifier)">
+                        <svg lucideUnlink aria-hidden="true"></svg>
+                        Desemparejar dispositivo
+                      </button>
+                    }
+                    <button yepMenuItem tone="danger" (click)="remove(row.notifier)">
+                      <svg lucideTrash2 aria-hidden="true"></svg>
+                      Eliminar
+                    </button>
+                  </yep-menu>
+                }
+              </div>
             }
           </div>
 
-          @if (canManage()) {
-            <div class="list-card__actions">
-              <!-- Activar / desactivar (interruptor) -->
-              <yep-toggle
-                appearance="switch"
-                [pressed]="row.notifier.active"
-                [ariaLabel]="row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'"
-                [disabled]="actingId() === row.notifier.id"
-                [title]="
-                  row.notifier.active
-                    ? 'Activo — toca para desactivar'
-                    : 'Inactivo — toca para activar'
-                "
-                (toggled)="toggleActive(row.notifier)"
-              />
+          @if (usesPairing(row.notifier)) {
+            <yep-description-list [columns]="3">
+              <yep-description-item label="Dispositivo">
+                {{ deviceLabel(row.notifier) }}
+              </yep-description-item>
+              <yep-description-item label="Último latido">
+                @if (row.status.lastSeenAt) {
+                  {{ relative(row.status) }} · {{ row.status.lastSeenAt | date: 'short' }}
+                } @else {
+                  <span class="notifier-card__muted">sin latido</span>
+                }
+              </yep-description-item>
+              <yep-description-item label="Estado">
+                {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
+              </yep-description-item>
+            </yep-description-list>
 
-              @if (
-                usesPairing(row.notifier) &&
-                row.notifier.active &&
-                !row.notifier.pairedDevice &&
-                !isCodeVisible(row.notifier)
-              ) {
-                <yep-button
-                  variant="secondary"
-                  size="sm"
-                  [title]="'Emparejar'"
-                  [disabled]="actingId() === row.notifier.id"
-                  (clicked)="revealCode(row.notifier)"
+            <!-- App de SMS del teléfono y avisos que descartó (solo celular emparejado). -->
+            <app-notifier-device-diagnostics
+              class="notifier-card__diagnostics"
+              [notifier]="row.notifier"
+            />
+            <!-- Respaldo por SMS cuando el celular no tiene internet (solo celular). -->
+            <app-notifier-sms-relay
+              [notifier]="row.notifier"
+              [canManage]="canManage()"
+              (updated)="onSmsRelayUpdated($event)"
+            />
+          } @else {
+            <yep-description-list [columns]="2">
+              @if (row.notifier.inboundAlias) {
+                <yep-description-item
+                  label="Reenviar a"
+                  [mono]="true"
+                  [copy]="row.notifier.inboundAlias"
+                  [hint]="
+                    isNotifierEmailCopied(row.notifier.id, 'forwardTo')
+                      ? 'Correo Reenviar a copiado'
+                      : ''
+                  "
+                  (copied)="
+                    copyNotifierEmail(row.notifier.inboundAlias, row.notifier.id, 'forwardTo')
+                  "
                 >
-                  <svg lucideLink aria-label="Emparejar"></svg>
-                </yep-button>
+                  {{ row.notifier.inboundAlias }}
+                </yep-description-item>
               }
+              <yep-description-item label="Estado">
+                {{ row.notifier.active ? 'Activo' : 'Inactivo' }}
+              </yep-description-item>
+            </yep-description-list>
 
-              <yep-button
-                variant="ghost"
-                size="sm"
-                [title]="'Editar'"
-                [disabled]="actingId() === row.notifier.id"
-                (clicked)="openEdit(row.notifier)"
-              >
-                <svg lucidePencil aria-label="Editar"></svg>
-              </yep-button>
-
-              <yep-button
-                variant="ghost"
-                size="sm"
-                [title]="'Cadencias (consumo de datos)'"
-                [disabled]="actingId() === row.notifier.id"
-                (clicked)="openConfig(row.notifier)"
-              >
-                <svg lucideSettings aria-label="Cadencias"></svg>
-              </yep-button>
-
-              @if (row.notifier.pairedDevice) {
-                <yep-button
-                  variant="ghost"
-                  size="sm"
-                  [title]="'Desemparejar dispositivo'"
-                  [loading]="actingId() === row.notifier.id"
-                  (clicked)="unpair(row.notifier)"
-                >
-                  <svg lucideUnlink aria-label="Desemparejar"></svg>
-                </yep-button>
+            @let bankSenderPatterns = notifierEmailSenderPatterns(row.notifier);
+            <yep-card-section title="Direcciones de correo a declarar dentro del filtro">
+              @if (bankSenderPatterns.length > 0) {
+                <div class="sender-row">
+                  <span class="sender-row__label">De:</span>
+                  <div class="sender-row__values">
+                    @for (sender of bankSenderPatterns; track sender; let senderIndex = $index) {
+                      @let senderCopied =
+                        isNotifierEmailCopied(row.notifier.id, 'from-' + senderIndex);
+                      <span class="sender-chip">
+                        <code class="sender-chip__value">{{ sender }}</code>
+                        <yep-icon-button
+                          [icon]="senderCopied ? copiedIcon : copyIcon"
+                          [label]="senderCopied ? 'Remitente De copiado' : 'Copiar remitente De'"
+                          (clicked)="
+                            copyNotifierEmail(sender, row.notifier.id, 'from-' + senderIndex)
+                          "
+                        />
+                      </span>
+                    }
+                  </div>
+                </div>
               }
-
-              <yep-button
-                variant="danger"
-                size="sm"
-                [title]="'Eliminar'"
-                [loading]="actingId() === row.notifier.id"
-                (clicked)="remove(row.notifier)"
-              >
-                <svg lucideTrash2 aria-label="Eliminar"></svg>
-              </yep-button>
-            </div>
+            </yep-card-section>
           }
-        </article>
+        </yep-card>
       }
     </div>
   }
@@ -315,82 +326,73 @@
           No hay cuentas bancarias activas. Crea una cuenta primero para poder monitorearla.
         </p>
       } @else {
-        <div class="account-picker">
+        <div class="notifier-account-list">
           @for (account of selectableAccounts(); track account.id) {
             @let blockedReason = accountBlockedReason(account);
-            <div
-              class="account-option"
-              [class.account-option--selected]="isSelected(account.id)"
-              [class.account-option--disabled]="!!blockedReason && !isSelected(account.id)"
+            @let accountSelected = isSelected(account.id);
+            @let showKeys = supportsBreBKeySelection() && accountSelected;
+            <yep-check-group
+              [label]="
+                bankName(account) +
+                ' · ' +
+                (account.displayName || '****' + account.accountNumberLast4)
+              "
+              [meta]="
+                '****' +
+                account.accountNumberLast4 +
+                (accountTypeLabel(account) ? ' · ' + accountTypeLabel(account) : '') +
+                ' · ' +
+                (account.isActive ? 'Activa' : 'Inactiva')
+              "
+              [count]="showKeys ? 'Llaves que escucha esta cuenta' : ''"
+              [checked]="accountSelected"
+              [disabled]="!!blockedReason && !accountSelected"
+              (checkedChange)="toggleAccount(account.id, $event)"
             >
-              <yep-checkbox
-                class="account-option__checkbox"
-                [checked]="isSelected(account.id)"
-                [disabled]="!!blockedReason && !isSelected(account.id)"
-                (checkedChange)="toggleAccount(account.id, $event)"
-              >
-                <span class="account-option__body">
-                  <span class="account-option__title">
-                    {{ bankName(account) }} ·
-                    {{ account.displayName || '****' + account.accountNumberLast4 }}
-                  </span>
-                  <span class="account-option__meta">
-                    ****{{ account.accountNumberLast4 }}
-                    @if (accountTypeLabel(account)) {
-                      · {{ accountTypeLabel(account) }}
-                    }
-                    · {{ account.isActive ? 'Activa' : 'Inactiva' }}
-                  </span>
-                  @if (blockedReason && !isSelected(account.id)) {
-                    <span class="field-error">{{ blockedReason }}</span>
-                  }
-                </span>
-              </yep-checkbox>
-
-              @if (supportsBreBKeySelection() && isSelected(account.id)) {
-                <div class="account-key-list" aria-label="Llaves Bre-B que escucha esta cuenta">
-                  <div class="account-key-list__header">
-                    <span class="account-key-hint">Llaves que escucha esta cuenta</span>
-                    <button
-                      type="button"
-                      class="inline-action"
-                      (click)="toggleAllBreBFiltersForAccount(account)"
-                    >
-                      {{
-                        areAllBreBFiltersSelectedForAccount(account)
-                          ? 'Deseleccionar todo'
-                          : 'Seleccionar todo'
-                      }}
-                    </button>
-                  </div>
-
-                  <yep-checkbox
-                    class="account-key-option"
-                    [checked]="isBreBKeySelected(directAccountFilterKey(account))"
-                    (checkedChange)="toggleBreBKey(directAccountFilterKey(account), $event)"
-                  >
-                    <span class="account-key-option__body">
-                      <span class="account-key-option__title">Cuenta directa</span>
-                      <span class="account-key-option__meta">Sin llave Bre-B</span>
-                    </span>
-                  </yep-checkbox>
-
-                  @for (key of account.breBKeys; track key; let i = $index) {
-                    <yep-checkbox
-                      class="account-key-option"
-                      [checked]="isBreBKeySelected(key)"
-                      (checkedChange)="toggleBreBKey(key, $event)"
-                    >
-                      <code class="account-key-option__value">{{ account.breBKeysDisplay[i] || key }}</code>
-                    </yep-checkbox>
-                  }
-
-                  @if (account.breBKeys.length === 0) {
-                    <span class="account-key-empty">Sin llaves Bre-B registradas.</span>
-                  }
-                </div>
+              @if (showKeys) {
+                <yep-button
+                  slot="actions"
+                  variant="ghost"
+                  size="sm"
+                  (clicked)="toggleAllBreBFiltersForAccount(account)"
+                >
+                  {{
+                    areAllBreBFiltersSelectedForAccount(account)
+                      ? 'Deseleccionar todo'
+                      : 'Seleccionar todo'
+                  }}
+                </yep-button>
               }
-            </div>
+
+              @if (blockedReason && !accountSelected) {
+                <span class="field-error notifier-account-note">{{ blockedReason }}</span>
+              }
+
+              @if (showKeys) {
+                <yep-check-option
+                  label="Cuenta directa"
+                  meta="Sin llave Bre-B"
+                  [checked]="isBreBKeySelected(directAccountFilterKey(account))"
+                  (checkedChange)="toggleBreBKey(directAccountFilterKey(account), $event)"
+                />
+
+                @for (key of account.breBKeys; track key; let i = $index) {
+                  <yep-check-option
+                    class="notifier-key-option"
+                    [label]="account.breBKeysDisplay[i] || key"
+                    meta="Llave Bre-B"
+                    [checked]="isBreBKeySelected(key)"
+                    (checkedChange)="toggleBreBKey(key, $event)"
+                  />
+                }
+
+                @if (account.breBKeys.length === 0) {
+                  <span class="notifier-account-note notifier-key-empty">
+                    Sin llaves Bre-B registradas.
+                  </span>
+                }
+              }
+            </yep-check-group>
           }
         </div>
       }
@@ -406,23 +408,20 @@
             </p>
           </div>
           @if (selectedEmailSenderPatterns().length > 0) {
-            <button
-              type="button"
-              class="code-copy code-copy--wide"
-              (click)="copyEmailSenderPatterns()"
-              [attr.aria-label]="
-                senderPatternsCopied() ? 'Remitentes copiados' : 'Copiar remitentes'
-              "
+            <yep-button
+              variant="secondary"
+              size="sm"
               [title]="senderPatternsCopied() ? 'Remitentes copiados' : 'Copiar remitentes'"
+              (clicked)="copyEmailSenderPatterns()"
             >
               @if (senderPatternsCopied()) {
                 <svg lucideClipboardCheck aria-hidden="true"></svg>
-                <span>Copiado</span>
+                Copiado
               } @else {
                 <svg lucideClipboardCopy aria-hidden="true"></svg>
-                <span>Copiar</span>
+                Copiar
               }
-            </button>
+            </yep-button>
           }
         </div>
 
@@ -458,4 +457,11 @@
   [notifier]="configNotifier()"
   (closeRequested)="closeConfig()"
   (saved)="onConfigSaved($event)"
+/>
+
+<!-- Diagnóstico de escucha del celular emparejado (solo lectura) -->
+<app-notifier-diagnostics-modal
+  [open]="diagnosticsModalOpen()"
+  [notifier]="diagnosticsNotifier()"
+  (closeRequested)="closeDiagnostics()"
 />

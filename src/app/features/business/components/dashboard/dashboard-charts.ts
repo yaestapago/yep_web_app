@@ -18,6 +18,7 @@ import {
 } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { Card, IconButton, State } from '../../../../shared/ui';
 import { Button } from '../../../../shared/ui/button/button';
 import { ChartCanvas } from '../../../../shared/ui/chart-canvas/chart-canvas';
 import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
@@ -104,6 +105,7 @@ const CATALOG: CatalogItem[] = [
 ];
 
 const DEFAULT_SELECTION = CATALOG.map((item) => item.id);
+const PRIMARY_CHART_ID = 'weeklyTrend';
 const STORAGE_PREFIX = 'yep:dashboard:charts:';
 
 /**
@@ -115,15 +117,17 @@ const STORAGE_PREFIX = 'yep:dashboard:charts:';
   selector: 'app-dashboard-charts',
   imports: [
     Button,
+    Card,
     ChartCanvas,
     Checkbox,
+    IconButton,
     Modal,
+    State,
     NgTemplateOutlet,
     LucideChartPie,
     LucideChevronLeft,
     LucideChevronRight,
     LucideMaximize2,
-    LucideSettings2,
   ],
   templateUrl: './dashboard-charts.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-charts.scss'],
@@ -131,6 +135,8 @@ const STORAGE_PREFIX = 'yep:dashboard:charts:';
 export class DashboardChartsPanel {
   private readonly document = inject(DOCUMENT);
   private readonly session = inject(AuthSessionService);
+
+  protected readonly settingsIcon = LucideSettings2;
 
   readonly charts = defineInput.required<DashboardChartsSummary>();
   readonly businessId = defineInput<string | null>(null);
@@ -188,6 +194,21 @@ export class DashboardChartsPanel {
     return id ? (this.views().find((view) => view.id === id) ?? null) : null;
   });
   readonly canNavigateExpanded = computed(() => this.views().length > 1);
+  /** "2 de 4" bajo el título del modal, para que se note que hay más gráficas. */
+  readonly expandedPosition = computed(() => {
+    const views = this.views();
+    const index = views.findIndex((view) => view.id === this.expandedId());
+    return index >= 0 && views.length > 1 ? `${index + 1} de ${views.length}` : '';
+  });
+  /**
+   * Única gráfica que se dibuja en la tarjeta: a media columna las cuatro no se leían. La tendencia
+   * semanal aguanta poco ancho; si el usuario la ocultó, va la primera que haya elegido. El resto se
+   * ve en el modal ampliado.
+   */
+  readonly primaryView = computed<ChartView | null>(() => {
+    const views = this.views();
+    return views.find((view) => view.id === PRIMARY_CHART_ID) ?? views[0] ?? null;
+  });
 
   chartTitle(id: string): string {
     return this.catalog().find((item) => item.id === id)?.title ?? id;
@@ -295,7 +316,6 @@ export class DashboardChartsPanel {
         datasets: [
           {
             data: [today, lastWeek],
-            backgroundColor: [this.cssVar('--color-primary'), this.cssVar('--color-text-muted')],
             borderRadius: 6,
           },
         ],
@@ -336,7 +356,6 @@ export class DashboardChartsPanel {
         datasets: [
           {
             data: points.map((point) => point.amount),
-            backgroundColor: this.cssVar('--color-primary'),
             borderRadius: 6,
           },
         ],
@@ -357,9 +376,6 @@ export class DashboardChartsPanel {
         datasets: [
           {
             data: points.map((point) => point.amount),
-            borderColor: this.cssVar('--color-primary'),
-            backgroundColor: `color-mix(in srgb, ${this.cssVar('--color-primary')} 18%, transparent)`,
-            fill: true,
             tension: 0.3,
           },
         ],
@@ -405,58 +421,42 @@ export class DashboardChartsPanel {
 
   // --- Opciones / colores ----------------------------------------------------
 
+  // Colores, cuadrícula, ejes y fuente los pone yep-chart-canvas desde los
+  // tokens `--chart-*` (y cambian con el tema): aquí solo la forma.
   private barOptions(): ChartOptions {
-    const grid = this.cssVar('--color-border');
-    const text = this.cssVar('--color-text-secondary');
     return {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } },
-        y: {
-          beginAtZero: true,
-          grid: { color: grid },
-          ticks: { color: text, font: { size: 10 }, maxTicksLimit: 4 },
-        },
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { maxTicksLimit: 4 } },
       },
     };
   }
 
   private horizontalBarOptions(): ChartOptions {
-    const grid = this.cssVar('--color-border');
-    const text = this.cssVar('--color-text-secondary');
     const options: ChartOptions<'bar'> = {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: {
-          beginAtZero: true,
-          grid: { color: grid },
-          ticks: { color: text, font: { size: 10 }, maxTicksLimit: 4 },
-        },
-        y: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } },
+        x: { beginAtZero: true, ticks: { maxTicksLimit: 4 } },
+        y: { grid: { display: false } },
       },
     };
     return options as ChartOptions;
   }
 
   private lineOptions(): ChartOptions {
-    const grid = this.cssVar('--color-border');
-    const text = this.cssVar('--color-text-secondary');
     const options: ChartOptions<'line'> = {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: text, font: { size: 10 } } },
-        y: {
-          beginAtZero: true,
-          grid: { color: grid },
-          ticks: { color: text, font: { size: 10 }, maxTicksLimit: 4 },
-        },
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { maxTicksLimit: 4 } },
       },
     };
     return options as ChartOptions;
@@ -476,34 +476,12 @@ export class DashboardChartsPanel {
   }
 
   /**
-   * Color de celda del mapa de calor: interpola manualmente entre
-   * `--color-surface` y `--color-primary` según la intensidad. Antes usaba
-   * `color-mix()` de CSS, que en navegadores que no lo soportan simplemente
-   * no aplica ningún color de fondo — todas las celdas se ven iguales, como
-   * si nunca cambiaran. Calculando el rgb() nosotros mismos funciona en
-   * cualquier navegador.
+   * Color de celda del mapa de calor: mezcla la serie principal (`--chart-1`)
+   * con la superficie atenuada según la intensidad. Solo tokens, así que la
+   * celda cambia con el tema sin recalcular.
    */
   heatmapCellColor(colorPct: number): string {
-    const primary = this.parseHexColor(this.cssVar('--color-primary'));
-    const surface = this.parseHexColor(this.cssVar('--color-surface'));
-    if (!primary || !surface) {
-      return `color-mix(in srgb, ${this.cssVar('--color-primary')} ${colorPct}%, ${this.cssVar('--color-surface')})`;
-    }
-    const ratio = colorPct / 100;
-    const mix = (from: number, to: number) => Math.round(from + (to - from) * ratio);
-    return `rgb(${mix(surface.r, primary.r)}, ${mix(surface.g, primary.g)}, ${mix(surface.b, primary.b)})`;
-  }
-
-  private parseHexColor(value: string): { r: number; g: number; b: number } | null {
-    const match = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (!match) {
-      return null;
-    }
-    const hex = match[1].length === 3
-      ? match[1].split('').map((c) => c + c).join('')
-      : match[1];
-    const num = parseInt(hex, 16);
-    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    return `color-mix(in srgb, var(--chart-1) ${colorPct}%, var(--color-surface-muted))`;
   }
 
   /** Hora en formato 12h compacto (ej. "12a", "3p") en vez de la hora militar 0-23. */
@@ -516,12 +494,6 @@ export class DashboardChartsPanel {
   /** Etiqueta del encabezado: vacía salvo cada HOUR_LABEL_STEP horas, para no saturar 24 columnas. */
   hourHeaderLabel(hour: number): string {
     return hour % HOUR_LABEL_STEP === 0 ? this.hourLabel(hour) : '';
-  }
-
-  private cssVar(name: string): string {
-    const root = this.document.documentElement;
-    const value = this.document.defaultView?.getComputedStyle(root).getPropertyValue(name).trim();
-    return value || '#00c27d';
   }
 
   private shortDateLabel(value: string): string {

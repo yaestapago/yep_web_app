@@ -1,0 +1,188 @@
+/* Diagnóstico de escucha: solo layout; color y tamaño salen de los tokens. */
+
+.diag-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.diag-summary__meta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Estado = ícono + palabra (chip), nunca solo color. */
+.diag-flag {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.diag-flag__icon {
+  color: var(--color-text-secondary);
+  flex: 0 0 auto;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+.diag-flag--lg .diag-flag__icon {
+  height: var(--icon-md);
+  width: var(--icon-md);
+}
+
+.diag-flag__icon--ok {
+  color: var(--color-success-strong);
+}
+
+.diag-flag__icon--bad {
+  color: var(--color-error-strong);
+}
+
+.diag-flag__icon--warn {
+  color: var(--color-warning-strong);
+}
+
+/* Filas de "Estado del celular": nombre a la izquierda, chip y detalle a la derecha. */
+.diag-flags {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.diag-flags__row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.diag-flags__label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.diag-flags__detail {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.diag-foot,
+.diag-muted {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  margin: 0;
+}
+
+.diag-foot {
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-3);
+}
+
+/* Causa de una prueba fallida: texto de lectura, debajo del chip. */
+.diag-reason {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  margin: var(--space-2) 0 0;
+}
+
+.diag-pkg {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+  padding: 0 var(--space-2);
+}
+
+.diag-app {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+.diag-table {
+  margin-top: var(--space-4);
+}
+
+/* Montos, horas y contadores en mono con dígitos tabulares. */
+.num {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Línea de tiempo: 96 cubetas de 15 min pegadas (sin gap ni min-width) para que
+   la tira siempre quepa y lo más reciente, a la derecha, nunca se recorte. */
+.diag-timeline {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  display: flex;
+  height: var(--space-4);
+  overflow: hidden;
+  width: 100%;
+}
+
+.diag-timeline__seg {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.diag-timeline__seg--on {
+  background: var(--color-success);
+}
+
+.diag-timeline__seg--off {
+  background: var(--color-warning);
+}
+
+.diag-timeline__seg--none {
+  background: transparent;
+}
+
+.diag-timeline__axis {
+  display: flex;
+  font-size: var(--font-size-xs);
+  justify-content: space-between;
+  margin-top: var(--space-1);
+}
+
+.diag-legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.diag-transitions {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+
+.diag-transitions__row {
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-3);
+}
+
+.diag-transitions__row .num {
+  color: var(--color-text-primary);
+}

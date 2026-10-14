@@ -7,34 +7,34 @@
   (closeRequested)="close.emit()"
 >
   @if (error()) {
-    <p class="detail-error">{{ error() }}</p>
+    <yep-alert class="detail-error" variant="error">{{ error() }}</yep-alert>
   }
 
   @if (detail()) {
-    <!-- Resumen: NO cambia al expandir/contraer reportes, siempre el mismo lugar. -->
+    <!-- Resumen: NO cambia al expandir/contraer reportes, siempre el mismo lugar.
+         Monto en display 40 px con el estado debajo, sin caja alrededor. -->
     <section class="event-summary">
-      <div class="event-summary__amount">
-        <span>Monto reportado</span>
-        @if (amount() !== null) {
-          <strong>{{ amount() | currency: amountCurrency() : 'symbol-narrow' : '1.0-0' }}</strong>
-        } @else {
-          <strong>Sin monto</strong>
-        }
-      </div>
-      <div class="event-summary__meta">
-        <span class="badge badge--{{ statusToneTop() }}">{{ statusLabelTop() }}</span>
+      <span class="event-summary__label">Monto reportado</span>
+      @if (amount() !== null) {
+        <strong class="event-summary__value">{{
+          amount() | currency: amountCurrency() : 'symbol-narrow' : '1.0-0'
+        }}</strong>
+      } @else {
+        <strong class="event-summary__value">Sin monto</strong>
+      }
+      <span class="event-summary__meta">
+        <yep-status-chip size="md" [tone]="statusToneTop()" [label]="statusLabelTop()" />
         @if (reports().length > 1) {
           <span class="event-summary__count">
             {{ reports().length }} reportes confirmaron este pago
           </span>
         }
-      </div>
+      </span>
     </section>
 
     <!-- Reportes: uno por origen que confirmó este pago, en orden de llegada.
          Se expanden/contraen en el lugar, sin reemplazar esta pantalla. -->
-    <section class="detail-section">
-      <h3>Reportes{{ loadingSiblings() ? ' · cargando…' : '' }}</h3>
+    <yep-card-section [title]="'Reportes' + (loadingSiblings() ? ' · cargando…' : '')">
       <ul class="reports">
         @for (report of reports(); track report.id) {
           <li class="report" [class.report--expanded]="isExpanded(report)">
@@ -44,17 +44,19 @@
               (click)="toggleReport(report)"
               [attr.aria-expanded]="isExpanded(report)"
             >
-              @switch (reportIcon(report)) {
-                @case ('mail') {
-                  <svg lucideMail aria-hidden="true"></svg>
+              <yep-icon-tile aria-hidden="true">
+                @switch (reportIcon(report)) {
+                  @case ('mail') {
+                    <svg lucideMail></svg>
+                  }
+                  @case ('monitor') {
+                    <svg lucideMonitor></svg>
+                  }
+                  @case ('smartphone') {
+                    <svg lucideSmartphone></svg>
+                  }
                 }
-                @case ('monitor') {
-                  <svg lucideMonitor aria-hidden="true"></svg>
-                }
-                @case ('smartphone') {
-                  <svg lucideSmartphone aria-hidden="true"></svg>
-                }
-              }
+              </yep-icon-tile>
               <span class="report__main">
                 <span class="report__type">
                   {{ sourceLabel(report) }} · {{ deviceLabel(report) }}
@@ -67,7 +69,7 @@
                     >
                   }
                   @if (isAnchor(report)) {
-                    <span class="report__you">este reporte</span>
+                    <yep-status-chip tone="info" [dot]="false" label="este reporte" />
                   }
                 </span>
                 <span class="report__sub">
@@ -83,73 +85,68 @@
                 </span>
               }
               @if (isExpanded(report)) {
-                <svg lucideChevronUp aria-hidden="true"></svg>
+                <svg class="report__chevron" lucideChevronUp aria-hidden="true"></svg>
               } @else {
-                <svg lucideChevronDown aria-hidden="true"></svg>
+                <svg class="report__chevron" lucideChevronDown aria-hidden="true"></svg>
               }
             </button>
 
             @if (isExpanded(report)) {
               <div class="report__body">
-                <dl class="detail-grid">
-                  <div>
-                    <dt>Banco</dt>
-                    <dd>{{ report.normalized?.bankId || 'No detectado' }}</dd>
-                  </div>
-                  <div>
-                    <dt>Fecha de banco</dt>
-                    <dd>{{ bankDate(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Fecha de reenvío</dt>
-                    <dd>{{ forwardedDate(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Fecha de evento</dt>
-                    <dd>{{ eventDate(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Referencia</dt>
-                    <dd>{{ report.normalized?.reference || 'Sin referencia' }}</dd>
-                  </div>
-                  <div>
-                    <dt>Nombre del emisor</dt>
-                    <dd>{{ senderName(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Nombre de llave</dt>
-                    <dd>{{ keyName(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Cuenta destino</dt>
-                    <dd>{{ destinationAccount(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Resolucion</dt>
-                    <dd>{{ report.normalized?.reportedBankAccountResolution || 'Sin resolver' }}</dd>
-                  </div>
-                  <div>
-                    <dt>Cuenta origen</dt>
-                    <dd>{{ report.normalized?.senderAccount || 'No detectada' }}</dd>
-                  </div>
-                  <div>
-                    <dt>Fecha de transferencia</dt>
-                    <dd>{{ transferDate(report) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Soporte vinculado</dt>
-                    <dd>{{ report.linkedSupportId || 'Sin soporte vinculado' }}</dd>
-                  </div>
-                </dl>
+                <yep-description-list layout="inline">
+                  <yep-description-item label="Banco">{{
+                    report.normalized?.bankId || 'No detectado'
+                  }}</yep-description-item>
+                  <yep-description-item label="Fecha de banco" [mono]="true">{{
+                    bankDate(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Fecha de reenvío" [mono]="true">{{
+                    forwardedDate(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Fecha de evento" [mono]="true">{{
+                    eventDate(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Referencia">{{
+                    report.normalized?.reference || 'Sin referencia'
+                  }}</yep-description-item>
+                  <yep-description-item label="Nombre del emisor">{{
+                    senderName(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Nombre de llave">{{
+                    keyName(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Cuenta destino" [mono]="true">{{
+                    destinationAccount(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Resolucion" [mono]="true">{{
+                    report.normalized?.reportedBankAccountResolution || 'Sin resolver'
+                  }}</yep-description-item>
+                  <yep-description-item label="Cuenta origen">{{
+                    report.normalized?.senderAccount || 'No detectada'
+                  }}</yep-description-item>
+                  <yep-description-item label="Fecha de transferencia" [mono]="true">{{
+                    transferDate(report)
+                  }}</yep-description-item>
+                  <yep-description-item label="Soporte vinculado" [mono]="true">{{
+                    report.linkedSupportId || 'Sin soporte vinculado'
+                  }}</yep-description-item>
+                </yep-description-list>
 
+                <!-- Enlaces plegables (los actuales). -->
                 <details class="raw">
-                  <summary>Notificación recibida</summary>
+                  <summary>
+                    <svg class="raw__chevron" lucideChevronRight aria-hidden="true"></svg>
+                    Notificación recibida
+                  </summary>
                   <pre>{{ rawNotificationText(report) || 'Sin texto disponible' }}</pre>
                 </details>
 
                 @if (showPayload()) {
                   <details class="raw">
-                    <summary>Ver payload original</summary>
+                    <summary>
+                      <svg class="raw__chevron" lucideChevronRight aria-hidden="true"></svg>
+                      Ver payload original
+                    </summary>
                     <pre>{{ report.rawPayload | json }}</pre>
                   </details>
                 }
@@ -158,7 +155,7 @@
           </li>
         }
       </ul>
-    </section>
+    </yep-card-section>
 
     @if (transaction(); as tx) {
       <app-transaction-supports-panel
@@ -168,15 +165,13 @@
         (invoiceRequested)="invoiceRequested.emit($event)"
       />
     } @else {
-      <section class="detail-section">
-        <h3>Transacción asociada</h3>
+      <yep-card-section title="Transacción asociada">
         <p class="muted">No hay transacción asociada a este reporte todavía.</p>
-      </section>
+      </yep-card-section>
     }
 
     @if (relatedEvents().length > 0) {
-      <section class="detail-section">
-        <h3>Otros reportes con la misma referencia (sin confirmar)</h3>
+      <yep-card-section title="Otros reportes con la misma referencia (sin confirmar)">
         <ul class="related-list">
           @for (related of relatedEvents(); track related.id) {
             <li>
@@ -195,19 +190,21 @@
             </li>
           }
         </ul>
-      </section>
+      </yep-card-section>
     }
   }
 
   <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="close.emit()">Cerrar</yep-button>
     @if (transaction(); as tx) {
-      @if (canVerify()) {
-        <yep-button variant="secondary" (clicked)="verifyRequested.emit(tx)">Verificar</yep-button>
-      }
       @if (canApplyInvoice()) {
         <yep-button variant="secondary" (clicked)="invoiceRequested.emit(tx)">Aplicar a factura</yep-button>
       }
+      @if (canVerify()) {
+        <yep-button (clicked)="verifyRequested.emit(tx)">
+          <svg lucideShieldCheck aria-hidden="true"></svg> Verificar
+        </yep-button>
+      }
     }
-    <yep-button variant="secondary" (clicked)="close.emit()">Cerrar</yep-button>
   </ng-container>
 </yep-modal>

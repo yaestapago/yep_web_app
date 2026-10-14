@@ -1,0 +1,100 @@
+<div class="yep-file-drop" [class.yep-file-drop--button]="!allowDrop()">
+  <input
+    #fileInput
+    class="yep-file-drop__input"
+    type="file"
+    tabindex="-1"
+    [accept]="accept()"
+    [multiple]="multiple()"
+    [disabled]="disabled()"
+    [attr.aria-label]="buttonLabel()"
+    [attr.aria-describedby]="describedBy()"
+    (change)="onChange($event)"
+  />
+
+  <div
+    class="yep-file-drop__zone"
+    role="button"
+    [class.yep-file-drop__zone--dragging]="dragging()"
+    [class.yep-file-drop__zone--error]="!!error()"
+    [class.yep-file-drop__zone--disabled]="disabled()"
+    [attr.tabindex]="disabled() ? -1 : 0"
+    [attr.aria-disabled]="disabled() ? 'true' : null"
+    [attr.aria-describedby]="describedBy()"
+    (click)="openPicker()"
+    (keydown)="onKeydown($event)"
+    (dragenter)="onDragEnter($event)"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <yep-icon-tile class="yep-file-drop__tile" [size]="48" [active]="dragging()" aria-hidden="true">
+      <svg lucideUpload></svg>
+    </yep-icon-tile>
+    <svg class="yep-file-drop__button-icon" lucideUpload aria-hidden="true"></svg>
+    <span class="yep-file-drop__label">{{ label() }}</span>
+    <span class="yep-file-drop__button-label">{{ buttonLabel() }}</span>
+    @if (hint()) {
+      <!-- La descripción se lee por aria-describedby, no como parte del nombre del botón. -->
+      <span class="yep-file-drop__hint yep-file-drop__hint--inside" aria-hidden="true" [id]="hintId">{{
+        hint()
+      }}</span>
+    }
+  </div>
+
+  @if (hint()) {
+    <!-- En modo botón la ayuda va debajo; la de dentro queda oculta pero sigue siendo la descripción. -->
+    <p class="yep-file-drop__hint yep-file-drop__hint--outside" aria-hidden="true">{{ hint() }}</p>
+  }
+
+  @if (error()) {
+    <p class="yep-file-drop__error" role="alert" [id]="errorId">{{ error() }}</p>
+  }
+
+  @if (files().length) {
+    <ul class="yep-file-drop__files">
+      @for (file of files(); track $index; let i = $index) {
+        <li class="yep-file-drop__file">
+          <span class="yep-file-drop__thumb" aria-hidden="true">
+            @if (file.previewUrl) {
+              <img class="yep-file-drop__thumb-img" [src]="file.previewUrl" alt="" />
+            } @else {
+              <svg lucideFileText></svg>
+            }
+          </span>
+
+          <div class="yep-file-drop__file-body">
+            <div class="yep-file-drop__file-meta">
+              <span class="yep-file-drop__file-name" [attr.title]="file.name">{{ file.name }}</span>
+              <span class="yep-file-drop__file-size">{{ formatSize(file.size) }}</span>
+            </div>
+            @if (progressValue() !== null) {
+              <div
+                class="yep-file-drop__progress"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-valuenow]="progressValue()"
+                [attr.aria-label]="'Progreso de ' + file.name"
+              >
+                <span class="yep-file-drop__progress-bar" [style.width.%]="progressValue()"></span>
+              </div>
+            }
+          </div>
+
+          @if (removable()) {
+            <button
+              class="yep-file-drop__remove"
+              type="button"
+              [disabled]="disabled()"
+              [attr.aria-label]="'Quitar ' + file.name"
+              (click)="remove(i)"
+            >
+              <svg lucideX aria-hidden="true"></svg>
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  }
+</div>

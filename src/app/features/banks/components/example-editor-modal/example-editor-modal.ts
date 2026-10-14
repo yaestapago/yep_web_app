@@ -14,7 +14,10 @@ import { finalize } from 'rxjs';
 
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
 import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -53,7 +56,16 @@ const CHANNELS: { key: ChannelKey; label: string }[] = [
  */
 @Component({
   selector: 'app-example-editor-modal',
-  imports: [Alert, Button, Modal, StatusDot, ExpectedValuesForm],
+  imports: [
+    Alert,
+    Button,
+    DescriptionItem,
+    DescriptionList,
+    Modal,
+    StatusChip,
+    StatusDot,
+    ExpectedValuesForm,
+  ],
   templateUrl: './example-editor-modal.html',
   styleUrl: './example-editor-modal.scss',
 })

@@ -1,22 +1,20 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, catchError, finalize, shareReplay, switchMap, throwError } from 'rxjs';
+import { catchError, from, switchMap, throwError } from 'rxjs';
 
-import { AuthApiService } from '../../features/auth/services/auth-api.service';
-import { AuthResponse } from '../../shared/models/auth.models';
 import { AuthSessionService } from '../services/auth-session.service';
 
+// Mensajes del JwtAuthGuard del backend (`auth/guards/jwt-auth.guard.ts`). Antes estaban
+// guardados con doble codificación ("autenticaciÃ³n") y nunca coincidían: el token vencido no
+// se renovaba.
 const INVALID_TOKEN_MESSAGES = [
-  'Token de autenticaciÃ³n invÃ¡lido',
-  'Token de autenticaciÃ³n requerido',
+  'Token de autenticación inválido',
+  'Token de autenticación requerido',
 ];
-
-let refreshRequest$: Observable<AuthResponse> | null = null;
 
 export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const session = inject(AuthSessionService);
-  const authApi = inject(AuthApiService);
   const router = inject(Router);
 
   return next(request).pipe(
@@ -28,22 +26,22 @@ export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
         isInvalidTokenError(error) &&
         !isRefreshRequest(request.url)
       ) {
-        return getRefreshRequest(authApi).pipe(
+        // Renovación compartida (pestaña y Web Lock entre pestañas): ver AuthSessionService.
+        return from(session.refreshAccessToken()).pipe(
           catchError(() => {
             session.clearSession();
             void router.navigate(['/login']);
             return throwError(() => error);
           }),
-          switchMap((response) => {
-            session.saveSession(response);
-            return next(
+          switchMap((response) =>
+            next(
               request.clone({
                 setHeaders: {
                   Authorization: `Bearer ${response.accessToken}`,
                 },
               }),
-            );
-          }),
+            ),
+          ),
         );
       }
 
@@ -59,15 +57,4 @@ function isInvalidTokenError(error: HttpErrorResponse): boolean {
 
 function isRefreshRequest(url: string): boolean {
   return url.includes('/auth/refresh');
-}
-
-function getRefreshRequest(authApi: AuthApiService): Observable<AuthResponse> {
-  refreshRequest$ ??= authApi.refresh().pipe(
-    finalize(() => {
-      refreshRequest$ = null;
-    }),
-    shareReplay({ bufferSize: 1, refCount: false }),
-  );
-
-  return refreshRequest$;
 }

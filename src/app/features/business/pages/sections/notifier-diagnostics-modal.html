@@ -1,0 +1,379 @@
+<yep-modal
+  [open]="open()"
+  title="Diagnóstico de escucha"
+  [subtitle]="subtitle()"
+  size="lg"
+  [loading]="loading()"
+  (closeRequested)="close()"
+>
+  @if (loading() && !hasData()) {
+    <yep-state kind="loading" [rows]="5" />
+  } @else {
+    @if (error()) {
+      <yep-alert variant="warning" title="No pudimos cargar el detalle">
+        {{ error() }} Te mostramos lo último que reportó el celular.
+      </yep-alert>
+    }
+
+    @if (!hasData()) {
+      <yep-state
+        kind="empty"
+        title="El celular aún no reporta diagnóstico"
+        description="Necesita la app de YEP 1.0.8 o superior. Actualízala en el celular, ábrela y vuelve a mirar aquí en un par de minutos."
+      />
+    } @else {
+      <!-- Resumen: lo que la app concluyó en su último latido -->
+      <div class="diag-summary" data-testid="diag-summary">
+        <span class="diag-flag diag-flag--lg">
+          @switch (overall().kind) {
+            @case ('ok') {
+              <svg class="diag-flag__icon diag-flag__icon--ok" lucideBellRing aria-hidden="true"></svg>
+            }
+            @case ('unknown') {
+              <svg class="diag-flag__icon" lucideCircleHelp aria-hidden="true"></svg>
+            }
+            @default {
+              <svg class="diag-flag__icon diag-flag__icon--warn" lucideBellOff aria-hidden="true"></svg>
+            }
+          }
+          <yep-status-chip [tone]="overall().tone" [label]="overall().label" [dot]="false" size="md" />
+        </span>
+        @if (capture()?.at) {
+          <span class="diag-summary__meta">
+            Reportado {{ reportedAgo() }} · {{ capture()?.at | date: 'short' }}
+            @if (sourceLabel()) {
+              · {{ sourceLabel() }}
+            }
+          </span>
+        }
+      </div>
+
+      @if (listenerDown()) {
+        <yep-alert variant="warning" title="El celular no está recibiendo las notificaciones">
+          Android desconectó el acceso a notificaciones de YEP. Abre la app de YEP en el celular y
+          toca "Reconectar". Si no funciona, en Ajustes apaga y vuelve a prender el acceso a
+          notificaciones de YEP.
+        </yep-alert>
+      }
+
+      @if (capture()) {
+        <!-- 1. Estado del celular -->
+        <yep-card-section title="Estado del celular">
+          <ul class="diag-flags" data-testid="diag-status">
+            @for (row of statusRows(); track row.key) {
+              <li class="diag-flags__row" [attr.data-key]="row.key">
+                <span class="diag-flags__label">{{ row.label }}</span>
+                <span class="diag-flag">
+                  @switch (row.flag.kind) {
+                    @case ('ok') {
+                      <svg
+                        class="diag-flag__icon diag-flag__icon--ok"
+                        lucideCircleCheck
+                        aria-hidden="true"
+                      ></svg>
+                    }
+                    @case ('bad') {
+                      <svg
+                        class="diag-flag__icon diag-flag__icon--bad"
+                        lucideCircleX
+                        aria-hidden="true"
+                      ></svg>
+                    }
+                    @case ('warn') {
+                      <svg
+                        class="diag-flag__icon diag-flag__icon--warn"
+                        lucideTriangleAlert
+                        aria-hidden="true"
+                      ></svg>
+                    }
+                    @default {
+                      <svg class="diag-flag__icon" lucideCircleHelp aria-hidden="true"></svg>
+                    }
+                  }
+                  <yep-status-chip [tone]="row.flag.tone" [label]="row.flag.label" [dot]="false" />
+                  @if (row.detail) {
+                    <span class="diag-flags__detail">{{ row.detail }}</span>
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+          <p class="diag-foot">
+            Proceso de la app vivo desde {{ processSince() }}
+            @if (rebindAttempts() > 0) {
+              · Intentos de reconexión: <span class="num">{{ rebindAttempts() }}</span> (último
+              {{ lastRebindAgo() }})
+            }
+          </p>
+        </yep-card-section>
+
+        <!-- 2. Lo que ha visto el listener -->
+        <yep-card-section title="Lo que ha visto el listener">
+          <yep-description-list [columns]="2">
+            <yep-description-item label="Última notificación vista (cualquier app)">
+              @if (lastNotificationAt()) {
+                {{ lastNotificationAgo() }}
+                <span class="diag-muted">· {{ lastNotificationAt() | date: 'short' }}</span>
+                @if (lastNotificationApp(); as app) {
+                  <span class="diag-muted">
+                    · {{ app.appLabel || '' }}
+                    <code class="diag-pkg">{{ app.packageName }}</code>
+                  </span>
+                }
+              } @else {
+                <span class="diag-muted">Ninguna todavía</span>
+              }
+            </yep-description-item>
+            <yep-description-item label="Notificaciones vistas desde el arranque">
+              @if (seenTotal() !== null) {
+                <span class="num">{{ seenTotal() }}</span>
+                <span class="diag-muted">· proceso vivo desde {{ processSince() }}</span>
+              } @else {
+                <span class="diag-muted">Sin dato</span>
+              }
+            </yep-description-item>
+          </yep-description-list>
+
+          @if (topApps().length > 0) {
+            <div class="yep-table-wrap diag-table">
+              <table yepTable density="compact" data-testid="diag-top-apps">
+                <thead>
+                  <tr>
+                    <th>App</th>
+                    <th class="num">Vistas</th>
+                    <th>Vigilada</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of topApps(); track row.packageName) {
+                    <tr [attr.data-package]="row.packageName">
+                      <td data-label="App">
+                        <span class="diag-app">
+                          @if (row.appLabel) {
+                            <span>{{ row.appLabel }}</span>
+                          }
+                          <code class="diag-pkg">{{ row.packageName }}</code>
+                          @if (row.isSms) {
+                            <yep-status-chip tone="info" label="App de SMS" [dot]="false" />
+                          }
+                        </span>
+                      </td>
+                      <td data-label="Vistas" class="num">{{ row.count }}</td>
+                      <td data-label="Vigilada">
+                        @if (row.watched) {
+                          <yep-status-chip tone="success" label="Vigilada" />
+                        } @else {
+                          <span class="diag-muted">No</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="diag-foot">
+              "Vigilada" = una app que las reglas de tus bancos escuchan en este celular. Si la app
+              de SMS no aparece aquí, el listener no está viendo sus notificaciones.
+            </p>
+          } @else {
+            <p class="diag-muted">
+              El listener no ha visto notificaciones de ninguna app desde que arrancó el proceso.
+            </p>
+          }
+        </yep-card-section>
+
+        <!-- 3. Receptor nativo -->
+        <yep-card-section title="Filtro de YEP en el celular">
+          @if (receiver(); as receiver) {
+            <yep-description-list [columns]="3">
+              <yep-description-item label="Recibidas">
+                <span class="num">{{ receiver.received ?? '—' }}</span>
+              </yep-description-item>
+              <yep-description-item label="Aceptadas (pagos)">
+                <span class="num">{{ receiver.accepted ?? '—' }}</span>
+              </yep-description-item>
+              <yep-description-item label="Casi aciertos">
+                <span class="num">{{ receiver.nearMiss ?? '—' }}</span>
+              </yep-description-item>
+              <yep-description-item label="Ignoradas">
+                <span class="num">{{ receiver.ignored ?? '—' }}</span>
+              </yep-description-item>
+              <yep-description-item label="Sin reglas">
+                <span class="num">{{ receiver.noRules ?? '—' }}</span>
+              </yep-description-item>
+              <yep-description-item label="Pendientes de enviar">
+                <span class="num">{{ receiver.inboxPending ?? '—' }}</span>
+              </yep-description-item>
+              <yep-description-item label="Reglas de los bancos">
+                <span class="diag-flag">
+                  <yep-status-chip [tone]="rulesFlag().tone" [label]="rulesFlag().label" />
+                </span>
+              </yep-description-item>
+              <yep-description-item label="Última recibida">
+                {{ receiverLastReceivedAgo() }}
+              </yep-description-item>
+              <yep-description-item label="Último pago guardado">
+                {{ receiverLastStoredAgo() }}
+              </yep-description-item>
+            </yep-description-list>
+          } @else {
+            <p class="diag-muted">La app todavía no reporta los contadores del filtro.</p>
+          }
+        </yep-card-section>
+
+        <!-- 4. Prueba de escucha -->
+        <yep-card-section title="Prueba de escucha">
+          <div class="diag-flag" data-testid="diag-self-test">
+            @switch (selfTestFlag().kind) {
+              @case ('ok') {
+                <svg
+                  class="diag-flag__icon diag-flag__icon--ok"
+                  lucideCircleCheck
+                  aria-hidden="true"
+                ></svg>
+              }
+              @case ('bad') {
+                <svg class="diag-flag__icon diag-flag__icon--bad" lucideCircleX aria-hidden="true"></svg>
+              }
+              @default {
+                <svg class="diag-flag__icon" lucideCircleHelp aria-hidden="true"></svg>
+              }
+            }
+            <yep-status-chip [tone]="selfTestFlag().tone" [label]="selfTestFlag().label" [dot]="false" />
+            @if (selfTest(); as test) {
+              @if (test.at) {
+                <span class="diag-flags__detail">
+                  {{ selfTestAgo() }} · {{ test.at | date: 'short' }}
+                  @if (test.ok && test.latencyMs !== null && test.latencyMs !== undefined) {
+                    · entregada en <span class="num">{{ test.latencyMs }}</span> ms
+                  }
+                </span>
+              }
+            }
+          </div>
+          @if (selfTestReason()) {
+            <p class="diag-reason" data-testid="diag-self-test-reason">{{ selfTestReason() }}</p>
+          }
+          <p class="diag-foot">
+            La app se manda una notificación a sí misma y mira si el listener la ve. Se corre desde
+            el celular: Diagnóstico de escucha → "Probar ahora".
+          </p>
+        </yep-card-section>
+      }
+
+      <!-- 5. Línea de tiempo: 24 h en cubetas fijas de 15 min (96 segmentos) -->
+      @if (timeline().points > 0) {
+        <yep-card-section title="Últimas 24 horas">
+          @let tl = timeline();
+          <div
+            class="diag-timeline"
+            role="img"
+            data-testid="diag-timeline"
+            [attr.aria-label]="
+              'Escuchando el ' + tl.activePercent + ' % del tiempo, ' + tl.outages + ' cortes'
+            "
+          >
+            @for (segment of tl.segments; track segment.start) {
+              <span
+                class="diag-timeline__seg"
+                [class.diag-timeline__seg--on]="segment.state === 'on'"
+                [class.diag-timeline__seg--off]="segment.state === 'off'"
+                [class.diag-timeline__seg--none]="segment.state === 'none'"
+                [title]="segment.title"
+              ></span>
+            }
+          </div>
+          <div class="diag-timeline__axis diag-muted">
+            <span>{{ tl.from | date: 'short' }}</span>
+            <span>{{ tl.to | date: 'short' }}</span>
+          </div>
+          <div class="diag-legend">
+            <span class="diag-flag">
+              <svg class="diag-flag__icon diag-flag__icon--ok" lucideBellRing aria-hidden="true"></svg>
+              Escuchando
+            </span>
+            <span class="diag-flag">
+              <svg class="diag-flag__icon diag-flag__icon--warn" lucideBellOff aria-hidden="true"></svg>
+              Sin escuchar
+            </span>
+            <span class="diag-flag diag-muted">
+              <svg class="diag-flag__icon" lucideCircleHelp aria-hidden="true"></svg>
+              Sin datos
+            </span>
+            <span class="diag-muted">
+              <span class="num">{{ tl.activePercent }}</span> % escuchando ·
+              <span class="num">{{ tl.outages }}</span>
+              {{ tl.outages === 1 ? 'corte' : 'cortes' }} · {{ tl.points }}
+              {{ tl.points === 1 ? 'latido' : 'latidos' }}
+            </span>
+          </div>
+          @if (tl.transitions.length > 0) {
+            <ul class="diag-transitions" data-testid="diag-transitions">
+              @for (change of tl.transitions; track change.at) {
+                <li class="diag-transitions__row">
+                  <span class="num">{{ change.at | date: 'short' }}</span>
+                  <span>{{ change.active ? 'Volvió a escuchar' : 'Dejó de escuchar' }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </yep-card-section>
+      }
+
+      <!-- 6. Último reporte enviado desde la app -->
+      <yep-card-section title="Último reporte enviado desde la app">
+        @if (latestReport(); as report) {
+          <yep-description-list [columns]="3" data-testid="diag-report">
+            <yep-description-item label="Enviado">
+              {{ since(report.at) }}
+              <span class="diag-muted">· {{ report.at | date: 'short' }}</span>
+            </yep-description-item>
+            <yep-description-item label="Versión de la app">
+              {{ report.appVersion || '—' }}
+            </yep-description-item>
+            @if (reportDevice()) {
+              <yep-description-item label="Celular">{{ reportDevice() }}</yep-description-item>
+            }
+            <yep-description-item label="Listener en ese momento">
+              <yep-status-chip [tone]="reportListenerFlag().tone" [label]="reportListenerFlag().label" />
+            </yep-description-item>
+            <yep-description-item label="Prueba de escucha">
+              <yep-status-chip [tone]="reportSelfTestFlag().tone" [label]="reportSelfTestFlag().label" />
+            </yep-description-item>
+            <yep-description-item label="Notificaciones vistas">
+              <span class="num">{{ reportHealth()?.seenTotal ?? '—' }}</span>
+            </yep-description-item>
+            @if (reportRulesVersion()) {
+              <yep-description-item label="Versión de reglas" [mono]="true">
+                {{ reportRulesVersion() }}
+              </yep-description-item>
+            }
+            @if (reportNearMisses() > 0) {
+              <yep-description-item label="Casi aciertos adjuntos">
+                <span class="num">{{ reportNearMisses() }}</span>
+              </yep-description-item>
+            }
+            @if (report.report?.notes) {
+              <yep-description-item label="Notas" [span]="3">{{ report.report?.notes }}</yep-description-item>
+            }
+          </yep-description-list>
+          @if (reports().length > 1) {
+            <p class="diag-foot">{{ reports().length }} reportes guardados; se muestra el más reciente.</p>
+          }
+        } @else {
+          <p class="diag-muted">
+            Ninguno todavía. Se manda desde el celular: Diagnóstico de escucha → "Enviar a YEP".
+          </p>
+        }
+      </yep-card-section>
+    }
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="close()">Cerrar</yep-button>
+    <yep-button variant="secondary" [loading]="loading()" (clicked)="reload()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+  </ng-container>
+</yep-modal>

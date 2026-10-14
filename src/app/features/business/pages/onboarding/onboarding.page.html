@@ -1,28 +1,21 @@
 <main class="onboarding-page">
-  <section class="onboarding-hero">
-    <div>
-      <p>Onboarding de negocio</p>
-      <h1>Activa tu espacio de trabajo</h1>
-      <span>{{ user()?.firstName }} {{ user()?.lastName }}</span>
-    </div>
-
-    <div class="hero-actions">
-      <button class="secondary-action" type="button" (click)="openLogout()">
-        <svg lucideLogOut aria-hidden="true"></svg>
-        <span>Cerrar sesión</span>
-      </button>
-    </div>
-  </section>
+  <yep-page-header
+    eyebrow="Onboarding de negocio"
+    title="Activa tu espacio de trabajo"
+    [subtitle]="(user()?.firstName ?? '') + ' ' + (user()?.lastName ?? '')"
+  >
+    <yep-button slot="actions" variant="secondary" (clicked)="openLogout()">
+      <svg lucideLogOut aria-hidden="true"></svg>
+      <span>Cerrar sesión</span>
+    </yep-button>
+  </yep-page-header>
 
   @if (error()) {
-    <div class="form-alert error">
-      <svg lucideTriangleAlert aria-hidden="true"></svg>
-      <span>{{ error() }}</span>
-    </div>
+    <yep-alert variant="error">{{ error() }}</yep-alert>
   }
 
   @if (success()) {
-    <p class="form-alert success">{{ success() }}</p>
+    <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
   @if (hasPendingStaffAccess()) {
@@ -33,10 +26,8 @@
         </div>
 
         <div class="panel-heading panel-heading--center">
-          <div>
-            <p>Registro exitoso</p>
-            <h2>Tu solicitud de acceso está pendiente</h2>
-          </div>
+          <p>Registro exitoso</p>
+          <h2>Tu solicitud de acceso está pendiente</h2>
         </div>
 
         <p class="pending-copy">
@@ -55,39 +46,34 @@
           }
         </div>
 
-        <button
-          class="primary-action"
-          type="button"
+        <yep-button
+          [loading]="refreshingAccess()"
           [disabled]="refreshingAccess()"
-          (click)="refreshAccessStatus()"
+          (clicked)="refreshAccessStatus()"
         >
-          @if (refreshingAccess()) {
-            <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-          } @else {
+          @if (!refreshingAccess()) {
             <svg lucideRefreshCw aria-hidden="true"></svg>
           }
           <span>Actualizar estado</span>
-        </button>
+        </yep-button>
       </article>
     </section>
   } @else {
     <section class="onboarding-grid">
       <article class="action-panel">
         <div class="panel-heading">
-          <div>
-            <p>Nuevo negocio</p>
-            <h2>Crear negocio</h2>
-          </div>
+          <p>Nuevo negocio</p>
+          <h2>Crear negocio</h2>
         </div>
 
         <form [formGroup]="businessForm" (ngSubmit)="createBusiness()" novalidate>
-          <label>
-            <span>Nombre</span>
-            <input type="text" formControlName="name" autocomplete="organization" />
-            @if (isBusinessInvalid('name')) {
-              <small>Ingresa el nombre del negocio.</small>
-            }
-          </label>
+          <yep-input
+            label="Nombre"
+            type="text"
+            autocomplete="organization"
+            formControlName="name"
+            [error]="isBusinessInvalid('name') ? 'Ingresa el nombre del negocio.' : ''"
+          />
 
           <yep-address-location-select
             formControlName="location"
@@ -96,13 +82,13 @@
             dataCy="onboarding-business-location"
           />
 
-          <label>
-            <span>Dirección</span>
-            <input type="text" formControlName="address" autocomplete="street-address" />
-            @if (isBusinessInvalid('address')) {
-              <small>Ingresa la dirección.</small>
-            }
-          </label>
+          <yep-input
+            label="Dirección"
+            type="text"
+            autocomplete="street-address"
+            formControlName="address"
+            [error]="isBusinessInvalid('address') ? 'Ingresa la dirección.' : ''"
+          />
 
           <yep-phone-input
             label="Teléfono"
@@ -112,7 +98,7 @@
             [error]="isBusinessInvalid('phone') ? 'Ingresa un teléfono válido.' : ''"
           ></yep-phone-input>
 
-          <label>
+          <label class="native-field">
             <span>Cuentas de cobro de YEP a nombre de</span>
             <select formControlName="invoiceRecipient" data-cy="onboarding-invoice-recipient">
               <option value="owner">A mi nombre</option>
@@ -120,27 +106,29 @@
             </select>
           </label>
 
-          <label>
-            <span>
-              NIT del negocio
-              @if (businessForm.controls.invoiceRecipient.value !== 'business') {
-                (opcional)
-              }
-            </span>
-            <input type="text" formControlName="nit" placeholder="900123456-7" />
-            @if (nitError()) {
-              <small>{{ nitError() }}</small>
-            }
-          </label>
+          <yep-input
+            [label]="
+              businessForm.controls.invoiceRecipient.value !== 'business'
+                ? 'NIT del negocio (opcional)'
+                : 'NIT del negocio'
+            "
+            type="text"
+            placeholder="900123456-7"
+            formControlName="nit"
+            [error]="nitError()"
+          />
 
-          <button class="primary-action" type="submit" [disabled]="creatingBusiness()">
-            @if (creatingBusiness()) {
-              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-            } @else {
+          <yep-button
+            type="submit"
+            [loading]="creatingBusiness()"
+            [disabled]="creatingBusiness()"
+            [fullWidth]="true"
+          >
+            @if (!creatingBusiness()) {
               <svg lucideBuilding2 aria-hidden="true"></svg>
             }
             <span>Crear y usar</span>
-          </button>
+          </yep-button>
         </form>
       </article>
     </section>
@@ -155,7 +143,7 @@
   >
     <ng-container modalFooter>
       <yep-button variant="ghost" (clicked)="cancelLogout()">Cancelar</yep-button>
-      <yep-button variant="danger" (clicked)="confirmLogout()">Cerrar sesión</yep-button>
+      <yep-button variant="secondary" tone="danger" (clicked)="confirmLogout()">Cerrar sesión</yep-button>
     </ng-container>
   </yep-modal>
 </main>

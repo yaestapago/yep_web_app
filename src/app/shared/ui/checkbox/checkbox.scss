@@ -11,7 +11,7 @@
 
 .yep-checkbox--disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 /* Casilla nativa oculta pero accesible (recibe foco/teclado). */
@@ -27,35 +27,44 @@
 .yep-checkbox__box {
   align-items: center;
   background: var(--color-input-bg);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-focus) solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  color: #ffffff;
+  color: var(--color-on-primary);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 1.15rem;
+  height: 18px;
   justify-content: center;
   transition:
     background-color var(--motion-fast),
     border-color var(--motion-fast);
-  width: 1.15rem;
+  width: 18px;
 }
 
 .yep-checkbox__box svg {
-  height: 0.85rem;
-  width: 0.85rem;
+  height: 12px;
+  stroke-width: 3;
+  width: 12px;
 }
 
-.yep-checkbox--checked .yep-checkbox__box {
+.yep-checkbox:hover:not(.yep-checkbox--disabled) .yep-checkbox__box {
+  border-color: var(--color-text-secondary);
+}
+
+.yep-checkbox--checked .yep-checkbox__box,
+.yep-checkbox--checked:hover:not(.yep-checkbox--disabled) .yep-checkbox__box {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.yep-checkbox__input:focus-visible + .yep-checkbox__box {
-  box-shadow: var(--shadow-focus);
+.yep-checkbox--invalid .yep-checkbox__box,
+.yep-checkbox--invalid:hover:not(.yep-checkbox--disabled) .yep-checkbox__box {
+  border-color: var(--color-error);
 }
 
-.yep-checkbox--invalid .yep-checkbox__box {
-  border-color: var(--color-error);
+/* Foco de teclado: anillo plano (P7), sin halo. */
+.yep-checkbox__input:focus-visible + .yep-checkbox__box {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .yep-checkbox__label {
@@ -66,10 +75,12 @@
 
 /* ---------- appearance: chip (píldora marcable) ---------- */
 .yep-checkbox--chip {
-  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-full);
   color: var(--color-text-secondary);
   justify-content: center;
+  min-height: 32px;
   min-width: 2.5rem;
   padding: var(--space-1) var(--space-3);
   transition:
@@ -84,15 +95,22 @@
 }
 
 .yep-checkbox--chip:hover:not(.yep-checkbox--disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-}
-
-.yep-checkbox--chip.yep-checkbox--checked {
-  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
-  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  border-color: var(--color-text-secondary);
   color: var(--color-text-primary);
 }
 
+.yep-checkbox--chip.yep-checkbox--checked,
+.yep-checkbox--chip.yep-checkbox--checked:hover:not(.yep-checkbox--disabled) {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.yep-checkbox--chip.yep-checkbox--invalid {
+  border-color: var(--color-error);
+}
+
 .yep-checkbox--chip:has(.yep-checkbox__input:focus-visible) {
-  box-shadow: var(--shadow-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }

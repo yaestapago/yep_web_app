@@ -1,3 +1,7 @@
+// A2 · Clientes y cobros (admin) · docs/rediseno-web/04-pantallas.md#vistas-de-administración-fase-4
+// yep-page-header; KPI en fila con yep-kpi; búsqueda con yep-input y filtros con yep-segmented;
+// tabla yepTable en una yep-card a sangre; estados con yep-state.
+
 :host {
   display: block;
 }
@@ -8,247 +12,92 @@
   min-width: 0;
 }
 
-.page-header {
-  align-items: center;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  justify-content: space-between;
-}
-
-.page-header__text {
-  min-width: 0;
-}
-
-.page-header__actions {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.page-header svg {
-  height: 18px;
-  width: 18px;
+// El ritmo entre bloques lo da `.billing-customers-page`.
+.billing-customers-page > yep-page-header {
+  margin-block-end: 0;
 }
 
 .generated-at {
+  align-self: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
 }
 
-.visually-hidden {
+/* ---------- KPI: en fila, sin tarjeta contenedora ---------- */
+.kpi-row {
+  display: grid;
+  gap: var(--space-4) var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+}
+
+/* Indicador que filtra: botón sin piel propia; la tarjeta del KPI marca hover y selección. */
+.kpi-filter {
+  background: transparent;
   border: 0;
-  clip: rect(0 0 0 0);
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  padding: 0;
-  position: absolute;
-  white-space: nowrap;
-  width: 1px;
-}
-
-/* KPI tiles: etiqueta + valor; el color de estado va en un punto junto a la
-   etiqueta (el texto conserva los tokens de texto). */
-.kpi-grid {
-  display: grid;
-  gap: var(--space-3);
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-.kpi-tile {
-  --tile-tone: var(--color-text-muted);
-
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
 }
 
-.kpi-tile[data-tone='warning'] {
-  --tile-tone: var(--color-warning);
+.kpi-filter yep-kpi {
+  height: 100%;
 }
 
-.kpi-tile[data-tone='info'] {
-  --tile-tone: var(--color-secondary);
+.kpi-filter:hover ::ng-deep .yep-kpi {
+  border-color: var(--color-border-strong);
 }
 
-.kpi-tile[data-tone='error'] {
-  --tile-tone: var(--color-error);
+.kpi-filter.is-active ::ng-deep .yep-kpi {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
 }
 
-.kpi-tile[data-tone='success'] {
-  --tile-tone: var(--color-success-strong);
+.kpi-filter:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-.kpi-tile__label {
-  align-items: center;
-  color: var(--color-text-secondary);
-  display: flex;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  gap: var(--space-2);
-}
-
-.kpi-tile__dot {
-  background: var(--tile-tone);
-  border-radius: var(--radius-full);
-  flex: 0 0 auto;
-  height: 8px;
-  width: 8px;
-}
-
-.kpi-tile__value {
-  color: var(--color-text-primary);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-}
-
-/* Búsqueda + filtros */
+/* ---------- Búsqueda + filtros ---------- */
 .toolbar {
   display: grid;
   gap: var(--space-3);
+  justify-items: start;
 }
 
 .search-box {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  gap: var(--space-2);
   max-width: 28rem;
-  min-height: 40px;
-  padding: 0 var(--space-3);
-}
-
-.search-box svg {
-  color: var(--color-text-muted);
-  flex: 0 0 auto;
-  height: 18px;
-  width: 18px;
-}
-
-.search-box input {
-  background: transparent;
-  border: 0;
-  color: var(--color-text-primary);
-  flex: 1;
-  min-width: 0;
-  outline: 0;
-}
-
-.filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.filter-chips button {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: var(--font-size-sm);
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-}
-
-.filter-chips button.active {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  border-color: var(--color-primary);
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.filter-chips__count {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.loading-row {
-  align-items: center;
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  font-size: var(--font-size-sm);
-  gap: var(--space-2);
-}
-
-.loading-row svg {
-  height: 18px;
-  width: 18px;
-}
-
-.spin {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Tabla: el scroll horizontal vive en el contenedor, nunca en la página. */
-.table-wrap {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-table {
-  border-collapse: collapse;
-  font-size: var(--font-size-sm);
-  min-width: 1080px;
   width: 100%;
 }
 
-th {
-  background: color-mix(in srgb, var(--color-background) 70%, var(--color-surface));
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: var(--space-3);
-  text-align: left;
-  white-space: nowrap;
+/* ---------- Tabla ---------- */
+.billing-customers-table {
+  min-width: 1080px;
 }
 
-td {
-  border-top: 1px solid var(--color-border);
-  padding: var(--space-3);
+.billing-customers-table td {
   vertical-align: top;
 }
 
-td small {
+.billing-customers-table td small {
   color: var(--color-text-secondary);
   display: block;
   font-size: var(--font-size-xs);
   margin-top: 2px;
 }
 
-tr[data-state='blocked'] td:first-child {
-  box-shadow: inset 3px 0 0 var(--color-error);
-}
-
-tr[data-state='due_soon'] td:first-child {
-  box-shadow: inset 3px 0 0 var(--color-warning);
-}
-
-.num {
+.deadline,
+.invoice-cell {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.amount {
+  font-family: var(--font-family-mono);
 }
 
 .muted {
@@ -265,40 +114,14 @@ tr[data-state='due_soon'] td:first-child {
 
 .state-badge,
 .invoice-status {
-  border-radius: var(--radius-full);
-  display: inline-block;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: 2px var(--space-2);
-  white-space: nowrap;
+  display: inline-flex;
 }
 
-.state-badge {
-  background: color-mix(in srgb, var(--color-success) 16%, transparent);
-  color: var(--color-success-strong);
+.invoice-status {
+  margin-top: var(--space-1);
 }
 
-.state-badge[data-state='blocked'] {
-  background: color-mix(in srgb, var(--color-error) 15%, transparent);
-  color: var(--color-error);
-}
-
-.state-badge[data-state='due_soon'] {
-  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
-  color: var(--color-text-primary);
-}
-
-.state-badge[data-state='payment_review'] {
-  background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
-  color: var(--color-secondary);
-}
-
-.days[data-tone='overdue'] {
-  color: var(--color-error);
-  font-weight: var(--font-weight-semibold);
-}
-
-.days[data-tone='soon'] {
+.billing-customers-table td small.days[data-tone='soon'] {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
 }
@@ -314,38 +137,20 @@ tr[data-state='due_soon'] td:first-child {
   width: 7px;
 }
 
+.billing-customers-table td small.days[data-tone='overdue'] {
+  color: var(--color-error);
+  font-weight: var(--font-weight-semibold);
+}
+
 .invoice-link {
-  color: var(--color-primary);
+  color: var(--color-primary-strong);
+  font-family: var(--font-family-mono);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
 }
 
 .invoice-link:hover {
   text-decoration: underline;
-}
-
-.invoice-status {
-  margin-top: var(--space-1);
-}
-
-.invoice-status[data-status='issued'] {
-  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
-  color: var(--color-text-primary);
-}
-
-.invoice-status[data-status='reported'] {
-  background: color-mix(in srgb, var(--color-secondary) 15%, transparent);
-  color: var(--color-secondary);
-}
-
-.invoice-status[data-status='paid'] {
-  background: color-mix(in srgb, var(--color-success) 16%, transparent);
-  color: var(--color-success-strong);
-}
-
-.invoice-status[data-status='cancelled'] {
-  background: color-mix(in srgb, var(--color-text-muted) 16%, transparent);
-  color: var(--color-text-secondary);
 }
 
 /* Avisos: un chip por tipo, con ✓/✗/– por canal (el símbolo no depende solo
@@ -358,8 +163,8 @@ tr[data-state='due_soon'] td:first-child {
 
 .notice-chip {
   align-items: center;
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: help;
   display: inline-flex;
@@ -370,7 +175,7 @@ tr[data-state='due_soon'] td:first-child {
 }
 
 .notice-chip--failed {
-  border-color: color-mix(in srgb, var(--color-error) 55%, var(--color-border));
+  border-color: var(--color-error);
 }
 
 .notice-mark {
@@ -391,24 +196,13 @@ tr[data-state='due_soon'] td:first-child {
 }
 
 .empty {
-  color: var(--color-text-secondary);
-  padding: var(--space-6);
-  text-align: center;
+  padding: 0;
 }
 
-.text-button {
-  background: transparent;
-  border: 0;
-  color: var(--color-primary);
-  cursor: pointer;
-  font-weight: var(--font-weight-semibold);
-  margin-left: var(--space-2);
-}
-
-@media (max-width: 640px) {
-  .page-header {
-    align-items: flex-start;
-    flex-direction: column;
+@media (max-width: 768px) {
+  // En celular la tabla se apila (stackOnMobile): sin ancho mínimo.
+  .billing-customers-table {
+    min-width: 0;
   }
 
   .search-box {

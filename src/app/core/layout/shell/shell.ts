@@ -1,12 +1,13 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { LucideFileScan, LucideMenu } from '@lucide/angular';
+import { LucideMenu, LucideScanLine } from '@lucide/angular';
 import { filter, startWith } from 'rxjs';
 
 import { AuthApiService } from '../../../features/auth/services/auth-api.service';
 import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
 import { Button } from '../../../shared/ui/button/button';
+import { IconButton } from '../../../shared/ui/icon-button/icon-button';
 import { Modal } from '../../../shared/ui/modal/modal';
 import { AuthSessionService } from '../../services/auth-session.service';
 import { BillingStatusService } from '../../services/billing-status.service';
@@ -14,9 +15,15 @@ import { Sidebar } from '../sidebar/sidebar';
 
 const SIDEBAR_COLLAPSED_KEY = 'yep-sidebar-collapsed';
 
+/**
+ * "Validar pago" (captura de comprobante) sigue en desarrollo: se oculta temporalmente
+ * para que los usuarios no hagan comprobaciones. Volver a `true` para habilitarlo.
+ */
+const RECEIPT_CAPTURE_ENABLED = false;
+
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, LucideFileScan, LucideMenu],
+  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, IconButton, LucideScanLine],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -28,12 +35,16 @@ export class Shell {
   private readonly authApi = inject(AuthApiService);
   private readonly billing = inject(BillingStatusService);
 
+  /** Icono del botón de menú de la barra superior en celular. */
+  protected readonly menuIcon = LucideMenu;
+
   /** Controla el drawer del sidebar en móvil. */
   readonly drawerOpen = signal(false);
   readonly receiptCaptureOpen = signal(false);
   /** Oculto en prueba gratis y mientras el negocio activo esté bloqueado por cobro. */
   readonly canShowReceiptCaptureButton = computed(
     () =>
+      RECEIPT_CAPTURE_ENABLED &&
       !this.session.isSupportUser() &&
       this.session.subscription()?.plan.code !== 'free_trial' &&
       !this.billing.isBlocked(),

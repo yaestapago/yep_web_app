@@ -1,19 +1,89 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  LucideArrowRight,
+  LucideCreditCard,
+  LucideDynamicIcon,
+  type LucideIcon,
+  LucideLayoutDashboard,
+  LucideMessageCircle,
+  LucideSmartphone,
+  LucideUsers,
+} from '@lucide/angular';
 
+import {
+  canAccessBusinessSection,
+  canAccessSubscription,
+} from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { SUPPORT_WHATSAPP_URL } from '../../../../shared/constants/legal.constants';
+import { Banner, ButtonLink, Card, IconTile, PageHeader, StatusChip } from '../../../../shared/ui';
+
+/** Acción propia de una novedad: enlace externo que se abre en otra pestaña. */
+interface NovedadAction {
+  label: string;
+  href: string;
+  icon?: LucideIcon;
+}
 
 interface Novedad {
   category: string;
   title: string;
   description: string;
+  /** En el banner es el botón primario; en "Más novedades", un enlace de texto. */
+  action?: NovedadAction;
+  /**
+   * Nota del blog con el detalle: en el banner es el botón secundario; en "Más novedades",
+   * un enlace de texto.
+   */
+  readMore?: NovedadAction;
 }
 
-/** Recapitulación completa publicada en el blog del landing. */
-const NOVEDADES_POST_URL = 'https://yaestapago.co/blog/novedades-agosto-2026';
+interface QuickLink {
+  title: string;
+  text: string;
+  link: unknown[] | string;
+  icon: LucideIcon;
+  active: boolean;
+}
+
+/** Listado del blog del landing ("Ver el blog" en "Más novedades"). */
+const BLOG_URL = 'https://yaestapago.co/blog';
+
+/** Nota publicada de la app de YEP para el celular. */
+const APP_POST_URL = 'https://yaestapago.co/blog/app-movil-yep';
+
+/**
+ * Nota de YEP Notifyer en el blog del landing. Es "no listada": no sale en el blog público y
+ * solo se llega a ella desde aquí (Novedades de la app web).
+ */
+const NOTIFYER_POST_URL = 'https://yaestapago.co/blog/yep-notifyer-nueva-version';
+
+/** Línea de WhatsApp de YEP con un mensaje listo para enviar. */
+function whatsappUrl(message: string): string {
+  return `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+}
+
+const TODAY_FORMAT = new Intl.DateTimeFormat('es-CO', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 
 @Component({
   selector: 'app-home-page',
-  imports: [],
+  imports: [
+    RouterLink,
+    LucideArrowRight,
+    LucideDynamicIcon,
+    LucideUsers,
+    Banner,
+    ButtonLink,
+    Card,
+    IconTile,
+    PageHeader,
+    StatusChip,
+  ],
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
 })
@@ -21,9 +91,105 @@ export class HomePage {
   private readonly session = inject(AuthSessionService);
 
   readonly user = this.session.user;
-  readonly novedadesPostUrl = NOVEDADES_POST_URL;
+  readonly blogUrl = BLOG_URL;
+
+  /** Fecha de hoy en texto largo ("Lunes, 12 de octubre") para el eyebrow del encabezado. */
+  readonly today = computed(() => {
+    const text = TODAY_FORMAT.format(new Date());
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  });
+
+  /**
+   * Enlaces del home al negocio activo, con el mismo permiso que el ítem equivalente del menú
+   * (`canAccessBusinessSection` / `canAccessSubscription`). Sin negocio activo apuntan a `/businesses`.
+   */
+  readonly shortcuts = computed(() => {
+    const id = this.session.activeBusinessAccountId();
+    const membership = this.session.activeMembership();
+    const role = membership?.role;
+    const isSu = this.session.isSuperUser();
+    const sectionAccess = membership?.sectionAccess;
+    const link = (path: string): unknown[] => (id ? ['/businesses', id, path] : ['/businesses']);
+    const can = (section: Parameters<typeof canAccessBusinessSection>[0]) =>
+      canAccessBusinessSection(section, role, isSu, sectionAccess);
+
+    const quickLinks: QuickLink[] = [];
+    if (can('dashboard')) {
+      quickLinks.push({
+        title: 'Panel de control',
+        text: 'Pagos de hoy, en vivo.',
+        link: link('dashboard'),
+        icon: LucideLayoutDashboard,
+        active: true,
+      });
+    }
+    if (can('notification-routing')) {
+      quickLinks.push({
+        title: 'Alertas WhatsApp',
+        text: 'Quién recibe cada aviso.',
+        link: link('notification-routing'),
+        icon: LucideMessageCircle,
+        active: false,
+      });
+    }
+    if (can('notifiers')) {
+      quickLinks.push({
+        title: 'Notificadores',
+        text: 'Celulares y correos conectados.',
+        link: link('notifiers'),
+        icon: LucideSmartphone,
+        active: false,
+      });
+    }
+    if (canAccessSubscription(role, isSu)) {
+      quickLinks.push({
+        title: 'Suscripción',
+        text: 'Tu plan y lo que te queda.',
+        link: '/subscription',
+        icon: LucideCreditCard,
+        active: false,
+      });
+    }
+
+    return {
+      employees: can('employees') ? link('employees') : null,
+      quickLinks,
+    };
+  });
 
   readonly novedades: Novedad[] = [
+    {
+      category: 'App móvil',
+      title: 'La app de YEP llega a tu celular',
+      description:
+        'Tu panel de pagos en el bolsillo: ve en vivo cada transferencia que entra a tu negocio, escúchala en voz alta y maneja tu equipo, tus cuentas y tus notificadores desde el celular. Ya está para Android y muy pronto llega a iOS.',
+      action: {
+        label: 'Pídela por WhatsApp',
+        href: whatsappUrl('Hola YEP, quiero la app de YEP para mi celular'),
+        icon: LucideMessageCircle,
+      },
+      readMore: {
+        label: 'Leer la nota',
+        href: APP_POST_URL,
+      },
+    },
+    {
+      category: 'Notificadores',
+      title: 'YEP Notifyer estrena imagen',
+      description:
+        'La app Android que le pasa a YEP los avisos de tu banco ahora se ve como tu panel, en modo claro y oscuro, escucha con más confianza y su aviso para celulares Xiaomi ya responde. Si ya la tienes, no tienes que volver a emparejarla.',
+      action: {
+        label: 'Pídela por WhatsApp',
+        href: whatsappUrl(
+          'Hola YEP, quiero el notificador YEP Notifyer para el celular de mi negocio',
+        ),
+        icon: LucideMessageCircle,
+      },
+      readMore: {
+        label: 'Leer la nota',
+        href: NOTIFYER_POST_URL,
+      },
+    },
     {
       category: 'Panel de pagos',
       title: 'Un panel de pagos más claro',
@@ -61,4 +227,9 @@ export class HomePage {
         'La verificación de cuenta y la recuperación de contraseña ahora usan códigos de un solo uso enviados por correo.',
     },
   ];
+
+  /** Primera novedad: va en el banner. */
+  readonly featured = this.novedades[0];
+  /** Las demás: lista de "Más novedades". */
+  readonly moreNovedades = this.novedades.slice(1);
 }

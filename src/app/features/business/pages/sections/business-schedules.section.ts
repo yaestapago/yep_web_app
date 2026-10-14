@@ -20,9 +20,11 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import {
+  LucideCalendarClock,
   LucideChevronLeft,
   LucideChevronRight,
-  LucideLoaderCircle,
+  LucideMapPin,
+  LucideMoon,
   LucidePlus,
   LucideX,
 } from '@lucide/angular';
@@ -31,11 +33,14 @@ import { finalize, forkJoin } from 'rxjs';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import type { ApprovedMember, DayOfWeek, Shift } from '../../../../shared/models/schedule.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { DayPicker } from '../../../../shared/ui/day-picker/day-picker';
+import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
 import { TimePicker } from '../../../../shared/ui/time-picker/time-picker';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -123,19 +128,8 @@ const TIME_TEMPLATES: TimeTemplate[] = [
   { label: 'Jornada completa', startTime: '06:00', endTime: '18:00' },
 ];
 
-/** Paleta estable para colorear por empleado. */
-const PALETTE = [
-  '#2563eb',
-  '#16a34a',
-  '#db2777',
-  '#d97706',
-  '#7c3aed',
-  '#0891b2',
-  '#dc2626',
-  '#4f46e5',
-  '#ca8a04',
-  '#0d9488',
-];
+/** Paleta estable para colorear por empleado (tokens `--employee-*` de styles.scss). */
+const PALETTE = Array.from({ length: 10 }, (_, i) => `var(--employee-${i + 1})`);
 
 const HOUR_HEIGHT = 40; // px por hora (compacto: 24h × 40 = 960px)
 const PX_PER_MIN = HOUR_HEIGHT / 60;
@@ -253,20 +247,23 @@ function findOverlaps(
   selector: 'app-business-schedules-section',
   imports: [
     ReactiveFormsModule,
+    Alert,
     Button,
     DayPicker,
+    IconButton,
     Modal,
     Select,
+    State,
     TimePicker,
     Toggle,
-    LucideChevronLeft,
-    LucideChevronRight,
-    LucideLoaderCircle,
+    LucideCalendarClock,
+    LucideMapPin,
+    LucideMoon,
     LucidePlus,
     LucideX,
   ],
   templateUrl: './business-schedules.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-schedules.section.scss'],
 })
 export class BusinessSchedulesSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);
@@ -276,6 +273,8 @@ export class BusinessSchedulesSection implements OnInit {
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notifications = inject(NotificationModalService);
 
+  protected readonly prevWeekIcon = LucideChevronLeft;
+  protected readonly nextWeekIcon = LucideChevronRight;
   readonly hourHeight = HOUR_HEIGHT;
   readonly dayColumns = DAY_COLUMNS;
 
@@ -324,7 +323,8 @@ export class BusinessSchedulesSection implements OnInit {
       if (!body || this.hasAutoScrolled) {
         return;
       }
-      body.scrollTop = hour * HOUR_HEIGHT;
+      // 12 px menos: la etiqueta de la hora sube 7 px sobre su línea y quedaba cortada bajo la cabecera.
+      body.scrollTop = Math.max(0, hour * HOUR_HEIGHT - 12);
       this.hasAutoScrolled = true;
     });
   }

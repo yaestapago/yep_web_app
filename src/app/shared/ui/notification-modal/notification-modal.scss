@@ -2,46 +2,58 @@
   display: contents;
 }
 
+/*
+ * Contenido del aviso dentro de yep-modal (03 · yep-notification-modal):
+ * icono del tono en un contenedor de 40 px con fondo `-soft`, título 18/600 y mensaje.
+ */
 .notification-modal {
-  align-items: center;
+  align-items: start;
+  column-gap: var(--space-4);
   display: grid;
-  gap: var(--space-4);
-  justify-items: center;
-  text-align: center;
+  grid-template-columns: 40px minmax(0, 1fr);
+  row-gap: var(--space-4);
 }
 
 .notification-icon {
+  --notification-bg: var(--color-info-soft);
+  --notification-fg: var(--color-info-strong);
+
   align-items: center;
-  background: color-mix(in srgb, var(--notification-color) 12%, transparent);
-  border-radius: var(--radius-full);
-  color: var(--notification-color);
+  background: var(--notification-bg);
+  border-radius: var(--radius-md);
+  color: var(--notification-fg);
   display: inline-flex;
-  height: 72px;
+  height: 40px;
   justify-content: center;
-  width: 72px;
+  width: 40px;
 }
 
 .notification-icon svg {
-  height: 38px;
-  width: 38px;
+  height: var(--icon-md);
+  stroke-width: 1.75;
+  width: var(--icon-md);
 }
 
 .notification-icon--info,
-.notification-icon--question {
-  --notification-color: var(--color-secondary);
+.notification-icon--question,
+.notification-icon--loading {
+  --notification-bg: var(--color-info-soft);
+  --notification-fg: var(--color-info-strong);
 }
 
 .notification-icon--success {
-  --notification-color: var(--color-success-strong);
+  --notification-bg: var(--color-success-soft);
+  --notification-fg: var(--color-success-strong);
 }
 
-.notification-icon--warning,
-.notification-icon--loading {
-  --notification-color: var(--color-warning);
+.notification-icon--warning {
+  --notification-bg: var(--color-warning-soft);
+  --notification-fg: var(--color-warning-strong);
 }
 
 .notification-icon--error {
-  --notification-color: var(--color-error);
+  --notification-bg: var(--color-error-soft);
+  --notification-fg: var(--color-error-strong);
 }
 
 .notification-icon__spinner {
@@ -51,33 +63,42 @@
 .notification-modal__content {
   display: grid;
   gap: var(--space-2);
-  max-width: 36ch;
+  min-width: 0;
+  padding-top: var(--space-2);
 }
 
 .notification-modal__content h2 {
-  font-size: var(--font-size-xl);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
   margin: 0;
 }
 
 .notification-modal__content p {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  line-height: 1.5;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.notification-modal__countdown {
-  color: var(--color-text-primary) !important;
+.notification-modal__content .notification-modal__countdown {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-semibold);
 }
 
+/* Barra indeterminada a lo ancho del aviso. */
 .notification-progress {
-  background: color-mix(in srgb, var(--color-border) 70%, transparent);
+  background: var(--color-surface-muted);
   border-radius: var(--radius-full);
-  height: 6px;
+  grid-column: 1 / -1;
+  height: 4px;
   overflow: hidden;
   position: relative;
-  width: min(220px, 100%);
+  width: 100%;
 }
 
 .notification-progress span {
@@ -103,8 +124,9 @@
   }
 }
 
-@media (max-width: 560px) {
-  .notification-modal {
-    padding-bottom: var(--space-2);
+@media (prefers-reduced-motion: reduce) {
+  .notification-icon__spinner,
+  .notification-progress span {
+    animation-duration: 2.4s;
   }
 }

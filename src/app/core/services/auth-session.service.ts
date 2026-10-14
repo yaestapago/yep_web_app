@@ -11,6 +11,14 @@ import {
   User,
 } from '../../shared/models/auth.models';
 
+/**
+ * Nombre del Web Lock que serializa `/auth/refresh` entre pestañas e iframes del mismo origen.
+ * El backend rota el refresh token en cada uso y, si recibe uno ya rotado, lo trata como robo y
+ * revoca todas las sesiones del usuario. Dos cargas simultáneas con la misma cookie cerraban la
+ * sesión; con el lock la segunda espera y renueva con la cookie ya rotada.
+ */
+const REFRESH_LOCK_NAME = 'yep_web.auth_refresh';
+
 interface StoredSession {
   accessToken: string | null;
   user: User;
@@ -25,6 +33,8 @@ export class AuthSessionService {
   private readonly apiUrl = environment.apiUrl;
   private readonly storageKey = 'yep_web.auth_session';
   private readonly session = signal<StoredSession | null>(this.readStoredSession());
+  /** Renovación en curso en esta pestaña: las llamadas simultáneas comparten la misma. */
+  private refreshInFlight: Promise<AuthResponse> | null = null;
 
   readonly user = computed(() => this.session()?.user ?? null);
   readonly subscription = computed(() => this.session()?.subscription ?? null);
@@ -204,17 +214,43 @@ export class AuthSessionService {
     localStorage.removeItem(this.storageKey);
   }
 
+  /**
+   * Pide un access token nuevo con la cookie de refresh y guarda la sesión. Una sola renovación a
+   * la vez: dentro de la pestaña se comparte la promesa y entre pestañas se espera el Web Lock.
+   */
+  refreshAccessToken(): Promise<AuthResponse> {
+    this.refreshInFlight ??= this.withRefreshLock(() =>
+      firstValueFrom(
+        this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true }),
+      ),
+    )
+      .then((response) => {
+        this.saveSession(response);
+        return response;
+      })
+      .finally(() => {
+        this.refreshInFlight = null;
+      });
+
+    return this.refreshInFlight;
+  }
+
   async restoreSession(): Promise<void> {
     try {
-      const response = await firstValueFrom(
-        this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, {}, { withCredentials: true }),
-      );
-      this.saveSession(response);
+      await this.refreshAccessToken();
     } catch {
       if (!this.accessToken()) {
         this.clearSession();
       }
     }
+  }
+
+  private withRefreshLock<T>(task: () => Promise<T>): Promise<T> {
+    const locks = globalThis.navigator?.locks;
+    // Sin Web Locks (navegadores muy viejos, pruebas) se renueva sin coordinar pestañas.
+    // `request` resuelve con lo que resuelve `task` (la promesa se aplana), aunque el tipo de la
+    // librería DOM diga `Promise<Promise<T>>`.
+    return locks ? (locks.request(REFRESH_LOCK_NAME, task) as unknown as Promise<T>) : task();
   }
 
   private persist(session: StoredSession): void {

@@ -1,112 +1,43 @@
-.zone__head {
-  gap: var(--space-2);
-}
+/* Estado del sistema (S4): sin semáforo. Chip del estado global en la
+   cabecera (abre el detalle), aviso si hay atención requerida y la lista de
+   notificadores con su estado. */
 
-.status-body {
-  gap: var(--space-3);
-}
-
-/* Semaforo global ----------------------------------------------------------*/
 .semaphore {
   align-items: center;
   background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  color: inherit;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
   cursor: pointer;
-  display: flex;
-  flex-direction: row-reverse;
-  font: inherit;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  text-align: left;
-  width: 100%;
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: 2px;
 }
 
 .semaphore:hover {
-  border-color: color-mix(in srgb, var(--color-secondary) 34%, var(--color-border));
+  color: var(--color-text-primary);
 }
 
 .semaphore:focus-visible {
-  box-shadow: var(--shadow-focus);
-  outline: none;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
-.semaphore__lights {
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  display: inline-flex;
+.semaphore__chevron {
+  height: var(--icon-sm);
+  width: var(--icon-sm);
+}
+
+.status-alert {
+  display: block;
   flex: 0 0 auto;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.35rem 0.3rem;
 }
 
-.slight {
-  border-radius: var(--radius-full);
-  height: 0.7rem;
-  opacity: 0.22;
-  width: 0.7rem;
-}
-
-.slight--red {
-  background: var(--color-error);
-}
-
-.slight--yellow {
-  background: var(--color-warning);
-}
-
-.slight--green {
-  background: var(--color-success);
-}
-
-.semaphore--red .slight--red,
-.semaphore--yellow .slight--yellow,
-.semaphore--green .slight--green {
-  opacity: 1;
-}
-
-.semaphore--red .slight--red {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 30%, transparent);
-}
-
-.semaphore--yellow .slight--yellow {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 30%, transparent);
-}
-
-.semaphore--green .slight--green {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 30%, transparent);
-}
-
-.semaphore__text {
-  display: grid;
-  flex: 1;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.semaphore__label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-}
-
-.semaphore--red .semaphore__label {
-  color: var(--color-error);
-}
-
-.semaphore--yellow .semaphore__label {
-  color: color-mix(in srgb, var(--color-warning) 72%, var(--color-text-primary));
-}
-
-.semaphore--green .semaphore__label {
-  color: var(--color-success-strong);
-}
-
-.semaphore__detail {
+.status-detail {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  margin: 0;
 }
 
 /* Notificadores ------------------------------------------------------------*/
@@ -114,22 +45,18 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-2);
+  margin-top: var(--space-4);
   min-height: 0;
 }
 
 .notifiers__caption {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-1);
 }
 
 .nlist {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
   list-style: none;
   margin: 0;
   min-height: 0;
@@ -139,23 +66,24 @@
 
 .nlist__row {
   align-items: center;
-  border-radius: var(--radius-md);
+  border-top: var(--border-width) solid var(--color-border);
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
 }
 
-.nlist__row:hover {
-  background: color-mix(in srgb, var(--color-secondary) 7%, transparent);
+.nlist__row:first-child {
+  border-top: 0;
 }
 
 .nlist__main {
   display: grid;
-  gap: 0;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .nlist__name {
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   overflow: hidden;
@@ -164,39 +92,16 @@
 }
 
 .nlist__rel {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xxs);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 
-.nlight {
-  border-radius: var(--radius-full);
+.nlist__status {
   flex: 0 0 auto;
-  height: 0.7rem;
-  width: 0.7rem;
 }
 
-.nlight--online {
-  background: var(--color-success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 22%, transparent);
-}
-
-.nlight--delayed {
-  background: var(--color-warning);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 22%, transparent);
-}
-
-.nlight--offline {
-  background: var(--color-error);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 20%, transparent);
-}
-
-.nlight--unknown {
-  background: var(--color-text-muted);
-}
-
+/* Detalle (modal) ----------------------------------------------------------*/
 .alert-list {
-  display: grid;
-  gap: var(--space-2);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -204,55 +109,29 @@
 
 .alert-item {
   align-items: flex-start;
-  border: 1px solid var(--color-border);
-  border-left-width: 3px;
-  border-radius: var(--radius-md);
+  border-top: var(--border-width) solid var(--color-border);
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-3);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
 }
 
-.alert-item--red {
-  border-left-color: var(--color-error);
-}
-
-.alert-item--yellow {
-  border-left-color: var(--color-warning);
+.alert-item:first-child {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .alert-item__main {
   display: grid;
-  gap: 0.15rem;
+  gap: 2px;
 }
 
 .alert-item__main strong {
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
-.alert-item__main span,
-.alert-empty p {
+.alert-item__main span {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  margin: 0;
-}
-
-.alert-empty {
-  align-items: center;
-  color: var(--color-success-strong);
-  display: grid;
-  gap: var(--space-2);
-  justify-items: center;
-  padding: var(--space-4);
-  text-align: center;
-}
-
-@media (max-width: 560px) {
-  .semaphore {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .semaphore__lights {
-    flex-direction: row;
-  }
+  font-size: 0.8125rem;
 }

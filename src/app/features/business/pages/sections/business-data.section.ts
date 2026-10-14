@@ -2,13 +2,7 @@ import { Component, DestroyRef, OnDestroy, computed, effect, inject, signal } fr
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  LucideClipboardCheck,
-  LucideClipboardCopy,
-  LucidePencil,
-  LucideTrash2,
-  LucideTriangleAlert,
-} from '@lucide/angular';
+import { LucidePencil, LucideTrash2, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -18,6 +12,9 @@ import type { ApprovedMember } from '../../../../shared/models/schedule.models';
 import { AddressLocationSelect } from '../../../../shared/ui/address-location-select/address-location-select';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -46,19 +43,20 @@ type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
     Alert,
     BillingCutoffCard,
     Button,
+    Card,
+    DescriptionItem,
+    DescriptionList,
     Input,
     Modal,
     OtpInput,
     PhoneInput,
     Select,
     LucidePencil,
-    LucideClipboardCopy,
-    LucideClipboardCheck,
     LucideTrash2,
     LucideTriangleAlert,
   ],
   templateUrl: './business-data.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-data.section.scss'],
 })
 export class BusinessDataSection implements OnDestroy {
   private readonly businessApi = inject(BusinessAccountsApiService);
@@ -108,6 +106,15 @@ export class BusinessDataSection implements OnDestroy {
       businessName: this.businessName(),
     });
     return `${origin}/register?${params.toString()}`;
+  });
+  /** El enlace que se copia, legible: sin `https://` y con espacios y tildes en vez de `+` y `%C3%A9`. */
+  readonly registrationLinkLabel = computed(() => {
+    const link = this.registrationLink().replace(/^https?:\/\//, '').replace(/\+/g, ' ');
+    try {
+      return decodeURIComponent(link);
+    } catch {
+      return link;
+    }
   });
 
   ngOnDestroy(): void {

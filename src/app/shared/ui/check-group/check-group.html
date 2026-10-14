@@ -1,0 +1,43 @@
+<div
+  class="yep-check-group"
+  [class.yep-check-group--on]="checked() || indeterminate()"
+  [class.yep-check-group--disabled]="disabled()"
+>
+  <div class="yep-check-group__head">
+    <label
+      class="yep-check yep-check-group__main"
+      [class.yep-check--on]="checked() || indeterminate()"
+      [class.yep-check--disabled]="disabled()"
+    >
+      <input
+        class="yep-check__input"
+        type="checkbox"
+        [checked]="checked()"
+        [indeterminate]="indeterminate()"
+        [disabled]="disabled()"
+        [attr.data-cy]="dataCy() || null"
+        (change)="onChange($event)"
+      />
+      <span class="yep-check__box" aria-hidden="true">
+        @if (indeterminate()) {
+          <svg lucideMinus></svg>
+        } @else if (checked()) {
+          <svg lucideCheck></svg>
+        }
+      </span>
+      <span class="yep-check__text">
+        <span class="yep-check__label" [id]="labelId">{{ label() }}</span>
+        @if (meta()) {
+          <span class="yep-check__meta yep-check-group__meta">{{ meta() }}</span>
+        }
+      </span>
+    </label>
+
+    @if (count()) {
+      <span class="yep-check-group__count">{{ count() }}</span>
+    }
+    <ng-content select="[slot=actions]"></ng-content>
+  </div>
+
+  <div class="yep-check-group__options" role="group" [attr.aria-labelledby]="labelId"><ng-content></ng-content></div>
+</div>

@@ -1,5 +1,5 @@
 import { Component, computed, input as defineInput } from '@angular/core';
-import { LucideMessageSquare, LucideTriangleAlert } from '@lucide/angular';
+import { LucideChevronDown, LucideMessageSquare, LucideTriangleAlert } from '@lucide/angular';
 
 import type {
   Notifier,
@@ -89,7 +89,7 @@ export function discardCountLabel(count: number): string {
  */
 @Component({
   selector: 'app-notifier-device-diagnostics',
-  imports: [LucideMessageSquare, LucideTriangleAlert],
+  imports: [LucideChevronDown, LucideMessageSquare, LucideTriangleAlert],
   templateUrl: './notifier-device-diagnostics.html',
   styleUrl: './notifier-device-diagnostics.scss',
 })

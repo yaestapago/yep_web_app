@@ -19,7 +19,7 @@ import {
   ValidationErrors,
   Validator,
 } from '@angular/forms';
-import { LucideCircleCheck, LucideCircleX, LucideInfo } from '@lucide/angular';
+import { LucideCircleAlert, LucideCircleCheck, LucideInfo } from '@lucide/angular';
 
 type OtpStatus = 'idle' | 'sending' | 'validating' | 'success' | 'error';
 type OtpEngine = 'email' | 'sms' | '2fa' | 'auth2fa';
@@ -29,7 +29,7 @@ const COMPLETE_DEBOUNCE_MS = 400;
 
 @Component({
   selector: 'yep-otp-input',
-  imports: [LucideCircleCheck, LucideCircleX, LucideInfo],
+  imports: [LucideCircleAlert, LucideCircleCheck, LucideInfo],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

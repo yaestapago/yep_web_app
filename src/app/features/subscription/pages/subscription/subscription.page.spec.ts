@@ -238,6 +238,34 @@ describe('SubscriptionPage — ciclo de pago mensual / anual', () => {
     ).toBeNull();
   });
 
+  it('destaca el plan Pro con el único botón primario y marca el plan actual', () => {
+    const fixture = create(subscription({ plan: basicPlan, contractedPriceCop: 50000 }));
+    const host = fixture.nativeElement as HTMLElement;
+
+    const featured = host.querySelectorAll('.plan-card--featured');
+    expect(featured.length).toBe(1);
+    expect(featured[0].textContent).toContain('Mejor costo-beneficio');
+    expect(featured[0].textContent).toContain('Pro');
+
+    const cards = fixture.componentInstance.planCards();
+    expect(cards.filter((card) => card.buttonVariant === 'primary').map((c) => c.plan.code)).toEqual([
+      'pro',
+    ]);
+    const current = cards.find((card) => card.current);
+    expect(current?.plan.code).toBe('basic');
+    expect(current?.buttonVariant).toBe('secondary');
+    expect(host.querySelector('.plan-card--current')?.textContent).toContain('Tu plan');
+  });
+
+  it('si el plan actual es Pro sigue destacado pero sin botón primario', () => {
+    const fixture = create(subscription());
+    const pro = fixture.componentInstance.planCards().find((card) => card.plan.code === 'pro');
+
+    expect(pro?.highlighted).toBe(true);
+    expect(pro?.current).toBe(true);
+    expect(pro?.buttonVariant).toBe('secondary');
+  });
+
   it('formatea el paso a mensual con un periodo de 1 mes', () => {
     expect(
       billingPeriodChangeMessage({

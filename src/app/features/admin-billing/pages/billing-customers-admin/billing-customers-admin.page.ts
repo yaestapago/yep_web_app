@@ -2,7 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { LucideLoaderCircle, LucideRefreshCw, LucideSearch } from '@lucide/angular';
+import { LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type {
@@ -14,8 +14,19 @@ import type {
   BillingNoticeKind,
   BillingState,
 } from '../../../../shared/models/billing-status.models';
-import { Alert } from '../../../../shared/ui/alert/alert';
-import { Button } from '../../../../shared/ui/button/button';
+import {
+  Alert,
+  Button,
+  Card,
+  Input,
+  Kpi,
+  PageHeader,
+  type KpiTone,
+  State,
+  StatusChip,
+  type StatusChipTone,
+  Table,
+} from '../../../../shared/ui';
 import {
   formatCopAmount,
   formatDateTime,
@@ -75,6 +86,29 @@ const INVOICE_STATUS_LABELS: Record<string, string> = {
   reported: 'Pago reportado',
   paid: 'Pagada',
   cancelled: 'Cancelada',
+};
+
+/** Tonos de presentación: los KPI solo tienen punto para aviso, error y éxito. */
+const KPI_TONES: Partial<Record<string, KpiTone>> = {
+  neutral: 'default',
+  info: 'default',
+  warning: 'warning',
+  error: 'error',
+  success: 'success',
+};
+
+const STATE_TONES: Record<BillingState, StatusChipTone> = {
+  blocked: 'error',
+  due_soon: 'warning',
+  payment_review: 'info',
+  ok: 'success',
+};
+
+const INVOICE_STATUS_TONES: Partial<Record<string, StatusChipTone>> = {
+  issued: 'warning',
+  reported: 'info',
+  paid: 'success',
+  cancelled: 'neutral',
 };
 
 const NOTICE_KINDS: Array<{ kind: BillingNoticeKind; short: string; label: string }> = [
@@ -258,7 +292,20 @@ export function toBillingCustomerView(row: BillingCustomerRow): BillingCustomerV
 
 @Component({
   selector: 'app-billing-customers-admin-page',
-  imports: [FormsModule, RouterLink, Alert, Button, LucideLoaderCircle, LucideRefreshCw, LucideSearch],
+  imports: [
+    FormsModule,
+    RouterLink,
+    Alert,
+    Button,
+    Card,
+    Input,
+    Kpi,
+    PageHeader,
+    State,
+    StatusChip,
+    Table,
+    LucideRefreshCw,
+  ],
   templateUrl: './billing-customers-admin.page.html',
   styleUrl: './billing-customers-admin.page.scss',
 })
@@ -267,6 +314,9 @@ export class BillingCustomersAdminPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly filters = FILTERS;
+  protected readonly kpiTones = KPI_TONES;
+  protected readonly stateTones = STATE_TONES;
+  protected readonly invoiceStatusTones = INVOICE_STATUS_TONES;
   readonly response = signal<BillingCustomersResponse | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
@@ -278,30 +328,38 @@ export class BillingCustomersAdminPage implements OnInit {
   readonly kpis = computed(() => {
     const totals = this.response()?.totals;
     return [
-      { key: 'total', label: 'Total', value: totals?.total ?? 0, tone: 'neutral' },
-      { key: 'trial', label: 'En prueba', value: totals?.trial ?? 0, tone: 'neutral' },
-      { key: 'due_soon', label: 'Por vencer', value: totals?.dueSoon ?? 0, tone: 'warning' },
+      // `filter`: el filtro que aplica el indicador al pulsarlo (los mismos de las antiguas pestañas).
+      { key: 'total', filter: 'all', label: 'Total', value: totals?.total ?? 0, tone: 'neutral' },
+      { key: 'trial', filter: 'trial', label: 'En prueba', value: totals?.trial ?? 0, tone: 'neutral' },
+      {
+        key: 'due_soon',
+        filter: 'due_soon',
+        label: 'Por vencer',
+        value: totals?.dueSoon ?? 0,
+        tone: 'warning',
+      },
       {
         key: 'payment_review',
+        filter: 'payment_review',
         label: 'Pago en revisión',
         value: totals?.paymentReview ?? 0,
         tone: 'info',
       },
-      { key: 'blocked', label: 'Bloqueados', value: totals?.blocked ?? 0, tone: 'error' },
-      { key: 'ok', label: 'Al día', value: totals?.active ?? 0, tone: 'success' },
-    ];
+      {
+        key: 'blocked',
+        filter: 'blocked',
+        label: 'Bloqueados',
+        value: totals?.blocked ?? 0,
+        tone: 'error',
+      },
+      { key: 'ok', filter: 'ok', label: 'Al día', value: totals?.active ?? 0, tone: 'success' },
+    ] satisfies Array<{ key: string; filter: BillingCustomerFilter; label: string; value: number; tone: string }>;
   });
 
   private readonly views = computed(() =>
     [...(this.response()?.rows ?? [])].sort(compareBillingRows).map(toBillingCustomerView),
   );
 
-  readonly filterCounts = computed(() => {
-    const rows = this.views().map((view) => view.row);
-    return Object.fromEntries(
-      FILTERS.map(({ key }) => [key, rows.filter((row) => matchesBillingFilter(row, key)).length]),
-    ) as Record<BillingCustomerFilter, number>;
-  });
 
   readonly visibleRows = computed(() => {
     const filter = this.filter();

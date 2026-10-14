@@ -1,22 +1,17 @@
 <section class="page requests-admin-page">
-  <header class="page-header">
-    <div class="page-header__text">
-      <h1 class="page-title">Solicitudes de cambio de plan</h1>
-      <p class="page-subtitle">
-        Revisa, aprueba o rechaza cambios de plan, add-ons y toppings solicitados por los negocios.
-      </p>
-    </div>
-    <div class="page-header__actions">
-      <yep-button size="sm" (clicked)="openAssignment()">
-        <svg lucidePlus aria-hidden="true"></svg>
-        Nueva asignación
-      </yep-button>
-      <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
-        <svg lucideRefreshCw aria-hidden="true"></svg>
-        Actualizar
-      </yep-button>
-    </div>
-  </header>
+  <yep-page-header
+    title="Solicitudes de cambio de plan"
+    subtitle="Revisa, aprueba o rechaza cambios de plan, adicionales y recargas solicitados por los negocios."
+  >
+    <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+    <yep-button slot="actions" size="sm" (clicked)="openAssignment()">
+      <svg lucidePlus aria-hidden="true"></svg>
+      Nueva asignación
+    </yep-button>
+  </yep-page-header>
 
   @if (error()) {
     <yep-alert variant="error">{{ error() }}</yep-alert>
@@ -25,62 +20,81 @@
     <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
-  <div class="filter-tabs">
-    @for (status of statusOptions; track status) {
-      <button
-        type="button"
-        [class.active]="statusFilter() === status"
-        (click)="statusFilter.set(status)"
-      >
-        {{ status === 'all' ? 'Todas' : status }}
-      </button>
-    }
-  </div>
+  <yep-segmented
+    class="requests-filter"
+    aria-label="Estado de la solicitud"
+    [options]="statusSegments"
+    [value]="statusFilter()"
+    (valueChange)="statusFilter.set($any($event))"
+  />
 
   @if (loading() && requests().length === 0) {
-    <div class="loading-row">
-      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando solicitudes...
-    </div>
+    <yep-state kind="loading" title="Cargando solicitudes..." [rows]="3" />
   } @else if (filteredRequests().length === 0) {
-    <p class="empty-hint">No hay solicitudes en este estado.</p>
+    <yep-state kind="empty" title="No hay solicitudes en este estado." />
   } @else {
-    <ul class="requests-list">
-      @for (request of filteredRequests(); track request.id) {
-        <li class="request-row">
-          <div class="request-row__body">
-            <strong>{{ request.accountName ?? request.accountId }}</strong>
-            <span>{{ requestTypeLabel(request.requestType) }} · {{ requestSummary(request) }}</span>
-            @if (request.message) {
-              <span class="request-message">"{{ request.message }}"</span>
+    <yep-card padding="none" aria-label="Solicitudes">
+      <div class="yep-table-wrap">
+        <table yepTable>
+          <thead>
+            <tr>
+              <th>Negocio</th>
+              <th>Solicitud</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th class="actions"><span class="requests-sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (request of filteredRequests(); track request.id) {
+              <tr>
+                <td data-label="Negocio">
+                  <span class="requests-name">{{ request.accountName ?? request.accountId }}</span>
+                </td>
+                <td data-label="Solicitud">
+                  {{ requestTypeLabel(request.requestType) }} · {{ requestSummary(request) }}
+                  @if (request.message) {
+                    <span class="requests-message">"{{ request.message }}"</span>
+                  }
+                </td>
+                <td data-label="Fecha" class="requests-date">
+                  {{ formatDateTime(request.createdAt) }}
+                </td>
+                <td data-label="Estado">
+                  <yep-status-chip
+                    [tone]="statusTones[request.status]"
+                    [label]="statusLabel(request.status)"
+                  />
+                </td>
+                <td class="actions">
+                  @if (request.status === 'pending') {
+                    <div class="requests-actions">
+                      <yep-button
+                        size="sm"
+                        variant="ghost"
+                        tone="danger"
+                        [loading]="actingId() === request.id"
+                        (clicked)="reject(request)"
+                      >
+                        Rechazar
+                      </yep-button>
+                      <yep-button
+                        size="sm"
+                        variant="secondary"
+                        [loading]="actingId() === request.id"
+                        (clicked)="openApprove(request)"
+                      >
+                        Aprobar
+                      </yep-button>
+                    </div>
+                  }
+                </td>
+              </tr>
             }
-            <span class="request-date">{{ request.createdAt | date: 'medium' }}</span>
-          </div>
-          <span class="request-status" [attr.data-status]="request.status">
-            {{ request.status }}
-          </span>
-          @if (request.status === 'pending') {
-            <div class="request-row__actions">
-              <yep-button
-                size="sm"
-                [loading]="actingId() === request.id"
-                (clicked)="openApprove(request)"
-              >
-                Aprobar
-              </yep-button>
-              <yep-button
-                size="sm"
-                variant="ghost"
-                [loading]="actingId() === request.id"
-                (clicked)="reject(request)"
-              >
-                Rechazar
-              </yep-button>
-            </div>
-          }
-        </li>
-      }
-    </ul>
+          </tbody>
+        </table>
+      </div>
+    </yep-card>
   }
 </section>
 
@@ -95,10 +109,7 @@
   }
 
   @if (assignmentOptionsLoading()) {
-    <div class="loading-row">
-      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando negocios y planes...
-    </div>
+    <yep-state kind="loading" title="Cargando negocios y planes..." [rows]="3" />
   } @else {
     <div class="assignment-form">
       <yep-select
@@ -180,7 +191,7 @@
   <ng-container modalFooter>
     <yep-button variant="ghost" (clicked)="closeAssignment()">Cancelar</yep-button>
     <yep-button
-      variant="ghost"
+      variant="secondary"
       [disabled]="assignmentOptionsLoading() || assignmentSubmitting() || !assignmentValid()"
       [loading]="assignmentSubmitting() && !assignmentApplyImmediately()"
       (clicked)="submitAssignment(false)"
@@ -215,7 +226,7 @@
         name="finalPrice"
         [ngModel]="approvePrice()"
         (ngModelChange)="approvePrice.set($event === '' ? null : +$event)"
-        hint="Si lo dejas vacio se usa el precio sugerido por la tabla de descuentos."
+        hint="Si lo dejas vacío se usa el precio sugerido por la tabla de descuentos."
       ></yep-input>
       <yep-input
         label="Nota (opcional)"

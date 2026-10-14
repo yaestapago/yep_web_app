@@ -1,0 +1,37 @@
+// yep-avatar · docs/rediseno-web/03-componentes.md#yep-avatar--yep-icon-tile
+// Iniciales 600 en tinta sobre `--color-accent`; tinta fija para que en oscuro se vea igual.
+
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.yep-avatar {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  color: var(--brand-ink);
+  display: inline-flex;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  height: 32px;
+  justify-content: center;
+  line-height: 1;
+  overflow: hidden;
+  user-select: none;
+  white-space: nowrap;
+  width: 32px;
+}
+
+.yep-avatar--40 {
+  font-size: var(--font-size-sm);
+  height: 40px;
+  width: 40px;
+}
+
+.yep-avatar--48 {
+  font-size: var(--font-size-md);
+  height: 48px;
+  width: 48px;
+}

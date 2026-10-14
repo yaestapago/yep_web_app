@@ -1,8 +1,7 @@
-import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucideLoaderCircle, LucidePlus, LucideRefreshCw } from '@lucide/angular';
+import { LucidePlus, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import type {
@@ -14,34 +13,72 @@ import type {
 } from '../../../../shared/models/billing.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
 import { Radio } from '../../../../shared/ui/radio/radio';
+import { Segmented, SegmentedOption } from '../../../../shared/ui/segmented/segmented';
 import { Select, SelectOption } from '../../../../shared/ui/select/select';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip, StatusChipTone } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { formatDateTime } from '../../../../shared/utils/billing-format';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AdminPlanChangeRequestsApiService } from '../../services/admin-plan-change-requests-api.service';
+
+/** Tono del chip de estado de cada solicitud (solo presentación). */
+const REQUEST_STATUS_TONES: Record<PlanChangeRequestStatus, StatusChipTone> = {
+  pending: 'warning',
+  approved: 'info',
+  scheduled: 'info',
+  applied: 'success',
+  rejected: 'error',
+  cancelled: 'neutral',
+  blocked_by_usage: 'error',
+};
 
 const REQUEST_TYPE_LABELS: Record<PlanChangeRequestType, string> = {
   upgrade: 'Cambio de plan',
   downgrade: 'Cambio de plan',
-  renew_trial: 'Renovacion de prueba',
-  top_up: 'Toping de WhatsApp',
-  add_on: 'Add-on',
+  renew_trial: 'Renovación de prueba',
+  top_up: 'Recarga de WhatsApp',
+  add_on: 'Adicional',
 };
+
+/** Etiqueta en español de cada estado (los mismos textos que usa `/subscription`). */
+const REQUEST_STATUS_LABELS: Record<PlanChangeRequestStatus, string> = {
+  pending: 'Pendiente',
+  approved: 'Aprobada',
+  scheduled: 'Agendada',
+  applied: 'Aplicada',
+  rejected: 'Rechazada',
+  cancelled: 'Cancelada',
+  blocked_by_usage: 'Bloqueada por uso',
+};
+
+/** Nombre legible de un código de plan (`basic` → `Basic`). */
+function planCodeLabel(code: string | null | undefined): string {
+  return code ? code.charAt(0).toUpperCase() + code.slice(1) : '?';
+}
 
 @Component({
   selector: 'app-plan-change-requests-admin-page',
   imports: [
-    DatePipe,
     FormsModule,
     Alert,
     Button,
+    Card,
     Input,
     Modal,
+    PageHeader,
     Radio,
+    Segmented,
     Select,
-    LucideLoaderCircle,
+    State,
+    StatusChip,
+    Table,
     LucidePlus,
     LucideRefreshCw,
   ],
@@ -65,6 +102,21 @@ export class PlanChangeRequestsAdminPage implements OnInit {
     'rejected',
     'all',
   ];
+  /** Opciones del filtro de estado, en español. */
+  protected readonly statusSegments: SegmentedOption[] = this.statusOptions.map((status) => ({
+    value: status,
+    // En plural, como "Todas" (el chip de cada fila va en singular).
+    label: status === 'all' ? 'Todas' : `${REQUEST_STATUS_LABELS[status]}s`,
+  }));
+  protected readonly statusTones = REQUEST_STATUS_TONES;
+
+  /** Etiqueta del chip de estado, en español. */
+  protected statusLabel(status: PlanChangeRequestStatus): string {
+    return REQUEST_STATUS_LABELS[status] ?? status;
+  }
+
+  /** Fecha y hora en español (`5 oct 2026, 9:30 a. m.`). */
+  protected readonly formatDateTime = formatDateTime;
 
   readonly approvingRequest = signal<PlanChangeRequestSummary | null>(null);
   readonly approveNote = signal('');
@@ -245,13 +297,13 @@ export class PlanChangeRequestsAdminPage implements OnInit {
       return `+${request.recurringAddOn.quantity} ${label} (sugerido: ${this.formatCop(request.recurringAddOn.totalPriceCop)})`;
     }
     if (request.requestedPlanCode && request.proration) {
-      const change = `${request.fromPlanCode ?? '?'} -> ${request.requestedPlanCode}`;
+      const change = `${planCodeLabel(request.fromPlanCode)} → ${planCodeLabel(request.requestedPlanCode)}`;
       return request.proration.proratedAmountCop > 0
-        ? `${change} (${this.formatCop(request.proration.proratedAmountCop)} prorrateado — se cobra via factura)`
+        ? `${change} (${this.formatCop(request.proration.proratedAmountCop)} prorrateado — se cobra vía factura)`
         : `${change} (sin cobro)`;
     }
     if (request.requestedPlanCode) {
-      return `Plan ${request.requestedPlanCode}`;
+      return `Plan ${planCodeLabel(request.requestedPlanCode)}`;
     }
     return '-';
   }

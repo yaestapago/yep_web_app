@@ -1,16 +1,13 @@
 <section class="page invoices-admin-page">
-  <header class="page-header">
-    <div class="page-header__text">
-      <h1 class="page-title">Cuentas de cobro</h1>
-      <p class="page-subtitle">
-        Confirma pagos reportados por los clientes o marca cuentas de cobro como pagadas/canceladas.
-      </p>
-    </div>
-    <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+  <yep-page-header
+    title="Cuentas de cobro"
+    subtitle="Confirma pagos reportados por los clientes o marca cuentas de cobro como pagadas o canceladas."
+  >
+    <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
       Actualizar
     </yep-button>
-  </header>
+  </yep-page-header>
 
   @if (error()) {
     <yep-alert variant="error">{{ error() }}</yep-alert>
@@ -20,64 +17,89 @@
   }
 
   <div class="invoice-filters">
-    <label class="filter-field filter-field--search">
-      <span>Buscar</span>
-      <input
-        type="search"
-        placeholder="Cuenta de cobro, negocio, comprador o correo"
-        [ngModel]="search()"
-        (ngModelChange)="search.set($event)"
-      />
-    </label>
+    <yep-input
+      class="invoice-filters__search"
+      type="search"
+      label="Buscar"
+      name="invoiceSearch"
+      placeholder="Cuenta de cobro, negocio, comprador o correo"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
     <yep-date-range-picker
+      fieldLabel="Rango"
       [range]="range()"
       [preset]="rangePreset()"
       (rangeChange)="onRangeChange($event)"
     />
-    <button type="button" class="clear-filters" (click)="clearFilters()">Limpiar</button>
+    <yep-button variant="ghost" size="sm" (clicked)="clearFilters()">Limpiar</yep-button>
   </div>
 
-  <div class="filter-tabs">
-    @for (status of statusOptions; track status) {
-      <button
-        type="button"
-        [class.active]="statusFilter() === status"
-        (click)="statusFilter.set(status)"
-      >
-        {{ statusLabel(status) }}
-      </button>
-    }
-  </div>
+  <yep-segmented
+    class="invoice-status-filter"
+    aria-label="Estado"
+    [options]="statusSegments"
+    [value]="statusFilter()"
+    (valueChange)="statusFilter.set($any($event))"
+  />
 
   @if (loading() && invoices().length === 0) {
-    <div class="loading-row">
-      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando cuentas de cobro...
-    </div>
+    <yep-state kind="loading" title="Cargando cuentas de cobro..." [rows]="3" />
   } @else if (filteredInvoices().length === 0) {
-    <p class="empty-hint">No hay cuentas de cobro en este estado.</p>
+    <yep-state kind="empty" title="No hay cuentas de cobro en este estado.">
+      <svg slot="icon" lucideReceipt aria-hidden="true"></svg>
+    </yep-state>
   } @else {
-    <ul class="invoices-list">
-      @for (invoice of filteredInvoices(); track invoice.id) {
-        <li class="invoice-row">
-          <div class="invoice-row__body">
-            <strong
-              >{{ invoice.invoiceNumber }} — {{ invoice.accountName || invoice.buyerName }}</strong
-            >
-            <span>{{ invoice.buyerName }} · {{ invoice.buyerEmail || 'Sin correo' }}</span>
-            <span>{{ invoice.concept }}</span>
-            <span class="invoice-date">{{ invoice.issuedAt | date: 'medium' }}</span>
-          </div>
-          <strong class="invoice-amount">{{ formatCop(invoice.totalCop) }}</strong>
-          <span class="invoice-status" [attr.data-status]="invoice.status">
-            {{ statusLabel(invoice.status) }}
-          </span>
-          <yep-button size="sm" variant="secondary" (clicked)="openInvoice(invoice)">
-            Ver detalle
-          </yep-button>
-        </li>
-      }
-    </ul>
+    <yep-card padding="none" aria-label="Cuentas de cobro">
+      <div class="yep-table-wrap">
+        <table yepTable>
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Negocio</th>
+              <th>Concepto</th>
+              <th>Emitida</th>
+              <th class="num">Monto</th>
+              <th>Estado</th>
+              <th class="actions"><span class="invoices-admin-sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (invoice of filteredInvoices(); track invoice.id) {
+              <tr>
+                <td data-label="Número">
+                  <span class="invoices-admin-number">{{ invoice.invoiceNumber }}</span>
+                </td>
+                <td data-label="Negocio">
+                  <strong class="invoices-admin-business">{{
+                    invoice.accountName || invoice.buyerName
+                  }}</strong>
+                  <span class="invoices-admin-line"
+                    >{{ invoice.buyerName }} · {{ invoice.buyerEmail || 'Sin correo' }}</span
+                  >
+                </td>
+                <td data-label="Concepto">{{ invoice.concept }}</td>
+                <td data-label="Emitida" class="invoices-admin-date">
+                  {{ invoice.issuedAt | date: 'medium' }}
+                </td>
+                <td data-label="Monto" class="num">{{ formatCop(invoice.totalCop) }}</td>
+                <td data-label="Estado">
+                  <yep-status-chip
+                    [tone]="statusTones[invoice.status]"
+                    [label]="statusLabel(invoice.status)"
+                  />
+                </td>
+                <td class="actions">
+                  <yep-button size="sm" variant="secondary" (clicked)="openInvoice(invoice)">
+                    Ver detalle
+                  </yep-button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </yep-card>
   }
 </section>
 
@@ -107,7 +129,7 @@
       }
       @if (invoice.canGeneratePdf === undefined) {
         <yep-alert variant="warning"
-          >El servidor todav?a no informa la disponibilidad del PDF. Actualiza el backend y vuelve a
+          >El servidor todavía no informa la disponibilidad del PDF. Actualiza el backend y vuelve a
           cargar las cuentas de cobro.</yep-alert
         >
       } @else if (!invoice.canGeneratePdf) {
@@ -116,73 +138,66 @@
           cobro.</yep-alert
         >
       }
-      <div class="invoice-detail__summary">
-        <div>
-          <span class="field-label">Negocio</span>
+
+      <yep-description-list [columns]="2">
+        <yep-description-item label="Negocio">
           <strong>{{ invoice.accountName || invoice.buyerName }}</strong>
-        </div>
-        <div>
-          <span class="field-label">Estado</span>
-          <span class="invoice-status" [attr.data-status]="invoice.status">
-            {{ statusLabel(invoice.status) }}
-          </span>
-        </div>
-        <div>
-          <span class="field-label">Fecha de emision</span>
-          <strong>{{ invoice.issuedAt | date: 'medium' }}</strong>
-        </div>
-        <div>
-          <span class="field-label">Total</span>
+        </yep-description-item>
+        <yep-description-item label="Estado">
+          <yep-status-chip
+            [tone]="statusTones[invoice.status]"
+            [label]="statusLabel(invoice.status)"
+          />
+        </yep-description-item>
+        <yep-description-item label="Fecha de emision">
+          {{ invoice.issuedAt | date: 'medium' }}
+        </yep-description-item>
+        <yep-description-item label="Total" [mono]="true">
           <strong>{{ formatCop(invoice.totalCop) }}</strong>
-        </div>
-      </div>
-
-      <div class="invoice-detail__parties">
-        <div>
-          <span class="field-label">Emitido por</span>
+        </yep-description-item>
+        <yep-description-item label="Emitido por">
           <strong>{{ invoice.sellerName }}</strong>
-          <span>RUT/NIT {{ invoice.sellerRut }}</span>
-        </div>
-        <div>
-          <span class="field-label">A nombre de</span>
+          <span class="invoice-detail__line">RUT/NIT {{ invoice.sellerRut }}</span>
+        </yep-description-item>
+        <yep-description-item label="A nombre de">
           <strong>{{ invoice.buyerName }}</strong>
-          <span>{{ invoice.buyerIdentification || 'Sin identificacion' }}</span>
-          <span>{{ invoice.buyerEmail || 'Sin correo' }}</span>
-        </div>
-      </div>
+          <span class="invoice-detail__line">{{
+            invoice.buyerIdentification || 'Sin identificacion'
+          }}</span>
+          <span class="invoice-detail__line">{{ invoice.buyerEmail || 'Sin correo' }}</span>
+        </yep-description-item>
+        <yep-description-item label="Concepto" [span]="2">
+          {{ invoice.concept }}
+        </yep-description-item>
+        @if (invoice.customerNote) {
+          <yep-description-item label="Nota del cliente" [span]="2">
+            {{ invoice.customerNote }}
+          </yep-description-item>
+        }
+      </yep-description-list>
 
-      <div>
-        <span class="field-label">Concepto</span>
-        <p>{{ invoice.concept }}</p>
-      </div>
-
-      <table class="invoice-items">
-        <thead>
-          <tr>
-            <th>Descripcion</th>
-            <th>Cantidad</th>
-            <th>Valor unitario</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of invoice.items; track item.description) {
+      <div class="invoice-items-wrap">
+        <table class="invoice-items">
+          <thead>
             <tr>
-              <td>{{ item.description }}</td>
-              <td>{{ item.quantity }}</td>
-              <td>{{ formatCop(item.unitPriceCop) }}</td>
-              <td>{{ formatCop(item.totalCop) }}</td>
+              <th>Descripción</th>
+              <th class="num">Cantidad</th>
+              <th class="num">Valor unitario</th>
+              <th class="num">Total</th>
             </tr>
-          }
-        </tbody>
-      </table>
-
-      @if (invoice.customerNote) {
-        <div class="invoice-detail__note">
-          <span class="field-label">Nota del cliente</span>
-          <p>{{ invoice.customerNote }}</p>
-        </div>
-      }
+          </thead>
+          <tbody>
+            @for (item of invoice.items; track item.description) {
+              <tr>
+                <td>{{ item.description }}</td>
+                <td class="num">{{ item.quantity }}</td>
+                <td class="num">{{ formatCop(item.unitPriceCop) }}</td>
+                <td class="num">{{ formatCop(item.totalCop) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       @if (invoice.reportedAt) {
         <p class="invoice-detail__date">
@@ -194,9 +209,11 @@
       }
 
       @if (invoice.hasVoucher) {
-        <yep-button variant="secondary" (clicked)="openVoucher(invoice)">
-          Ver comprobante de pago
-        </yep-button>
+        <div>
+          <yep-button variant="secondary" (clicked)="openVoucher(invoice)">
+            Ver comprobante de pago
+          </yep-button>
+        </div>
       } @else if (invoice.status === 'reported') {
         <yep-alert variant="warning">Esta cuenta de cobro no tiene un comprobante adjunto.</yep-alert>
       }
@@ -209,6 +226,7 @@
       @if (invoice.status === 'issued' || invoice.status === 'reported') {
         <yep-button
           variant="ghost"
+          tone="danger"
           [loading]="actingId() === invoice.id"
           (clicked)="markCancelled(invoice)"
         >

@@ -1,0 +1,23 @@
+<header class="yep-page-header">
+  <div class="yep-page-header__main">
+    <div class="yep-page-header__leading"><ng-content select="[slot=leading]"></ng-content></div>
+
+    <div class="yep-page-header__heading">
+      <div class="yep-page-header__back"><ng-content select="[slot=back]"></ng-content></div>
+      @if (eyebrow()) {
+        <p class="yep-page-header__eyebrow">{{ eyebrow() }}</p>
+      }
+
+      <div class="yep-page-header__title-row">
+        <h1 class="yep-page-header__title">{{ title() }}</h1>
+        <div class="yep-page-header__meta"><ng-content select="[slot=meta]"></ng-content></div>
+      </div>
+
+      @if (subtitle()) {
+        <p class="yep-page-header__subtitle">{{ subtitle() }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="yep-page-header__actions"><ng-content select="[slot=actions]"></ng-content></div>
+</header>

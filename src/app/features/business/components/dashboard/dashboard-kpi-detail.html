@@ -8,35 +8,36 @@
 >
   <section class="kpi-detail">
     @if (loading()) {
-      <div class="state"><svg class="spin" lucideLoaderCircle aria-hidden="true"></svg></div>
+      <yep-state kind="loading" [rows]="4" />
     } @else if (kind() === 'transactions') {
       @if (transactions().length === 0) {
-        <div class="state"><p>Sin transacciones para este KPI.</p></div>
+        <yep-state kind="empty" description="Sin transacciones para este KPI." />
       } @else {
-        <div class="kpi-detail__table">
-          <table>
+        <div class="yep-table-wrap kpi-detail__table">
+          <table yepTable clickableRows density="compact">
             <thead>
               <tr>
-                <th>Referencia</th>
-                <th>Banco</th>
-                <th class="num">Monto</th>
-                <th>Fecha</th>
-                <th>Estado</th>
+                <th scope="col">Referencia</th>
+                <th scope="col">Banco</th>
+                <th scope="col" class="num">Monto</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Estado</th>
               </tr>
             </thead>
             <tbody>
               @for (transaction of transactions(); track transaction.id) {
                 <tr (click)="viewTransaction.emit(transaction)">
-                  <td>{{ transaction.reference || 'Sin referencia' }}</td>
-                  <td>{{ transaction.bankId }}</td>
-                  <td class="num">
+                  <td data-label="Referencia" class="mono">{{ transaction.reference || 'Sin referencia' }}</td>
+                  <td data-label="Banco">{{ transaction.bankId }}</td>
+                  <td data-label="Monto" class="num">
                     {{ transaction.amount | currency: transaction.currency : 'symbol-narrow' : '1.0-0' }}
                   </td>
-                  <td>{{ transaction.transactionDate | date: 'short' }}</td>
-                  <td>
-                    <span class="badge badge--{{ tone(transaction) }}">{{
-                      statusLabel(transaction)
-                    }}</span>
+                  <td data-label="Fecha" class="mono">{{ transaction.transactionDate | date: 'short' }}</td>
+                  <td data-label="Estado">
+                    <yep-status-chip
+                      [tone]="$any(tone(transaction))"
+                      [label]="statusLabel(transaction)"
+                    />
                   </td>
                 </tr>
               }
@@ -46,25 +47,25 @@
       }
     } @else {
       @if (events().length === 0) {
-        <div class="state"><p>Sin eventos para este KPI.</p></div>
+        <yep-state kind="empty" description="Sin eventos para este KPI." />
       } @else {
-        <div class="kpi-detail__table">
-          <table>
+        <div class="yep-table-wrap kpi-detail__table">
+          <table yepTable clickableRows density="compact">
             <thead>
               <tr>
-                <th>Origen</th>
-                <th>Texto</th>
-                <th class="num">Monto</th>
-                <th>Fecha</th>
-                <th>Estado</th>
+                <th scope="col">Origen</th>
+                <th scope="col">Texto</th>
+                <th scope="col" class="num">Monto</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Estado</th>
               </tr>
             </thead>
             <tbody>
               @for (event of events(); track event.id) {
                 <tr (click)="viewEvent.emit(event)">
-                  <td>{{ event.sourceType }}</td>
-                  <td>{{ eventBody(event) }}</td>
-                  <td class="num">
+                  <td data-label="Origen">{{ event.sourceType }}</td>
+                  <td data-label="Texto" class="kpi-detail__text">{{ eventBody(event) }}</td>
+                  <td data-label="Monto" class="num">
                     @if (event.normalized?.amount) {
                       {{
                         event.normalized?.amount
@@ -72,8 +73,8 @@
                       }}
                     }
                   </td>
-                  <td>{{ event.createdAt | date: 'short' }}</td>
-                  <td>{{ event.status }}</td>
+                  <td data-label="Fecha" class="mono">{{ event.createdAt | date: 'short' }}</td>
+                  <td data-label="Estado">{{ event.status }}</td>
                 </tr>
               }
             </tbody>

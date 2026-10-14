@@ -2,7 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  LucideLoaderCircle,
+  LucideCheck,
   LucideRefreshCw,
   LucideShieldAlert,
   LucideShieldCheck,
@@ -16,13 +16,20 @@ import type {
   ReconciliationBankEvent,
   ReconciliationOrphanTransaction,
 } from '../../../../shared/models/insight.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import {
   DateRangePicker,
   rangeForPreset,
   type DateRangePreset,
 } from '../../../../shared/ui/date-range-picker/date-range-picker';
+import { Menu } from '../../../../shared/ui/menu/menu';
+import { MenuItem } from '../../../../shared/ui/menu/menu-item';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { InsightsApiService } from '../../services/insights-api.service';
 
@@ -40,9 +47,25 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
  */
 @Component({
   selector: 'app-business-insights-section',
-  imports: [CurrencyPipe, DatePipe, Button, DateRangePicker, LucideLoaderCircle, LucideRefreshCw, LucideShieldAlert, LucideShieldCheck],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    Alert,
+    Button,
+    Card,
+    DateRangePicker,
+    Menu,
+    MenuItem,
+    State,
+    StatusChip,
+    Table,
+    LucideCheck,
+    LucideRefreshCw,
+    LucideShieldAlert,
+    LucideShieldCheck,
+  ],
   templateUrl: './business-insights.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-insights.section.scss'],
 })
 export class BusinessInsightsSection implements OnInit {
   private readonly insightsApi = inject(InsightsApiService);

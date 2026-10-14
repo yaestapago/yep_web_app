@@ -1,0 +1,81 @@
+// yep-check-group · docs/rediseno-web/03-componentes.md#yep-check-group
+// Bloque sin borde (P1): fondo muted, marcado en primary-soft. Hijas en rejilla 2 → 1 columna.
+
+@use './check-box';
+
+:host {
+  display: block;
+}
+
+/* Separación entre grupos consecutivos: 8 px (el último no deja margen). */
+:host(:not(:last-child)) {
+  margin-bottom: var(--space-2);
+}
+
+.yep-check-group {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px var(--space-4);
+  transition: background-color var(--motion-fast);
+}
+
+.yep-check-group--on {
+  background: var(--color-primary-soft);
+}
+
+.yep-check-group--disabled .yep-check-group__main,
+.yep-check-group--disabled .yep-check-group__count {
+  opacity: 0.45;
+}
+
+.yep-check-group__head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  min-height: 40px;
+}
+
+.yep-check-group__main {
+  flex: 1 1 12rem;
+  font-size: var(--font-size-sm);
+}
+
+/* La meta mezcla número y texto ("****9432 · Ahorros · Activa"): Inter con cifras
+   tabulares en vez de mono, para no poner en mono palabras que no son datos (P9). */
+.yep-check-group__meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.yep-check-group__count {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.yep-check-group__options {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-left: 30px;
+}
+
+.yep-check-group__options:empty {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .yep-check-group__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yep-check-group {
+    transition: none;
+  }
+}

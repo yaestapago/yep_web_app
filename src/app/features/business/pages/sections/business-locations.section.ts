@@ -1,16 +1,24 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LucideLoaderCircle, LucideMapPin, LucidePlus } from '@lucide/angular';
+import { LucideMapPin, LucidePlus, LucidePower, LucidePowerOff } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
+import { IconTile } from '../../../../shared/ui/icon-tile/icon-tile';
 import { Input } from '../../../../shared/ui/input/input';
+import { Menu } from '../../../../shared/ui/menu/menu';
+import { MenuItem } from '../../../../shared/ui/menu/menu-item';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-input/phone-input';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
+import { Table } from '../../../../shared/ui/table/table';
 import type { BusinessLocation } from '../../../../shared/models/bank-account.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
@@ -24,17 +32,26 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
   selector: 'app-business-locations-section',
   imports: [
     ReactiveFormsModule,
+    Alert,
     Button,
+    Card,
     IconButton,
+    IconTile,
     Input,
+    Menu,
+    MenuItem,
     Modal,
     PhoneInput,
-    LucideLoaderCircle,
+    State,
+    StatusChip,
+    Table,
     LucideMapPin,
     LucidePlus,
+    LucidePower,
+    LucidePowerOff,
   ],
   templateUrl: './business-locations.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-locations.section.scss'],
 })
 export class BusinessLocationsSection implements OnInit {
   private readonly businessApi = inject(BusinessAccountsApiService);

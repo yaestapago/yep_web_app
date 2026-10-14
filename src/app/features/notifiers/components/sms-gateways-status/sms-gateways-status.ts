@@ -7,7 +7,7 @@ import type {
   SmsGatewayStatus,
   SmsGatewaysResponse,
 } from '../../../../shared/models/sms-gateway.models';
-import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
+import { Alert, Card, IconButton, State, StatusChip, type StatusChipTone, Table } from '../../../../shared/ui';
 import { formatDateTime } from '../../../../shared/utils/billing-format';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import type { NotifierStatusLevel } from '../../../../shared/utils/notifier-status';
@@ -71,13 +71,21 @@ export function gatewayRow(gateway: SmsGatewayStatus): GatewayRow {
  */
 @Component({
   selector: 'app-sms-gateways-status',
-  imports: [StatusDot, LucideRefreshCw],
+  imports: [Alert, Card, IconButton, State, StatusChip, Table],
   templateUrl: './sms-gateways-status.html',
   styleUrl: './sms-gateways-status.scss',
 })
 export class SmsGatewaysStatus implements OnInit {
   private readonly api = inject(SmsGatewaysAdminApiService);
   private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly refreshIcon = LucideRefreshCw;
+  protected readonly levelTone: Record<NotifierStatusLevel, StatusChipTone> = {
+    online: 'success',
+    delayed: 'warning',
+    offline: 'error',
+    unknown: 'neutral',
+  };
 
   readonly data = signal<SmsGatewaysResponse | null>(null);
   readonly loading = signal(false);

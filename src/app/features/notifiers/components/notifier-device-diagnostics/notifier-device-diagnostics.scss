@@ -5,10 +5,11 @@
 
 .device-diagnostics {
   display: grid;
-  gap: var(--space-2);
+  gap: 0;
   min-width: 0;
 }
 
+/* Línea de lectura bajo los datos del dispositivo: sin caja propia (P1). */
 .device-diagnostics__sms {
   align-items: center;
   color: var(--color-text-secondary);
@@ -20,12 +21,13 @@
 
   svg {
     flex: 0 0 auto;
-    height: 14px;
-    width: 14px;
+    height: var(--icon-sm);
+    width: var(--icon-sm);
   }
 }
 
 .device-diagnostics__label {
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -34,54 +36,56 @@
 }
 
 .device-diagnostics__pkg {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  background: var(--color-surface-muted);
   border-radius: var(--radius-sm);
-  color: var(--color-primary);
-  font-family: var(--font-mono, monospace);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
   overflow-wrap: anywhere;
   padding: 1px var(--space-2);
 }
 
+/* Sección de la tarjeta del notificador (como yep-card-section): divisor arriba, sin caja propia. */
 .device-diagnostics__discards {
-  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-warning) 40%, var(--color-border));
-  border-radius: var(--radius-md);
+  border-top: var(--border-width) solid var(--color-border);
   font-size: var(--font-size-sm);
-  max-width: 40rem;
-  padding: var(--space-2) var(--space-3);
+  margin-top: calc(var(--space-4) + var(--space-1));
+  padding-top: calc(var(--space-4) + var(--space-1));
 }
 
 .device-diagnostics__summary {
   align-items: center;
+  border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   cursor: pointer;
   display: flex;
   flex-wrap: wrap;
   font-weight: var(--font-weight-semibold);
-  gap: var(--space-1);
+  gap: var(--space-1) var(--space-2);
   list-style: none;
 
   &::-webkit-details-marker {
     display: none;
   }
 
-  // Indicador propio de desplegable (el marcador nativo no se ve con flex).
-  &::after {
-    color: var(--color-text-secondary);
-    content: '▾';
-    margin-left: auto;
-    transition: transform 0.15s ease;
-  }
-
   svg {
-    color: var(--color-warning);
-    height: 14px;
-    width: 14px;
+    flex: 0 0 auto;
+    height: var(--icon-sm);
+    width: var(--icon-sm);
   }
 }
 
-.device-diagnostics__discards[open] > .device-diagnostics__summary::after {
+.device-diagnostics__warn {
+  color: var(--color-warning-strong);
+}
+
+.device-diagnostics__chevron {
+  color: var(--color-text-secondary);
+  margin-left: auto;
+  transition: transform var(--motion-fast);
+}
+
+.device-diagnostics__discards[open] .device-diagnostics__chevron {
   transform: rotate(180deg);
 }
 
@@ -91,14 +95,20 @@
 }
 
 .device-diagnostics__group {
-  border-top: 1px solid color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
+  border-top: var(--border-width) solid var(--color-border);
   display: grid;
   gap: var(--space-1);
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.device-diagnostics__group:first-of-type {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .device-diagnostics__reason {
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   margin: 0;
@@ -115,7 +125,7 @@
   display: grid;
   gap: var(--space-1);
   list-style: none;
-  margin: 0;
+  margin: var(--space-1) 0 0;
   padding: 0;
 }
 
@@ -130,6 +140,7 @@
 
 .device-diagnostics__app {
   align-items: baseline;
+  color: var(--color-text-primary);
   display: inline-flex;
   flex-wrap: wrap;
   gap: var(--space-1);
@@ -139,5 +150,6 @@
 .device-diagnostics__meta {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

@@ -1,7 +1,13 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { LucideChevronRight, LucideMapPin, LucidePlus, LucideUserPlus } from '@lucide/angular';
+import {
+  LucideChevronRight,
+  LucideMapPin,
+  LucidePlus,
+  LucideStore,
+  LucideUserPlus,
+} from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -10,7 +16,11 @@ import type {
   SubscriptionCreationPermissionResponse,
 } from '../../../../shared/models/auth.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
+import { Avatar } from '../../../../shared/ui/avatar/avatar';
 import { Button } from '../../../../shared/ui/button/button';
+import { PageHeader } from '../../../../shared/ui/page-header/page-header';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip } from '../../../../shared/ui/status-chip/status-chip';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { SubscriptionsApiService } from '../../../subscription/services/subscriptions-api.service';
 import { CreateBusinessModal } from '../../components/create-business-modal/create-business-modal';
@@ -21,12 +31,17 @@ import { RequestMembershipModal } from '../../components/request-membership-moda
   imports: [
     RouterLink,
     Alert,
+    Avatar,
     Button,
+    PageHeader,
+    State,
+    StatusChip,
     CreateBusinessModal,
     RequestMembershipModal,
     LucideChevronRight,
     LucideMapPin,
     LucidePlus,
+    LucideStore,
     LucideUserPlus,
   ],
   templateUrl: './business-list.page.html',

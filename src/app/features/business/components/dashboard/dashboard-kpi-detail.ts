@@ -1,17 +1,16 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, input as defineInput, output } from '@angular/core';
-import { LucideLoaderCircle } from '@lucide/angular';
 
 import type { SourceEvent } from '../../../../shared/models/source-event.models';
 import type { PaymentTransaction } from '../../../../shared/models/transaction.models';
-import { Modal } from '../../../../shared/ui/modal/modal';
+import { Modal, State, StatusChip, Table } from '../../../../shared/ui';
 import { transactionStatusLabel, transactionTone } from '../../../../shared/utils/transaction-status';
 
 export type KpiDetailKind = 'transactions' | 'events';
 
 @Component({
   selector: 'app-dashboard-kpi-detail',
-  imports: [CurrencyPipe, DatePipe, LucideLoaderCircle, Modal],
+  imports: [CurrencyPipe, DatePipe, Modal, State, StatusChip, Table],
   templateUrl: './dashboard-kpi-detail.html',
   styleUrls: ['./dashboard-shared.scss', './dashboard-kpi-detail.scss'],
 })

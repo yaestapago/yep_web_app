@@ -3,22 +3,40 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
+  LucideActivity,
   LucideClipboardCheck,
   LucideClipboardCopy,
   LucideLink,
-  LucideLoaderCircle,
-  LucidePencil,
+  LucideMail,
+  LucideMonitor,
   LucidePlus,
   LucideRefreshCw,
   LucideSettings,
+  LucideSmartphone,
   LucideTrash2,
   LucideUnlink,
 } from '@lucide/angular';
 import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import {
+  Alert,
+  Card,
+  CardSection,
+  CheckGroup,
+  CheckOption,
+  DescriptionItem,
+  DescriptionList,
+  IconButton,
+  IconTile,
+  Kpi,
+  Menu,
+  MenuItem,
+  State,
+  StatusChip,
+  type StatusChipTone,
+} from '../../../../shared/ui';
 import { Button } from '../../../../shared/ui/button/button';
-import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
@@ -26,8 +44,8 @@ import {
   RadioSelectionList,
   type RadioSelectionOption,
 } from '../../../../shared/ui/radio-selection-list/radio-selection-list';
-import { StatusDot } from '../../../../shared/ui/status-dot/status-dot';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
+import { NotifierDiagnosticsModal } from './notifier-diagnostics-modal';
 import { NotifierRuntimeConfigModal } from './notifier-runtime-config-modal';
 import { NotifierDeviceDiagnostics } from '../../../notifiers/components/notifier-device-diagnostics/notifier-device-diagnostics';
 import { NotifierSmsRelay } from '../../../notifiers/components/notifier-sms-relay/notifier-sms-relay';
@@ -84,28 +102,43 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     DatePipe,
     ReactiveFormsModule,
     Button,
-    Checkbox,
+    CheckGroup,
+    CheckOption,
     Input,
     Modal,
     RadioSelectionList,
-    StatusDot,
     Toggle,
+    Alert,
+    Card,
+    CardSection,
+    DescriptionItem,
+    DescriptionList,
+    IconButton,
+    IconTile,
+    Kpi,
+    Menu,
+    MenuItem,
+    State,
+    StatusChip,
+    NotifierDiagnosticsModal,
     NotifierRuntimeConfigModal,
     NotifierDeviceDiagnostics,
     NotifierSmsRelay,
+    LucideActivity,
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLink,
-    LucideLoaderCircle,
-    LucidePencil,
+    LucideMail,
+    LucideMonitor,
     LucidePlus,
     LucideRefreshCw,
     LucideSettings,
+    LucideSmartphone,
     LucideTrash2,
     LucideUnlink,
   ],
   templateUrl: './business-notifiers.section.html',
-  styleUrl: './business-sections.scss',
+  styleUrls: ['./business-sections.scss', './business-notifiers.section.scss'],
 })
 export class BusinessNotifiersSection implements OnInit {
   private readonly notifiersApi = inject(NotifiersApiService);
@@ -116,6 +149,17 @@ export class BusinessNotifiersSection implements OnInit {
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notifications = inject(NotificationModalService);
   readonly thresholds = inject(NOTIFIER_STATUS_THRESHOLDS);
+
+  /** Tono del chip de estado por nivel del semáforo (solo presentación). */
+  protected readonly statusChipTone: Record<NotifierStatusLevel, StatusChipTone> = {
+    online: 'success',
+    delayed: 'warning',
+    offline: 'error',
+    unknown: 'neutral',
+  };
+  protected readonly copyIcon = LucideClipboardCopy;
+  protected readonly copiedIcon = LucideClipboardCheck;
+  protected readonly diagnosticsIcon = LucideActivity;
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly notifiers = signal<Notifier[]>([]);
@@ -137,6 +181,17 @@ export class BusinessNotifiersSection implements OnInit {
   /** Notificador cuyo modal de cadencias está abierto (null = cerrado). */
   readonly configNotifier = signal<Notifier | null>(null);
   readonly configModalOpen = signal(false);
+
+  /**
+   * Notificador cuyo diagnóstico de escucha está abierto. Se guarda el id y se
+   * resuelve contra la lista para que el auto-refresco mantenga el modal al día.
+   */
+  private readonly diagnosticsNotifierId = signal<string | null>(null);
+  readonly diagnosticsNotifier = computed<Notifier | null>(() => {
+    const id = this.diagnosticsNotifierId();
+    return id ? (this.notifiers().find((notifier) => notifier.id === id) ?? null) : null;
+  });
+  readonly diagnosticsModalOpen = computed(() => this.diagnosticsNotifier() !== null);
 
   /**
    * Opciones de tipo mostradas como radio buttons al crear un notificador.
@@ -466,6 +521,23 @@ export class BusinessNotifiersSection implements OnInit {
   closeConfig(): void {
     this.configModalOpen.set(false);
     this.configNotifier.set(null);
+  }
+
+  /** Solo un celular emparejado reporta diagnóstico de escucha. */
+  hasDiagnostics(notifier: Notifier): boolean {
+    return notifier.type === 'phone_app' && !!notifier.pairedDevice;
+  }
+
+  /** Abre el modal "Diagnóstico de escucha" del celular emparejado. */
+  openDiagnostics(notifier: Notifier): void {
+    if (!this.hasDiagnostics(notifier)) return;
+    this.error.set('');
+    this.success.set('');
+    this.diagnosticsNotifierId.set(notifier.id);
+  }
+
+  closeDiagnostics(): void {
+    this.diagnosticsNotifierId.set(null);
   }
 
   /** Se activó/desactivó el respaldo por SMS: actualiza la tarjeta. */
@@ -905,7 +977,7 @@ export class BusinessNotifiersSection implements OnInit {
   async remove(notifier: Notifier): Promise<void> {
     const confirmed = await this.notifications.confirm({
       title: 'Eliminar notificador',
-      message: 'Esta accion no se puede deshacer.',
+      message: 'Esta acción no se puede deshacer.',
       type: 'error',
       confirmText: 'Eliminar',
     });

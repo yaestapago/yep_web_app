@@ -17,10 +17,8 @@ import {
   LucideCamera,
   LucideCameraOff,
   LucideLoaderCircle,
-  LucidePaperclip,
   LucideRotateCcw,
   LucideSend,
-  LucideTriangleAlert,
 } from '@lucide/angular';
 import { finalize, map, of, switchMap } from 'rxjs';
 
@@ -36,6 +34,11 @@ import {
   TransactionParty,
   VerificationLevel,
 } from '../../../../shared/models/transaction.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
+import { Button } from '../../../../shared/ui/button/button';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
+import { FileDrop, FileDropItem } from '../../../../shared/ui/file-drop/file-drop';
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
@@ -53,13 +56,16 @@ type CaptureStep = 'capture' | 'review';
     PercentPipe,
     ReactiveFormsModule,
     Modal,
+    Alert,
+    Button,
+    DescriptionList,
+    DescriptionItem,
+    FileDrop,
     LucideCamera,
     LucideCameraOff,
     LucideLoaderCircle,
-    LucidePaperclip,
     LucideRotateCcw,
     LucideSend,
-    LucideTriangleAlert,
   ],
   templateUrl: './receipt-capture-modal.html',
   styleUrl: './receipt-capture-modal.scss',
@@ -95,6 +101,11 @@ export class ReceiptCaptureModal {
   readonly previewUrl = signal('');
   readonly extraction = signal<TransactionExtractionResponse | null>(null);
   readonly loading = computed(() => this.extracting() || this.creatingTransaction());
+  /** Presentación: el comprobante elegido como fila de `yep-file-drop`. */
+  readonly receiptFiles = computed<FileDropItem[]>(() => {
+    const file = this.selectedReceipt();
+    return file ? [{ name: file.name, size: file.size, previewUrl: this.previewUrl() || undefined }] : [];
+  });
 
   readonly manualForm = this.fb.group({
     bankId: ['', [Validators.required, Validators.minLength(2)]],

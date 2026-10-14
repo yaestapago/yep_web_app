@@ -7,24 +7,18 @@
   (closeRequested)="cancel.emit()"
 >
   @if (transaction(); as tx) {
-    <dl class="verify-summary">
-      <div class="verify-row">
-        <dt>Referencia</dt>
-        <dd>{{ tx.reference || 'Sin referencia' }}</dd>
-      </div>
-      <div class="verify-row">
-        <dt>Banco</dt>
-        <dd>{{ tx.bankId }}</dd>
-      </div>
-      <div class="verify-row">
-        <dt>Monto</dt>
-        <dd class="verify-amount">{{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}</dd>
-      </div>
-      <div class="verify-row">
-        <dt>Estado actual</dt>
-        <dd>{{ statusLabel(tx) }}</dd>
-      </div>
-    </dl>
+    <yep-description-list layout="inline">
+      <yep-description-item label="Referencia" [mono]="!!tx.reference">{{
+        tx.reference || 'Sin referencia'
+      }}</yep-description-item>
+      <yep-description-item label="Banco">{{ tx.bankId }}</yep-description-item>
+      <yep-description-item label="Monto" [mono]="true">
+        <span class="verify-amount">{{
+          tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0'
+        }}</span>
+      </yep-description-item>
+      <yep-description-item label="Estado actual">{{ statusLabel(tx) }}</yep-description-item>
+    </yep-description-list>
 
     <p class="verify-note">
       Confirma para marcar el pago como verificado, o recházalo si no procede. Se
@@ -35,7 +29,7 @@
 
   <ng-container modalFooter>
     <yep-button variant="ghost" [disabled]="loading()" (clicked)="cancel.emit()">Cancelar</yep-button>
-    <yep-button variant="danger" [loading]="loading()" (clicked)="onReject()">
+    <yep-button variant="secondary" tone="danger" [loading]="loading()" (clicked)="onReject()">
       <svg lucideShieldX aria-hidden="true"></svg>
       Rechazar
     </yep-button>

@@ -6,34 +6,38 @@
   (closeRequested)="close.emit()"
 >
   @if (transaction(); as tx) {
-    <!-- Resumen + estado destacado -->
-    <section class="detail-summary">
-      <div class="summary-amount">
-        <span class="summary-amount__label">Monto</span>
-        <strong class="summary-amount__value">
-          {{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}
-        </strong>
-        <span class="badge badge--{{ tone(tx) }}">{{ statusLabel(tx) }}</span>
-      </div>
-      <dl class="summary-grid">
-        <div><dt>Banco</dt><dd>{{ tx.bankId }}</dd></div>
-        <div><dt>Fecha / hora</dt><dd>{{ tx.transactionDate | date: 'medium' }}</dd></div>
-        <div><dt>Referencia</dt><dd>{{ tx.reference || '—' }}</dd></div>
-        <div><dt>Origen / pagador</dt><dd>{{ sender(tx) }}</dd></div>
-        <div><dt>Generada por</dt><dd>{{ tx.employeeName || 'No registrado' }}</dd></div>
-      </dl>
+    <!-- Monto en grande con el estado debajo, sin caja alrededor. -->
+    <section class="detail-amount">
+      <span class="detail-amount__label">Monto</span>
+      <strong class="detail-amount__value">
+        {{ tx.amount | currency: tx.currency : 'symbol-narrow' : '1.0-0' }}
+      </strong>
+      <span><yep-status-chip size="md" [tone]="$any(tone(tx))" [label]="statusLabel(tx)" /></span>
     </section>
+
+    <yep-card-section>
+      <yep-description-list layout="inline">
+        <yep-description-item label="Banco">{{ tx.bankId }}</yep-description-item>
+        <yep-description-item label="Fecha / hora" [mono]="true">{{
+          tx.transactionDate | date: 'medium'
+        }}</yep-description-item>
+        <yep-description-item label="Referencia" [mono]="true">{{
+          tx.reference || '—'
+        }}</yep-description-item>
+        <yep-description-item label="Origen / pagador">{{ sender(tx) }}</yep-description-item>
+        <yep-description-item label="Generada por">{{
+          tx.employeeName || 'No registrado'
+        }}</yep-description-item>
+      </yep-description-list>
+    </yep-card-section>
 
     <!-- Completar datos faltantes (NEEDS_INPUT) -->
     @if (needsInput()) {
-      <section class="detail-section needs-input">
-        <h3 class="detail-section__title">
-          <svg lucideTriangleAlert aria-hidden="true"></svg> Faltan datos del comprobante
-        </h3>
-        <p class="needs-input__hint">
+      <yep-card-section title="Faltan datos del comprobante">
+        <yep-alert variant="warning">
           El lector automático no pudo obtener estos datos. Complétalos aquí o
           pídelos al staff por WhatsApp; la corrección queda registrada.
-        </p>
+        </yep-alert>
         <div class="field-form">
           @for (field of missingFields(); track field) {
             <label class="field">
@@ -50,25 +54,24 @@
           }
         </div>
         @if (completeError()) {
-          <div class="inline-state inline-state--error">
+          <div class="inline-state inline-state--error" role="alert">
             <svg lucideTriangleAlert aria-hidden="true"></svg> {{ completeError() }}
           </div>
         }
         <div class="field-form__actions">
-          <button
-            type="button"
-            class="btn btn--primary"
-            (click)="submitCompleteData()"
-            [disabled]="!canSubmit() || submitting()"
+          <yep-button
+            [loading]="submitting()"
+            [disabled]="!canSubmit()"
+            (clicked)="submitCompleteData()"
           >
             @if (submitting()) {
-              <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Guardando…
+              Guardando…
             } @else {
               <svg lucideCheck aria-hidden="true"></svg> Guardar datos
             }
-          </button>
+          </yep-button>
         </div>
-      </section>
+      </yep-card-section>
     }
 
     <app-transaction-supports-panel
@@ -79,30 +82,38 @@
     />
 
     <!-- Auditoría -->
-    <section class="detail-section">
-      <h3 class="detail-section__title">Auditoría</h3>
-      <dl class="summary-grid">
-        <div><dt>Estado actual</dt><dd>{{ statusLabel(tx) }}</dd></div>
-        <div>
-          <dt>Última verificación</dt>
-          <dd>{{ tx.verification.lastRunAt ? (tx.verification.lastRunAt | date: 'medium') : 'Sin ejecutar' }}</dd>
-        </div>
-        <div><dt>ID de ejecución</dt><dd>{{ tx.verification.lastRunId || '—' }}</dd></div>
-        <div><dt>Creada</dt><dd>{{ tx.createdAt | date: 'short' }}</dd></div>
+    <yep-card-section title="Auditoría">
+      <yep-description-list layout="inline">
+        <yep-description-item label="Estado actual">{{ statusLabel(tx) }}</yep-description-item>
+        <yep-description-item label="Última verificación" [mono]="!!tx.verification.lastRunAt">{{
+          tx.verification.lastRunAt ? (tx.verification.lastRunAt | date: 'medium') : 'Sin ejecutar'
+        }}</yep-description-item>
+        <yep-description-item label="ID de ejecución" [mono]="true">{{
+          tx.verification.lastRunId || '—'
+        }}</yep-description-item>
+        <yep-description-item label="Creada" [mono]="true">{{
+          tx.createdAt | date: 'short'
+        }}</yep-description-item>
         @if (tx.notes) {
-          <div class="span-2"><dt>Observaciones</dt><dd>{{ tx.notes }}</dd></div>
+          <yep-description-item label="Observaciones">{{ tx.notes }}</yep-description-item>
         }
-      </dl>
-    </section>
+      </yep-description-list>
+    </yep-card-section>
   }
 
   <ng-container modalFooter>
+    <yep-button variant="ghost" (clicked)="close.emit()">Cerrar</yep-button>
     @if (transaction(); as tx) {
-      @if (canVerify()) {
-        <yep-button variant="secondary" (clicked)="verifyRequested.emit(tx)">Verificar</yep-button>
-      }
       @if (canApplyInvoice()) {
         <yep-button variant="secondary" (clicked)="invoiceRequested.emit(tx)">Aplicar a factura</yep-button>
+      }
+      @if (canVerify()) {
+        <yep-button
+          [variant]="needsInput() ? 'secondary' : 'primary'"
+          (clicked)="verifyRequested.emit(tx)"
+        >
+          <svg lucideShieldCheck aria-hidden="true"></svg> Verificar
+        </yep-button>
       }
     }
   </ng-container>

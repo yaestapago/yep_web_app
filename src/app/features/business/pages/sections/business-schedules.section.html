@@ -21,10 +21,10 @@
   </div>
 
   @if (error()) {
-    <div class="field-error" role="alert">{{ error() }}</div>
+    <yep-alert variant="error">{{ error() }}</yep-alert>
   }
   @if (success()) {
-    <div class="section-subtitle" style="color: var(--color-success-strong)">{{ success() }}</div>
+    <yep-alert variant="success">{{ success() }}</yep-alert>
   }
 
   @if (selectedUserId()) {
@@ -32,28 +32,27 @@
       <span
         >Mostrando turnos de <strong>{{ activeEmployeeName() }}</strong></span
       >
-      <button type="button" class="employee-filter__clear" (click)="clearEmployeeFilter()">
+      <yep-button variant="ghost" size="sm" (clicked)="clearEmployeeFilter()">
         <svg lucideX aria-hidden="true"></svg>
         Quitar filtro
-      </button>
+      </yep-button>
     </div>
   }
 
   @if (loading()) {
-    <div class="loading-row">
-      <svg lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando horarios…
-    </div>
+    <yep-state kind="loading" title="Cargando horarios…" [rows]="3" />
   } @else if (message()) {
-    <div class="empty-state">
-      <h3>Horarios no disponibles</h3>
-      <p>{{ message() }}</p>
-    </div>
+    <yep-state kind="empty" title="Horarios no disponibles" [description]="message()">
+      <svg slot="icon" lucideCalendarClock aria-hidden="true"></svg>
+    </yep-state>
   } @else if (locations().length === 0) {
-    <div class="empty-state">
-      <h3>Sin sedes</h3>
-      <p>Crea una sede antes de programar turnos.</p>
-    </div>
+    <yep-state
+      kind="empty"
+      title="Sin sedes"
+      description="Crea una sede antes de programar turnos."
+    >
+      <svg slot="icon" lucideMapPin aria-hidden="true"></svg>
+    </yep-state>
   } @else {
     @if (locationToggles().length > 1 || legend().length > 0) {
       <div class="grid-filters">
@@ -92,31 +91,32 @@
       </div>
     }
 
-    <div class="week-nav">
-      <button
-        type="button"
-        class="week-nav__arrow"
-        (click)="prevWeek()"
-        aria-label="Semana anterior"
-      >
-        <svg lucideChevronLeft aria-hidden="true"></svg>
-      </button>
-      <h3 class="week-nav__month">{{ monthTitle() }}</h3>
-      <button type="button" class="week-nav__arrow" (click)="nextWeek()" aria-label="Semana siguiente">
-        <svg lucideChevronRight aria-hidden="true"></svg>
-      </button>
-      <yep-button
-        variant="ghost"
-        size="sm"
-        class="week-nav__today"
-        [disabled]="isCurrentWeek()"
-        (clicked)="goToday()"
-      >
-        Hoy
-      </yep-button>
-    </div>
-
     <div class="week-board" [class.week-board--empty]="visibleShifts().length === 0">
+      <div class="week-nav">
+        <yep-icon-button
+          class="week-nav__arrow"
+          [icon]="prevWeekIcon"
+          label="Semana anterior"
+          (clicked)="prevWeek()"
+        />
+        <h3 class="week-nav__month">{{ monthTitle() }}</h3>
+        <yep-icon-button
+          class="week-nav__arrow"
+          [icon]="nextWeekIcon"
+          label="Semana siguiente"
+          (clicked)="nextWeek()"
+        />
+        <yep-button
+          variant="secondary"
+          size="sm"
+          class="week-nav__today"
+          [disabled]="isCurrentWeek()"
+          (clicked)="goToday()"
+        >
+          Hoy
+        </yep-button>
+      </div>
+
       <div class="week-board__scroll" #boardBody>
         <div class="week-board__head">
           <div class="week-board__corner"></div>
@@ -145,6 +145,11 @@
               [style.background-size]="'100% ' + hourHeight + 'px'"
               (click)="onColumnClick(col.day, $event)"
             >
+              <div class="week-board__lines" aria-hidden="true">
+                @for (hour of hourMarks(); track hour) {
+                  <div class="week-board__line" [style.height.px]="hourHeight"></div>
+                }
+              </div>
               @for (item of layoutForDay(col.day); track item.shift.id) {
                 <button
                   type="button"
@@ -157,11 +162,16 @@
                   [style.--shift-color]="item.color"
                   (click)="onBlockClick(item.shift, $event)"
                 >
-                  <span class="shift-block__emp">{{ employeeLabelForUser(item.shift.userId) }}</span>
+                  <span class="shift-block__emp">
+                    <span class="shift-block__dot" aria-hidden="true"></span>
+                    {{ employeeLabelForUser(item.shift.userId) }}
+                  </span>
                   <span class="shift-block__time"
                     >{{ item.shift.startTime }}–{{ item.shift.endTime }}
                     @if (isNightHalf(item.shift)) {
-                      <span class="shift-block__night" title="Turno nocturno">🌙</span>
+                      <span class="shift-block__night" title="Turno nocturno"
+                        ><svg lucideMoon aria-hidden="true"></svg
+                      ></span>
                     }
                   </span>
                   <span class="shift-block__loc">{{ locationName(item.shift.locationId) }}</span>
@@ -264,7 +274,8 @@
   <ng-container modalFooter>
     @if (editingShiftId()) {
       <yep-button
-        variant="danger"
+        variant="secondary"
+        tone="danger"
         [loading]="deletingId() === editingShiftId()"
         (clicked)="deleteEditing()"
       >

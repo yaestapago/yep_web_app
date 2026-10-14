@@ -52,7 +52,12 @@
       @if (isEditing()) {
         <div class="example-editor__channelrow">
           <span class="example-editor__channellabel">Canal</span>
-          <span class="example-editor__channelbadge">{{ channelLabel() }}</span>
+          <yep-status-chip
+            class="example-editor__channelbadge"
+            tone="neutral"
+            [label]="channelLabel()"
+            [dot]="false"
+          />
           <small class="bank-form__hint">Para cambiarlo, elimina el ejemplo y crea otro.</small>
         </div>
       } @else {
@@ -237,29 +242,21 @@
                 : 'Las reglas todavía no lo reconocen'
             "
           />
-          <dl class="example-editor__grid">
-            <dt>Monto</dt>
-            <dd>{{ r.parsed.amount ?? '—' }}</dd>
-            <dt>Remitente</dt>
-            <dd>{{ r.parsed.senderName ?? '—' }}</dd>
-            <dt>Dirección</dt>
-            <dd>{{ r.parsed.direction ?? '—' }}</dd>
-            <dt>Tipo</dt>
-            <dd>{{ r.parsed.kind ?? '—' }}</dd>
-            <dt>Referencia</dt>
-            <dd>{{ r.parsed.reference ?? '—' }}</dd>
-            <dt>Cuenta destino</dt>
-            <dd>{{ r.parsed.receiverAccount ?? '—' }}</dd>
-            <dt>Fecha de transferencia</dt>
-            <dd>
+          <yep-description-list class="example-editor__grid" layout="inline" [columns]="1">
+            <yep-description-item label="Monto" [mono]="true">{{ r.parsed.amount ?? '—' }}</yep-description-item>
+            <yep-description-item label="Remitente">{{ r.parsed.senderName ?? '—' }}</yep-description-item>
+            <yep-description-item label="Dirección">{{ r.parsed.direction ?? '—' }}</yep-description-item>
+            <yep-description-item label="Tipo">{{ r.parsed.kind ?? '—' }}</yep-description-item>
+            <yep-description-item label="Referencia" [mono]="true">{{ r.parsed.reference ?? '—' }}</yep-description-item>
+            <yep-description-item label="Cuenta destino" [mono]="true">{{ r.parsed.receiverAccount ?? '—' }}</yep-description-item>
+            <yep-description-item label="Fecha de transferencia">
               {{ formatTransactionDate(r.parsed.transactionDate) }}
               @if (r.parsed.transactionDateSource) {
                 · {{ transactionDateSourceLabel(r.parsed.transactionDateSource) }}
               }
-            </dd>
-            <dt>Confianza</dt>
-            <dd>{{ r.parsed.confidence }}</dd>
-          </dl>
+            </yep-description-item>
+            <yep-description-item label="Confianza">{{ r.parsed.confidence }}</yep-description-item>
+          </yep-description-list>
         </div>
       }
     </section>
@@ -268,7 +265,8 @@
   <ng-container modalFooter>
     @if (isEditing()) {
       <yep-button
-        variant="danger"
+        variant="ghost"
+        tone="danger"
         type="button"
         [loading]="deleting()"
         [disabled]="saving()"

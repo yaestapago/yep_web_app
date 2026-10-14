@@ -1,3 +1,8 @@
+/* S4 · Panel de control (04-pantallas · mockups 02, 02b y 10).
+   Vista inmersiva: el shell le da un alto fijo de viewport y cada zona maneja
+   su propio scroll en escritorio; en pantallas bajas o angostas el panel
+   completo scrollea para que cada zona conserve un alto usable. */
+
 :host {
   display: flex;
   flex: 1;
@@ -6,244 +11,84 @@
   overflow: hidden;
 }
 
-/* The immersive shell gives this panel a fixed viewport height. On wide
-   desktops each zone owns its scroll; on narrower screens the panel can scroll
-   so every zone keeps a usable height. */
 .panel {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-height: 0;
   overflow: hidden;
 }
 
+/* --- Barra superior ------------------------------------------------------ */
+
 .panel-bar {
-  align-items: center;
-  display: flex;
   flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
+  margin-block-end: 0;
 }
 
-.panel-bar__heading {
-  display: grid;
-  margin-right: auto;
-  min-width: 0;
-}
-
-.panel-bar__eyebrow {
-  color: var(--color-secondary);
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.05em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.panel-bar__title {
-  font-size: var(--font-size-xl);
-  line-height: 1.1;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.op-msg {
-  align-items: center;
-  border-radius: var(--radius-md);
-  display: inline-flex;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-3);
-}
-
-.op-msg--ok {
-  background: color-mix(in srgb, var(--color-success) 16%, transparent);
-  color: var(--color-success-strong);
-}
-
-.op-msg--err {
-  background: color-mix(in srgb, var(--color-error) 12%, transparent);
-  color: var(--color-error);
-}
-
-.op-msg svg {
-  height: 14px;
-  width: 14px;
-}
-
-.refresh-btn {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  display: inline-flex;
-  flex: 0 0 auto;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  gap: var(--space-2);
-  min-height: var(--control-height-sm);
-  padding: 0 var(--space-3);
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
-}
-
-.refresh-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.refresh-btn svg {
-  height: 16px;
-  width: 16px;
-}
-
-.summary-bar {
-  align-items: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xs);
-  display: flex;
-  flex: 0 0 auto;
-  gap: var(--space-3);
-  justify-content: space-between;
-  min-height: 48px;
-  padding: var(--space-2) var(--space-3);
-}
-
-.summary-bar__main {
+.panel-bar__meta,
+.panel-bar__chips {
   align-items: center;
   display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  min-width: 0;
-}
-
-.summary-bar__title {
-  align-items: center;
-  display: flex;
-  flex: 0 0 auto;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  gap: var(--space-2);
-  line-height: 1.2;
-  margin: 0;
-}
-
-.summary-bar__title svg {
-  color: var(--color-secondary);
-  height: 16px;
-  width: 16px;
-}
-
-.summary-bar__chips {
-  align-items: center;
-  display: flex;
-  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: var(--space-2);
-  min-width: 0;
 }
 
-.summary-chip {
+.panel-bar__actions {
   align-items: center;
-  background: color-mix(in srgb, var(--color-secondary) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-secondary) 18%, var(--color-border));
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  min-height: 26px;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0 var(--space-2);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.summary-chip--green {
-  background: color-mix(in srgb, var(--color-success) 14%, transparent);
-  border-color: color-mix(in srgb, var(--color-success) 24%, var(--color-border));
-  color: var(--color-success-strong);
-}
-
-.summary-chip--yellow {
-  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
-  border-color: color-mix(in srgb, var(--color-warning) 28%, var(--color-border));
-  color: color-mix(in srgb, var(--color-warning) 72%, var(--color-text-primary));
-}
-
-.summary-chip--red {
-  background: color-mix(in srgb, var(--color-error) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-error) 24%, var(--color-border));
-  color: var(--color-error);
+  display: flex;
+  gap: var(--space-2);
 }
 
 .summary-toggle {
   align-items: center;
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   cursor: pointer;
   display: inline-flex;
   flex: 0 0 auto;
-  height: var(--control-height-sm);
+  height: var(--control-height-md);
   justify-content: center;
   padding: 0;
-  width: var(--control-height-sm);
+  transition: background-color var(--motion-fast);
+  width: var(--control-height-md);
 }
 
 .summary-toggle:hover {
-  background: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
-  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
+}
+
+.summary-toggle:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .summary-toggle svg {
-  height: 16px;
-  width: 16px;
+  height: var(--icon-md);
+  width: var(--icon-md);
 }
 
-.spin {
-  animation: yep-panel-spin 800ms linear infinite;
+.panel-alert {
+  display: block;
+  flex: 0 0 auto;
 }
 
-@keyframes yep-panel-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* --- Fila de KPI (sin panel contenedor) ---------------------------------- */
 
 .kpi-carousel {
-  min-height: 0;
+  flex: 0 0 auto;
   min-width: 0;
-  overflow: hidden;
   position: relative;
 }
 
-/* Una sola fila que desborda horizontalmente, no un grid que envuelve: los
-   botones/chevrones y el estado canScrollKpisLeft/Right ya asumen esto (miden
-   scrollWidth vs clientWidth de este mismo elemento). Con `auto-fit` el grid
-   envolvía a filas extra en vez de desbordar, así que scrollWidth nunca
-   superaba a clientWidth: los chevrones no aparecían nunca y los KPIs que no
-   entraban en la primera fila quedaban recortados en silencio por
-   `.kpi-carousel { overflow: hidden }`, sin ninguna forma de alcanzarlos. */
+/* Una sola fila que desborda horizontalmente: los chevrones y el estado
+   canScrollKpisLeft/Right miden scrollWidth vs clientWidth de este elemento. */
 .kpi-row {
-  display: grid;
-  gap: var(--space-2);
-  grid-auto-columns: minmax(112px, 1fr);
-  grid-auto-flow: column;
+  display: flex;
+  gap: var(--space-4);
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -253,12 +98,42 @@
   display: none;
 }
 
+.kpi {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-lg);
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  flex: 1 0 168px;
+  font: inherit;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.kpi--emphasis {
+  flex: 1.4 0 232px;
+}
+
+.kpi yep-kpi {
+  height: 100%;
+}
+
+.kpi:not(.kpi--emphasis):hover ::ng-deep .yep-kpi {
+  border-color: var(--color-border-strong);
+}
+
+.kpi:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .kpi-scroll-btn {
   align-items: center;
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  box-shadow: var(--shadow-md);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-full);
   color: var(--color-text-primary);
   cursor: pointer;
   display: inline-flex;
@@ -266,21 +141,24 @@
   justify-content: center;
   padding: 0;
   position: absolute;
-  top: calc(50% - var(--space-1));
+  top: 50%;
   transform: translateY(-50%);
   width: 32px;
   z-index: 2;
 }
 
 .kpi-scroll-btn:hover {
-  background: var(--color-surface);
-  border-color: color-mix(in srgb, var(--color-secondary) 40%, var(--color-border));
-  color: var(--color-secondary);
+  background: var(--color-surface-muted);
+}
+
+.kpi-scroll-btn:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .kpi-scroll-btn svg {
-  height: 16px;
-  width: 16px;
+  height: var(--icon-sm);
+  width: var(--icon-sm);
 }
 
 .kpi-scroll-btn--left {
@@ -291,211 +169,95 @@
   right: var(--space-1);
 }
 
-.kpi {
-  align-content: space-between;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xs);
-  color: inherit;
-  cursor: pointer;
-  display: grid;
-  font: inherit;
-  gap: var(--space-1);
-  min-height: 74px;
-  min-width: 0;
-  padding: var(--space-2);
-  text-align: left;
-}
+/* --- Dos columnas: eventos (2/3) + estado y gráficas (1/3) --------------- */
 
-.kpi:hover {
-  border-color: color-mix(in srgb, var(--color-secondary) 34%, var(--color-border));
-}
-
-.kpi:focus-visible {
-  box-shadow: var(--shadow-focus);
-  outline: none;
-}
-
-.kpi__label {
-  align-items: flex-start;
-  color: var(--color-text-secondary);
-  display: flex;
-  flex-direction: column;
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-semibold);
-  gap: 0.2rem;
-  letter-spacing: 0.02em;
-  overflow: hidden;
-  text-transform: uppercase;
-  white-space: normal;
-}
-
-.kpi__label svg {
-  color: var(--color-secondary);
-  flex: 0 0 auto;
-  height: 14px;
-  width: 14px;
-}
-
-.kpi__value {
-  font-size: clamp(var(--font-size-md), 1.1vw, var(--font-size-lg));
-  font-weight: var(--font-weight-extrabold);
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.kpi__value--ok {
-  color: var(--color-success-strong);
-}
-
-.kpi__value--warn {
-  color: color-mix(in srgb, var(--color-warning) 72%, var(--color-text-primary));
-}
-
-.kpi__value--err {
-  color: var(--color-error);
-}
-
-.grid {
+.board {
   display: grid;
   flex: 1;
-  gap: var(--space-3);
-  grid-template-areas:
-    'insights insights insights insights insights insights insights insights status status status status'
-    'events events events events events events events events events events events events';
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: clamp(320px, 36vh, 430px) minmax(0, 1fr);
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
   min-height: 0;
 }
 
-.grid > * {
+.board > * {
   min-height: 0;
   min-width: 0;
 }
 
-.grid__top {
-  display: contents;
-}
-
-.grid__insights {
-  display: grid;
-  gap: var(--space-3);
-  grid-area: insights;
-  /* Solo hay 2 hijos (kpi-carousel, dashboard-charts): un 3er token de fila
-     acá era un residuo — dashboard-charts caía en el 2do "auto" en vez del
-     "minmax(0, 1fr)", así que nunca recibía el espacio sobrante de verdad y
-     competía por alto con el carrusel de KPIs (el canvas del chart podía
-     terminar con unos pocos px de alto). */
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
-  min-width: 0;
-}
-
-.grid__charts {
-  min-height: 0;
-}
-
-.grid__status {
-  grid-area: status;
-}
-
-.grid__events {
-  grid-area: events;
-}
-
-/* Fase 3 (docs/refactor-mvp-yep.md): retirada del panel por defecto — el
-   detalle del evento cubre lo que mostraba. El componente sigue existiendo
-   por si hace falta reactivarlo. */
-.grid__transactions {
-  display: none;
-}
-
-.grid--summary-collapsed {
-  grid-template-areas: 'events';
+.board--no-side,
+.board--no-events {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
 }
 
-/* Simétrico a .grid--summary-collapsed: sin tabla de ingresos (por permiso),
-   el resumen ocupa todo el alto disponible en vez de dejar la 2da fila vacía. */
-.grid--events-hidden {
-  grid-template-areas: 'insights insights insights insights insights insights insights insights status status status status';
-  grid-template-rows: minmax(0, 1fr);
+.board__events {
+  min-height: 0;
 }
 
-/* Size 1: wide desktop. This is the default above. */
-
-/* Size 2: medium desktop / horizontal tablet. Keep two columns, but soften the
-   proportions so status does not squeeze the data lists. */
-@media (max-width: 1280px) {
-  .grid {
-    grid-template-areas:
-      'insights status'
-      'events events';
-    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.78fr);
-    grid-template-rows: clamp(320px, 35vh, 400px) minmax(0, 1fr);
-  }
-
-  .grid--summary-collapsed {
-    grid-template-areas: 'events';
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-  }
-
-  .grid--events-hidden {
-    grid-template-areas: 'insights status';
-    grid-template-rows: minmax(0, 1fr);
-  }
+.board__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow-y: auto;
 }
 
-/* Size 3a: compact desktop / vertical tablet. Use a single column inside the
-   dashboard panel. Rows use `fr` (not `auto`) so the three zones share out
-   whatever height the panel actually has beyond these floors: on typical
-   short windows nothing needs to scroll. The floors themselves are a
-   legibility budget, not just "something greater than zero" — insights needs
-   room for the KPI row *and* an actual rendered chart (a squeezed chart card
-   just clips its canvas and scrolls invisibly inside an 80px box, which is
-   worse than no chart at all), and events/transactions need at least one
-   full row under their filters. Only when a window is too short even for
-   these floors does `.panel`'s scroll fallback kick in — and because the
-   floors are real per-zone minimums, scrolling then actually reveals
-   legible content instead of more of the same clipped mess. */
+.board__status {
+  flex: 0 1 auto;
+  max-height: 50%;
+  min-height: 180px;
+}
+
+.board__charts {
+  flex: 1 1 0;
+  // Cabecera + una gráfica legible (~180 px) + el botón "Ver todas".
+  min-height: 320px;
+}
+
+.board--status-only .board__status {
+  flex: 1 1 auto;
+  max-height: none;
+}
+
+/* Sin tabla de ingresos (por permiso): estado y gráficas lado a lado. */
+.board--no-events .board__side {
+  flex-direction: row;
+  overflow: visible;
+}
+
+.board--no-events .board__status {
+  flex: 0 1 380px;
+  max-height: none;
+}
+
+.board--no-events .board__charts {
+  flex: 1 1 0;
+}
+
+/* Escritorio compacto / tableta horizontal, o ventanas bajas: el panel
+   scrollea y cada zona conserva un piso legible. */
 @media (max-width: 1024px), (max-height: 700px) {
   .panel {
     overflow-y: auto;
-    padding-right: 2px;
   }
 
-  .grid {
-    grid-template-areas:
-      'insights status'
-      'events events';
-    grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.82fr);
-    grid-template-rows:
-      minmax(300px, 0.85fr)
-      minmax(460px, 1.15fr);
+  .board {
+    flex: 1 0 auto;
   }
 
-  .grid__top {
-    display: contents;
+  .board__events {
+    min-height: 460px;
   }
 
-  .grid--summary-collapsed {
-    grid-template-areas: 'events';
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
+  .board__side {
+    overflow: visible;
   }
 
-  .grid--events-hidden {
-    grid-template-areas: 'insights status';
-    grid-template-rows: minmax(0, 1fr);
+  .board__status {
+    max-height: none;
   }
 }
 
-/* Size 3b: mobile. The shell already becomes scrollable, so the dashboard stops
-   forcing a viewport-height workbench. KPIs become a horizontal strip. */
+/* Celular: el shell scrollea la página; una sola columna y KPI en carrusel. */
 @media (max-width: 860px) {
   :host {
     min-height: auto;
@@ -508,130 +270,51 @@
     overflow: visible;
   }
 
-  .grid {
-    grid-template-areas:
-      'insights'
-      'status'
-      'events';
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
-    grid-auto-rows: auto;
+  .board,
+  .board--no-side,
+  .board--no-events {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .grid__events {
-    min-height: 420px;
+  .board--no-events .board__side {
+    flex-direction: column;
   }
 
-  .grid--summary-collapsed {
-    grid-template-areas: 'events';
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
+  .board__events {
+    min-height: 640px;
   }
 
-  .grid--events-hidden {
-    grid-template-areas: 'insights' 'status';
+  .board__status,
+  .board--no-events .board__status {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  .board__charts {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  .kpi-row {
+    gap: var(--space-3);
+  }
+
+  .kpi {
+    flex: 0 0 156px;
+  }
+
+  .kpi--emphasis {
+    flex: 0 0 232px;
   }
 }
 
 @media (max-width: 560px) {
-  .grid {
-    gap: var(--space-2);
-  }
-}
-
-.grid__insights--no-kpis {
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.grid__insights--no-charts {
-  grid-template-rows: auto;
-}
-
-.grid--status-hidden {
-  grid-template-areas: 'insights' 'events';
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.grid--insights-hidden {
-  grid-template-areas: 'status' 'events';
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.grid--summary-empty,
-.grid--summary-collapsed {
-  grid-template-areas: 'events';
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.grid--status-hidden.grid--events-hidden {
-  grid-template-areas: 'insights';
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.grid--insights-hidden.grid--events-hidden {
-  grid-template-areas: 'status';
-  grid-template-rows: minmax(0, 1fr);
-}
-
-/* Sin graficas, los KPI usan solo su alto natural. Estado queda compacto
-   y la tabla de eventos conserva una fila de ancho completo. */
-.grid--charts-hidden {
-  grid-template-areas: 'insights' 'status' 'events';
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto clamp(190px, 22vh, 260px) minmax(0, 1fr);
-}
-
-.grid--charts-hidden.grid--status-hidden {
-  grid-template-areas: 'insights' 'events';
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.grid--charts-hidden.grid--events-hidden {
-  grid-template-areas: 'insights' 'status';
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.grid--charts-hidden.grid--status-hidden.grid--events-hidden {
-  align-content: start;
-  grid-template-areas: 'insights';
-  grid-template-rows: max-content;
-}
-
-@media (max-width: 1024px), (max-height: 700px) {
-  .grid--charts-hidden:not(.grid--events-hidden):not(.grid--status-hidden) {
-    grid-template-rows: auto clamp(190px, 22vh, 260px) minmax(460px, 1fr);
+  .panel-bar__actions {
+    flex-wrap: wrap;
   }
 
-  .grid--charts-hidden.grid--status-hidden:not(.grid--events-hidden) {
-    grid-template-rows: auto minmax(460px, 1fr);
-  }
-}
-
-@media (max-width: 860px) {
-  .grid--charts-hidden {
-    grid-template-areas: 'insights' 'status' 'events';
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: none;
-    grid-auto-rows: auto;
-  }
-
-  .grid--charts-hidden:not(.grid--events-hidden):not(.grid--status-hidden) {
-    grid-template-rows: none;
-  }
-
-  .grid--charts-hidden.grid--status-hidden {
-    grid-template-areas: 'insights' 'events';
-    grid-template-rows: none;
-  }
-
-  .grid--charts-hidden.grid--events-hidden {
-    grid-template-areas: 'insights' 'status';
-    grid-template-rows: none;
-  }
-
-  .grid--charts-hidden.grid--status-hidden.grid--events-hidden {
-    grid-template-areas: 'insights';
-    grid-template-rows: none;
+  .panel-bar__actions yep-date-range-picker {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }

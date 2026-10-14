@@ -1,23 +1,35 @@
-<yep-button
-  [variant]="variant()"
-  [size]="size()"
-  [loading]="loading()"
-  [disabled]="disabled()"
-  [title]="title()"
-  (clicked)="clicked.emit($event)"
+<button
+  class="yep-icon-button"
+  [class.yep-icon-button--sm]="size() === 'sm'"
+  [class.yep-icon-button--md]="size() === 'md'"
+  [class.yep-icon-button--lg]="size() === 'lg'"
+  [class.yep-icon-button--danger]="appliedTone() === 'danger'"
+  [class.yep-icon-button--loading]="loading()"
+  type="button"
+  [disabled]="disabled() || loading()"
+  [attr.aria-label]="title()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [attr.title]="title()"
+  (click)="onClick($event)"
 >
-  @switch (action()) {
-    @case ('edit') {
-      <svg lucidePencil [attr.aria-label]="title()"></svg>
-    }
-    @case ('delete') {
-      <svg lucideTrash2 [attr.aria-label]="title()"></svg>
-    }
-    @case ('activate') {
-      <svg lucidePower [attr.aria-label]="title()"></svg>
-    }
-    @case ('deactivate') {
-      <svg lucidePowerOff [attr.aria-label]="title()"></svg>
+  @if (loading()) {
+    <span class="yep-icon-button__loader" aria-hidden="true"></span>
+  } @else if (icon(); as freeIcon) {
+    <svg [lucideIcon]="freeIcon" aria-hidden="true"></svg>
+  } @else {
+    @switch (action()) {
+      @case ('edit') {
+        <svg lucidePencil aria-hidden="true"></svg>
+      }
+      @case ('delete') {
+        <svg lucideTrash2 aria-hidden="true"></svg>
+      }
+      @case ('activate') {
+        <svg lucidePower aria-hidden="true"></svg>
+      }
+      @case ('deactivate') {
+        <svg lucidePowerOff aria-hidden="true"></svg>
+      }
     }
   }
-</yep-button>
+</button>

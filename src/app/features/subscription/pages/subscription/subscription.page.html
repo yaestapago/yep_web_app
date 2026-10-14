@@ -1,282 +1,332 @@
 <section class="page subscription-page">
-  <header class="page-header">
-    <div class="page-header__text">
-      <h1 class="page-title">Suscripcion</h1>
-      <p class="page-subtitle">
-        Revisa el consumo de tu plan y compara las capacidades disponibles.
-      </p>
-    </div>
-    <div class="page-header__actions">
-      <yep-button size="sm" (clicked)="openRequestModal()">
-        Solicitudes de cambio de plan
-      </yep-button>
-      <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
-        <svg lucideRefreshCw aria-hidden="true"></svg>
-        Actualizar
-      </yep-button>
-    </div>
-  </header>
+  <yep-page-header
+    title="Suscripción"
+    subtitle="Revisa el consumo de tu plan y compara las capacidades disponibles."
+  >
+    <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+      <svg lucideRefreshCw aria-hidden="true"></svg>
+      Actualizar
+    </yep-button>
+    <yep-button slot="actions" variant="secondary" size="sm" (clicked)="openRequestModal()">
+      Solicitudes de cambio de plan
+    </yep-button>
+  </yep-page-header>
 
-  @if (error()) {
-    <yep-alert variant="error">{{ error() }}</yep-alert>
-  }
-  @if (success()) {
-    <yep-alert variant="success">{{ success() }}</yep-alert>
-  }
-
-  @if (loading() && !subscription()) {
-    <div class="loading-row">
-      <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg>
-      Cargando suscripcion...
-    </div>
-  } @else {
-    <section class="subscription-summary">
-      <div class="summary-icon" aria-hidden="true">
-        <svg lucideCreditCard></svg>
-      </div>
-      <div class="summary-text">
-        <span class="summary-label">Plan actual</span>
-        <h2>{{ currentPlanName() }}</h2>
-        @if (isTrialEnded()) {
-          <p>Tu prueba gratis terminó{{ trialEndLabel() ? ' el ' + trialEndLabel() : '' }}.</p>
-        } @else if (subscription()?.trialEndsAt) {
-          <p>Prueba gratis activa hasta el {{ trialEndLabel() }}</p>
-        } @else {
-          <p>Periodo vigente hasta el {{ periodEndLabel() }}</p>
-        }
-        @if (showBillingPeriod()) {
-          <p data-cy="subscription-billing-period">
-            Ciclo de pago: {{ currentBillingPeriodSummary() }}
-          </p>
-        }
-      </div>
-      @if (canSwitchBillingPeriod()) {
-        <div class="summary-actions">
-          <yep-button
-            size="sm"
-            variant="secondary"
-            data-cy="subscription-switch-billing-period"
-            (clicked)="openBillingPeriodSwitch()"
-          >
-            {{ billingPeriodSwitchLabel() }}
-          </yep-button>
-        </div>
-      }
-    </section>
-
-    @if (pendingBillingPeriodMessage()) {
-      <yep-alert variant="info" data-cy="subscription-pending-billing-period">
-        {{ pendingBillingPeriodMessage() }}
-        La cuenta de cobro de ese periodo se genera 5 días antes.
-      </yep-alert>
+  <div class="subscription-body">
+    @if (error()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
+    @if (success()) {
+      <yep-alert variant="success">{{ success() }}</yep-alert>
     }
 
-    @if (blockedAt()) {
-      <yep-alert
-        variant="error"
-        [title]="
-          blockedSinceLabel()
-            ? 'Tu negocio está bloqueado desde el ' + blockedSinceLabel()
-            : 'Tu negocio está bloqueado'
-        "
-      >
-        <p>
-          {{ blockReasonText() }}
-          @if (paysInvoiceToUnblock()) {
-            Paga la cuenta de cobro pendiente y reporta el pago para reactivar el servicio.
-          } @else {
-            Elige un plan para reactivar el servicio.
+    @if (loading() && !subscription()) {
+      <yep-card>
+        <yep-state kind="loading" title="Cargando suscripción..." [rows]="4" />
+      </yep-card>
+    } @else {
+      <yep-card class="current-plan">
+        <div class="current-plan__layout">
+          <div class="current-plan__summary">
+            <span class="current-plan__label">Plan actual</span>
+            <div class="current-plan__name-row">
+              <h2 class="current-plan__name">{{ currentPlanName() }}</h2>
+              @if (statusChip(); as chip) {
+                <yep-status-chip [tone]="chip.tone" [label]="chip.label" />
+              }
+            </div>
+            @if (isTrialEnded()) {
+              <p>Tu prueba gratis terminó{{ trialEndLabel() ? ' el ' + trialEndLabel() : '' }}.</p>
+            } @else if (subscription()?.trialEndsAt) {
+              <p>Prueba gratis activa hasta el {{ trialEndLabel() }}</p>
+            } @else if (periodEndLabel()) {
+              <p>Periodo vigente hasta el {{ periodEndLabel() }}</p>
+            }
+            @if (showBillingPeriod()) {
+              <p data-cy="subscription-billing-period">
+                Ciclo de pago: {{ currentBillingPeriodSummary() }}
+              </p>
+            }
+            @if (canSwitchBillingPeriod()) {
+              <div class="current-plan__actions">
+                <yep-button
+                  size="sm"
+                  variant="secondary"
+                  data-cy="subscription-switch-billing-period"
+                  (clicked)="openBillingPeriodSwitch()"
+                >
+                  {{ billingPeriodSwitchLabel() }}
+                </yep-button>
+              </div>
+            }
+          </div>
+
+          @if (usage().length > 0) {
+            <section class="usage" aria-labelledby="subscription-usage-title">
+              <h3 class="usage__title" id="subscription-usage-title">Uso del plan</h3>
+              <div class="usage__grid">
+                @for (metric of usage(); track metric.metric) {
+                  <div
+                    class="usage-metric"
+                    [class.usage-metric--alert]="metric.state === 'warning' || metric.state === 'blocked'"
+                  >
+                    <div class="usage-metric__top">
+                      <span>{{ metric.label }}</span>
+                      <strong>{{ usageLabel(metric) }}</strong>
+                    </div>
+                    <div class="usage-bar" aria-hidden="true">
+                      <span [style.width.%]="boundedPercent(metric)"></span>
+                    </div>
+                    <p>{{ metric.percent }}% utilizado</p>
+                  </div>
+                }
+              </div>
+            </section>
           }
-        </p>
-        <p>
-          Seguimos registrando los pagos que recibe tu negocio; podrás verlos apenas se confirme
-          el pago. Los avisos por WhatsApp de este periodo no se enviarán.
-        </p>
-        <div class="alert-actions">
-          @if (paysInvoiceToUnblock()) {
+        </div>
+      </yep-card>
+
+      @if (pendingBillingPeriodMessage()) {
+        <yep-alert variant="info" data-cy="subscription-pending-billing-period">
+          {{ pendingBillingPeriodMessage() }}
+          La cuenta de cobro de ese periodo se genera 5 días antes.
+        </yep-alert>
+      }
+
+      @if (blockedAt()) {
+        <yep-alert
+          variant="error"
+          [title]="
+            blockedSinceLabel()
+              ? 'Tu negocio está bloqueado desde el ' + blockedSinceLabel()
+              : 'Tu negocio está bloqueado'
+          "
+        >
+          <p>
+            {{ blockReasonText() }}
+            @if (paysInvoiceToUnblock()) {
+              Paga la cuenta de cobro pendiente y reporta el pago para reactivar el servicio.
+            } @else {
+              Elige un plan para reactivar el servicio.
+            }
+          </p>
+          <p>
+            Seguimos registrando los pagos que recibe tu negocio; podrás verlos apenas se confirme
+            el pago. Los avisos por WhatsApp de este periodo no se enviarán.
+          </p>
+          <div class="alert-actions">
+            @if (paysInvoiceToUnblock()) {
+              <yep-button size="sm" (clicked)="goToInvoices()">Ver cuentas de cobro</yep-button>
+              <yep-button size="sm" variant="secondary" (clicked)="openReportModal()">
+                Ya pagué / Reportar pago
+              </yep-button>
+            } @else {
+              <yep-button size="sm" variant="secondary" (clicked)="scrollToPlans()">
+                Elegir un plan
+              </yep-button>
+            }
+          </div>
+        </yep-alert>
+      } @else if (subscription()?.status === 'past_due') {
+        <!-- past_due = venció el plazo pero el pago ya fue reportado y está en revisión. -->
+        <yep-alert variant="info" title="Estamos revisando tu pago">
+          <p>
+            Recibimos el reporte de tu pago. Mientras lo confirmamos, tu servicio sigue activo con
+            normalidad.
+          </p>
+          <div class="alert-actions">
+            <yep-button size="sm" variant="secondary" (clicked)="goToInvoices()">
+              Ver cuentas de cobro
+            </yep-button>
+          </div>
+        </yep-alert>
+      } @else if (isTrialEnded()) {
+        <yep-alert variant="warning" title="Tu prueba gratis terminó">
+          <p>Elige un plan para seguir viendo los pagos que recibe tu negocio.</p>
+          <div class="alert-actions">
+            <yep-button size="sm" variant="secondary" (clicked)="scrollToPlans()">
+              Elegir un plan
+            </yep-button>
+          </div>
+        </yep-alert>
+      } @else if (isPastDueOrSuspended()) {
+        <yep-alert variant="error">
+          Tu negocio está bloqueado por falta de pago: no podrás ver los pagos que recibe hasta
+          que confirmemos tu pago.
+          <div class="alert-actions">
             <yep-button size="sm" (clicked)="goToInvoices()">Ver cuentas de cobro</yep-button>
             <yep-button size="sm" variant="secondary" (clicked)="openReportModal()">
               Ya pagué / Reportar pago
             </yep-button>
-          } @else {
-            <yep-button size="sm" (clicked)="scrollToPlans()">Elegir un plan</yep-button>
-          }
-        </div>
-      </yep-alert>
-    } @else if (subscription()?.status === 'past_due') {
-      <!-- past_due = venció el plazo pero el pago ya fue reportado y está en revisión. -->
-      <yep-alert variant="info" title="Estamos revisando tu pago">
-        <p>
-          Recibimos el reporte de tu pago. Mientras lo confirmamos, tu servicio sigue activo con
-          normalidad.
-        </p>
-        <div class="alert-actions">
-          <yep-button size="sm" variant="secondary" (clicked)="goToInvoices()">
-            Ver cuentas de cobro
-          </yep-button>
-        </div>
-      </yep-alert>
-    } @else if (isTrialEnded()) {
-      <yep-alert variant="warning" title="Tu prueba gratis terminó">
-        <p>Elige un plan para seguir viendo los pagos que recibe tu negocio.</p>
-        <div class="alert-actions">
-          <yep-button size="sm" (clicked)="scrollToPlans()">Elegir un plan</yep-button>
-        </div>
-      </yep-alert>
-    } @else if (isPastDueOrSuspended()) {
-      <yep-alert variant="error">
-        Tu negocio está bloqueado por falta de pago: no podrás ver los pagos que recibe hasta
-        que confirmemos tu pago.
-        <div class="alert-actions">
-          <yep-button size="sm" (clicked)="goToInvoices()">Ver cuentas de cobro</yep-button>
-          <yep-button size="sm" variant="secondary" (clicked)="openReportModal()">
-            Ya pagué / Reportar pago
-          </yep-button>
-        </div>
-      </yep-alert>
-    }
-
-    @if (subscription(); as sub) {
-      @if (sub.whatsappTopUpBalance > 0 || sub.recurringAddOnsCop > 0 || sub.pendingChange) {
-        <section class="addons-section">
-          <h2 class="section-heading">Add-ons activos</h2>
-          <div class="addons-grid">
-            @if (sub.whatsappTopUpBalance > 0) {
-              <article class="addon-card">
-                <span>Saldo de notificaciones WhatsApp (pago unico)</span>
-                <strong>{{ formatPlanLimit(sub.whatsappTopUpBalance) }}</strong>
-                <p>No vence ni se reinicia cada mes; se usa cuando la cuota del plan llega a 0. No es un cargo recurrente.</p>
-              </article>
-            }
-            @if (sub.recurringAddOnsCop > 0) {
-              <article class="addon-card">
-                <span>Recargo mensual por add-ons (sedes/usuarios)</span>
-                <strong>{{ formatCop(sub.recurringAddOnsCop) }}</strong>
-                <p>Se suma todos los meses a tu cuenta de cobro junto con el precio del plan.</p>
-              </article>
-            }
           </div>
-          @if (sub.pendingChange; as pending) {
-            <yep-alert variant="info">
-              @if (pending.pendingPlanCode) {
-                Cambio agendado: pasaras al plan {{ planNameByCode(pending.pendingPlanCode) }} el
-                {{ pending.effectiveAt | date: 'mediumDate' }}.
-              } @else {
-                Cambio agendado: entra en vigor el {{ pending.effectiveAt | date: 'mediumDate' }}.
-              }
-            </yep-alert>
-          }
-        </section>
+        </yep-alert>
       }
-    }
 
-    <section class="usage-section">
-      <h2 class="section-heading">Uso del plan</h2>
-      <div class="usage-grid">
-        @for (metric of usage(); track metric.metric) {
-          <article class="usage-card" [class.usage-card--blocked]="metric.state === 'blocked'">
-            <div class="usage-card__top">
-              <span>{{ metric.label }}</span>
-              <strong>{{ usageLabel(metric) }}</strong>
-            </div>
-            <div class="usage-bar" aria-hidden="true">
-              <span [style.width.%]="boundedPercent(metric)"></span>
-            </div>
-            <p>{{ metric.percent }}% utilizado</p>
-          </article>
+      @if (subscription(); as sub) {
+        @if (sub.whatsappTopUpBalance > 0 || sub.recurringAddOnsCop > 0 || sub.pendingChange) {
+          <yep-card title="Add-ons activos">
+            @if (sub.whatsappTopUpBalance > 0 || sub.recurringAddOnsCop > 0) {
+              <yep-description-list [columns]="2">
+                @if (sub.whatsappTopUpBalance > 0) {
+                  <yep-description-item
+                    label="Saldo de notificaciones WhatsApp (pago único)"
+                    hint="No vence ni se reinicia cada mes; se usa cuando la cuota del plan llega a 0. No es un cargo recurrente."
+                    [mono]="true"
+                  >
+                    {{ formatPlanLimit(sub.whatsappTopUpBalance) }}
+                  </yep-description-item>
+                }
+                @if (sub.recurringAddOnsCop > 0) {
+                  <yep-description-item
+                    label="Recargo mensual por add-ons (sedes/usuarios)"
+                    hint="Se suma todos los meses a tu cuenta de cobro junto con el precio del plan."
+                    [mono]="true"
+                  >
+                    {{ formatCop(sub.recurringAddOnsCop) }}
+                  </yep-description-item>
+                }
+              </yep-description-list>
+            }
+            @if (sub.pendingChange; as pending) {
+              <yep-alert class="addons-pending" variant="info">
+                @if (pending.pendingPlanCode) {
+                  Cambio agendado: pasaras al plan {{ planNameByCode(pending.pendingPlanCode) }} el
+                  {{ pending.effectiveAt | date: 'mediumDate' }}.
+                } @else {
+                  Cambio agendado: entra en vigor el {{ pending.effectiveAt | date: 'mediumDate' }}.
+                }
+              </yep-alert>
+            }
+          </yep-card>
         }
-      </div>
-    </section>
+      }
 
-    <section class="plans-section" id="subscription-plans">
-      <h2 class="section-heading">Planes disponibles</h2>
-      <div class="plans-grid">
-        @for (plan of availablePlans(); track plan.code) {
-          <article class="plan-card" [class.plan-card--current]="isCurrentPlan(plan)">
-            <div class="plan-card__header">
-              <div>
-                <h3>{{ plan.name }}</h3>
-                <p>{{ priceLabel(plan) }}</p>
-                @if (annualPriceLabel(plan); as annualLabel) {
-                  <p class="plan-card__annual">o {{ annualLabel }} (paga 10, recibe 12)</p>
+      <section
+        class="plans-section"
+        id="subscription-plans"
+        aria-labelledby="subscription-plans-title"
+      >
+        <h2 class="section-heading" id="subscription-plans-title">Planes disponibles</h2>
+        <div class="plans-grid">
+          @for (card of planCards(); track card.plan.code) {
+            <yep-card
+              class="plan-card"
+              [class.plan-card--featured]="card.highlighted"
+              [class.plan-card--current]="card.current"
+              [tone]="card.highlighted ? 'brand' : 'default'"
+            >
+              @if (card.highlighted) {
+                <!-- Diagonal de marca (P9), pendiente 0,633 como en yep-banner. -->
+                <svg
+                  class="plan-card__diagonal"
+                  viewBox="0 0 90 70"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <polygon points="72,0 90,0 90,5 55,59 45,44" />
+                </svg>
+              }
+
+              <div class="plan-card__header">
+                @if (card.highlighted) {
+                  <yep-status-chip tone="live" label="Mejor costo-beneficio" />
+                }
+                <div class="plan-card__name-row">
+                  <h3>{{ card.plan.name }}</h3>
+                  @if (card.current) {
+                    <yep-status-chip tone="neutral" label="Tu plan" />
+                  }
+                </div>
+              </div>
+
+              <div class="plan-card__price">
+                <p class="plan-card__amount">
+                  <span>{{ priceLabel(card.plan) }}</span>
+                  @if (!card.plan.isCustom) {
+                    <small>/ mes</small>
+                  }
+                </p>
+                @if (annualPriceLabel(card.plan); as annualLabel) {
+                  <p class="plan-card__annual">
+                    o <span class="plan-card__annual-amount">{{ annualLabel }}</span> (paga 10,
+                    recibe 12)
+                  </p>
                 }
               </div>
-              @if (isCurrentPlan(plan)) {
-                <span class="current-badge">
-                  <svg lucideCheckCircle2 aria-hidden="true"></svg>
-                  Actual
-                </span>
-              }
-            </div>
 
-            <dl class="plan-limits">
-              <div>
-                <dt>Negocios</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxBusinesses) }}</dd>
-              </div>
-              <div>
-                <dt>Sedes</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxLocations) }}</dd>
-              </div>
-              <div>
-                <dt>Usuarios</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxUsers) }}</dd>
-              </div>
-              <div>
-                <dt>Cuentas</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxBankAccounts) }}</dd>
-              </div>
-              <div>
-                <dt>WhatsApp / mes</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxMonthlyWhatsappNotifications) }}</dd>
-              </div>
-              <div>
-                <dt>OCR + IA / mes</dt>
-                <dd>{{ formatPlanLimit(plan.quotas.maxMonthlyAiTransactionValidations) }}</dd>
-              </div>
-            </dl>
+              <ul class="plan-limits">
+                @for (limit of card.limits; track limit.label) {
+                  <li [class.plan-limits__item--off]="!limit.included">
+                    @if (limit.included) {
+                      <svg lucideCheck aria-hidden="true"></svg>
+                    } @else {
+                      <svg lucideMinus aria-hidden="true"></svg>
+                    }
+                    <span>{{ limit.label }}</span>
+                    <strong>{{ limit.value }}</strong>
+                  </li>
+                }
+              </ul>
 
-            @if (plan.isCustom && !isCurrentPlan(plan)) {
-              <p class="plan-card__custom">
-                Plan a la medida —
-                <a [href]="supportWhatsappUrl" target="_blank" rel="noopener">contáctanos</a>
-              </p>
-            } @else {
-              <yep-button
-                size="sm"
-                [variant]="isTrialEnded() && !isCurrentPlan(plan) ? 'primary' : 'secondary'"
-                [disabled]="isCurrentPlan(plan)"
-                (clicked)="openPlanChangeModal(plan)"
-              >
-                {{ planActionLabel(plan) }}
-              </yep-button>
-            }
-          </article>
-        }
-      </div>
-    </section>
-
-    <section class="requests-section">
-      <h2 class="section-heading">Mis solicitudes</h2>
-      @if (changeRequests().length === 0) {
-        <p class="empty-hint">Todavia no has enviado solicitudes de cambio de plan.</p>
-      } @else {
-        <ul class="requests-list">
-          @for (request of changeRequests(); track request.id) {
-            <li class="request-row">
-              <div>
-                <strong>{{ requestTypeLabel(request.requestType) }}</strong>
-                <span>{{ requestSummary(request) }}</span>
+              <div class="plan-card__footer">
+                @if (card.plan.isCustom && !card.current) {
+                  <p class="plan-card__custom">
+                    Plan a la medida —
+                    <a [href]="supportWhatsappUrl" target="_blank" rel="noopener">contáctanos</a>
+                  </p>
+                } @else {
+                  <yep-button
+                    size="sm"
+                    [fullWidth]="true"
+                    [variant]="card.buttonVariant"
+                    [tone]="card.buttonTone"
+                    [disabled]="card.current"
+                    (clicked)="openPlanChangeModal(card.plan)"
+                  >
+                    {{ planActionLabel(card.plan) }}
+                  </yep-button>
+                }
               </div>
-              <span class="request-status" [attr.data-status]="request.status">
-                {{ requestStatusLabel(request.status) }}
-              </span>
-            </li>
+            </yep-card>
           }
-        </ul>
-      }
-    </section>
-  }
+        </div>
+      </section>
+
+      <yep-card title="Mis solicitudes" padding="none">
+        @if (changeRequests().length === 0) {
+          <yep-state kind="empty" title="Todavía no has enviado solicitudes de cambio de plan." />
+        } @else {
+          <div class="yep-table-wrap">
+            <table yepTable>
+              <thead>
+                <tr>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Detalle</th>
+                  <th scope="col">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (request of changeRequests(); track request.id) {
+                  <tr>
+                    <td data-label="Tipo">
+                      <strong>{{ requestTypeLabel(request.requestType) }}</strong>
+                    </td>
+                    <td data-label="Detalle">{{ requestSummary(request) }}</td>
+                    <td data-label="Estado" [attr.data-status]="request.status">
+                      <yep-status-chip
+                        [tone]="requestStatusTones[request.status] ?? 'neutral'"
+                        [label]="requestStatusLabel(request.status)"
+                      />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </yep-card>
+    }
+  </div>
 </section>
 
 <yep-modal
@@ -424,7 +474,7 @@
 <yep-modal
   [open]="reportModalOpen()"
   title="Reportar pago"
-  subtitle="Cuentanos como pagaste para que podamos confirmarlo mas rapido."
+  subtitle="Cuéntanos cómo pagaste para que podamos confirmarlo más rápido."
   [loading]="reporting()"
   (closeRequested)="closeReportModal()"
 >

@@ -1,0 +1,21 @@
+<div class="yep-description-item__label">{{ label() }}</div>
+
+<div class="yep-description-item__body">
+  <div class="yep-description-item__value-row">
+    <div class="yep-description-item__value" [class.yep-description-item__value--mono]="mono()">
+      <ng-content></ng-content>
+    </div>
+    @if (copy()) {
+      <yep-icon-button
+        class="yep-description-item__copy"
+        [icon]="copyIcon"
+        [label]="'Copiar ' + label()"
+        (clicked)="copied.emit()"
+      />
+    }
+  </div>
+
+  @if (hint()) {
+    <div class="yep-description-item__hint">{{ hint() }}</div>
+  }
+</div>

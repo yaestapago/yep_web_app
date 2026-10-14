@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, input as defineInput, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { LucideCircleCheck } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -9,6 +10,7 @@ import type {
   BusinessMembershipRole,
 } from '../../../../shared/models/auth.models';
 import type { BusinessLookupResult } from '../../../../shared/models/business-account.models';
+import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Input } from '../../../../shared/ui/input/input';
 import { Modal } from '../../../../shared/ui/modal/modal';
@@ -25,7 +27,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
  */
 @Component({
   selector: 'app-request-membership-modal',
-  imports: [ReactiveFormsModule, Button, Input, Modal, Select],
+  imports: [ReactiveFormsModule, Alert, Button, Input, Modal, Select, LucideCircleCheck],
   templateUrl: './request-membership-modal.html',
   styleUrl: './request-membership-modal.scss',
 })

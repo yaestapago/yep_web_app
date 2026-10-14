@@ -1,0 +1,43 @@
+/* S5 · Datos del negocio: tarjetas con listas de datos (P1, P2). */
+.data-section {
+  gap: var(--space-4);
+}
+
+.data-section > yep-alert {
+  margin-bottom: 0;
+}
+
+/* Código para compartir: mono más grande y espaciado, como en el diseño. */
+.share-code {
+  font-size: var(--font-size-lg);
+  letter-spacing: 0.08em;
+}
+
+/* Enlace de registro: una línea, truncado; el enlace completo va en el title y en el copiado. */
+.share-link {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-feedback {
+  color: var(--color-success-strong);
+  display: block;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+}
+
+.danger-icon {
+  color: var(--color-error);
+}
+
+.modal-hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}

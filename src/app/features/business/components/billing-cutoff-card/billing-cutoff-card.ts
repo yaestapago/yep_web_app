@@ -10,7 +10,6 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucideCalendarClock } from '@lucide/angular';
 import { Subscription, finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
@@ -22,6 +21,12 @@ import type {
 } from '../../../../shared/models/billing-status.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { Card } from '../../../../shared/ui/card/card';
+import { CardSection } from '../../../../shared/ui/card-section/card-section';
+import { DescriptionItem } from '../../../../shared/ui/description-list/description-item';
+import { DescriptionList } from '../../../../shared/ui/description-list/description-list';
+import { State } from '../../../../shared/ui/state/state';
+import { StatusChip, type StatusChipTone } from '../../../../shared/ui/status-chip/status-chip';
 import {
   billingPeriodLabel,
   billingPeriodWord,
@@ -42,6 +47,20 @@ const STATE_LABELS: Record<BillingState, string> = {
   due_soon: 'Por vencer',
   payment_review: 'Pago en revisión',
   blocked: 'Bloqueado',
+};
+
+const STATE_TONES: Record<BillingState, StatusChipTone> = {
+  ok: 'success',
+  due_soon: 'warning',
+  payment_review: 'info',
+  blocked: 'error',
+};
+
+const INVOICE_STATUS_TONES: Record<BillingStatusInvoiceStatus, StatusChipTone> = {
+  issued: 'warning',
+  reported: 'info',
+  paid: 'success',
+  cancelled: 'neutral',
 };
 
 const INVOICE_STATUS_LABELS: Record<BillingStatusInvoiceStatus, string> = {
@@ -67,7 +86,17 @@ function bogotaMidnightIso(isoDate: string): string {
  */
 @Component({
   selector: 'app-billing-cutoff-card',
-  imports: [FormsModule, Alert, Button, LucideCalendarClock],
+  imports: [
+    FormsModule,
+    Alert,
+    Button,
+    Card,
+    CardSection,
+    DescriptionItem,
+    DescriptionList,
+    State,
+    StatusChip,
+  ],
   templateUrl: './billing-cutoff-card.html',
   styleUrl: './billing-cutoff-card.scss',
 })
@@ -99,6 +128,11 @@ export class BillingCutoffCard {
   readonly stateLabel = computed(() => {
     const state = this.status()?.state;
     return state ? STATE_LABELS[state] : '';
+  });
+  /** Tono del chip de estado (solo presentación). */
+  readonly stateTone = computed<StatusChipTone>(() => {
+    const state = this.status()?.state;
+    return state ? STATE_TONES[state] : 'neutral';
   });
   readonly periodLabel = computed(() => {
     const status = this.status();
@@ -140,6 +174,11 @@ export class BillingCutoffCard {
   readonly invoiceStatusLabel = computed(() => {
     const status = this.invoice()?.status;
     return status ? (INVOICE_STATUS_LABELS[status] ?? status) : '';
+  });
+  /** Tono del chip de la cuenta de cobro pendiente (solo presentación). */
+  readonly invoiceTone = computed<StatusChipTone>(() => {
+    const status = this.invoice()?.status;
+    return status ? (INVOICE_STATUS_TONES[status] ?? 'neutral') : 'neutral';
   });
   /** Fecha elegida, legible, para el paso de confirmación. */
   readonly selectedDateLabel = computed(() => {

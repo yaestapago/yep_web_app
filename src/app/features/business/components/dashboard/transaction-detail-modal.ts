@@ -11,11 +11,18 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { LucideCheck, LucideLoaderCircle, LucideTriangleAlert } from '@lucide/angular';
+import { LucideCheck, LucideShieldCheck, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
-import { Button } from '../../../../shared/ui/button/button';
-import { Modal } from '../../../../shared/ui/modal/modal';
+import {
+  Alert,
+  Button,
+  CardSection,
+  DescriptionItem,
+  DescriptionList,
+  Modal,
+  StatusChip,
+} from '../../../../shared/ui';
 import type { MissingField, PaymentTransaction } from '../../../../shared/models/transaction.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
@@ -54,11 +61,16 @@ const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
     CurrencyPipe,
     DatePipe,
     FormsModule,
+    Alert,
     Button,
+    CardSection,
+    DescriptionItem,
+    DescriptionList,
     Modal,
+    StatusChip,
     TransactionSupportsPanel,
     LucideCheck,
-    LucideLoaderCircle,
+    LucideShieldCheck,
     LucideTriangleAlert,
   ],
   templateUrl: './transaction-detail-modal.html',

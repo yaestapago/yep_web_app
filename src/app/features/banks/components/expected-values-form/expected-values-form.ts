@@ -1,6 +1,7 @@
 import { Component, input, model } from '@angular/core';
 
 import type { ExpectedResolution, ExpectedValues } from '../../../../shared/models/bank.models';
+import { Button } from '../../../../shared/ui/button/button';
 
 /**
  * Sub-formulario del ground truth de un ejemplo: valores esperados de la
@@ -10,7 +11,7 @@ import type { ExpectedResolution, ExpectedValues } from '../../../../shared/mode
  */
 @Component({
   selector: 'app-expected-values-form',
-  imports: [],
+  imports: [Button],
   templateUrl: './expected-values-form.html',
   styleUrl: './expected-values-form.scss',
 })

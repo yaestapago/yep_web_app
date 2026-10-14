@@ -1,0 +1,133 @@
+// S9 · Alertas WhatsApp · docs/rediseno-web/04-pantallas.md#s9--alertas-whatsapp
+// Una yep-card por empleado: cabecera clicable (chevron, avatar, nombre, teléfono · rol, chip) y,
+// al abrir, un yep-card-section por banco con un yep-check-group por cuenta.
+
+.routing-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.routing-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.routing-toggle {
+  align-items: center;
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: 1 1 auto;
+  font: inherit;
+  gap: var(--space-3);
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  &:hover .routing-employee-name {
+    color: var(--color-primary-strong);
+  }
+}
+
+.routing-chevron {
+  color: var(--color-text-secondary);
+  flex: 0 0 auto;
+  height: 20px;
+  transition: transform var(--motion-fast);
+  width: 20px;
+}
+
+.routing-chevron[data-expanded='true'] {
+  transform: rotate(90deg);
+}
+
+.routing-employee-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.routing-employee-name {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--motion-fast);
+  white-space: nowrap;
+}
+
+.routing-employee-meta {
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.routing-summary {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.routing-spin {
+  animation: routing-spin 800ms linear infinite;
+  color: var(--color-text-secondary);
+  height: 16px;
+  width: 16px;
+}
+
+@keyframes routing-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Contenido abierto: alineado con el nombre (chevron 20 + espacio 12).
+.routing-accounts {
+  margin-top: var(--space-5);
+  min-width: 0;
+  padding-left: calc(20px + var(--space-3));
+}
+
+.routing-no-accounts {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .routing-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .routing-summary {
+    padding-left: calc(20px + var(--space-3));
+  }
+
+  .routing-accounts {
+    padding-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routing-chevron,
+  .routing-employee-name {
+    transition: none;
+  }
+
+  .routing-spin {
+    animation: none;
+  }
+}

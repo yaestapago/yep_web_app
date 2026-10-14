@@ -1,23 +1,19 @@
-@if (hasDuplicateReceipt()) {
-  <div class="inline-state inline-state--error">
-    <svg lucideTriangleAlert aria-hidden="true"></svg>
-    Uno de los comprobantes de esta transacción coincide con el de otra transacción
-    (posible duplicado). Revísalo en Conciliación antes de confirmar.
-  </div>
-}
-
 <!-- Validación -->
-<section class="detail-section">
-  <h3 class="detail-section__title">Validación</h3>
+<yep-card-section title="Validación">
+  @if (hasDuplicateReceipt()) {
+    <yep-alert class="supports-alert" variant="error">
+      Uno de los comprobantes de esta transacción coincide con el de otra transacción
+      (posible duplicado). Revísalo en Conciliación antes de confirmar.
+    </yep-alert>
+  }
   <div class="validation">
-    <span class="validation__method validation__method--{{ method() }}">{{ methodLabel() }}</span>
+    <yep-status-chip size="md" [tone]="methodTone()" [label]="methodLabel()" />
     <span class="validation__level">Nivel: {{ levelLabel() }}</span>
   </div>
-</section>
+</yep-card-section>
 
 <!-- Soportes relacionados: eventos bancarios + comprobante + confirmaciones -->
-<section class="detail-section">
-  <h3 class="detail-section__title">Soportes relacionados</h3>
+<yep-card-section title="Soportes relacionados">
   @if (loadingSupports()) {
     <div class="inline-state">
       <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando evidencias…
@@ -76,7 +72,7 @@
               @if (hasPhoto(support)) { · Ver foto }
             </span>
             @if (isDuplicateSupport(support)) {
-              <span class="badge badge--error">Duplicado</span>
+              <yep-status-chip tone="error" label="Duplicado" />
             }
           </span>
           @if (loadingReceiptId() === support.id) {
@@ -99,7 +95,7 @@
   } @else if (!loadingSupports()) {
     <p class="empty-hint">Aún no hay soportes relacionados.</p>
   }
-</section>
+</yep-card-section>
 
 <!-- Lightbox de la foto del comprobante -->
 @if (receiptUrl(); as url) {
