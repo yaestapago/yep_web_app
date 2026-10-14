@@ -139,6 +139,12 @@ export interface NotifierCaptureSelfTest {
   latencyMs?: number | null;
   /** Solo cuando `ok === false`; ausente en una app/backend anterior. */
   reason?: NotifierSelfTestFailureReason | null;
+  /**
+   * Parte "conversación" de la prueba (app ≥ 1.0.9): llegó la notificación de
+   * tipo conversación (como un SMS). `false` = «Conversaciones» está apagado
+   * para YEP; `null`/ausente = no se probó (o Android < 12).
+   */
+  conversationOk?: boolean | null;
 }
 
 /**
@@ -163,6 +169,13 @@ export interface NotifierCaptureSnapshot {
    * puede hacer la prueba de escucha ni avisarle al usuario que algo falla.
    */
   notificationsEnabled?: boolean | null;
+  /**
+   * Si Android le entrega a YEP las notificaciones de tipo conversación (ahí
+   * caen los SMS de Google Messages; app ≥ 1.0.9). `false` = el usuario apagó
+   * «Conversaciones» para YEP: el listener corre pero no ve los SMS.
+   * `null`/ausente = no se ha probado o el Android no tiene ese filtro (< 12).
+   */
+  conversationsAllowed?: boolean | null;
   componentEnabled?: boolean | null;
   serviceRunning?: boolean | null;
   /** `null` cuando la app no pudo leerlo. */

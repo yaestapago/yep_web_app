@@ -254,6 +254,11 @@
           @if (selfTestReason()) {
             <p class="diag-reason" data-testid="diag-self-test-reason">{{ selfTestReason() }}</p>
           }
+          @if (selfTestConversationMissed()) {
+            <p class="diag-reason" data-testid="diag-self-test-conversation">
+              La notificación de tipo conversación no llegó: «Conversaciones» está apagado para YEP.
+            </p>
+          }
           <p class="diag-foot">
             La app se manda una notificación a sí misma y mira si el listener la ve. Se corre desde
             el celular: Diagnóstico de escucha → "Probar ahora".

@@ -3,6 +3,7 @@ import {
   LISTENING_LABEL,
   NOT_LISTENING_LABEL,
   NOT_LISTENING_NO_ACCESS_LABEL,
+  NOT_LISTENING_SMS_LABEL,
   computeNotifierStatus,
   effectiveThresholds,
   relativeFromMs,
@@ -177,6 +178,98 @@ describe('computeNotifierStatus', () => {
       );
       expect(status.level).toBe('offline');
       expect(status.label).toBe('Fuera de línea');
+    });
+  });
+
+  describe('SMS bloqueados (app ≥ 1.0.9, `capture.conversationsAllowed`)', () => {
+    /** Late hace 1 min y la captura está viva (hace 30 s). */
+    function listeningNow() {
+      return {
+        ...notifierSeenAgo(60_000),
+        lastCaptureAliveAt: new Date(now - 30_000).toISOString(),
+      };
+    }
+
+    it('en línea y escuchando, pero «Conversaciones» apagado ⇒ amarillo "sin acceso a los SMS"', () => {
+      const status = computeNotifierStatus(
+        { ...listeningNow(), capture: { listenerConnected: true, conversationsAllowed: false } },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      // El servicio sí corre: lo que no llega son los SMS.
+      expect(status.listening).toBe(true);
+      expect(status.label).toBe(NOT_LISTENING_SMS_LABEL);
+      expect(status.sinceMs).toBe(60_000);
+    });
+
+    it('también sin dato de escucha (app que no reporta lastCaptureAliveAt)', () => {
+      const status = computeNotifierStatus(
+        { ...notifierSeenAgo(60_000), capture: { conversationsAllowed: false } },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      expect(status.label).toBe(NOT_LISTENING_SMS_LABEL);
+    });
+
+    it('si además Android soltó el listener, manda "sin acceso a notificaciones"', () => {
+      const status = computeNotifierStatus(
+        { ...listeningNow(), capture: { listenerConnected: false, conversationsAllowed: false } },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      expect(status.label).toBe(NOT_LISTENING_NO_ACCESS_LABEL);
+    });
+
+    it('con la captura muerta manda "sin escuchar" (no se oye nada, ni SMS ni lo demás)', () => {
+      const status = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(60_000),
+          lastCaptureAliveAt: new Date(now - 40 * 60_000).toISOString(),
+          capture: { listenerConnected: true, conversationsAllowed: false },
+        },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      expect(status.label).toBe(NOT_LISTENING_LABEL);
+    });
+
+    it('permitidas o sin probar (true / null / ausente) ⇒ sigue "Escuchando"', () => {
+      for (const conversationsAllowed of [true, null, undefined]) {
+        const status = computeNotifierStatus(
+          { ...listeningNow(), capture: { listenerConnected: true, conversationsAllowed } },
+          thresholds,
+          now,
+        );
+        expect(status.level).toBe('online');
+        expect(status.label).toBe(LISTENING_LABEL);
+      }
+    });
+
+    it('con retraso o fuera de línea, el heartbeat manda sobre los SMS', () => {
+      const delayed = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(thresholds.delayedAfterMs + 1),
+          capture: { conversationsAllowed: false },
+        },
+        thresholds,
+        now,
+      );
+      expect(delayed.level).toBe('delayed');
+      expect(delayed.label).toBe('Con retraso');
+      const offline = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(thresholds.offlineAfterMs + 1),
+          capture: { conversationsAllowed: false },
+        },
+        thresholds,
+        now,
+      );
+      expect(offline.level).toBe('offline');
+      expect(offline.label).toBe('Fuera de línea');
     });
   });
 
