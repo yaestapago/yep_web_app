@@ -3,6 +3,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
+  LucideActivity,
   LucideClipboardCheck,
   LucideClipboardCopy,
   LucideLink,
@@ -44,6 +45,7 @@ import {
   type RadioSelectionOption,
 } from '../../../../shared/ui/radio-selection-list/radio-selection-list';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
+import { NotifierDiagnosticsModal } from './notifier-diagnostics-modal';
 import { NotifierRuntimeConfigModal } from './notifier-runtime-config-modal';
 import { NotifierDeviceDiagnostics } from '../../../notifiers/components/notifier-device-diagnostics/notifier-device-diagnostics';
 import { NotifierSmsRelay } from '../../../notifiers/components/notifier-sms-relay/notifier-sms-relay';
@@ -118,9 +120,11 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     MenuItem,
     State,
     StatusChip,
+    NotifierDiagnosticsModal,
     NotifierRuntimeConfigModal,
     NotifierDeviceDiagnostics,
     NotifierSmsRelay,
+    LucideActivity,
     LucideClipboardCheck,
     LucideClipboardCopy,
     LucideLink,
@@ -155,6 +159,7 @@ export class BusinessNotifiersSection implements OnInit {
   };
   protected readonly copyIcon = LucideClipboardCopy;
   protected readonly copiedIcon = LucideClipboardCheck;
+  protected readonly diagnosticsIcon = LucideActivity;
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly notifiers = signal<Notifier[]>([]);
@@ -176,6 +181,17 @@ export class BusinessNotifiersSection implements OnInit {
   /** Notificador cuyo modal de cadencias está abierto (null = cerrado). */
   readonly configNotifier = signal<Notifier | null>(null);
   readonly configModalOpen = signal(false);
+
+  /**
+   * Notificador cuyo diagnóstico de escucha está abierto. Se guarda el id y se
+   * resuelve contra la lista para que el auto-refresco mantenga el modal al día.
+   */
+  private readonly diagnosticsNotifierId = signal<string | null>(null);
+  readonly diagnosticsNotifier = computed<Notifier | null>(() => {
+    const id = this.diagnosticsNotifierId();
+    return id ? (this.notifiers().find((notifier) => notifier.id === id) ?? null) : null;
+  });
+  readonly diagnosticsModalOpen = computed(() => this.diagnosticsNotifier() !== null);
 
   /**
    * Opciones de tipo mostradas como radio buttons al crear un notificador.
@@ -505,6 +521,23 @@ export class BusinessNotifiersSection implements OnInit {
   closeConfig(): void {
     this.configModalOpen.set(false);
     this.configNotifier.set(null);
+  }
+
+  /** Solo un celular emparejado reporta diagnóstico de escucha. */
+  hasDiagnostics(notifier: Notifier): boolean {
+    return notifier.type === 'phone_app' && !!notifier.pairedDevice;
+  }
+
+  /** Abre el modal "Diagnóstico de escucha" del celular emparejado. */
+  openDiagnostics(notifier: Notifier): void {
+    if (!this.hasDiagnostics(notifier)) return;
+    this.error.set('');
+    this.success.set('');
+    this.diagnosticsNotifierId.set(notifier.id);
+  }
+
+  closeDiagnostics(): void {
+    this.diagnosticsNotifierId.set(null);
   }
 
   /** Se activó/desactivó el respaldo por SMS: actualiza la tarjeta. */

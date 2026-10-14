@@ -1,0 +1,666 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Subject, of, throwError } from 'rxjs';
+
+import type {
+  Notifier,
+  NotifierCaptureHistoryEntry,
+  NotifierCaptureSnapshot,
+  NotifierDiagnosticsResponse,
+} from '../../../../shared/models/notifier.models';
+import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
+import {
+  NotifierDiagnosticsModal,
+  SELF_TEST_REASON_COPY,
+  TIMELINE_BUCKETS,
+  flagFor,
+  seenByPackageEntries,
+  selfTestReasonCopy,
+  summarizeTimeline,
+  topSeenApps,
+  watchedPackageSet,
+} from './notifier-diagnostics-modal';
+
+const NOW = new Date('2026-10-13T15:00:00.000Z');
+
+function iso(minutesAgo: number): string {
+  return new Date(NOW.getTime() - minutesAgo * 60_000).toISOString();
+}
+
+function notifier(overrides: Partial<Notifier> = {}): Notifier {
+  return {
+    id: 'n1',
+    accountId: 'a1',
+    type: 'phone_app',
+    displayName: 'Caja',
+    bankIds: ['bancolombia'],
+    bankAccountIds: [],
+    allowedBreBKeys: [],
+    bankAccounts: [],
+    watchedPackages: ['@default_sms', 'com.nequi.MobileApp'],
+    active: true,
+    pairingVersion: 1,
+    pairedDevice: {
+      deviceId: 'd1',
+      manufacturer: 'Xiaomi',
+      model: 'Redmi 12',
+      appVersion: '1.0.8',
+      defaultSmsPackage: 'com.android.mms',
+      pairedAt: '2026-10-01T12:00:00.000Z',
+    },
+    deviceHistory: [],
+    isOnline: true,
+    createdAt: '2026-10-01T12:00:00.000Z',
+    updatedAt: '2026-10-01T12:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function capture(overrides: Partial<NotifierCaptureSnapshot> = {}): NotifierCaptureSnapshot {
+  return {
+    at: iso(1),
+    source: 'foreground',
+    captureActive: true,
+    listenerConnected: true,
+    listenerConnectedAt: iso(120),
+    listenerDisconnectedAt: null,
+    permissionGranted: true,
+    notificationsEnabled: true,
+    componentEnabled: true,
+    serviceRunning: true,
+    batteryUnrestricted: true,
+    processStartedAt: iso(180),
+    seenTotal: 96,
+    // Como lo manda el backend: arreglo ordenado desc.
+    seenByPackage: [
+      { packageName: 'com.whatsapp', count: 80 },
+      { packageName: 'com.android.mms', count: 12 },
+      { packageName: 'com.nequi.mobileapp', count: 4 },
+    ],
+    lastNotificationPackage: 'com.whatsapp',
+    receiver: {
+      received: 16,
+      accepted: 3,
+      nearMiss: 1,
+      ignored: 12,
+      noRules: 0,
+      lastReceivedAt: iso(5),
+      lastStoredAt: iso(40),
+      inboxPending: 0,
+      rulesLoaded: true,
+    },
+    rebindAttempts: 0,
+    lastRebindAt: null,
+    selfTest: { at: iso(30), ok: true, latencyMs: 230 },
+    ...overrides,
+  };
+}
+
+function history(states: boolean[], stepMinutes = 5): NotifierCaptureHistoryEntry[] {
+  // Del más viejo al más nuevo, un latido cada `stepMinutes`; el último hace `stepMinutes`.
+  return states.map((captureActive, index) => ({
+    at: iso((states.length - index) * stepMinutes),
+    source: 'foreground',
+    captureActive,
+    listenerConnected: captureActive,
+  }));
+}
+
+describe('helpers del diagnóstico de escucha', () => {
+  it('flagFor: ícono + palabra según el booleano; sin dato cuando la app no lo reporta', () => {
+    expect(flagFor(true, 'Conectado', 'Desconectado')).toEqual({
+      kind: 'ok',
+      tone: 'success',
+      label: 'Conectado',
+    });
+    expect(flagFor(false, 'Conectado', 'Desconectado')).toEqual({
+      kind: 'bad',
+      tone: 'error',
+      label: 'Desconectado',
+    });
+    expect(flagFor(false, 'Sin restricciones', 'Restringida', 'warn').tone).toBe('warning');
+    expect(flagFor(null, 'a', 'b').label).toBe('Sin dato');
+    expect(flagFor(undefined, 'a', 'b').kind).toBe('unknown');
+  });
+
+  it('watchedPackageSet: expande @default_sms a la app de SMS del celular y une reglas y reporte', () => {
+    const watched = watchedPackageSet(notifier({ watchRules: [{ packageNames: ['com.todo1.mobile'] }] }), {
+      at: iso(10),
+      report: { rules: { watched: ['com.davivienda.daviplata'] } },
+    });
+    expect([...watched].sort()).toEqual([
+      'com.android.mms',
+      'com.davivienda.daviplata',
+      'com.nequi.mobileapp',
+      'com.todo1.mobile',
+    ]);
+  });
+
+  it('watchedPackageSet: sin app de SMS reportada, @default_sms no marca nada', () => {
+    const watched = watchedPackageSet(
+      notifier({
+        pairedDevice: { deviceId: 'd1', defaultSmsPackage: null, pairedAt: iso(1000) },
+      }),
+      null,
+    );
+    expect([...watched]).toEqual(['com.nequi.mobileapp']);
+    expect(watchedPackageSet(null, null).size).toBe(0);
+  });
+
+  it('seenByPackageEntries: lee el arreglo del backend y tolera el objeto antiguo; descarta basura', () => {
+    expect(
+      seenByPackageEntries([
+        { packageName: 'com.whatsapp', count: 80 },
+        { packageName: '', count: 3 },
+        { packageName: 'com.android.mms', count: 'x' } as never,
+        null as never,
+        { packageName: 'com.nequi.mobileapp', count: 4 },
+      ]),
+    ).toEqual([
+      { packageName: 'com.whatsapp', count: 80 },
+      { packageName: 'com.nequi.mobileapp', count: 4 },
+    ]);
+    expect(seenByPackageEntries({ 'com.whatsapp': 80, 'com.android.mms': 12 })).toEqual([
+      { packageName: 'com.whatsapp', count: 80 },
+      { packageName: 'com.android.mms', count: 12 },
+    ]);
+    expect(seenByPackageEntries([])).toEqual([]);
+    expect(seenByPackageEntries(null)).toEqual([]);
+    expect(seenByPackageEntries(undefined)).toEqual([]);
+  });
+
+  it('topSeenApps: ordena por cuenta, marca vigiladas y la app de SMS, respeta el límite', () => {
+    const rows = topSeenApps(
+      [
+        { packageName: 'com.android.mms', count: 12 },
+        { packageName: 'com.whatsapp', count: 80 },
+        { packageName: 'com.nequi.mobileapp', count: 4 },
+        { packageName: 'x.y', count: 0 },
+      ],
+      new Set(['com.android.mms', 'com.nequi.mobileapp']),
+      'com.android.mms',
+      2,
+    );
+    expect(rows.map((row) => row.packageName)).toEqual(['com.whatsapp', 'com.android.mms']);
+    expect(rows[0]).toMatchObject({ appLabel: 'WhatsApp', watched: false, isSms: false });
+    expect(rows[1]).toMatchObject({ appLabel: 'Mensajes', watched: true, isSms: true, count: 12 });
+    expect(topSeenApps(null, new Set(), null)).toEqual([]);
+    expect(topSeenApps([], new Set(), null)).toEqual([]);
+  });
+
+  it('topSeenApps: también funciona con el objeto de un backend anterior', () => {
+    const rows = topSeenApps({ 'com.whatsapp': 80, 'com.android.mms': 12 }, new Set(), null);
+    expect(rows.map((row) => `${row.packageName}:${row.count}`)).toEqual([
+      'com.whatsapp:80',
+      'com.android.mms:12',
+    ]);
+  });
+
+  describe('summarizeTimeline: 24 h en cubetas fijas de 15 min', () => {
+    const now = NOW.getTime();
+    const states = (summary: ReturnType<typeof summarizeTimeline>) =>
+      summary.segments.map((segment) => segment.state);
+
+    it('siempre devuelve 96 cubetas, de la más vieja a la más reciente, cubriendo hasta "ahora"', () => {
+      const summary = summarizeTimeline(history([true]), now);
+      expect(TIMELINE_BUCKETS).toBe(96);
+      expect(summary.segments).toHaveLength(96);
+      expect(summary.from).toBe(new Date(now - 24 * 60 * 60_000).toISOString());
+      expect(summary.to).toBe(new Date(now).toISOString());
+      expect(summary.segments[0].start).toBe(summary.from);
+      expect(summary.segments[95].end).toBe(summary.to);
+      // Latido hace 5 min → cubeta más reciente (la última); el resto sin datos.
+      expect(summary.segments[95].state).toBe('on');
+      expect(summary.segments[95].count).toBe(1);
+      expect(states(summary).filter((state) => state === 'none')).toHaveLength(95);
+    });
+
+    it('una cubeta es "off" si cualquier latido dentro iba sin escuchar; "none" sin latidos', () => {
+      // Hace 80, 60, 40 y 20 min → cubetas 5, 4, 2 y 1 (índices desde la más reciente).
+      const summary = summarizeTimeline(history([true, true, false, true], 20), now);
+      const byIndexFromNow = (index: number) => summary.segments[95 - index];
+      expect(byIndexFromNow(5).state).toBe('on');
+      expect(byIndexFromNow(4).state).toBe('on');
+      expect(byIndexFromNow(3).state).toBe('none');
+      expect(byIndexFromNow(2).state).toBe('off');
+      expect(byIndexFromNow(1).state).toBe('on');
+      expect(byIndexFromNow(0).state).toBe('none');
+      expect(byIndexFromNow(2).title).toContain('Sin escuchar (1 latido)');
+      expect(byIndexFromNow(0).title).toContain('Sin datos');
+
+      // Dos latidos en la misma cubeta, uno sin escuchar ⇒ off.
+      const mixed = summarizeTimeline(
+        [
+          { at: iso(3), captureActive: true },
+          { at: iso(8), captureActive: false },
+        ],
+        now,
+      );
+      expect(mixed.segments[95].state).toBe('off');
+      expect(mixed.segments[95].count).toBe(2);
+      expect(mixed.segments[95].title).toContain('(2 latidos)');
+    });
+
+    it('porcentaje, cortes y cambios se calculan sobre los latidos, con su hora exacta', () => {
+      const summary = summarizeTimeline(
+        [
+          ...history([true, true, false, false, true]).reverse(),
+          { at: 'no-es-fecha', captureActive: true },
+        ],
+        now,
+      );
+      expect(summary.points).toBe(5);
+      expect(summary.activePercent).toBe(60);
+      expect(summary.outages).toBe(1);
+      expect(summary.transitions).toEqual([
+        { at: iso(5), active: true },
+        { at: iso(15), active: false },
+      ]);
+    });
+
+    it('descarta latidos fuera de la ventana (más de 24 h o en el futuro)', () => {
+      const summary = summarizeTimeline(
+        [
+          { at: iso(25 * 60), captureActive: false },
+          { at: iso(-10), captureActive: false },
+          { at: iso(10), captureActive: true },
+        ],
+        now,
+      );
+      expect(summary.points).toBe(1);
+      expect(summary.activePercent).toBe(100);
+      expect(summary.outages).toBe(0);
+      expect(states(summary).filter((state) => state === 'off')).toHaveLength(0);
+    });
+
+    it('sin historial: 96 cubetas vacías y cero latidos', () => {
+      const summary = summarizeTimeline(undefined, now);
+      expect(summary.segments).toHaveLength(96);
+      expect(states(summary).every((state) => state === 'none')).toBe(true);
+      expect(summary).toMatchObject({ points: 0, activePercent: 0, outages: 0, transitions: [] });
+    });
+  });
+
+  it('selfTestReasonCopy: texto por causa; vacío si no viene o es desconocida', () => {
+    expect(selfTestReasonCopy('not_posted')).toBe(SELF_TEST_REASON_COPY.not_posted);
+    expect(selfTestReasonCopy('listener_missed')).toBe(SELF_TEST_REASON_COPY.listener_missed);
+    expect(selfTestReasonCopy(null)).toBe('');
+    expect(selfTestReasonCopy(undefined)).toBe('');
+    expect(selfTestReasonCopy('otra_causa_futura')).toBe('');
+  });
+
+});
+
+describe('NotifierDiagnosticsModal', () => {
+  let api: { diagnostics: ReturnType<typeof vi.fn> };
+
+  function render(
+    value: Notifier,
+    open = true,
+  ): ComponentFixture<NotifierDiagnosticsModal> {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [{ provide: NotifiersApiService, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(NotifierDiagnosticsModal);
+    fixture.componentRef.setInput('notifier', value);
+    fixture.componentRef.setInput('open', open);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const el = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+    fixture.nativeElement as HTMLElement;
+  const text = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+    (el(fixture).textContent ?? '').replace(/\s+/g, ' ');
+  /** Valor del `yep-description-item` cuya etiqueta es `label` (texto colapsado). */
+  const dlValue = (fixture: ComponentFixture<NotifierDiagnosticsModal>, label: string) => {
+    const item = Array.from(el(fixture).querySelectorAll('yep-description-item')).find(
+      (candidate) =>
+        candidate.querySelector('.yep-description-item__label')?.textContent?.trim() === label,
+    );
+    return (item?.querySelector('.yep-description-item__value')?.textContent ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const response: NotifierDiagnosticsResponse = {
+    capture: capture(),
+    // Hace 80, 60, 40 y 20 min: cada latido cae en una cubeta distinta de 15 min.
+    captureHistory: history([true, true, false, true], 20),
+    reports: [
+      {
+        at: iso(50),
+        appVersion: '1.0.8',
+        report: {
+          device: { manufacturer: 'Xiaomi', model: 'Redmi 12', osVersion: '14' },
+          health: { listenerConnected: true, seenTotal: 90, selfTest: { ok: true } },
+          rules: { rulesVersion: 'abcdef0123456789', watched: ['com.android.mms'], pairings: 1 },
+          nearMisses: [{ at: iso(60), packageName: 'com.android.mms', reason: 'sender_not_matched' }],
+          notes: 'Probando desde la caja',
+        },
+      },
+      { at: iso(500), appVersion: '1.0.7' },
+    ],
+  };
+
+  beforeEach(() => {
+    // Solo el reloj: los "hace X" deben ser estables; el resto de timers siguen reales.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    api = { diagnostics: vi.fn().mockReturnValue(of(response)) };
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('al abrirse pide el diagnóstico del notificador y lo pinta', () => {
+    const fixture = render(notifier());
+    expect(api.diagnostics).toHaveBeenCalledWith('n1');
+
+    const content = text(fixture);
+    expect(content).toContain('Diagnóstico de escucha');
+    expect(content).toContain('Caja · Xiaomi Redmi 12 · app 1.0.8');
+    expect(el(fixture).querySelector('[data-testid="diag-summary"]')?.textContent).toContain(
+      'Escuchando',
+    );
+
+    const rows = Array.from(el(fixture).querySelectorAll('[data-testid="diag-status"] li'));
+    expect(rows.map((row) => row.getAttribute('data-key'))).toEqual([
+      'listener',
+      'permission',
+      'notifications',
+      'service',
+      'battery',
+    ]);
+    expect(rows[0].textContent).toContain('Conectado');
+    expect(rows[0].textContent).toContain('desde hace 2 h');
+    expect(rows[2].textContent).toContain('Permitidos');
+    expect(rows[4].textContent).toContain('Sin restricciones');
+
+    expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('96');
+    // Sin `lastNotificationAt` no hay fecha, así que tampoco se muestra la app.
+    expect(dlValue(fixture, 'Última notificación vista (cualquier app)')).toBe('Ninguna todavía');
+    expect(dlValue(fixture, 'Aceptadas (pagos)')).toBe('3');
+    expect(content).toContain('Funcionó');
+    expect(content).toContain('entregada en 230 ms');
+  });
+
+  it('"última notificación vista": hace X · fecha · app (del `capture.lastNotificationPackage`)', () => {
+    const fixture = render(notifier({ lastNotificationAt: iso(3) }));
+    const value = dlValue(fixture, 'Última notificación vista (cualquier app)');
+    expect(value).toContain('hace 3 min');
+    expect(value).toContain('WhatsApp');
+    expect(value).toContain('com.whatsapp');
+  });
+
+  describe('fila "Avisos de la app" (capture.notificationsEnabled)', () => {
+    const notificationsRow = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+      el(fixture).querySelector('[data-testid="diag-status"] li[data-key="notifications"]');
+
+    function renderWith(notificationsEnabled: boolean | null | undefined) {
+      const snapshot = capture();
+      if (notificationsEnabled === undefined) {
+        delete snapshot.notificationsEnabled;
+      } else {
+        snapshot.notificationsEnabled = notificationsEnabled;
+      }
+      api.diagnostics.mockReturnValue(of({ ...response, capture: snapshot }));
+      return render(notifier());
+    }
+
+    it('true ⇒ "Permitidos" en verde', () => {
+      const row = notificationsRow(renderWith(true));
+      expect(row?.textContent).toContain('Permitidos');
+      expect(row?.querySelector('.yep-status-chip--success')).not.toBeNull();
+      expect(row?.textContent).not.toContain('Sin este permiso');
+    });
+
+    it('false ⇒ "Bloqueados" en ámbar con la consecuencia', () => {
+      const row = notificationsRow(renderWith(false));
+      expect(row?.textContent).toContain('Bloqueados');
+      expect(row?.querySelector('.yep-status-chip--warning')).not.toBeNull();
+      expect(row?.textContent).toContain('no puede hacer la prueba de escucha ni avisarte');
+    });
+
+    it('null ⇒ "Sin dato"', () => {
+      expect(notificationsRow(renderWith(null))?.textContent).toContain('Sin dato');
+    });
+
+    it('ausente (backend viejo) ⇒ "Sin dato"', () => {
+      expect(notificationsRow(renderWith(undefined))?.textContent).toContain('Sin dato');
+    });
+  });
+
+  describe('causa de una prueba de escucha fallida (capture.selfTest.reason)', () => {
+    const reasonEl = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+      el(fixture).querySelector('[data-testid="diag-self-test-reason"]');
+
+    function renderSelfTest(selfTest: NotifierCaptureSnapshot['selfTest']) {
+      api.diagnostics.mockReturnValue(of({ ...response, capture: capture({ selfTest }) }));
+      return render(notifier());
+    }
+
+    it('not_posted ⇒ la app no pudo mostrar la notificación de prueba', () => {
+      const fixture = renderSelfTest({ at: iso(10), ok: false, reason: 'not_posted' });
+      expect(el(fixture).querySelector('[data-testid="diag-self-test"]')?.textContent).toContain(
+        'Falló',
+      );
+      expect(reasonEl(fixture)?.textContent?.trim()).toBe(
+        'La app no pudo mostrar la notificación de prueba (sin permiso de notificaciones).',
+      );
+    });
+
+    it('listener_missed ⇒ el listener no la recibió', () => {
+      const fixture = renderSelfTest({ at: iso(10), ok: false, reason: 'listener_missed' });
+      expect(reasonEl(fixture)?.textContent?.trim()).toBe('El listener no la recibió.');
+    });
+
+    it('falló sin causa (app vieja) ⇒ solo el chip, sin explicación', () => {
+      const fixture = renderSelfTest({ at: iso(10), ok: false });
+      expect(el(fixture).querySelector('[data-testid="diag-self-test"]')?.textContent).toContain(
+        'Falló',
+      );
+      expect(reasonEl(fixture)).toBeNull();
+    });
+
+    it('funcionó ⇒ nunca muestra causa aunque venga', () => {
+      const fixture = renderSelfTest({
+        at: iso(10),
+        ok: true,
+        latencyMs: 90,
+        reason: 'listener_missed',
+      });
+      expect(reasonEl(fixture)).toBeNull();
+    });
+  });
+
+  it('no abre la petición mientras el modal está cerrado', () => {
+    render(notifier(), false);
+    expect(api.diagnostics).not.toHaveBeenCalled();
+  });
+
+  it('marca las apps vigiladas con la app de SMS expandida y ordena por vistas', () => {
+    const fixture = render(notifier());
+    const rows = Array.from(
+      el(fixture).querySelectorAll<HTMLTableRowElement>('[data-testid="diag-top-apps"] tbody tr'),
+    );
+    expect(rows.map((row) => row.getAttribute('data-package'))).toEqual([
+      'com.whatsapp',
+      'com.android.mms',
+      'com.nequi.mobileapp',
+    ]);
+    expect(rows[0].textContent).toContain('WhatsApp');
+    expect(rows[0].textContent).not.toContain('Vigilada');
+    expect(rows[1].textContent).toContain('App de SMS');
+    expect(rows[1].textContent).toContain('Vigilada');
+    expect(rows[2].textContent).toContain('Nequi');
+    expect(rows[2].textContent).toContain('Vigilada');
+  });
+
+  it('pinta la línea de tiempo con 96 cubetas fijas y los cambios de estado', () => {
+    const fixture = render(notifier());
+    const segments = Array.from(
+      el(fixture).querySelectorAll('[data-testid="diag-timeline"] .diag-timeline__seg'),
+    );
+    expect(segments).toHaveLength(96);
+    const withClass = (name: string) =>
+      segments.filter((segment) => segment.classList.contains(name)).length;
+    expect(withClass('diag-timeline__seg--on')).toBe(3);
+    expect(withClass('diag-timeline__seg--off')).toBe(1);
+    expect(withClass('diag-timeline__seg--none')).toBe(92);
+    // La cubeta "off" (hace 40 min) está tercera desde la derecha; la más reciente no tiene datos.
+    expect(segments[93].classList.contains('diag-timeline__seg--off')).toBe(true);
+    expect(segments[95].classList.contains('diag-timeline__seg--none')).toBe(true);
+    expect(segments[93].getAttribute('title')).toContain('Sin escuchar');
+    expect(el(fixture).querySelector('[data-testid="diag-timeline"]')?.getAttribute('aria-label')).toBe(
+      'Escuchando el 75 % del tiempo, 1 cortes',
+    );
+    expect(text(fixture)).toContain('75 % escuchando · 1 corte · 4 latidos');
+    const changes = Array.from(
+      el(fixture).querySelectorAll('[data-testid="diag-transitions"] li'),
+    ).map((li) => (li.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(changes).toHaveLength(2);
+    expect(changes[0]).toContain('Volvió a escuchar');
+    expect(changes[1]).toContain('Dejó de escuchar');
+  });
+
+  it('muestra el último reporte completo: versión, celular, reglas y notas', () => {
+    const fixture = render(notifier());
+    const report = el(fixture).querySelector('[data-testid="diag-report"]');
+    expect(report?.textContent).toContain('1.0.8');
+    expect(report?.textContent).toContain('Xiaomi · Redmi 12 · Android 14');
+    expect(report?.textContent).toContain('abcdef01');
+    expect(report?.textContent).toContain('Probando desde la caja');
+    expect(text(fixture)).toContain('2 reportes guardados');
+  });
+
+  it('listener desconectado: chip "Sin escuchar", fila en rojo y aviso con qué hacer', () => {
+    api.diagnostics.mockReturnValue(
+      of({
+        ...response,
+        capture: capture({
+          captureActive: false,
+          listenerConnected: false,
+          listenerDisconnectedAt: iso(15),
+          rebindAttempts: 3,
+          lastRebindAt: iso(4),
+        }),
+      }),
+    );
+    const fixture = render(notifier());
+    const content = text(fixture);
+    expect(el(fixture).querySelector('[data-testid="diag-summary"]')?.textContent).toContain(
+      'Sin escuchar',
+    );
+    expect(content).toContain('Android desconectó el acceso a notificaciones de YEP');
+    const listenerRow = el(fixture).querySelector('[data-testid="diag-status"] li[data-key="listener"]');
+    expect(listenerRow?.textContent).toContain('Desconectado');
+    expect(listenerRow?.textContent).toContain('desde hace 15 min');
+    expect(content).toContain('Intentos de reconexión: 3');
+  });
+
+  it('si el GET falla, avisa y muestra lo que ya traía el notificador', () => {
+    api.diagnostics.mockReturnValue(throwError(() => ({ status: 404, error: { message: 'Not Found' } })));
+    const fixture = render(
+      notifier({
+        capture: capture({ seenTotal: 7, seenByPackage: null, receiver: null, selfTest: null }),
+        captureHistory: history([true]),
+        latestDiagnosticReport: {
+          at: iso(90),
+          appVersion: '1.0.8',
+          summary: { listenerConnected: true, selfTestOk: false, seenTotal: 5 },
+        },
+      }),
+    );
+    const content = text(fixture);
+    expect(content).toContain('No pudimos cargar el detalle');
+    expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('7');
+    expect(content).toContain('no ha visto notificaciones de ninguna app');
+    expect(content).toContain('todavía no reporta los contadores del filtro');
+    expect(el(fixture).querySelector('[data-testid="diag-self-test"]')?.textContent).toContain(
+      'Sin prueba todavía',
+    );
+    const report = el(fixture).querySelector('[data-testid="diag-report"]');
+    expect(report?.textContent).toContain('1.0.8');
+    expect(report?.textContent).toContain('Falló');
+  });
+
+  it('sin foto, historial ni reporte: estado vacío que pide actualizar la app', () => {
+    api.diagnostics.mockReturnValue(of({ capture: null, captureHistory: [], reports: [] }));
+    const fixture = render(notifier());
+    expect(text(fixture)).toContain('El celular aún no reporta diagnóstico');
+    expect(el(fixture).querySelector('[data-testid="diag-status"]')).toBeNull();
+  });
+
+  describe('peticiones en vuelo', () => {
+    function pending() {
+      const a$ = new Subject<NotifierDiagnosticsResponse>();
+      const b$ = new Subject<NotifierDiagnosticsResponse>();
+      api.diagnostics.mockImplementation((id: string) => (id === 'A' ? a$ : b$));
+      return { a$, b$ };
+    }
+
+    it('una respuesta tardía del notificador anterior no pisa la del vigente', () => {
+      const { a$, b$ } = pending();
+      // Abre A (red lenta), cierra, abre B.
+      const fixture = render(notifier({ id: 'A' }));
+      expect(api.diagnostics).toHaveBeenCalledWith('A');
+      expect(a$.observed).toBe(true);
+
+      fixture.componentRef.setInput('open', false);
+      fixture.detectChanges();
+      fixture.componentRef.setInput('notifier', notifier({ id: 'B', displayName: 'Bodega' }));
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+      expect(api.diagnostics).toHaveBeenCalledWith('B');
+      // Al cambiar de id la petición de A quedó cancelada.
+      expect(a$.observed).toBe(false);
+      expect(fixture.componentInstance.loading()).toBe(true);
+
+      // A responde tarde: no debe tocar nada.
+      a$.next({ capture: capture({ seenTotal: 111 }), captureHistory: [], reports: [] });
+      a$.complete();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.data()).toBeNull();
+      expect(fixture.componentInstance.loading()).toBe(true);
+      expect(text(fixture)).not.toContain('111');
+
+      // Llega B: es la que manda.
+      b$.next({ capture: capture({ seenTotal: 222 }), captureHistory: [], reports: [] });
+      b$.complete();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.loading()).toBe(false);
+      expect(fixture.componentInstance.data()?.capture?.seenTotal).toBe(222);
+      expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('222');
+      expect(text(fixture)).toContain('Bodega');
+    });
+
+    it('cerrar el modal cancela la petición en vuelo y apaga la carga', () => {
+      const { a$ } = pending();
+      const fixture = render(notifier({ id: 'A' }));
+      expect(a$.observed).toBe(true);
+      expect(fixture.componentInstance.loading()).toBe(true);
+
+      fixture.componentRef.setInput('open', false);
+      fixture.detectChanges();
+      expect(a$.observed).toBe(false);
+      expect(fixture.componentInstance.loading()).toBe(false);
+
+      // Una respuesta tardía tras cerrar tampoco deja rastro.
+      a$.next({ capture: capture({ seenTotal: 111 }), captureHistory: [], reports: [] });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.data()).toBeNull();
+    });
+  });
+
+  it('"Actualizar" vuelve a pedir el diagnóstico; "Cerrar" avisa al padre', () => {
+    const fixture = render(notifier());
+    let closed = 0;
+    fixture.componentInstance.closeRequested.subscribe(() => (closed += 1));
+    fixture.componentInstance.reload();
+    expect(api.diagnostics).toHaveBeenCalledTimes(2);
+    fixture.componentInstance.close();
+    expect(closed).toBe(1);
+  });
+});

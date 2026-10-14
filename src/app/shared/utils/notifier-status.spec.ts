@@ -2,6 +2,7 @@ import {
   DEFAULT_NOTIFIER_STATUS_THRESHOLDS,
   LISTENING_LABEL,
   NOT_LISTENING_LABEL,
+  NOT_LISTENING_NO_ACCESS_LABEL,
   computeNotifierStatus,
   effectiveThresholds,
   relativeFromMs,
@@ -105,6 +106,77 @@ describe('computeNotifierStatus', () => {
       );
       expect(status.listening).toBeNull();
       expect(status.level).toBe('online');
+    });
+  });
+
+  describe('acceso a notificaciones (app ≥ 1.0.8, `capture.listenerConnected`)', () => {
+    /** Late hace 1 min, pero la captura lleva 40 min muerta. */
+    function notListening() {
+      return {
+        ...notifierSeenAgo(60_000),
+        lastCaptureAliveAt: new Date(now - 40 * 60_000).toISOString(),
+      };
+    }
+
+    it('en línea, sin escuchar y Android soltó el listener ⇒ "sin acceso a notificaciones"', () => {
+      const status = computeNotifierStatus(
+        { ...notListening(), capture: { listenerConnected: false, serviceRunning: true } },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      expect(status.listening).toBe(false);
+      expect(status.label).toBe(NOT_LISTENING_NO_ACCESS_LABEL);
+    });
+
+    it('sin escuchar pero el listener seguía enlazado ⇒ etiqueta genérica (es el servicio)', () => {
+      const status = computeNotifierStatus(
+        { ...notListening(), capture: { listenerConnected: true, serviceRunning: false } },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('delayed');
+      expect(status.label).toBe(NOT_LISTENING_LABEL);
+    });
+
+    it('sin foto de captura (app vieja) o sin el dato ⇒ etiqueta genérica', () => {
+      expect(computeNotifierStatus({ ...notListening(), capture: null }, thresholds, now).label).toBe(
+        NOT_LISTENING_LABEL,
+      );
+      expect(computeNotifierStatus({ ...notListening(), capture: {} }, thresholds, now).label).toBe(
+        NOT_LISTENING_LABEL,
+      );
+      expect(computeNotifierStatus(notListening(), thresholds, now).label).toBe(
+        NOT_LISTENING_LABEL,
+      );
+    });
+
+    it('solo aplica cuando no escucha: si captura, sigue "Escuchando" aunque la foto diga lo contrario', () => {
+      const status = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(60_000),
+          lastCaptureAliveAt: new Date(now - 30_000).toISOString(),
+          capture: { listenerConnected: false },
+        },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('online');
+      expect(status.label).toBe(LISTENING_LABEL);
+    });
+
+    it('fuera de línea manda sobre el acceso', () => {
+      const status = computeNotifierStatus(
+        {
+          ...notifierSeenAgo(thresholds.offlineAfterMs + 1),
+          lastCaptureAliveAt: new Date(now - 40 * 60_000).toISOString(),
+          capture: { listenerConnected: false },
+        },
+        thresholds,
+        now,
+      );
+      expect(status.level).toBe('offline');
+      expect(status.label).toBe('Fuera de línea');
     });
   });
 

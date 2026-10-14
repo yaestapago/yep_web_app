@@ -108,59 +108,79 @@
               </div>
             </div>
 
-            @if (canManage()) {
+            @if (canManage() || hasDiagnostics(row.notifier)) {
               <div class="notifier-card__actions">
-                <!-- Activar / desactivar (interruptor) -->
-                <yep-toggle
-                  appearance="switch"
-                  [pressed]="row.notifier.active"
-                  [ariaLabel]="row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'"
-                  [disabled]="actingId() === row.notifier.id"
-                  [title]="
-                    row.notifier.active
-                      ? 'Activo — toca para desactivar'
-                      : 'Inactivo — toca para activar'
-                  "
-                  (toggled)="toggleActive(row.notifier)"
-                />
+                <!-- Diagnóstico de escucha: qué ve el celular y si Android lo dejó sordo. -->
+                @if (hasDiagnostics(row.notifier)) {
+                  <yep-icon-button
+                    [icon]="diagnosticsIcon"
+                    label="Diagnóstico de escucha"
+                    data-cy="notifier-diagnostics"
+                    (clicked)="openDiagnostics(row.notifier)"
+                  />
+                }
 
-                <yep-icon-button
-                  action="edit"
-                  label="Editar"
-                  [disabled]="actingId() === row.notifier.id"
-                  (clicked)="openEdit(row.notifier)"
-                />
+                @if (canManage()) {
+                  <!-- Activar / desactivar (interruptor) -->
+                  <yep-toggle
+                    appearance="switch"
+                    [pressed]="row.notifier.active"
+                    [ariaLabel]="
+                      row.notifier.active ? 'Desactivar notificador' : 'Activar notificador'
+                    "
+                    [disabled]="actingId() === row.notifier.id"
+                    [title]="
+                      row.notifier.active
+                        ? 'Activo — toca para desactivar'
+                        : 'Inactivo — toca para activar'
+                    "
+                    (toggled)="toggleActive(row.notifier)"
+                  />
 
-                <yep-menu
-                  label="Más acciones"
-                  [disabled]="actingId() === row.notifier.id"
-                >
-                  @if (
-                    usesPairing(row.notifier) &&
-                    row.notifier.active &&
-                    !row.notifier.pairedDevice &&
-                    !isCodeVisible(row.notifier)
-                  ) {
-                    <button yepMenuItem (click)="revealCode(row.notifier)">
-                      <svg lucideLink aria-hidden="true"></svg>
-                      Emparejar
+                  <yep-icon-button
+                    action="edit"
+                    label="Editar"
+                    [disabled]="actingId() === row.notifier.id"
+                    (clicked)="openEdit(row.notifier)"
+                  />
+
+                  <yep-menu
+                    label="Más acciones"
+                    [disabled]="actingId() === row.notifier.id"
+                  >
+                    @if (
+                      usesPairing(row.notifier) &&
+                      row.notifier.active &&
+                      !row.notifier.pairedDevice &&
+                      !isCodeVisible(row.notifier)
+                    ) {
+                      <button yepMenuItem (click)="revealCode(row.notifier)">
+                        <svg lucideLink aria-hidden="true"></svg>
+                        Emparejar
+                      </button>
+                    }
+                    @if (hasDiagnostics(row.notifier)) {
+                      <button yepMenuItem (click)="openDiagnostics(row.notifier)">
+                        <svg lucideActivity aria-hidden="true"></svg>
+                        Diagnóstico de escucha
+                      </button>
+                    }
+                    <button yepMenuItem (click)="openConfig(row.notifier)">
+                      <svg lucideSettings aria-hidden="true"></svg>
+                      Cadencias (consumo de datos)
                     </button>
-                  }
-                  <button yepMenuItem (click)="openConfig(row.notifier)">
-                    <svg lucideSettings aria-hidden="true"></svg>
-                    Cadencias (consumo de datos)
-                  </button>
-                  @if (row.notifier.pairedDevice) {
-                    <button yepMenuItem (click)="unpair(row.notifier)">
-                      <svg lucideUnlink aria-hidden="true"></svg>
-                      Desemparejar dispositivo
+                    @if (row.notifier.pairedDevice) {
+                      <button yepMenuItem (click)="unpair(row.notifier)">
+                        <svg lucideUnlink aria-hidden="true"></svg>
+                        Desemparejar dispositivo
+                      </button>
+                    }
+                    <button yepMenuItem tone="danger" (click)="remove(row.notifier)">
+                      <svg lucideTrash2 aria-hidden="true"></svg>
+                      Eliminar
                     </button>
-                  }
-                  <button yepMenuItem tone="danger" (click)="remove(row.notifier)">
-                    <svg lucideTrash2 aria-hidden="true"></svg>
-                    Eliminar
-                  </button>
-                </yep-menu>
+                  </yep-menu>
+                }
               </div>
             }
           </div>
@@ -437,4 +457,11 @@
   [notifier]="configNotifier()"
   (closeRequested)="closeConfig()"
   (saved)="onConfigSaved($event)"
+/>
+
+<!-- Diagnóstico de escucha del celular emparejado (solo lectura) -->
+<app-notifier-diagnostics-modal
+  [open]="diagnosticsModalOpen()"
+  [notifier]="diagnosticsNotifier()"
+  (closeRequested)="closeDiagnostics()"
 />

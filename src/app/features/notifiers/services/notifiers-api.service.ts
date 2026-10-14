@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 import {
   CreateNotifierRequest,
   DeleteNotifierResponse,
+  NotifierDiagnosticsResponse,
   NotifierResponse,
   NotifiersResponse,
   SetSmsRelayRequest,
@@ -52,5 +53,15 @@ export class NotifiersApiService {
   /** Respaldo por SMS (solo celular, solo dueño). Activarlo exige `consentVersion`. */
   setSmsRelay(id: string, request: SetSmsRelayRequest): Observable<NotifierResponse> {
     return this.http.patch<NotifierResponse>(`${this.apiUrl}/notifiers/${id}/sms-relay`, request);
+  }
+
+  /**
+   * Diagnóstico de captura del celular emparejado: foto actual, línea de tiempo
+   * completa (~24 h) y los últimos reportes que mandó la app (máx. 5).
+   */
+  diagnostics(id: string): Observable<NotifierDiagnosticsResponse> {
+    return this.http.get<NotifierDiagnosticsResponse>(
+      `${this.apiUrl}/notifiers/${id}/diagnostics`,
+    );
   }
 }

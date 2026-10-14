@@ -68,6 +68,13 @@ const STATUS_LABELS: Record<NotifierStatusLevel, string> = {
 /** Late (verde por heartbeat) pero el servicio que captura está muerto. */
 export const NOT_LISTENING_LABEL = 'En línea, sin escuchar';
 
+/**
+ * Late y el servicio corre, pero Android desenlazó el servicio que lee
+ * notificaciones (`capture.listenerConnected === false`, app ≥ 1.0.8). El
+ * celular está sordo aunque "parezca" vivo: hay que reconectar el acceso.
+ */
+export const NOT_LISTENING_NO_ACCESS_LABEL = 'En línea, sin acceso a notificaciones';
+
 /** Verde de verdad: late Y captura. */
 export const LISTENING_LABEL = 'Escuchando';
 
@@ -77,7 +84,7 @@ export function notifierStatusLabel(level: NotifierStatusLevel): string {
 
 /** Lo que `computeNotifierStatus` necesita de un notifier. */
 export type NotifierStatusInput = Pick<Notifier, 'lastSeenAt' | 'active'> &
-  Partial<Pick<Notifier, 'lastCaptureAliveAt' | 'runtimeConfig'>>;
+  Partial<Pick<Notifier, 'lastCaptureAliveAt' | 'runtimeConfig' | 'capture'>>;
 
 /**
  * Umbrales efectivos para un notifier: si tiene cadencias propias (heartbeat
@@ -150,7 +157,12 @@ export function computeNotifierStatus(
   const listening = computeListening(notifier.lastCaptureAliveAt, effective, now);
   if (level === 'online' && listening === false) {
     level = 'delayed';
-    label = NOT_LISTENING_LABEL;
+    // Si la app ya reporta el enlace del listener y dice que Android lo soltó,
+    // el texto apunta a la causa real (no es el servicio: es el acceso).
+    label =
+      notifier.capture?.listenerConnected === false
+        ? NOT_LISTENING_NO_ACCESS_LABEL
+        : NOT_LISTENING_LABEL;
   } else if (level === 'online' && listening === true) {
     label = LISTENING_LABEL;
   }

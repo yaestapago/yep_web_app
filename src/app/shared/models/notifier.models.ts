@@ -95,6 +95,161 @@ export interface NotifierRuntimeConfigOverride {
   workManagerFallbackMinutes?: number;
 }
 
+/** Isolate de la app móvil que mandó el último heartbeat. */
+export type NotifierCaptureSource = 'foreground' | 'ui' | 'workmanager';
+
+/**
+ * Contadores del receptor nativo (`yep_capture`) desde que arrancó el proceso
+ * de la app. Todo opcional: lo manda la app ≥ 1.0.8 y el backend lo pasa tal
+ * cual, saneado.
+ */
+export interface NotifierCaptureReceiverStats {
+  received?: number | null;
+  accepted?: number | null;
+  nearMiss?: number | null;
+  ignored?: number | null;
+  noRules?: number | null;
+  lastReceivedAt?: string | null;
+  lastStoredAt?: string | null;
+  inboxPending?: number | null;
+  rulesLoaded?: boolean | null;
+}
+
+/**
+ * Una app y cuántas notificaciones vio el listener desde el arranque. El
+ * backend manda el arreglo ordenado de mayor a menor (máx. 50; `[]` si nada).
+ */
+export interface NotifierSeenByPackageEntry {
+  packageName: string;
+  count: number;
+}
+
+/**
+ * Por qué falló la prueba de escucha:
+ * - `not_posted`: la app no pudo mostrar su notificación de prueba (sin permiso
+ *   de notificaciones), así que no hay nada que el listener pudiera ver.
+ * - `listener_missed`: la notificación salió, pero el listener no la recibió.
+ */
+export type NotifierSelfTestFailureReason = 'listener_missed' | 'not_posted';
+
+/** Resultado de la prueba de escucha que el celular se hace a sí mismo. */
+export interface NotifierCaptureSelfTest {
+  at?: string | null;
+  ok?: boolean | null;
+  latencyMs?: number | null;
+  /** Solo cuando `ok === false`; ausente en una app/backend anterior. */
+  reason?: NotifierSelfTestFailureReason | null;
+}
+
+/**
+ * Foto de la captura en el celular tal como llegó en el último heartbeat
+ * (app ≥ 1.0.8). `listenerConnected` es la verdad sobre si Android tiene
+ * enlazado el servicio que lee notificaciones: el servicio en primer plano puede
+ * estar vivo y el celular, aun así, sordo. Todos los campos son opcionales
+ * porque dependen de la versión de la app y del backend.
+ */
+export interface NotifierCaptureSnapshot {
+  /** Momento del heartbeat que trajo esta foto. */
+  at?: string | null;
+  source?: NotifierCaptureSource | null;
+  /** Lo que la app concluyó: servicio vivo Y listener enlazado Y permiso. */
+  captureActive?: boolean | null;
+  listenerConnected?: boolean | null;
+  listenerConnectedAt?: string | null;
+  listenerDisconnectedAt?: string | null;
+  permissionGranted?: boolean | null;
+  /**
+   * Si la app puede mostrar sus propias notificaciones. Sin ese permiso no
+   * puede hacer la prueba de escucha ni avisarle al usuario que algo falla.
+   */
+  notificationsEnabled?: boolean | null;
+  componentEnabled?: boolean | null;
+  serviceRunning?: boolean | null;
+  /** `null` cuando la app no pudo leerlo. */
+  batteryUnrestricted?: boolean | null;
+  processStartedAt?: string | null;
+  /** Notificaciones de cualquier app vistas por el listener desde `processStartedAt`. */
+  seenTotal?: number | null;
+  /**
+   * Apps vistas y cuántas veces, de mayor a menor (máx. 50). El backend lo
+   * expone como arreglo (Mongo no admite puntos en claves de mapa); se tolera
+   * también el objeto `{ paquete: n }` de un backend anterior.
+   */
+  seenByPackage?: NotifierSeenByPackageEntry[] | Record<string, number> | null;
+  /** Paquete Android de la última notificación que vio el listener (cualquier app). */
+  lastNotificationPackage?: string | null;
+  receiver?: NotifierCaptureReceiverStats | null;
+  rebindAttempts?: number | null;
+  lastRebindAt?: string | null;
+  selfTest?: NotifierCaptureSelfTest | null;
+}
+
+/** Un punto de la línea de tiempo de captura (uno por heartbeat, ~24 h). */
+export interface NotifierCaptureHistoryEntry {
+  at: string;
+  source?: NotifierCaptureSource | null;
+  captureActive: boolean;
+  listenerConnected?: boolean | null;
+  seenTotal?: number | null;
+  lastNotificationAt?: string | null;
+  inboxPending?: number | null;
+}
+
+/** Resumen del último reporte de diagnóstico que mandó la app (en el notifier serializado). */
+export interface NotifierLatestDiagnosticReport {
+  at: string;
+  appVersion?: string | null;
+  summary?: {
+    listenerConnected?: boolean | null;
+    selfTestOk?: boolean | null;
+    seenTotal?: number | null;
+  } | null;
+}
+
+/** Cuerpo del reporte que la app manda a `POST /notifier-app/diagnostics`. Todo opcional. */
+export interface NotifierDiagnosticReportBody {
+  appVersion?: string | null;
+  device?: { model?: string | null; manufacturer?: string | null; osVersion?: string | null } | null;
+  health?: NotifierCaptureSnapshot | null;
+  rules?: { rulesVersion?: string | null; watched?: string[] | null; pairings?: number | null } | null;
+  nearMisses?: Array<{
+    at: string;
+    packageName: string;
+    reason: NotifierDiscardReason | string;
+    title?: string | null;
+  }> | null;
+  heartbeats?: Array<{
+    at: string;
+    source?: NotifierCaptureSource | null;
+    captureActive: boolean;
+    ok: boolean;
+  }> | null;
+  notes?: string | null;
+}
+
+/** Reporte completo guardado por el backend (máx. 5, el más reciente primero). */
+export interface NotifierDiagnosticReport {
+  at: string;
+  appVersion?: string | null;
+  report?: NotifierDiagnosticReportBody | null;
+}
+
+/** Respuesta de `GET /notifiers/:id/diagnostics`. */
+export interface NotifierDiagnosticsResponse {
+  capture?: NotifierCaptureSnapshot | null;
+  /** Todas las entradas guardadas (hasta ~288 ≈ 24 h a 5 min). */
+  captureHistory?: NotifierCaptureHistoryEntry[] | null;
+  reports?: NotifierDiagnosticReport[] | null;
+}
+
+/**
+ * Regla de escucha del celular, si el backend la expone en el notifier. Solo se
+ * usa para marcar apps vigiladas en el diagnóstico; `watchedPackages` manda.
+ */
+export interface NotifierWatchRule {
+  packageNames?: string[] | null;
+}
+
 export interface Notifier {
   id: string;
   accountId: string;
@@ -133,9 +288,21 @@ export interface Notifier {
    */
   lastCaptureAliveAt?: string | null;
   /** Isolate del último heartbeat (diagnóstico). */
-  captureSource?: 'foreground' | 'ui' | 'workmanager' | null;
+  captureSource?: NotifierCaptureSource | null;
   /** Calculado por el backend al serializar; la UI lo recalcula con el reloj. */
   isListening?: boolean;
+  /**
+   * Última notificación de CUALQUIER app que vio el listener del celular
+   * (app ≥ 1.0.8). Si está vieja mientras el celular late, el listener está sordo.
+   */
+  lastNotificationAt?: string | null;
+  /** Foto de la captura del último heartbeat (app ≥ 1.0.8). */
+  capture?: NotifierCaptureSnapshot | null;
+  /** Últimas entradas (≈ 60) de la línea de tiempo de captura. */
+  captureHistory?: NotifierCaptureHistoryEntry[] | null;
+  latestDiagnosticReport?: NotifierLatestDiagnosticReport | null;
+  /** Reglas de escucha, solo si el backend las expone al dueño. */
+  watchRules?: NotifierWatchRule[] | null;
   /** Config operativa efectiva (default global + override) de este notificador. */
   runtimeConfig?: NotifierRuntimeConfig;
   /** Override propio de cadencias; null cuando hereda los valores de flota. */
