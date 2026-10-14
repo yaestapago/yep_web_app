@@ -16,12 +16,22 @@ import {
   canAccessSubscription,
 } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { SUPPORT_WHATSAPP_URL } from '../../../../shared/constants/legal.constants';
 import { Banner, ButtonLink, Card, IconTile, PageHeader, StatusChip } from '../../../../shared/ui';
+
+/** Acción propia de una novedad: enlace externo que se abre en otra pestaña. */
+interface NovedadAction {
+  label: string;
+  href: string;
+  icon?: LucideIcon;
+}
 
 interface Novedad {
   category: string;
   title: string;
   description: string;
+  /** En el banner es el botón primario; en "Más novedades", un enlace de texto. */
+  action?: NovedadAction;
 }
 
 interface QuickLink {
@@ -32,8 +42,16 @@ interface QuickLink {
   active: boolean;
 }
 
-/** Recapitulación completa publicada en el blog del landing. */
+/**
+ * Recapitulación de las novedades de agosto (las de "Más novedades") en el blog del landing.
+ * La nota de YEP Notifyer sigue en borrador: no se enlaza hasta que se publique.
+ */
 const NOVEDADES_POST_URL = 'https://yaestapago.co/blog/novedades-agosto-2026';
+
+/** Línea de WhatsApp de YEP con un mensaje listo para enviar. */
+function whatsappUrl(message: string): string {
+  return `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+}
 
 const TODAY_FORMAT = new Intl.DateTimeFormat('es-CO', {
   weekday: 'long',
@@ -123,13 +141,25 @@ export class HomePage {
     }
 
     return {
-      dashboard: can('dashboard') ? link('dashboard') : null,
       employees: can('employees') ? link('employees') : null,
       quickLinks,
     };
   });
 
   readonly novedades: Novedad[] = [
+    {
+      category: 'Notificadores',
+      title: 'YEP Notifyer estrena imagen',
+      description:
+        'La app Android que le pasa a YEP los avisos de tu banco ahora se ve como tu panel, en modo claro y oscuro, y su aviso para celulares Xiaomi ya responde. Funciona igual: si ya la tienes, no tienes que volver a emparejarla.',
+      action: {
+        label: 'Pídela por WhatsApp',
+        href: whatsappUrl(
+          'Hola YEP, quiero el notificador YEP Notifyer para el celular de mi negocio',
+        ),
+        icon: LucideMessageCircle,
+      },
+    },
     {
       category: 'Panel de pagos',
       title: 'Un panel de pagos más claro',

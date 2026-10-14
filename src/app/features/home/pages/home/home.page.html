@@ -11,23 +11,14 @@
     [text]="featured.description"
     imageSrc="illustrations/home-panel.svg"
   >
-    @if (shortcuts().dashboard; as dashboardLink) {
-      <a slot="actions" yepButton [routerLink]="dashboardLink">
-        Ir al panel de control
-        <svg lucideArrowRight aria-hidden="true"></svg>
+    @if (featured.action; as action) {
+      <a slot="actions" yepButton [href]="action.href" target="_blank" rel="noopener noreferrer">
+        @if (action.icon) {
+          <svg [lucideIcon]="action.icon" aria-hidden="true"></svg>
+        }
+        {{ action.label }}
       </a>
     }
-    <a
-      slot="actions"
-      yepButton
-      variant="secondary"
-      tone="on-brand"
-      [href]="novedadesPostUrl"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Ver todas las novedades
-    </a>
   </yep-banner>
 
   @if (shortcuts().quickLinks.length) {
@@ -86,6 +77,17 @@
           <yep-status-chip tone="neutral" [dot]="false" [label]="novedad.category" />
           <h3 class="home-news__title">{{ novedad.title }}</h3>
           <p class="home-news__text">{{ novedad.description }}</p>
+          @if (novedad.action; as action) {
+            <a
+              class="home-link home-news__action"
+              [href]="action.href"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ action.label }}
+              <svg lucideArrowRight aria-hidden="true"></svg>
+            </a>
+          }
         </li>
       }
     </ul>

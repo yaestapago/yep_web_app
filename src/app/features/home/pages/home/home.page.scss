@@ -155,6 +155,11 @@ a.home-link:focus-visible {
   margin: 2px 0 0;
 }
 
+// Acción propia de una novedad (si la tiene): enlace de texto, no compite con el primario.
+.home-news__action {
+  margin-top: var(--space-2);
+}
+
 // Tableta y celular: accesos 2 × 2 (04-pantallas, S1).
 
 @media (max-width: 900px) {
