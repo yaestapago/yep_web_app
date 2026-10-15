@@ -75,6 +75,14 @@ export const NOT_LISTENING_LABEL = 'En línea, sin escuchar';
  */
 export const NOT_LISTENING_NO_ACCESS_LABEL = 'En línea, sin acceso a notificaciones';
 
+/**
+ * Late y escucha, pero Android no le entrega a YEP las notificaciones de tipo
+ * conversación (`capture.conversationsAllowed === false`, app ≥ 1.0.9): ahí
+ * caen los SMS de Google Messages, así que los pagos que llegan por SMS no se
+ * capturan. Se arregla activando «Conversaciones» para YEP en el celular.
+ */
+export const NOT_LISTENING_SMS_LABEL = 'En línea, sin acceso a los SMS';
+
 /** Verde de verdad: late Y captura. */
 export const LISTENING_LABEL = 'Escuchando';
 
@@ -155,14 +163,19 @@ export function computeNotifierStatus(
   let label = STATUS_LABELS[level];
 
   const listening = computeListening(notifier.lastCaptureAliveAt, effective, now);
-  if (level === 'online' && listening === false) {
+  // Android no le entrega los SMS a YEP: amarillo aunque el servicio escuche.
+  const smsBlocked = notifier.capture?.conversationsAllowed === false;
+  if (level === 'online' && (listening === false || smsBlocked)) {
     level = 'delayed';
     // Si la app ya reporta el enlace del listener y dice que Android lo soltó,
-    // el texto apunta a la causa real (no es el servicio: es el acceso).
+    // el texto apunta a la causa real (no es el servicio: es el acceso). Con el
+    // servicio muerto no se oye nada, así que eso manda sobre los SMS.
     label =
       notifier.capture?.listenerConnected === false
         ? NOT_LISTENING_NO_ACCESS_LABEL
-        : NOT_LISTENING_LABEL;
+        : listening === false
+          ? NOT_LISTENING_LABEL
+          : NOT_LISTENING_SMS_LABEL;
   } else if (level === 'online' && listening === true) {
     label = LISTENING_LABEL;
   }

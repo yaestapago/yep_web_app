@@ -9,9 +9,11 @@ import type {
 } from '../../../../shared/models/notifier.models';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import {
+  CONVERSATIONS_BLOCKED_DETAIL,
   NotifierDiagnosticsModal,
   SELF_TEST_REASON_COPY,
   TIMELINE_BUCKETS,
+  conversationsFlag,
   flagFor,
   seenByPackageEntries,
   selfTestReasonCopy,
@@ -369,14 +371,17 @@ describe('NotifierDiagnosticsModal', () => {
     expect(rows.map((row) => row.getAttribute('data-key'))).toEqual([
       'listener',
       'permission',
+      'conversations',
       'notifications',
       'service',
       'battery',
     ]);
     expect(rows[0].textContent).toContain('Conectado');
     expect(rows[0].textContent).toContain('desde hace 2 h');
-    expect(rows[2].textContent).toContain('Permitidos');
-    expect(rows[4].textContent).toContain('Sin restricciones');
+    // App ≤ 1.0.8: aún no prueba las conversaciones.
+    expect(rows[2].textContent).toContain('Sin probar');
+    expect(rows[3].textContent).toContain('Permitidos');
+    expect(rows[5].textContent).toContain('Sin restricciones');
 
     expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('96');
     // Sin `lastNotificationAt` no hay fecha, así que tampoco se muestra la app.
@@ -429,6 +434,108 @@ describe('NotifierDiagnosticsModal', () => {
 
     it('ausente (backend viejo) ⇒ "Sin dato"', () => {
       expect(notificationsRow(renderWith(undefined))?.textContent).toContain('Sin dato');
+    });
+  });
+
+  describe('fila "Conversaciones (SMS)" (capture.conversationsAllowed, app ≥ 1.0.9)', () => {
+    const conversationsRow = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+      el(fixture).querySelector('[data-testid="diag-status"] li[data-key="conversations"]');
+
+    function renderWith(conversationsAllowed: boolean | null | undefined) {
+      const snapshot = capture();
+      if (conversationsAllowed === undefined) {
+        delete snapshot.conversationsAllowed;
+      } else {
+        snapshot.conversationsAllowed = conversationsAllowed;
+      }
+      api.diagnostics.mockReturnValue(of({ ...response, capture: snapshot }));
+      return render(notifier());
+    }
+
+    it('true ⇒ "Permitidas" en verde, sin detalle', () => {
+      const row = conversationsRow(renderWith(true));
+      expect(row?.textContent).toContain('Conversaciones (SMS)');
+      expect(row?.textContent).toContain('Permitidas');
+      expect(row?.querySelector('.yep-status-chip--success')).not.toBeNull();
+      expect(row?.querySelector('.diag-flags__detail')).toBeNull();
+    });
+
+    it('false ⇒ "Bloqueadas" en ámbar con qué hacer en el celular', () => {
+      const row = conversationsRow(renderWith(false));
+      expect(row?.textContent).toContain('Bloqueadas');
+      expect(row?.querySelector('.yep-status-chip--warning')).not.toBeNull();
+      expect(row?.querySelector('.diag-flags__detail')?.textContent?.trim()).toBe(
+        CONVERSATIONS_BLOCKED_DETAIL,
+      );
+      expect(CONVERSATIONS_BLOCKED_DETAIL).toBe(
+        'Android no le entrega los SMS a YEP. En el celular: Ajustes → Acceso a notificaciones → YEP Notifyer → activa «Conversaciones».',
+      );
+    });
+
+    it('null ⇒ "Sin probar" en gris', () => {
+      const row = conversationsRow(renderWith(null));
+      expect(row?.textContent).toContain('Sin probar');
+      expect(row?.querySelector('.yep-status-chip--neutral')).not.toBeNull();
+      expect(row?.textContent).not.toContain('Android no le entrega');
+    });
+
+    it('ausente (app o backend anterior) ⇒ "Sin probar"', () => {
+      expect(conversationsRow(renderWith(undefined))?.textContent).toContain('Sin probar');
+    });
+
+    it('conversationsFlag: Permitidas / Bloqueadas (warn) / Sin probar', () => {
+      expect(conversationsFlag(true)).toEqual({ kind: 'ok', tone: 'success', label: 'Permitidas' });
+      expect(conversationsFlag(false)).toEqual({
+        kind: 'warn',
+        tone: 'warning',
+        label: 'Bloqueadas',
+      });
+      expect(conversationsFlag(null)).toEqual({
+        kind: 'unknown',
+        tone: 'neutral',
+        label: 'Sin probar',
+      });
+      expect(conversationsFlag(undefined).label).toBe('Sin probar');
+    });
+  });
+
+  describe('prueba de escucha: parte "conversación" (capture.selfTest.conversationOk)', () => {
+    const conversationEl = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+      el(fixture).querySelector('[data-testid="diag-self-test-conversation"]');
+
+    function renderSelfTest(selfTest: NotifierCaptureSnapshot['selfTest']) {
+      api.diagnostics.mockReturnValue(of({ ...response, capture: capture({ selfTest }) }));
+      return render(notifier());
+    }
+
+    it('false ⇒ explica que «Conversaciones» está apagado', () => {
+      const fixture = renderSelfTest({
+        at: iso(10),
+        ok: true,
+        latencyMs: 90,
+        conversationOk: false,
+      });
+      expect(conversationEl(fixture)?.textContent?.trim()).toBe(
+        'La notificación de tipo conversación no llegó: «Conversaciones» está apagado para YEP.',
+      );
+    });
+
+    it('también cuando la prueba completa falló, junto a la causa', () => {
+      const fixture = renderSelfTest({
+        at: iso(10),
+        ok: false,
+        reason: 'listener_missed',
+        conversationOk: false,
+      });
+      expect(el(fixture).querySelector('[data-testid="diag-self-test-reason"]')).not.toBeNull();
+      expect(conversationEl(fixture)).not.toBeNull();
+    });
+
+    it('true, null o ausente ⇒ no muestra la línea', () => {
+      for (const conversationOk of [true, null, undefined]) {
+        const fixture = renderSelfTest({ at: iso(10), ok: true, latencyMs: 90, conversationOk });
+        expect(conversationEl(fixture)).toBeNull();
+      }
     });
   });
 

@@ -147,6 +147,21 @@ export function flagFor(
   return UNKNOWN_FLAG;
 }
 
+/** Qué hacer cuando Android no le entrega a YEP las notificaciones de tipo conversación. */
+export const CONVERSATIONS_BLOCKED_DETAIL =
+  'Android no le entrega los SMS a YEP. En el celular: Ajustes → Acceso a notificaciones → YEP Notifyer → activa «Conversaciones».';
+
+/**
+ * Chip de "Conversaciones (SMS)" (`capture.conversationsAllowed`, app ≥ 1.0.9).
+ * `null`/ausente = la app aún no lo ha probado (o Android < 12, sin ese filtro).
+ */
+export function conversationsFlag(value: boolean | null | undefined): Flag {
+  if (value === true || value === false) {
+    return flagFor(value, 'Permitidas', 'Bloqueadas', 'warn');
+  }
+  return { kind: 'unknown', tone: 'neutral', label: 'Sin probar' };
+}
+
 /**
  * Paquetes que el celular vigila, en minúsculas: `watchedPackages` del
  * notifier (con `@default_sms` expandido a la app de SMS reportada),
@@ -470,6 +485,13 @@ export class NotifierDiagnosticsModal {
         detail: '',
       },
       {
+        // Ahí caen los SMS de Google Messages: apagado, el listener corre pero no los ve.
+        key: 'conversations',
+        label: 'Conversaciones (SMS)',
+        flag: conversationsFlag(capture.conversationsAllowed),
+        detail: capture.conversationsAllowed === false ? CONVERSATIONS_BLOCKED_DETAIL : '',
+      },
+      {
         key: 'notifications',
         label: 'Avisos de la app',
         flag: flagFor(capture.notificationsEnabled, 'Permitidos', 'Bloqueados', 'warn'),
@@ -560,6 +582,10 @@ export class NotifierDiagnosticsModal {
     const test = this.selfTest();
     return test?.ok === false ? selfTestReasonCopy(test.reason) : '';
   });
+  /** La parte "conversación" de la prueba no llegó (app ≥ 1.0.9). */
+  readonly selfTestConversationMissed = computed(
+    () => this.selfTest()?.conversationOk === false,
+  );
 
   /** Se recalcula con el reloj: la ventana de 24 h termina en "ahora". */
   readonly timeline = computed(() => summarizeTimeline(this.history(), this.now()));
