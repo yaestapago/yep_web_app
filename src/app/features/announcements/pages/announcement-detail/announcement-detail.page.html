@@ -1,0 +1,290 @@
+<section class="page detail-page">
+  @let item = announcement();
+  <yep-page-header [title]="item?.title || 'Anuncio'" [subtitle]="audience()">
+    <yep-button slot="back" variant="ghost" size="sm" (clicked)="back()">
+      <svg lucideArrowLeft aria-hidden="true"></svg>
+      Volver
+    </yep-button>
+    @if (item) {
+      <span slot="meta" class="meta">
+        <yep-status-chip [tone]="statusTones[item.status]" [label]="statusLabels[item.status]" />
+        <yep-status-chip tone="neutral" [dot]="false" [label]="appLabels[item.app]" />
+        @if (item.source === 'system') {
+          <yep-status-chip tone="neutral" [dot]="false" label="Automático" />
+        }
+      </span>
+    }
+    @if (item) {
+      <ng-container ngProjectAs="[slot=actions]">
+        <yep-button variant="secondary" size="sm" (clicked)="edit()">
+          <svg lucidePencil aria-hidden="true"></svg>
+          Editar
+        </yep-button>
+        <yep-menu label="Más acciones" size="md" [disabled]="acting()">
+          <button yepMenuItem (click)="duplicate()">
+            <svg lucideCopy aria-hidden="true"></svg>
+            Duplicar
+          </button>
+          @if (item.status !== 'published') {
+            <button yepMenuItem (click)="changeStatus('published')">
+              <svg lucideSend aria-hidden="true"></svg>
+              Publicar
+            </button>
+          }
+          @if (item.status !== 'draft') {
+            <button yepMenuItem (click)="changeStatus('draft')">
+              <svg lucideUndo2 aria-hidden="true"></svg>
+              Pasar a borrador
+            </button>
+          }
+          @if (item.status !== 'archived') {
+            <button yepMenuItem (click)="changeStatus('archived')">
+              <svg lucideArchive aria-hidden="true"></svg>
+              Archivar
+            </button>
+          }
+          @if (canDelete(item)) {
+            <button yepMenuItem tone="danger" (click)="remove()">
+              <svg lucideTrash2 aria-hidden="true"></svg>
+              Borrar
+            </button>
+          }
+        </yep-menu>
+      </ng-container>
+    }
+  </yep-page-header>
+
+  @if (notice()) {
+    <yep-alert variant="success" [dismissible]="true" (dismissed)="notice.set('')">{{
+      notice()
+    }}</yep-alert>
+  }
+  @if (error() && item) {
+    <yep-alert variant="error">{{ error() }}</yep-alert>
+  }
+
+  @if (loading() && !item) {
+    <yep-state kind="loading" title="Cargando anuncio…" [rows]="5" />
+  } @else if (error() && !item) {
+    <yep-state kind="error" [title]="error()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()"
+        >Reintentar</yep-button
+      >
+    </yep-state>
+  } @else if (item) {
+    @let stats = item.stats;
+    <div class="kpis" role="group" aria-label="Estadísticas">
+      <yep-kpi
+        size="sm"
+        label="Vistos"
+        [value]="formatCount(stats?.seen)"
+        [hint]="isNotifier() ? 'Celulares que lo vieron' : 'Usuarios que lo vieron'"
+      />
+      <yep-kpi size="sm" label="Tocaron el botón" [value]="formatCount(stats?.action)" />
+      <yep-kpi size="sm" label="Cerraron" [value]="formatCount(stats?.dismissed)" />
+      @if (isNotifier()) {
+        <yep-kpi
+          size="sm"
+          label="Notificados"
+          [value]="formatCount(stats?.notified)"
+          hint="Notificación de Android"
+        />
+      }
+    </div>
+
+    <div class="detail-layout">
+      <yep-card title="Detalle">
+        <yep-description-list [columns]="2">
+          <yep-description-item label="Tono">{{ toneLabels[item.tone] }}</yep-description-item>
+          <yep-description-item label="Botón">
+            @if (item.action; as action) {
+              «{{ action.label }}» · {{ actionLabels[action.type] || action.type }}
+            } @else {
+              Sin botón
+            }
+          </yep-description-item>
+          @if (item.action?.url) {
+            <yep-description-item label="Enlace" [span]="2" [mono]="true">{{
+              item.action?.url
+            }}</yep-description-item>
+          }
+          @if (item.action?.route) {
+            <yep-description-item label="Pantalla" [mono]="true">{{
+              item.action?.route
+            }}</yep-description-item>
+          }
+          <yep-description-item label="Se puede cerrar">
+            {{
+              item.dismissible ? 'Sí, con «' + dismissLabel(item) + '»' : 'No: solo con el botón'
+            }}
+          </yep-description-item>
+          <yep-description-item label="Cuántas veces">
+            {{ repeatLabels[item.repeat] }}
+            @if (item.repeat === 'until_action' || item.audience.condition) {
+              · vuelve en {{ item.snoozeHours }} h
+            }
+          </yep-description-item>
+          <yep-description-item label="A quién va" [span]="2">{{
+            audience()
+          }}</yep-description-item>
+          <yep-description-item label="Ventana">
+            {{ windowLabel(item) }}
+            @if (note()) {
+              <small class="muted">{{ note() }}</small>
+            }
+          </yep-description-item>
+          <yep-description-item label="Prioridad" [mono]="true">{{
+            item.priority
+          }}</yep-description-item>
+          @if (isNotifier()) {
+            <yep-description-item label="Notificación de Android">{{
+              item.notify ? 'Sí' : 'No'
+            }}</yep-description-item>
+          }
+          <yep-description-item label="Origen">
+            {{ sourceLabel(item) }}
+            @if (item.systemKey) {
+              <small class="muted mono">{{ item.systemKey }}</small>
+            }
+          </yep-description-item>
+          <yep-description-item label="Publicado">{{
+            formatDateTime(item.publishedAt) || '—'
+          }}</yep-description-item>
+          <yep-description-item label="Última edición">{{
+            formatDateTime(item.updatedAt) || '—'
+          }}</yep-description-item>
+        </yep-description-list>
+      </yep-card>
+
+      <app-announcement-preview
+        class="detail-preview"
+        [app]="item.app"
+        [tone]="item.tone"
+        [title]="item.title"
+        [body]="item.body"
+        [actionType]="item.action?.type ?? ''"
+        [actionLabel]="item.action?.label ?? ''"
+        [dismissible]="item.dismissible"
+        [repeat]="item.repeat"
+        [notify]="item.notify"
+      />
+    </div>
+
+    <yep-card
+      title="Quién lo vio"
+      subtitle="Una fila por celular o usuario. Las fechas son la última vez."
+      padding="none"
+      data-testid="receipts"
+    >
+      <yep-button
+        slot="actions"
+        variant="ghost"
+        size="sm"
+        [loading]="receiptsLoading()"
+        (clicked)="loadReceipts()"
+      >
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+
+      <div class="yep-table-wrap">
+        <table yepTable class="receipts-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ isNotifier() ? 'Celular' : 'Usuario' }}</th>
+              <th scope="col">Negocio</th>
+              <th scope="col">Versión</th>
+              <th scope="col">Lo vio</th>
+              @if (isNotifier()) {
+                <th scope="col">Notificado</th>
+              }
+              <th scope="col">Tocó el botón</th>
+              <th scope="col">Cerró</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (receiptsLoading() && receipts().length === 0) {
+              <tr>
+                <td [attr.colspan]="isNotifier() ? 7 : 6" class="empty">
+                  <yep-state kind="loading" title="Cargando…" [rows]="3" />
+                </td>
+              </tr>
+            } @else if (receiptsError()) {
+              <tr>
+                <td [attr.colspan]="isNotifier() ? 7 : 6" class="empty">
+                  <yep-state kind="error" [title]="receiptsError()">
+                    <yep-button
+                      slot="action"
+                      variant="secondary"
+                      size="sm"
+                      (clicked)="loadReceipts()"
+                    >
+                      Reintentar
+                    </yep-button>
+                  </yep-state>
+                </td>
+              </tr>
+            } @else {
+              @for (row of receiptRows(); track row.receipt.id) {
+                <tr>
+                  <td [attr.data-label]="isNotifier() ? 'Celular' : 'Usuario'">
+                    <strong>{{ row.name }}</strong>
+                    @if (row.detail) {
+                      <small>{{ row.detail }}</small>
+                    }
+                  </td>
+                  <td data-label="Negocio">{{ row.account }}</td>
+                  <td data-label="Versión">
+                    <span class="mono">{{ row.version }}</span>
+                    @if (row.platform) {
+                      <small>{{ row.platform }}</small>
+                    }
+                  </td>
+                  <td data-label="Lo vio" class="nowrap">
+                    {{ row.seen }}
+                    @if (row.seenCount) {
+                      <small>{{ row.seenCount }}</small>
+                    }
+                  </td>
+                  @if (isNotifier()) {
+                    <td data-label="Notificado" class="nowrap">{{ row.notified }}</td>
+                  }
+                  <td data-label="Tocó el botón" class="nowrap">{{ row.action }}</td>
+                  <td data-label="Cerró" class="nowrap">
+                    {{ row.dismissed }}
+                    @if (row.dismissCount) {
+                      <small>{{ row.dismissCount }}</small>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="isNotifier() ? 7 : 6" class="empty">
+                    <yep-state
+                      kind="empty"
+                      title="Nadie lo ha visto todavía"
+                      [description]="
+                        item.status === 'published'
+                          ? 'Cuando un celular lo muestre, aparece aquí.'
+                          : 'Solo se entrega cuando está publicado.'
+                      "
+                    />
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (pageCount() > 1) {
+        <div slot="footer" class="receipts-footer">
+          <yep-pagination
+            [page]="receiptsPage()"
+            [pageCount]="pageCount()"
+            (pageChange)="goToPage($event)"
+          />
+        </div>
+      }
+    </yep-card>
+  }
+</section>

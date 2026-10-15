@@ -1,0 +1,235 @@
+// Superadmin · editor de anuncios. Una sola tarjeta con secciones (P1); la vista previa
+// y el alcance van al lado y se quedan a la vista al bajar.
+
+:host {
+  display: block;
+}
+
+.editor-page {
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.editor-page > yep-page-header {
+  margin-block-end: 0;
+}
+
+.editor {
+  align-items: start;
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr) 20rem;
+}
+
+.editor__main {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.editor__aside {
+  display: grid;
+  gap: var(--space-4);
+  position: sticky;
+  top: var(--space-4);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin: var(--space-2) 0 0;
+}
+
+.radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+}
+
+.radio-row--stack {
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+
+/* Controles nativos (textarea y fecha) con la piel de los inputs (P6). */
+.field {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.field__label {
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.field textarea,
+.field input {
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  min-height: var(--control-height-md);
+  padding: var(--space-2) var(--space-3);
+  width: 100%;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  &.is-invalid {
+    border-color: var(--color-error);
+  }
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field__hint,
+.field__error {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+}
+
+.field__hint {
+  color: var(--color-text-secondary);
+}
+
+.field__error {
+  color: var(--color-error-strong);
+}
+
+.toggle-row {
+  align-items: flex-start;
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+
+  small {
+    color: var(--color-text-secondary);
+    display: block;
+    font-size: var(--font-size-xs);
+  }
+}
+
+.toggle-row.is-disabled {
+  color: var(--color-text-muted);
+}
+
+.checks {
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+
+  legend {
+    color: var(--color-text-primary);
+    font-size: 0.8125rem;
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--space-2);
+    padding: 0;
+  }
+
+  .hint {
+    flex-basis: 100%;
+    margin: 0;
+  }
+}
+
+.server-errors {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.editor__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.editor__spacer {
+  flex: 1 1 auto;
+}
+
+.reach {
+  align-items: flex-start;
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+
+  svg {
+    color: var(--color-text-secondary);
+    flex: 0 0 auto;
+    height: var(--icon-md);
+    margin-top: 2px;
+    width: var(--icon-md);
+  }
+
+  strong {
+    display: block;
+    font-size: var(--font-size-sm);
+  }
+
+  small {
+    color: var(--color-text-secondary);
+    display: block;
+    font-size: var(--font-size-xs);
+    margin-top: var(--space-1);
+  }
+}
+
+.reach[data-state='loading'] strong {
+  color: var(--color-text-muted);
+}
+
+.reach[data-state='error'] strong {
+  color: var(--color-error-strong);
+}
+
+@media (max-width: 1100px) {
+  .editor {
+    grid-template-columns: 1fr;
+  }
+
+  .editor__aside {
+    order: -1;
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+}

@@ -1,0 +1,228 @@
+<div class="releases">
+  <yep-alert variant="info" data-testid="releases-store-note">
+    Sube la «Última versión» solo cuando Google Play (o App Store) ya la esté entregando: si la
+    subes antes, el celular pide actualizar y la tienda todavía no la tiene.
+  </yep-alert>
+
+  @if (loading() && !loaded()) {
+    <yep-state kind="loading" title="Cargando versiones…" [rows]="3" />
+  } @else if (error() && !loaded()) {
+    <yep-state kind="error" [title]="error()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()"
+        >Reintentar</yep-button
+      >
+    </yep-state>
+  } @else {
+    <div class="releases__grid">
+      @for (card of cards; track card.key) {
+        @let chip = statusChip(card);
+        @let value = card.value();
+        <yep-card
+          [title]="card.title"
+          [subtitle]="updatedLabel(card)"
+          [attr.data-testid]="'release-card-' + card.key"
+        >
+          <yep-status-chip slot="actions" [tone]="chip.tone" [label]="chip.label" />
+
+          <div class="release-form">
+            <yep-input
+              label="Última versión"
+              [placeholder]="card.slot.app === 'notifier' ? '1.0.10' : '1.2.0'"
+              [required]="true"
+              hint="La que ya entrega la tienda."
+              [error]="fieldError(card, 'latestVersion')"
+              [ngModel]="value.latestVersion"
+              (ngModelChange)="patch(card, 'latestVersion', $event)"
+            />
+            <yep-input
+              label="Versión mínima (opcional)"
+              [placeholder]="card.slot.app === 'notifier' ? '1.0.9' : '1.1.0'"
+              hint="Por debajo de esta, el aviso no se puede cerrar."
+              [error]="fieldError(card, 'minSupportedVersion')"
+              [ngModel]="value.minSupportedVersion"
+              (ngModelChange)="patch(card, 'minSupportedVersion', $event)"
+            />
+            <yep-input
+              class="span-2"
+              type="url"
+              [label]="'Enlace de ' + card.store"
+              placeholder="https://"
+              [required]="true"
+              [error]="fieldError(card, 'storeUrl')"
+              [ngModel]="value.storeUrl"
+              (ngModelChange)="patch(card, 'storeUrl', $event)"
+            />
+            <yep-input
+              class="span-2"
+              label="Título (opcional)"
+              [placeholder]="titlePlaceholder(card)"
+              [hint]="copyHint(card)"
+              [error]="fieldError(card, 'title')"
+              [ngModel]="value.title"
+              (ngModelChange)="patch(card, 'title', $event)"
+            />
+            <label class="field span-2">
+              <span class="field__label">Texto (opcional)</span>
+              <textarea
+                rows="3"
+                [placeholder]="bodyPlaceholder(card)"
+                [value]="value.body"
+                [class.is-invalid]="!!fieldError(card, 'body')"
+                (input)="onBody(card, $event)"
+              ></textarea>
+              @if (fieldError(card, 'body')) {
+                <small class="field__error">{{ fieldError(card, 'body') }}</small>
+              } @else {
+                <small class="field__hint"
+                  >Vacío = el texto por defecto con la versión nueva.</small
+                >
+              }
+            </label>
+          </div>
+
+          <div class="toggles">
+            <label class="toggle-row">
+              <yep-toggle
+                [pressed]="value.notify"
+                ariaLabel="Avisar también con notificación"
+                (toggled)="patch(card, 'notify', $event)"
+              />
+              <span>
+                Avisar también con notificación
+                @if (card.slot.app === 'yep') {
+                  <small>La App de YEP todavía no muestra notificaciones con la app cerrada.</small>
+                }
+              </span>
+            </label>
+            <label class="toggle-row">
+              <yep-toggle
+                [pressed]="value.enabled"
+                ariaLabel="Política activa"
+                (toggled)="patch(card, 'enabled', $event)"
+              />
+              <span>
+                Activa
+                <small>Apagada, nadie ve el aviso de actualizar de esta app.</small>
+              </span>
+            </label>
+          </div>
+
+          @if (card.release()?.stats; as stats) {
+            <div class="release-stats" [attr.data-testid]="'release-stats-' + card.key">
+              <span class="release-stats__title">
+                Aviso de la versión {{ card.release()?.latestVersion }}
+              </span>
+              <dl>
+                <div>
+                  <dt>Lo vieron</dt>
+                  <dd>{{ formatCount(stats.seen) }}</dd>
+                </div>
+                <div>
+                  <dt>Tocaron «Actualizar»</dt>
+                  <dd>{{ formatCount(stats.action) }}</dd>
+                </div>
+                <div>
+                  <dt>Más tarde</dt>
+                  <dd>{{ formatCount(stats.dismissed) }}</dd>
+                </div>
+                @if (card.slot.app === 'notifier') {
+                  <div>
+                    <dt>Notificados</dt>
+                    <dd>{{ formatCount(stats.notified) }}</dd>
+                  </div>
+                }
+              </dl>
+            </div>
+          }
+
+          <div slot="footer" class="release-footer">
+            @if (card.error().length) {
+              <yep-alert variant="error" title="No se pudo guardar">
+                @for (message of card.error(); track $index) {
+                  <span class="release-error">{{ message }}</span>
+                }
+              </yep-alert>
+            }
+            @if (card.success()) {
+              <yep-alert variant="success">{{ card.success() }}</yep-alert>
+            }
+            <yep-button
+              variant="secondary"
+              size="sm"
+              [loading]="card.saving()"
+              [attr.data-testid]="'save-release-' + card.key"
+              (clicked)="save(card)"
+            >
+              Guardar
+            </yep-button>
+          </div>
+        </yep-card>
+      }
+    </div>
+
+    <yep-card
+      title="Versiones del notificador en uso"
+      subtitle="Celulares con latido en los últimos 7 días, por versión. Se marcan con la última y la mínima de arriba, aunque no las hayas guardado."
+      padding="none"
+      data-testid="notifier-versions"
+    >
+      <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+
+      @if (versionRows().length) {
+        @let summary = versionSummary();
+        <p class="versions-summary" data-testid="versions-summary">
+          De <strong>{{ formatCount(summary.total) }}</strong> celulares,
+          <strong>{{ formatCount(summary.seeUpdate) }}</strong> verían el aviso de actualizar
+          (<strong>{{ formatCount(summary.forced) }}</strong> sin poder cerrarlo).
+          @if (summary.legacy) {
+            <strong>{{ formatCount(summary.legacy) }}</strong> tienen una versión anterior a la
+            1.0.10 y no ven avisos: a esos toca escribirles.
+          }
+          @if (notifierPolicyOff()) {
+            La política del Notificador está apagada: hoy nadie ve el aviso.
+          }
+        </p>
+        <div class="yep-table-wrap">
+          <table yepTable density="compact" class="versions-table">
+            <thead>
+              <tr>
+                <th scope="col">Versión</th>
+                <th scope="col" class="num">Celulares</th>
+                <th scope="col" class="bar-col"><span class="sr-only">Proporción</span></th>
+                <th scope="col">Cómo quedaría</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of versionRows(); track row.version) {
+                <tr [attr.data-standing]="row.standing">
+                  <td data-label="Versión" class="mono">{{ row.version }}</td>
+                  <td data-label="Celulares" class="num">{{ formatCount(row.count) }}</td>
+                  <td class="bar-col" aria-hidden="true">
+                    <span class="bar"
+                      ><span class="bar__fill" [style.width.%]="row.share"></span
+                    ></span>
+                  </td>
+                  <td data-label="Cómo quedaría">
+                    <yep-status-chip [tone]="row.tone" [label]="row.standingLabel" />
+                    @if (row.note) {
+                      <small>{{ row.note }}</small>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <yep-state
+          kind="empty"
+          title="Sin datos de versiones"
+          description="Ningún celular del Notificador ha latido en los últimos 7 días."
+        />
+      }
+    </yep-card>
+  }
+</div>
