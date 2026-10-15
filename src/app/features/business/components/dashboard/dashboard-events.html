@@ -81,7 +81,9 @@
             <tr>
               <th scope="col">Origen</th>
               <th scope="col">Pagador</th>
-              <th scope="col">Estado</th>
+              <!-- TEMPORAL: columna "Estado" oculta; confundía a quienes usan el
+                   panel solo como notificación. Restaurar junto con su <td>. -->
+              <!-- <th scope="col">Estado</th> -->
               <th scope="col" class="num">Monto</th>
               <th scope="col" class="num">Hora</th>
             </tr>
@@ -165,12 +167,15 @@
                     </span>
                   }
                 </td>
+                <!-- TEMPORAL: columna "Estado" oculta (ver <thead>).
                 <td data-label="Estado">
                   <yep-status-chip
                     [tone]="statusTone(event.status)"
                     [label]="statusLabel(event.status)"
                   />
                 </td>
+                -->
+
                 <td data-label="Monto" class="num event__amount">
                   @if (event.normalized?.amount) {
                     {{
