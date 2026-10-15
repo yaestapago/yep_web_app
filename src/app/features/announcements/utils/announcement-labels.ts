@@ -18,11 +18,20 @@ export const APP_LABELS: Record<AnnouncementApp, string> = {
   yep: 'App de YEP',
 };
 
-/** Para usar dentro de una frase: "el Notificador", "la App de YEP". */
-export const APP_WITH_ARTICLE: Record<AnnouncementApp, string> = {
-  notifier: 'el Notificador',
-  yep: 'la App de YEP',
-};
+export type AppPreposition = '' | 'de' | 'a' | 'en' | 'para';
+
+/**
+ * El nombre de la app dentro de una frase, con su artículo y la contracción que pida la
+ * preposición: «el Notificador», «del Notificador», «al Notificador», «en la App de YEP».
+ */
+export function appInSentence(app: AnnouncementApp, preposition: AppPreposition = ''): string {
+  if (app === 'notifier') {
+    if (preposition === 'de') return 'del Notificador';
+    if (preposition === 'a') return 'al Notificador';
+    return preposition ? `${preposition} el Notificador` : 'el Notificador';
+  }
+  return preposition ? `${preposition} la App de YEP` : 'la App de YEP';
+}
 
 export const PLATFORM_LABELS: Record<AnnouncementPlatform, string> = {
   android: 'Android',

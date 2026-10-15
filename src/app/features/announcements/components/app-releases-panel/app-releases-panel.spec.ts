@@ -51,6 +51,7 @@ describe('AppReleasesPanel (Versiones de las apps)', () => {
           ],
         }),
       ),
+      receipts: vi.fn().mockReturnValue(of({ receipts: [], total: 0 })),
       saveRelease: vi.fn((app, platform, payload) =>
         of({ app, platform, ...payload, updatedAt: null }),
       ),
@@ -131,5 +132,60 @@ describe('AppReleasesPanel (Versiones de las apps)', () => {
     });
     expect(ios.success()).toContain('Guardado');
     expect(panel.statusChip(ios).label).toBe('Activa');
+  });
+
+  it('«Quién lo vio» abre los recibos del aviso de actualizar vigente', () => {
+    const { fixture, panel, root } = create();
+    expect(root.querySelector('[data-testid="release-receipts-yep/android"]')).toBeNull();
+    const button = root.querySelector<HTMLElement>(
+      '[data-testid="release-receipts-notifier/android"] button',
+    );
+    expect(button?.textContent).toContain('Quién lo vio');
+    button?.click();
+    fixture.detectChanges();
+
+    expect(panel.receiptsKey()).toBe('update:notifier:android:1.0.10');
+    expect(panel.receiptsSubtitle()).toBe('Notificador · Android · versión 1.0.10');
+    expect(api['receipts']).toHaveBeenCalledWith('update:notifier:android:1.0.10', {
+      limit: 50,
+      skip: 0,
+    });
+    expect(root.querySelector('[data-testid="release-receipts-table"]')).not.toBeNull();
+    expect(root.textContent).toContain('Quién vio el aviso de actualizar');
+
+    panel.closeReceipts();
+    fixture.detectChanges();
+    expect(root.querySelector('[data-testid="release-receipts-table"]')).toBeNull();
+  });
+
+  it('el resumen respeta singular/plural y la política apagada', () => {
+    api['listReleases'].mockReturnValue(
+      of({
+        releases: [
+          {
+            app: 'notifier',
+            platform: 'android',
+            latestVersion: '1.0.11',
+            minSupportedVersion: null,
+            storeUrl: 'https://play.google.com/store/apps/details?id=co.yaestapago.notifier',
+            notify: true,
+            enabled: false,
+          },
+        ],
+        notifierVersions: [{ version: '1.0.10', count: 1 }],
+      }),
+    );
+    const { fixture, panel, root } = create();
+    const summary = () =>
+      root
+        .querySelector('[data-testid="versions-summary"]')
+        ?.textContent?.replace(/\s+/g, ' ')
+        .trim();
+    expect(summary()).toBe(
+      'De 1 celular, ninguno ve el aviso de actualizar: la política del Notificador está apagada. Si la activas, 1 lo vería.',
+    );
+    panel.patch(panel.cards[0], 'enabled', true);
+    fixture.detectChanges();
+    expect(summary()).toBe('De 1 celular, 1 vería el aviso de actualizar.');
   });
 });

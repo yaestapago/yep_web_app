@@ -349,6 +349,35 @@ describe('AnnouncementEditorPage', () => {
     expect(manual.page.canDelete()).toBe(true);
   });
 
+  it('las frases contraen el artículo: «al Notificador» y «del Notificador»', async () => {
+    vi.useFakeTimers();
+    api['audiencePreview'].mockReturnValue(of({ notifiers: 1 }));
+    const { page } = create({}, { app: 'yep' });
+    expect(page.value().app).toBe('yep');
+    page.form.patchValue({ userIds: ['6710c0ffee0000000000abcd'] });
+    page.setApp('notifier');
+    expect(page.appNotice()).toBe('Quité los usuarios elegidos: no aplica al Notificador.');
+
+    page.form.patchValue({ title: 'Hola', body: 'Mundo' });
+    TestBed.tick();
+    vi.advanceTimersByTime(450);
+    expect(page.audienceCountText()).toBe('Le llegaría a 1 celular');
+    await page.save('published');
+    expect(confirm.mock.calls[0][0].message).toEqual([
+      'Le llegaría a 1 celular del Notificador.',
+      'Sale en el próximo latido de cada celular (Notificador 1.0.10 o superior).',
+    ]);
+  });
+
+  it('al pasar a la App de YEP también contrae bien («a la App de YEP»)', () => {
+    const { page } = create();
+    page.form.patchValue({ condition: 'listener_off', notifierIds: ['6710c0ffee0000000000abcd'] });
+    page.setApp('yep');
+    expect(page.appNotice()).toBe(
+      'Quité los celulares elegidos y la condición automática: no aplican a la App de YEP.',
+    );
+  });
+
   it('audienceCountLabel en singular y plural', () => {
     expect(audienceCountLabel('notifier', 1)).toBe('Le llegaría a 1 celular');
     expect(audienceCountLabel('notifier', 1200)).toBe('Le llegaría a 1.200 celulares');

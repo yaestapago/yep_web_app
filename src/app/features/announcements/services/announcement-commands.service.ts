@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { NotificationModalService } from '../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessages } from '../utils/http-error-messages';
 import type { Announcement, AnnouncementStatus } from '../models/announcement.models';
-import { APP_WITH_ARTICLE } from '../utils/announcement-labels';
+import { appInSentence } from '../utils/announcement-labels';
 import { AdminAnnouncementsApiService } from './admin-announcements-api.service';
 
 export type AnnouncementCommandResult =
@@ -39,7 +39,7 @@ export class AnnouncementCommandsService {
       message:
         status === 'published'
           ? [
-              `Va para ${APP_WITH_ARTICLE[announcement.app]}.`,
+              `Va ${appInSentence(announcement.app, 'para')}.`,
               AnnouncementCommandsService.deliveryHint(announcement.app),
             ]
           : copy.message,

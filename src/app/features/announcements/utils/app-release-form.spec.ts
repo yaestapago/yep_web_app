@@ -3,7 +3,10 @@ import {
   notifierVersionRows,
   releaseFormToPayload,
   releaseToForm,
+  notifierVersionSummaryParts,
   summarizeNotifierVersions,
+  summaryText,
+  updateAnnouncementKey,
   validateReleaseForm,
 } from './app-release-form';
 
@@ -127,5 +130,70 @@ describe('app-release-form · versiones del notificador en uso', () => {
   it('sin última ni mínima todo queda al día', () => {
     const rows = notifierVersionRows([{ version: '1.0.10', count: 1 }], '', '');
     expect(rows[0].standing).toBe('current');
+  });
+});
+
+describe('app-release-form · resumen de versiones en uso', () => {
+  const text = (
+    summary: { total: number; seeUpdate: number; forced: number; legacy: number },
+    on = true,
+  ) => summaryText(notifierVersionSummaryParts(summary, on));
+
+  it('singular y plural en el total y en quién vería el aviso', () => {
+    expect(text({ total: 1, seeUpdate: 1, forced: 0, legacy: 0 })).toBe(
+      'De 1 celular, 1 vería el aviso de actualizar.',
+    );
+    expect(text({ total: 35, seeUpdate: 20, forced: 3, legacy: 0 })).toBe(
+      'De 35 celulares, 20 verían el aviso de actualizar (3 sin poder cerrarlo).',
+    );
+    expect(text({ total: 2, seeUpdate: 0, forced: 0, legacy: 0 })).toBe(
+      'De 2 celulares, ninguno vería el aviso de actualizar.',
+    );
+  });
+
+  it('los anteriores a 1.0.10, en singular y plural', () => {
+    expect(text({ total: 3, seeUpdate: 2, forced: 1, legacy: 1 })).toBe(
+      'De 3 celulares, 2 verían el aviso de actualizar (1 sin poder cerrarlo). 1 tiene una versión anterior a la 1.0.10 y no ve avisos: a ese toca escribirle.',
+    );
+    expect(text({ total: 1200, seeUpdate: 0, forced: 0, legacy: 15 })).toBe(
+      'De 1.200 celulares, ninguno vería el aviso de actualizar. 15 tienen una versión anterior a la 1.0.10 y no ven avisos: a esos toca escribirles.',
+    );
+  });
+
+  it('con la política apagada no dice que alguien lo vería sin activarla', () => {
+    const off = text({ total: 1, seeUpdate: 1, forced: 0, legacy: 0 }, false);
+    expect(off).toBe(
+      'De 1 celular, ninguno ve el aviso de actualizar: la política del Notificador está apagada. Si la activas, 1 lo vería.',
+    );
+    expect(off).not.toMatch(/vería el aviso|verían el aviso/);
+    expect(text({ total: 4, seeUpdate: 0, forced: 0, legacy: 0 }, false)).toBe(
+      'De 4 celulares, ninguno ve el aviso de actualizar: la política del Notificador está apagada.',
+    );
+    expect(text({ total: 9, seeUpdate: 5, forced: 2, legacy: 0 }, false)).toContain(
+      'Si la activas, 5 lo verían (2 sin poder cerrarlo).',
+    );
+  });
+
+  it('las cifras van resaltadas', () => {
+    const parts = notifierVersionSummaryParts(
+      { total: 2, seeUpdate: 1, forced: 0, legacy: 0 },
+      true,
+    );
+    expect(parts.filter((part) => part.strong).map((part) => part.text)).toEqual(['2', '1']);
+  });
+
+  it('key del aviso de actualizar: la del backend o armada con la versión guardada', () => {
+    const slot = { app: 'notifier' as const, platform: 'android' as const };
+    expect(updateAnnouncementKey(slot, null)).toBeNull();
+    expect(
+      updateAnnouncementKey(slot, {
+        key: 'update:notifier:android:1.0.10',
+        latestVersion: '1.0.10',
+      }),
+    ).toBe('update:notifier:android:1.0.10');
+    expect(updateAnnouncementKey({ app: 'yep', platform: 'ios' }, { latestVersion: '1.2.0' })).toBe(
+      'update:yep:ios:1.2.0',
+    );
+    expect(updateAnnouncementKey(slot, { latestVersion: '' })).toBeNull();
   });
 });

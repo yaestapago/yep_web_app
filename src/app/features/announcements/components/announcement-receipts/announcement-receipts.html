@@ -1,0 +1,85 @@
+<div class="yep-table-wrap">
+  <table yepTable class="receipts-table" data-testid="receipts-table">
+    <thead>
+      <tr>
+        <th scope="col">{{ isNotifier() ? 'Celular' : 'Usuario' }}</th>
+        <th scope="col">Negocio</th>
+        <th scope="col">Versión</th>
+        <th scope="col">Lo vio</th>
+        @if (isNotifier()) {
+          <th scope="col">Notificado</th>
+        }
+        <th scope="col">Tocó el botón</th>
+        <th scope="col">Cerró</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (loading() && receipts().length === 0) {
+        <tr>
+          <td [attr.colspan]="columns()" class="empty">
+            <yep-state kind="loading" title="Cargando…" [rows]="3" />
+          </td>
+        </tr>
+      } @else if (error()) {
+        <tr>
+          <td [attr.colspan]="columns()" class="empty">
+            <yep-state kind="error" [title]="error()">
+              <yep-button slot="action" variant="secondary" size="sm" (clicked)="reload()">
+                Reintentar
+              </yep-button>
+            </yep-state>
+          </td>
+        </tr>
+      } @else {
+        @for (row of rows(); track row.receipt.id) {
+          <tr data-testid="receipt-row">
+            <td [attr.data-label]="isNotifier() ? 'Celular' : 'Usuario'">
+              <strong>{{ row.name }}</strong>
+              @if (row.detail) {
+                <small>{{ row.detail }}</small>
+              }
+            </td>
+            <td data-label="Negocio">{{ row.account }}</td>
+            <td data-label="Versión">
+              <span class="mono">{{ row.version }}</span>
+              @if (row.platform) {
+                <small>{{ row.platform }}</small>
+              }
+            </td>
+            <td data-label="Lo vio" class="nowrap">
+              {{ row.seen }}
+              @if (row.seenCount) {
+                <small>{{ row.seenCount }}</small>
+              }
+            </td>
+            @if (isNotifier()) {
+              <td data-label="Notificado" class="nowrap">{{ row.notified }}</td>
+            }
+            <td data-label="Tocó el botón" class="nowrap">{{ row.action }}</td>
+            <td data-label="Cerró" class="nowrap">
+              {{ row.dismissed }}
+              @if (row.dismissCount) {
+                <small>{{ row.dismissCount }}</small>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td [attr.colspan]="columns()" class="empty">
+              <yep-state
+                kind="empty"
+                title="Nadie lo ha visto todavía"
+                [description]="emptyDescription()"
+              />
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>
+@if (pageCount() > 1) {
+  <div class="receipts-footer">
+    <yep-pagination [page]="page()" [pageCount]="pageCount()" (pageChange)="goToPage($event)" />
+  </div>
+}

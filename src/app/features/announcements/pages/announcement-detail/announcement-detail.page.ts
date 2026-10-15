@@ -23,80 +23,31 @@ import {
   Menu,
   MenuItem,
   PageHeader,
-  Pagination,
   State,
   StatusChip,
-  Table,
 } from '../../../../shared/ui';
 import { formatDateTime } from '../../../../shared/utils/billing-format';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AnnouncementPreview } from '../../components/announcement-preview/announcement-preview';
-import type {
-  Announcement,
-  AnnouncementReceipt,
-  AnnouncementStatus,
-} from '../../models/announcement.models';
+import { AnnouncementReceipts } from '../../components/announcement-receipts/announcement-receipts';
+import type { Announcement, AnnouncementStatus } from '../../models/announcement.models';
 import { AdminAnnouncementsApiService } from '../../services/admin-announcements-api.service';
 import { AnnouncementCommandsService } from '../../services/announcement-commands.service';
 import {
   ACTION_LABELS,
   APP_LABELS,
-  PLATFORM_LABELS,
   REPEAT_LABELS,
   STATUS_LABELS,
   STATUS_TONES,
   TONE_LABELS,
   audienceSummary,
   dismissLabelFor,
-  formatCompactDateTime,
   formatCount,
   sourceLabel,
   statusNote,
   windowLabel,
 } from '../../utils/announcement-labels';
 import { takeNavigationNotice } from '../../utils/navigation-notice';
-
-export const RECEIPTS_PAGE_SIZE = 50;
-
-export interface ReceiptRowView {
-  receipt: AnnouncementReceipt;
-  name: string;
-  detail: string;
-  account: string;
-  version: string;
-  platform: string;
-  seen: string;
-  seenCount: string;
-  notified: string;
-  action: string;
-  dismissed: string;
-  dismissCount: string;
-}
-
-export function toReceiptRow(receipt: AnnouncementReceipt, now: Date = new Date()): ReceiptRowView {
-  const fallbackName = receipt.recipientType === 'notifier' ? 'Celular sin nombre' : 'Usuario';
-  const at = (value: string | null) => formatCompactDateTime(value, now) || '—';
-  return {
-    receipt,
-    name: receipt.recipientName || fallbackName,
-    detail: receipt.recipientDetail ?? '',
-    account: receipt.accountName ?? '—',
-    version: receipt.appVersion || '—',
-    platform: receipt.platform ? PLATFORM_LABELS[receipt.platform] : '',
-    seen: at(receipt.lastSeenAt ?? receipt.firstSeenAt),
-    seenCount:
-      receipt.seenCount > 1
-        ? `${formatCount(receipt.seenCount)} veces · primera ${formatCompactDateTime(receipt.firstSeenAt, now)}`
-        : '',
-    notified: at(receipt.notifiedAt),
-    action: at(receipt.actionAt),
-    dismissed: at(receipt.dismissedAt),
-    dismissCount:
-      receipt.dismissedAt && receipt.dismissCount > 1
-        ? `${formatCount(receipt.dismissCount)} veces`
-        : '',
-  };
-}
 
 /** Superadmin · detalle de un anuncio: estadísticas y quién lo vio, tocó o cerró. */
 @Component({
@@ -111,11 +62,10 @@ export function toReceiptRow(receipt: AnnouncementReceipt, now: Date = new Date(
     Menu,
     MenuItem,
     PageHeader,
-    Pagination,
     State,
     StatusChip,
-    Table,
     AnnouncementPreview,
+    AnnouncementReceipts,
     LucideArchive,
     LucideArrowLeft,
     LucideCopy,
@@ -152,20 +102,6 @@ export class AnnouncementDetailPage implements OnInit {
   readonly notice = signal('');
   readonly acting = signal(false);
 
-  readonly receipts = signal<AnnouncementReceipt[]>([]);
-  readonly receiptsTotal = signal<number | null>(null);
-  readonly receiptsPage = signal(1);
-  readonly receiptsLoading = signal(false);
-  readonly receiptsError = signal('');
-
-  readonly receiptRows = computed(() => this.receipts().map((receipt) => toReceiptRow(receipt)));
-  readonly pageCount = computed(() => {
-    const total = this.receiptsTotal();
-    if (total !== null) return Math.max(1, Math.ceil(total / RECEIPTS_PAGE_SIZE));
-    // Sin total: hay otra página si esta vino llena.
-    const full = this.receipts().length === RECEIPTS_PAGE_SIZE;
-    return this.receiptsPage() + (full ? 1 : 0);
-  });
   readonly isNotifier = computed(() => this.announcement()?.app === 'notifier');
   readonly audience = computed(() => {
     const item = this.announcement();
@@ -180,11 +116,11 @@ export class AnnouncementDetailPage implements OnInit {
     this.notice.set(takeNavigationNotice());
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.id.set(params.get('id') ?? '');
-      this.receiptsPage.set(1);
       this.load();
     });
   }
 
+  /** Recarga el anuncio; la tabla de recibos se carga sola con su `key`. */
   load(): void {
     const id = this.id();
     if (!id) return;
@@ -200,35 +136,6 @@ export class AnnouncementDetailPage implements OnInit {
         next: (announcement) => this.announcement.set(announcement),
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
-    this.loadReceipts();
-  }
-
-  loadReceipts(): void {
-    const id = this.id();
-    if (!id) return;
-    this.receiptsLoading.set(true);
-    this.receiptsError.set('');
-    this.api
-      .receipts(id, {
-        limit: RECEIPTS_PAGE_SIZE,
-        skip: (this.receiptsPage() - 1) * RECEIPTS_PAGE_SIZE,
-      })
-      .pipe(
-        finalize(() => this.receiptsLoading.set(false)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (page) => {
-          this.receipts.set(page.receipts);
-          this.receiptsTotal.set(page.total);
-        },
-        error: (error) => this.receiptsError.set(httpErrorMessage(error)),
-      });
-  }
-
-  goToPage(page: number): void {
-    this.receiptsPage.set(page);
-    this.loadReceipts();
   }
 
   back(): void {

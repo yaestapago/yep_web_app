@@ -10,7 +10,12 @@ import {
   switchFormApp,
   validateAnnouncementForm,
 } from './announcement-form';
-import { ACTIONS_BY_APP, audienceSummary, isActionAllowed } from './announcement-labels';
+import {
+  ACTIONS_BY_APP,
+  appInSentence,
+  audienceSummary,
+  isActionAllowed,
+} from './announcement-labels';
 
 function form(overrides: Partial<AnnouncementFormValue> = {}): AnnouncementFormValue {
   return { ...emptyAnnouncementForm('notifier'), title: 'Título', body: 'Mensaje', ...overrides };
@@ -119,7 +124,7 @@ describe('announcement-form · validaciones del contrato', () => {
     const errors = validateAnnouncementForm(yep);
     expect(errors.notifierIds).toBeDefined();
     expect(errors.condition).toBeDefined();
-    expect(errors.actionType).toBe('Esa acción no existe en App de YEP.');
+    expect(errors.actionType).toBe('Esa acción no existe en la App de YEP.');
 
     const notifier = form({
       userIds: ['u1'],
@@ -339,6 +344,33 @@ describe('announcement-labels · a quién va', () => {
     ).toBe('3 negocios · Solo dueños · Solo iPhone · desde la versión 1.2.0');
     expect(audienceSummary('notifier', { notifierIds: ['n1', 'n2'], maxVersion: '1.0.9' })).toBe(
       '2 celulares · hasta la versión 1.0.9',
+    );
+  });
+});
+
+describe('announcement-labels · la app dentro de una frase', () => {
+  it('contrae «de el» y «a el» en «del» y «al»', () => {
+    expect(appInSentence('notifier')).toBe('el Notificador');
+    expect(appInSentence('notifier', 'de')).toBe('del Notificador');
+    expect(appInSentence('notifier', 'a')).toBe('al Notificador');
+    expect(appInSentence('notifier', 'en')).toBe('en el Notificador');
+    expect(appInSentence('notifier', 'para')).toBe('para el Notificador');
+    expect(appInSentence('yep', 'de')).toBe('de la App de YEP');
+    expect(appInSentence('yep', 'a')).toBe('a la App de YEP');
+    expect(appInSentence('yep', 'en')).toBe('en la App de YEP');
+  });
+
+  it('el error de acción usa el artículo', () => {
+    const value = {
+      ...emptyAnnouncementForm('notifier'),
+      title: 't',
+      body: 'b',
+      actionType: 'open_route' as const,
+      actionLabel: 'Ver',
+      actionRoute: '/x',
+    };
+    expect(validateAnnouncementForm(value).actionType).toBe(
+      'Esa acción no existe en el Notificador.',
     );
   });
 });

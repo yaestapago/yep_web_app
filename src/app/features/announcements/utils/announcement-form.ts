@@ -13,7 +13,7 @@ import type {
   AnnouncementTone,
 } from '../models/announcement.models';
 import { DEFAULT_STORE_URLS } from '../models/announcement.models';
-import { ACTIONS_BY_APP, APP_LABELS, isActionAllowed } from './announcement-labels';
+import { ACTIONS_BY_APP, appInSentence, isActionAllowed } from './announcement-labels';
 import { compareAppVersions, isValidVersionInput } from './app-version';
 
 /** Valor plano del formulario del editor (lo que ve y edita el superadmin). */
@@ -240,7 +240,7 @@ export function validateAnnouncementForm(value: AnnouncementFormValue): Announce
 
   if (value.actionType) {
     if (!isActionAllowed(value.app, value.actionType)) {
-      errors.actionType = `Esa acción no existe en ${APP_LABELS[value.app]}.`;
+      errors.actionType = `Esa acción no existe ${appInSentence(value.app, 'en')}.`;
     }
     const label = value.actionLabel.trim();
     if (!label) errors.actionLabel = 'Escribe el texto del botón.';

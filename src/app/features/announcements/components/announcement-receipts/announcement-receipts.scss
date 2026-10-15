@@ -1,0 +1,47 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.receipts-table {
+  min-width: 860px;
+}
+
+.receipts-table td {
+  vertical-align: top;
+}
+
+.receipts-table td:first-child {
+  min-width: 10rem;
+}
+
+.receipts-table td small {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: var(--font-size-xs);
+  margin-top: 2px;
+}
+
+.mono {
+  font-family: var(--font-family-mono);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 0;
+}
+
+.receipts-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-3) var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .receipts-table {
+    min-width: 0;
+  }
+}

@@ -75,7 +75,7 @@ import {
   ACTIONS_BY_APP,
   ACTION_LABELS,
   APP_LABELS,
-  APP_WITH_ARTICLE,
+  appInSentence,
   CONDITION_HINTS,
   CONDITION_LABELS,
   PLATFORM_LABELS,
@@ -409,7 +409,7 @@ export class AnnouncementEditorPage implements OnInit {
     this.setFormValue(value);
     this.appNotice.set(
       removed.length
-        ? `Quité ${joinList(removed)}: no aplica${removed.length > 1 ? 'n' : ''} a ${APP_WITH_ARTICLE[target]}.`
+        ? `Quité ${joinList(removed)}: no aplica${removed.length > 1 ? 'n' : ''} ${appInSentence(target, 'a')}.`
         : '',
     );
   }
@@ -476,8 +476,8 @@ export class AnnouncementEditorPage implements OnInit {
         title: `Publicar «${value.title.trim()}»`,
         message: [
           count.state === 'ready'
-            ? `${audienceCountLabel(value.app, count.count)} de ${APP_WITH_ARTICLE[value.app]}.`
-            : `Va para ${APP_WITH_ARTICLE[value.app]}.`,
+            ? `${audienceCountLabel(value.app, count.count)} ${appInSentence(value.app, 'de')}.`
+            : `Va ${appInSentence(value.app, 'para')}.`,
           AnnouncementCommandsService.deliveryHint(value.app),
         ],
         type: 'question',

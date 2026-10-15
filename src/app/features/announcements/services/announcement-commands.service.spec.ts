@@ -74,7 +74,11 @@ describe('AnnouncementCommandsService', () => {
     api['setStatus'].mockReturnValue(of({ ...draft, status: 'published' }));
     const result = await service().changeStatus(draft, 'published');
     expect(confirm).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Publicar «Borrador»', confirmText: 'Publicar' }),
+      expect.objectContaining({
+        title: 'Publicar «Borrador»',
+        confirmText: 'Publicar',
+        message: ['Va para la App de YEP.', 'Sale cuando abran la App de YEP (1.2.0 o superior).'],
+      }),
     );
     expect(api['setStatus']).toHaveBeenCalledWith('a1', 'published');
     expect(result).toMatchObject({ kind: 'updated', message: 'Anuncio publicado.' });

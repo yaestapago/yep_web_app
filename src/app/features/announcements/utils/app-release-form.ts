@@ -27,6 +27,20 @@ export interface AppReleaseFormValue {
 
 export type AppReleaseFormErrors = Partial<Record<keyof AppReleaseFormValue, string>>;
 
+/**
+ * Key del aviso de actualizar vigente (`update:<app>:<platform>:<latestVersion>`): la que
+ * manda el backend en la política o, si no viene, armada con la versión guardada.
+ */
+export function updateAnnouncementKey(
+  slot: AppReleaseSlot,
+  release: Pick<AppRelease, 'key' | 'latestVersion'> | null,
+): string | null {
+  if (!release) return null;
+  if (release.key) return release.key;
+  const version = release.latestVersion?.trim();
+  return version ? `update:${slot.app}:${slot.platform}:${version}` : null;
+}
+
 export function releaseSlotTitle(slot: AppReleaseSlot): string {
   return `${APP_LABELS[slot.app]} · ${PLATFORM_LABELS[slot.platform]}`;
 }
@@ -210,6 +224,81 @@ export interface NotifierVersionSummary {
   forced: number;
   /** Anteriores a 1.0.10: no ven avisos. */
   legacy: number;
+}
+
+/** Trozo del resumen: las cifras van resaltadas (mono). */
+export interface SummaryPart {
+  text: string;
+  strong?: boolean;
+}
+
+const count = (value: number): SummaryPart => ({
+  text: new Intl.NumberFormat('es-CO').format(value),
+  strong: true,
+});
+
+/**
+ * Resumen de «Versiones del notificador en uso» con singular y plural correctos. Con la
+ * política apagada no dice que alguien vería el aviso: dice que hoy nadie lo ve y, si
+ * aplica, cuántos lo verían al activarla. Los anteriores a 1.0.10 van aparte (nunca lo ven).
+ */
+export function notifierVersionSummaryParts(
+  summary: NotifierVersionSummary,
+  policyEnabled: boolean,
+): SummaryPart[] {
+  const parts: SummaryPart[] = [
+    { text: 'De ' },
+    count(summary.total),
+    { text: summary.total === 1 ? ' celular, ' : ' celulares, ' },
+  ];
+  const forced = (): SummaryPart[] =>
+    summary.forced > 0
+      ? [{ text: ' (' }, count(summary.forced), { text: ' sin poder cerrarlo)' }]
+      : [];
+
+  if (!policyEnabled) {
+    parts.push({
+      text: 'ninguno ve el aviso de actualizar: la política del Notificador está apagada.',
+    });
+    if (summary.seeUpdate > 0) {
+      parts.push(
+        { text: ' Si la activas, ' },
+        count(summary.seeUpdate),
+        { text: summary.seeUpdate === 1 ? ' lo vería' : ' lo verían' },
+        ...forced(),
+        { text: '.' },
+      );
+    }
+  } else if (summary.seeUpdate === 0) {
+    parts.push({ text: 'ninguno vería el aviso de actualizar.' });
+  } else {
+    parts.push(
+      count(summary.seeUpdate),
+      {
+        text:
+          summary.seeUpdate === 1
+            ? ' vería el aviso de actualizar'
+            : ' verían el aviso de actualizar',
+      },
+      ...forced(),
+      { text: '.' },
+    );
+  }
+
+  if (summary.legacy > 0) {
+    parts.push({ text: ' ' }, count(summary.legacy), {
+      text:
+        summary.legacy === 1
+          ? ' tiene una versión anterior a la 1.0.10 y no ve avisos: a ese toca escribirle.'
+          : ' tienen una versión anterior a la 1.0.10 y no ven avisos: a esos toca escribirles.',
+    });
+  }
+  return parts;
+}
+
+/** El resumen como texto plano (para pruebas y lectores). */
+export function summaryText(parts: SummaryPart[]): string {
+  return parts.map((part) => part.text).join('');
 }
 
 export function summarizeNotifierVersions(rows: NotifierVersionRow[]): NotifierVersionSummary {

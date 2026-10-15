@@ -180,111 +180,23 @@
         slot="actions"
         variant="ghost"
         size="sm"
-        [loading]="receiptsLoading()"
-        (clicked)="loadReceipts()"
+        [loading]="receiptsTable.loading()"
+        (clicked)="receiptsTable.reload()"
       >
         <svg lucideRefreshCw aria-hidden="true"></svg>
         Actualizar
       </yep-button>
 
-      <div class="yep-table-wrap">
-        <table yepTable class="receipts-table">
-          <thead>
-            <tr>
-              <th scope="col">{{ isNotifier() ? 'Celular' : 'Usuario' }}</th>
-              <th scope="col">Negocio</th>
-              <th scope="col">Versión</th>
-              <th scope="col">Lo vio</th>
-              @if (isNotifier()) {
-                <th scope="col">Notificado</th>
-              }
-              <th scope="col">Tocó el botón</th>
-              <th scope="col">Cerró</th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (receiptsLoading() && receipts().length === 0) {
-              <tr>
-                <td [attr.colspan]="isNotifier() ? 7 : 6" class="empty">
-                  <yep-state kind="loading" title="Cargando…" [rows]="3" />
-                </td>
-              </tr>
-            } @else if (receiptsError()) {
-              <tr>
-                <td [attr.colspan]="isNotifier() ? 7 : 6" class="empty">
-                  <yep-state kind="error" [title]="receiptsError()">
-                    <yep-button
-                      slot="action"
-                      variant="secondary"
-                      size="sm"
-                      (clicked)="loadReceipts()"
-                    >
-                      Reintentar
-                    </yep-button>
-                  </yep-state>
-                </td>
-              </tr>
-            } @else {
-              @for (row of receiptRows(); track row.receipt.id) {
-                <tr>
-                  <td [attr.data-label]="isNotifier() ? 'Celular' : 'Usuario'">
-                    <strong>{{ row.name }}</strong>
-                    @if (row.detail) {
-                      <small>{{ row.detail }}</small>
-                    }
-                  </td>
-                  <td data-label="Negocio">{{ row.account }}</td>
-                  <td data-label="Versión">
-                    <span class="mono">{{ row.version }}</span>
-                    @if (row.platform) {
-                      <small>{{ row.platform }}</small>
-                    }
-                  </td>
-                  <td data-label="Lo vio" class="nowrap">
-                    {{ row.seen }}
-                    @if (row.seenCount) {
-                      <small>{{ row.seenCount }}</small>
-                    }
-                  </td>
-                  @if (isNotifier()) {
-                    <td data-label="Notificado" class="nowrap">{{ row.notified }}</td>
-                  }
-                  <td data-label="Tocó el botón" class="nowrap">{{ row.action }}</td>
-                  <td data-label="Cerró" class="nowrap">
-                    {{ row.dismissed }}
-                    @if (row.dismissCount) {
-                      <small>{{ row.dismissCount }}</small>
-                    }
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td [attr.colspan]="isNotifier() ? 7 : 6" class="empty">
-                    <yep-state
-                      kind="empty"
-                      title="Nadie lo ha visto todavía"
-                      [description]="
-                        item.status === 'published'
-                          ? 'Cuando un celular lo muestre, aparece aquí.'
-                          : 'Solo se entrega cuando está publicado.'
-                      "
-                    />
-                  </td>
-                </tr>
-              }
-            }
-          </tbody>
-        </table>
-      </div>
-      @if (pageCount() > 1) {
-        <div slot="footer" class="receipts-footer">
-          <yep-pagination
-            [page]="receiptsPage()"
-            [pageCount]="pageCount()"
-            (pageChange)="goToPage($event)"
-          />
-        </div>
-      }
+      <app-announcement-receipts
+        #receiptsTable
+        [announcementKey]="item.id"
+        [app]="item.app"
+        [emptyDescription]="
+          item.status === 'published'
+            ? 'Cuando un celular lo muestre, aparece aquí.'
+            : 'Solo se entrega cuando está publicado.'
+        "
+      />
     </yep-card>
   }
 </section>

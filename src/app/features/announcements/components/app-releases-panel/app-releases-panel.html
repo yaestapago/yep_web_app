@@ -109,9 +109,22 @@
 
           @if (card.release()?.stats; as stats) {
             <div class="release-stats" [attr.data-testid]="'release-stats-' + card.key">
-              <span class="release-stats__title">
-                Aviso de la versión {{ card.release()?.latestVersion }}
-              </span>
+              <div class="release-stats__head">
+                <span class="release-stats__title">
+                  Aviso de la versión {{ card.release()?.latestVersion }}
+                </span>
+                @if (updateKey(card)) {
+                  <yep-button
+                    variant="ghost"
+                    size="sm"
+                    [attr.data-testid]="'release-receipts-' + card.key"
+                    (clicked)="openReceipts(card)"
+                  >
+                    <svg lucideUsers aria-hidden="true"></svg>
+                    Quién lo vio
+                  </yep-button>
+                }
+              </div>
               <dl>
                 <div>
                   <dt>Lo vieron</dt>
@@ -172,17 +185,13 @@
       </yep-button>
 
       @if (versionRows().length) {
-        @let summary = versionSummary();
         <p class="versions-summary" data-testid="versions-summary">
-          De <strong>{{ formatCount(summary.total) }}</strong> celulares,
-          <strong>{{ formatCount(summary.seeUpdate) }}</strong> verían el aviso de actualizar
-          (<strong>{{ formatCount(summary.forced) }}</strong> sin poder cerrarlo).
-          @if (summary.legacy) {
-            <strong>{{ formatCount(summary.legacy) }}</strong> tienen una versión anterior a la
-            1.0.10 y no ven avisos: a esos toca escribirles.
-          }
-          @if (notifierPolicyOff()) {
-            La política del Notificador está apagada: hoy nadie ve el aviso.
+          @for (part of versionSummaryParts(); track $index) {
+            @if (part.strong) {
+              <strong>{{ part.text }}</strong>
+            } @else {
+              <span>{{ part.text }}</span>
+            }
           }
         </p>
         <div class="yep-table-wrap">
@@ -225,4 +234,24 @@
       }
     </yep-card>
   }
+
+  <yep-modal
+    size="lg"
+    title="Quién vio el aviso de actualizar"
+    [open]="!!receiptsCard()"
+    [subtitle]="receiptsSubtitle()"
+    (closeRequested)="closeReceipts()"
+  >
+    @if (receiptsKey(); as key) {
+      <app-announcement-receipts
+        data-testid="release-receipts-table"
+        [announcementKey]="key"
+        [app]="receiptsCard()?.slot?.app ?? 'notifier'"
+        emptyDescription="Cuando un celular muestre el aviso de esta versión, aparece aquí."
+      />
+    }
+    <ng-container modalFooter>
+      <yep-button variant="secondary" (clicked)="closeReceipts()">Cerrar</yep-button>
+    </ng-container>
+  </yep-modal>
 </div>

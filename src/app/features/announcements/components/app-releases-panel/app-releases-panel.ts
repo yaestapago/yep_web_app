@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucideRefreshCw } from '@lucide/angular';
+import { LucideRefreshCw, LucideUsers } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import {
@@ -17,6 +17,7 @@ import {
   Button,
   Card,
   Input,
+  Modal,
   State,
   StatusChip,
   type StatusChipTone,
@@ -26,6 +27,7 @@ import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { formatDateTime } from '../../../../shared/utils/billing-format';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { httpErrorMessages } from '../../utils/http-error-messages';
+import { AnnouncementReceipts } from '../announcement-receipts/announcement-receipts';
 import {
   APP_RELEASE_SLOTS,
   type AppRelease,
@@ -44,7 +46,9 @@ import {
   releaseSlotTitle,
   releaseToForm,
   storeName,
+  notifierVersionSummaryParts,
   summarizeNotifierVersions,
+  updateAnnouncementKey,
   validateReleaseForm,
 } from '../../utils/app-release-form';
 
@@ -73,11 +77,14 @@ export interface ReleaseCard {
     Button,
     Card,
     Input,
+    Modal,
     State,
     StatusChip,
     Table,
     Toggle,
+    AnnouncementReceipts,
     LucideRefreshCw,
+    LucideUsers,
   ],
   templateUrl: './app-releases-panel.html',
   styleUrl: './app-releases-panel.scss',
@@ -112,7 +119,36 @@ export class AppReleasesPanel implements OnInit {
   });
   readonly versionSummary = computed(() => summarizeNotifierVersions(this.versionRows()));
   readonly notifierPolicyOff = computed(() => !this.notifierCard.value().enabled);
+  /** Con el interruptor «Activa» del formulario, aunque no se haya guardado. */
+  readonly versionSummaryParts = computed(() =>
+    notifierVersionSummaryParts(this.versionSummary(), !this.notifierPolicyOff()),
+  );
   readonly formatCount = formatCount;
+
+  /** Tarjeta cuyo «Quién lo vio» está abierto. */
+  readonly receiptsCard = signal<ReleaseCard | null>(null);
+  readonly receiptsKey = computed(() => {
+    const card = this.receiptsCard();
+    return card ? updateAnnouncementKey(card.slot, card.release()) : null;
+  });
+  readonly receiptsSubtitle = computed(() => {
+    const card = this.receiptsCard();
+    const version = card?.release()?.latestVersion;
+    return card ? `${card.title}${version ? ` · versión ${version}` : ''}` : '';
+  });
+
+  /** La key del aviso de actualizar vigente (la guardada, no la que se está escribiendo). */
+  updateKey(card: ReleaseCard): string | null {
+    return updateAnnouncementKey(card.slot, card.release());
+  }
+
+  openReceipts(card: ReleaseCard): void {
+    this.receiptsCard.set(card);
+  }
+
+  closeReceipts(): void {
+    this.receiptsCard.set(null);
+  }
 
   ngOnInit(): void {
     this.load();
