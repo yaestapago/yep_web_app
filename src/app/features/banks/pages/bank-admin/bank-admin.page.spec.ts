@@ -7,6 +7,7 @@ import type { AdminBank, BankChannelConfig } from '../../../../shared/models/ban
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { AdminBanksApiService } from '../../services/admin-banks-api.service';
 import { SmsGatewaysAdminApiService } from '../../../notifiers/services/sms-gateways-admin-api.service';
+import { NotifierSupportPinApiService } from '../../../notifiers/services/notifier-support-pin-api.service';
 import { BankAdminPage } from './bank-admin.page';
 
 const channel = (overrides: Partial<BankChannelConfig> = {}): BankChannelConfig => ({
@@ -55,6 +56,11 @@ describe('BankAdminPage — token @default_sms en packageNames', () => {
         {
           provide: SmsGatewaysAdminApiService,
           useValue: { list: vi.fn().mockReturnValue(of({ gateways: [], relay: null })) },
+        },
+        // Tarjeta «PIN de soporte del Notificador» (fuera del alcance de este spec).
+        {
+          provide: NotifierSupportPinApiService,
+          useValue: { status: vi.fn().mockReturnValue(of({ configured: false, updatedAt: null })) },
         },
       ],
     });

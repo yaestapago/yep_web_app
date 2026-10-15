@@ -1,0 +1,91 @@
+<div class="picker" [attr.data-testid]="dataTestId() || null">
+  <div class="picker__head">
+    <span class="picker__label">{{ label() }}</span>
+    @if (ids().length) {
+      <button type="button" class="picker__link" [disabled]="disabled()" (click)="clear()">
+        Quitar todos
+      </button>
+    }
+  </div>
+
+  <div class="picker__chips">
+    @for (chip of chips(); track chip.id) {
+      <span class="chip" [title]="chip.detail || chip.id">
+        <span class="chip__label">{{ chip.label }}</span>
+        <button
+          type="button"
+          class="chip__remove"
+          [attr.aria-label]="'Quitar ' + chip.label"
+          [disabled]="disabled()"
+          (click)="remove(chip.id)"
+        >
+          <svg lucideX aria-hidden="true"></svg>
+        </button>
+      </span>
+    } @empty {
+      <span class="picker__all">{{ allLabel() }}</span>
+    }
+  </div>
+
+  @if (search()) {
+    <div class="picker__search">
+      <svg lucideSearch aria-hidden="true"></svg>
+      <input
+        type="search"
+        [placeholder]="searchPlaceholder()"
+        [value]="query()"
+        [disabled]="disabled()"
+        [attr.aria-label]="'Buscar ' + noun()"
+        (input)="onQuery($event)"
+      />
+    </div>
+    @if (searching()) {
+      <p class="picker__note">Buscando…</p>
+    } @else if (searchError()) {
+      <p class="picker__note picker__note--error">{{ searchError() }}</p>
+    } @else if (query().trim().length >= 2 && visibleResults().length === 0) {
+      <p class="picker__note">Sin resultados para «{{ query().trim() }}».</p>
+    }
+    @if (visibleResults().length) {
+      <ul class="picker__results" [attr.aria-label]="'Resultados: ' + noun()">
+        @for (option of visibleResults(); track option.id) {
+          <li>
+            <button type="button" class="result" (click)="add(option)">
+              <span class="result__label">{{ option.label }}</span>
+              @if (option.detail) {
+                <span class="result__detail">{{ option.detail }}</span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  }
+
+  <div class="picker__paste">
+    <yep-button variant="ghost" size="sm" [disabled]="disabled()" (clicked)="togglePaste()">
+      <svg lucideClipboardPaste aria-hidden="true"></svg>
+      {{ pasteOpen() ? 'Cancelar' : 'Pegar IDs' }}
+    </yep-button>
+    @if (pasteOpen()) {
+      <textarea
+        rows="3"
+        class="picker__textarea"
+        placeholder="Uno por línea o separados por comas"
+        [attr.aria-label]="'IDs de ' + noun()"
+        [value]="pasteText()"
+        (input)="onPasteText($event)"
+      ></textarea>
+      <yep-button variant="secondary" size="sm" (clicked)="addPasted()">Agregar</yep-button>
+    }
+    @if (pasteError()) {
+      <p class="picker__note picker__note--error">{{ pasteError() }}</p>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="picker__note picker__note--error">{{ error() }}</p>
+  } @else if (hint()) {
+    <p class="picker__note">{{ hint() }}</p>
+  }
+</div>

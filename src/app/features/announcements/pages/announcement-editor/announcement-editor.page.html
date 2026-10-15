@@ -1,0 +1,487 @@
+<section class="page editor-page">
+  <yep-page-header
+    [title]="pageTitle()"
+    subtitle="Un aviso con un botón que sale dentro de la app. La vista previa muestra cómo se verá en el celular."
+  >
+    <yep-button slot="back" variant="ghost" size="sm" (clicked)="back()">
+      <svg lucideArrowLeft aria-hidden="true"></svg>
+      Volver
+    </yep-button>
+  </yep-page-header>
+
+  @if (loading()) {
+    <yep-state kind="loading" title="Cargando anuncio…" [rows]="5" />
+  } @else if (loadError()) {
+    <yep-state kind="error" [title]="loadError()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="back()">Volver</yep-button>
+    </yep-state>
+  } @else {
+    @if (duplicateOf(); as source) {
+      <yep-alert variant="info">
+        Copia de «{{ source.title }}». Queda como un anuncio nuevo: revisa la app y a quién va antes
+        de publicarlo.
+      </yep-alert>
+    }
+    @if (isSystem()) {
+      <yep-alert variant="info" title="Lo creó YEP automáticamente">
+        Sale solo cuando el celular tiene el problema y deja de salir cuando se arregla. Puedes
+        cambiar los textos o archivarlo; no se puede borrar.
+      </yep-alert>
+    }
+
+    <form class="editor" [formGroup]="form" novalidate>
+      <div class="editor__main">
+        <yep-card>
+          <!-- ═══ App ═══ -->
+          <yep-card-section title="App">
+            <div class="radio-row" role="radiogroup" aria-label="App">
+              <yep-radio
+                name="announcement-app"
+                value="notifier"
+                [label]="appLabels.notifier"
+                [checked]="value().app === 'notifier'"
+                [disabled]="appLocked()"
+                dataCy="app-notifier"
+                (selected)="setApp($event)"
+              />
+              <yep-radio
+                name="announcement-app"
+                value="yep"
+                [label]="appLabels.yep"
+                [checked]="value().app === 'yep'"
+                [disabled]="appLocked()"
+                dataCy="app-yep"
+                (selected)="setApp($event)"
+              />
+            </div>
+            <p class="hint">
+              @if (appLocked()) {
+                Un anuncio es de una sola app. Para mandarlo a la otra, duplícalo.
+              } @else {
+                Solo lo ven el Notificador 1.0.10 y la App de YEP 1.2.0 en adelante.
+              }
+            </p>
+            @if (appNotice()) {
+              <yep-alert variant="warning" [dismissible]="true" (dismissed)="appNotice.set('')">{{
+                appNotice()
+              }}</yep-alert>
+            }
+          </yep-card-section>
+
+          <!-- ═══ Mensaje ═══ -->
+          <yep-card-section title="Mensaje">
+            <div class="grid">
+              <yep-select
+                formControlName="tone"
+                label="Tono"
+                [options]="toneOptions"
+                hint="Da el color del aviso. «Urgente» solo para problemas."
+                dataCy="tone"
+              />
+              <yep-input
+                class="span-2"
+                formControlName="title"
+                label="Título"
+                placeholder="YEP dejó de escuchar los pagos"
+                [required]="true"
+                [hint]="counter('title', titleMax)"
+                [error]="fieldError('title')"
+                data-testid="field-title"
+              />
+              <label class="field span-2">
+                <span class="field__label">Mensaje <span aria-hidden="true">*</span></span>
+                <textarea
+                  formControlName="body"
+                  rows="4"
+                  placeholder="Escribe en texto plano. Un salto de línea se ve como salto de línea."
+                  [class.is-invalid]="!!fieldError('body')"
+                  data-testid="field-body"
+                ></textarea>
+                @if (fieldError('body')) {
+                  <small class="field__error" data-testid="error-body">{{
+                    fieldError('body')
+                  }}</small>
+                } @else {
+                  <small class="field__hint">{{ counter('body', bodyMax) }}</small>
+                }
+              </label>
+            </div>
+          </yep-card-section>
+
+          <!-- ═══ Botón ═══ -->
+          <yep-card-section title="Botón">
+            <div class="grid">
+              <yep-select
+                formControlName="actionType"
+                label="Qué hace el botón"
+                [options]="actionOptions()"
+                [error]="fieldError('actionType')"
+                dataCy="action-type"
+              />
+              @if (hasAction()) {
+                <yep-input
+                  formControlName="actionLabel"
+                  label="Texto del botón"
+                  placeholder="Activar"
+                  [required]="true"
+                  [hint]="counter('actionLabel', actionLabelMax)"
+                  [error]="fieldError('actionLabel')"
+                  data-testid="field-action-label"
+                />
+                @if (needsUrl()) {
+                  <yep-input
+                    class="span-2"
+                    type="url"
+                    formControlName="actionUrl"
+                    [label]="value().actionType === 'update_app' ? 'Enlace de la tienda' : 'Enlace'"
+                    placeholder="https://"
+                    [required]="true"
+                    [hint]="
+                      value().actionType === 'update_app'
+                        ? 'En Android primero intenta actualizar desde Play; si no puede, abre este enlace.'
+                        : 'Un enlace https://. Uno de wa.me abre WhatsApp.'
+                    "
+                    [error]="fieldError('actionUrl')"
+                    data-testid="field-action-url"
+                  />
+                }
+                @if (needsRoute()) {
+                  <yep-input
+                    class="span-2"
+                    formControlName="actionRoute"
+                    label="Pantalla de la app"
+                    placeholder="/settings"
+                    [required]="true"
+                    hint="Empieza por /. Si la pantalla no existe en la app, el aviso solo se cierra."
+                    [error]="fieldError('actionRoute')"
+                    data-testid="field-action-route"
+                  />
+                }
+              }
+            </div>
+
+            <label class="toggle-row" [class.is-disabled]="!hasAction()">
+              <yep-toggle
+                [pressed]="value().dismissible || !hasAction()"
+                [disabled]="!hasAction()"
+                ariaLabel="Se puede cerrar"
+                dataCy="dismissible"
+                (toggled)="setDismissible($event)"
+              />
+              <span>
+                Se puede cerrar
+                <small>
+                  @if (hasAction()) {
+                    Apagado, el aviso no se cierra con atrás ni tocando afuera: solo con el botón.
+                  } @else {
+                    Sin botón, el aviso siempre se puede cerrar.
+                  }
+                </small>
+              </span>
+            </label>
+            @if (fieldError('dismissible')) {
+              <p class="field__error">{{ fieldError('dismissible') }}</p>
+            }
+          </yep-card-section>
+
+          <!-- ═══ A quién ═══ -->
+          <yep-card-section title="A quién">
+            <div class="stack">
+              @if (fields().condition) {
+                <div>
+                  <yep-select
+                    formControlName="condition"
+                    label="Automático por problema en el celular"
+                    [options]="conditionOptions"
+                    [error]="fieldError('condition')"
+                    dataCy="condition"
+                  />
+                  <p class="hint">
+                    @if (conditionHint()) {
+                      {{ conditionHint() }} Sale mientras el problema siga y deja de salir solo
+                      cuando se arregla.
+                    } @else {
+                      Con una condición, el aviso le sale solo a los celulares que tienen ese
+                      problema.
+                    }
+                  </p>
+                </div>
+              }
+
+              <app-id-picker
+                formControlName="accountIds"
+                label="Negocios"
+                noun="negocios"
+                allLabel="Todos los negocios"
+                searchPlaceholder="Buscar negocio por nombre"
+                [search]="searchBusinesses"
+                dataTestId="picker-accounts"
+              />
+
+              @if (fields().notifierIds) {
+                <app-id-picker
+                  formControlName="notifierIds"
+                  label="Celulares (notificadores)"
+                  noun="celulares"
+                  allLabel="Todos los celulares"
+                  hint="Pega los IDs de los notificadores. Todavía no hay buscador de celulares para superadmin."
+                  [error]="fieldError('notifierIds')"
+                  dataTestId="picker-notifiers"
+                />
+              }
+
+              @if (fields().userIds) {
+                <app-id-picker
+                  formControlName="userIds"
+                  label="Usuarios"
+                  noun="usuarios"
+                  allLabel="Todos los usuarios"
+                  searchPlaceholder="Buscar por nombre o correo"
+                  [search]="searchUsers"
+                  [error]="fieldError('userIds')"
+                  dataTestId="picker-users"
+                />
+              }
+
+              @if (fields().roles) {
+                <fieldset class="checks" data-testid="field-roles">
+                  <legend>Rol en el negocio</legend>
+                  @for (role of roles; track role.value) {
+                    <yep-checkbox
+                      [label]="role.label"
+                      [checked]="value().roles.includes(role.value)"
+                      (checkedChange)="toggleRole(role.value, $event)"
+                    />
+                  }
+                  <small class="hint">Ninguno marcado = todos.</small>
+                </fieldset>
+              }
+
+              @if (fields().platforms) {
+                <fieldset class="checks" data-testid="field-platforms">
+                  <legend>Celular</legend>
+                  @for (platform of platforms; track platform.value) {
+                    <yep-checkbox
+                      [label]="platform.label"
+                      [checked]="value().platforms.includes(platform.value)"
+                      (checkedChange)="togglePlatform(platform.value, $event)"
+                    />
+                  }
+                  <small class="hint">Ninguno marcado = los dos.</small>
+                </fieldset>
+              }
+
+              <div class="grid">
+                <yep-input
+                  formControlName="minVersion"
+                  label="Desde la versión (opcional)"
+                  [placeholder]="value().app === 'notifier' ? '1.0.10' : '1.2.0'"
+                  [error]="fieldError('minVersion')"
+                />
+                <yep-input
+                  formControlName="maxVersion"
+                  label="Hasta la versión (opcional)"
+                  [placeholder]="value().app === 'notifier' ? '1.0.12' : '1.3.0'"
+                  [error]="fieldError('maxVersion')"
+                />
+              </div>
+              <p class="hint">Si pones versión, no le llega a quien no la haya informado.</p>
+            </div>
+          </yep-card-section>
+
+          <!-- ═══ Cuándo ═══ -->
+          <yep-card-section title="Cuándo y cuántas veces">
+            <div class="grid">
+              <label class="field">
+                <span class="field__label">Desde (opcional)</span>
+                <input
+                  type="datetime-local"
+                  formControlName="startsAt"
+                  [class.is-invalid]="!!fieldError('startsAt')"
+                />
+                @if (fieldError('startsAt')) {
+                  <small class="field__error">{{ fieldError('startsAt') }}</small>
+                }
+              </label>
+              <label class="field">
+                <span class="field__label">Hasta (opcional)</span>
+                <input
+                  type="datetime-local"
+                  formControlName="endsAt"
+                  [class.is-invalid]="!!fieldError('endsAt')"
+                />
+                @if (fieldError('endsAt')) {
+                  <small class="field__error" data-testid="error-endsAt">{{
+                    fieldError('endsAt')
+                  }}</small>
+                }
+              </label>
+            </div>
+
+            <div class="radio-row radio-row--stack" role="radiogroup" aria-label="Cuántas veces">
+              <yep-radio
+                name="announcement-repeat"
+                value="once"
+                label="Una sola vez: se va al cerrarlo o tocar el botón («Cerrar»)"
+                [checked]="value().repeat === 'once'"
+                (selected)="setRepeat($event)"
+              />
+              <yep-radio
+                name="announcement-repeat"
+                value="until_action"
+                label="Hasta que toque el botón: «Más tarde» lo pospone"
+                [checked]="value().repeat === 'until_action'"
+                (selected)="setRepeat($event)"
+              />
+            </div>
+
+            <div class="grid">
+              @if (showSnooze()) {
+                <yep-input
+                  type="number"
+                  formControlName="snoozeHours"
+                  label="Volver a mostrar después de (horas)"
+                  hint="Entre 1 y 720. 24 = al otro día."
+                  [error]="fieldError('snoozeHours')"
+                  data-testid="field-snooze"
+                />
+              }
+              <yep-input
+                type="number"
+                formControlName="priority"
+                label="Prioridad"
+                hint="0 a 100. Si hay varios, sale primero el de mayor prioridad."
+                [error]="fieldError('priority')"
+              />
+            </div>
+
+            @if (fields().notify) {
+              <label class="toggle-row" data-testid="field-notify">
+                <yep-toggle
+                  [pressed]="value().notify"
+                  ariaLabel="Avisar también con notificación"
+                  dataCy="notify"
+                  (toggled)="setNotify($event)"
+                />
+                <span>
+                  Avisar también con notificación
+                  <small
+                    >Sale en el celular aunque la app esté cerrada (canal «Avisos de YEP»).</small
+                  >
+                </span>
+              </label>
+            }
+          </yep-card-section>
+        </yep-card>
+
+        @if (error()) {
+          <yep-alert variant="error" data-testid="editor-error">{{ error() }}</yep-alert>
+        }
+        @if (serverErrors().length) {
+          <yep-alert variant="error" title="No se pudo guardar" data-testid="editor-server-errors">
+            <ul class="server-errors">
+              @for (message of serverErrors(); track $index) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </yep-alert>
+        }
+
+        <div class="editor__actions">
+          @if (status(); as current) {
+            @if (canDelete()) {
+              <yep-button
+                variant="ghost"
+                tone="danger"
+                [loading]="saving() === 'delete'"
+                (clicked)="remove()"
+              >
+                <svg lucideTrash2 aria-hidden="true"></svg>
+                Borrar
+              </yep-button>
+            }
+            @if (current !== 'archived') {
+              <yep-button variant="ghost" [loading]="saving() === 'archive'" (clicked)="archive()">
+                <svg lucideArchive aria-hidden="true"></svg>
+                Archivar
+              </yep-button>
+            }
+            <span class="editor__spacer"></span>
+            @if (current === 'published') {
+              <yep-button
+                variant="secondary"
+                [loading]="saving() === 'draft'"
+                (clicked)="save('draft')"
+              >
+                Pasar a borrador
+              </yep-button>
+              <yep-button
+                type="button"
+                [loading]="saving() === 'save'"
+                (clicked)="save()"
+                data-testid="save-changes"
+              >
+                Guardar cambios
+              </yep-button>
+            } @else {
+              <yep-button variant="secondary" [loading]="saving() === 'save'" (clicked)="save()">
+                Guardar
+              </yep-button>
+              <yep-button
+                [loading]="saving() === 'published'"
+                (clicked)="save('published')"
+                data-testid="publish"
+              >
+                <svg lucideSend aria-hidden="true"></svg>
+                Publicar
+              </yep-button>
+            }
+          } @else {
+            <span class="editor__spacer"></span>
+            <yep-button variant="ghost" (clicked)="back()">Cancelar</yep-button>
+            <yep-button
+              variant="secondary"
+              [loading]="saving() === 'draft'"
+              (clicked)="save('draft')"
+              data-testid="save-draft"
+            >
+              Guardar borrador
+            </yep-button>
+            <yep-button
+              [loading]="saving() === 'published'"
+              (clicked)="save('published')"
+              data-testid="publish"
+            >
+              <svg lucideSend aria-hidden="true"></svg>
+              Publicar
+            </yep-button>
+          }
+        </div>
+      </div>
+
+      <aside class="editor__aside" aria-label="Vista previa">
+        <app-announcement-preview
+          [app]="value().app"
+          [tone]="value().tone"
+          [title]="value().title"
+          [body]="value().body"
+          [actionType]="value().actionType"
+          [actionLabel]="value().actionLabel"
+          [dismissible]="value().dismissible"
+          [repeat]="value().repeat"
+          [notify]="value().notify"
+        />
+        <div class="reach" data-testid="audience-count" [attr.data-state]="audienceCount().state">
+          <svg lucideUsers aria-hidden="true"></svg>
+          <div>
+            <strong>{{ audienceCountText() }}</strong>
+            <small>{{ audienceCountNote() }}</small>
+          </div>
+        </div>
+        @if (status(); as current) {
+          <p class="hint">Estado actual: {{ statusLabels[current] }}.</p>
+        }
+      </aside>
+    </form>
+  }
+</section>

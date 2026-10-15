@@ -1,0 +1,78 @@
+<figure class="preview" [attr.aria-label]="'Vista previa: ' + displayTitle()">
+  @if (showNotification()) {
+    <div class="android-notif" data-testid="preview-notification">
+      <span class="android-notif__head">
+        <svg lucideBell aria-hidden="true"></svg>
+        {{ appName() }} · Avisos de YEP · ahora
+      </span>
+      <strong class="android-notif__title">{{ displayTitle() }}</strong>
+      <span class="android-notif__body">{{ displayBody() }}</span>
+    </div>
+  }
+
+  <div class="phone" aria-hidden="true">
+    <div class="phone__screen">
+      <div class="phone__statusbar">
+        <span class="phone__time">9:41</span>
+        <span class="phone__camera"></span>
+        <span class="phone__signal"></span>
+      </div>
+
+      <!-- La app de fondo, apagada por el velo del modal. -->
+      <div class="phone__app">
+        <span class="phone__appname">{{ appName() }}</span>
+        <span class="phone__line phone__line--wide"></span>
+        <span class="phone__line"></span>
+        <span class="phone__block"></span>
+        <span class="phone__line phone__line--wide"></span>
+        <span class="phone__line"></span>
+      </div>
+      <div class="phone__scrim"></div>
+
+      <div class="sheet" [attr.data-tone]="tone()" data-testid="preview-sheet">
+        <span class="sheet__icon" [attr.data-tone]="tone()">
+          @switch (tone()) {
+            @case ('success') {
+              <svg lucideCircleCheck></svg>
+            }
+            @case ('warning') {
+              <svg lucideTriangleAlert></svg>
+            }
+            @case ('danger') {
+              <svg lucideCircleAlert></svg>
+            }
+            @default {
+              <svg lucideInfo></svg>
+            }
+          }
+        </span>
+        <span class="sheet__tone" data-testid="preview-tone">{{ toneLabels[tone()] }}</span>
+        <strong
+          class="sheet__title"
+          [class.is-placeholder]="isPlaceholder()"
+          data-testid="preview-title"
+          >{{ displayTitle() }}</strong
+        >
+        <p class="sheet__body" [class.is-placeholder]="isPlaceholder()" data-testid="preview-body">
+          {{ displayBody() }}
+        </p>
+
+        <div class="sheet__actions">
+          @if (primaryLabel()) {
+            <span class="sheet__primary" data-testid="preview-primary">{{ primaryLabel() }}</span>
+          }
+          @if (canDismiss()) {
+            <span class="sheet__dismiss" data-testid="preview-dismiss">{{ dismissLabel() }}</span>
+          } @else {
+            <span class="sheet__locked" data-testid="preview-locked">
+              <svg lucideLock></svg>
+              No se puede cerrar
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <figcaption class="preview__caption">{{ captionText() }}</figcaption>
+</figure>

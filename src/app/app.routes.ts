@@ -72,6 +72,39 @@ export const routes: Routes = [
           import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
       },
       {
+        // Anuncios y versiones de las apps (docs/anuncios-y-avisos.md en local-dev-env).
+        path: '__ops/announcements',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/announcements/pages/announcements-admin/announcements-admin.page').then(
+            (m) => m.AnnouncementsAdminPage,
+          ),
+      },
+      {
+        path: '__ops/announcements/new',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/announcements/pages/announcement-editor/announcement-editor.page').then(
+            (m) => m.AnnouncementEditorPage,
+          ),
+      },
+      {
+        path: '__ops/announcements/:id/edit',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/announcements/pages/announcement-editor/announcement-editor.page').then(
+            (m) => m.AnnouncementEditorPage,
+          ),
+      },
+      {
+        path: '__ops/announcements/:id',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/announcements/pages/announcement-detail/announcement-detail.page').then(
+            (m) => m.AnnouncementDetailPage,
+          ),
+      },
+      {
         path: '__ops/subscriptions/change-requests',
         canActivate: [opsGuard],
         loadComponent: () =>

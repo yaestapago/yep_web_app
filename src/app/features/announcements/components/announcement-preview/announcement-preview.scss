@@ -1,0 +1,272 @@
+// Vista previa del modal en el celular. Solo tokens (docs/rediseno-web/02-tokens.md):
+// plano, sin sombras ni degradados; el tono se nota en el ícono y su etiqueta.
+
+:host {
+  display: block;
+}
+
+.preview {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  margin: 0;
+}
+
+.preview__caption {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+/* ---------- Notificación de Android ---------- */
+.android-notif {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 2px;
+  max-width: 18rem;
+  padding: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
+.android-notif__head {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: var(--font-size-xxs);
+  gap: var(--space-1);
+
+  svg {
+    height: var(--font-size-xs);
+    width: var(--font-size-xs);
+  }
+}
+
+.android-notif__title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.android-notif__body {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Celular ---------- */
+.phone {
+  background: var(--card-brand-bg);
+  border: var(--border-width) solid var(--card-brand-border);
+  border-radius: calc(var(--radius-xl) * 2);
+  max-width: 18rem;
+  padding: var(--space-2);
+  width: 100%;
+}
+
+.phone__screen {
+  aspect-ratio: 9 / 18;
+  background: var(--color-background);
+  border-radius: calc(var(--radius-xl) * 1.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.phone__statusbar {
+  align-items: center;
+  color: var(--color-text-primary);
+  display: flex;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xxs);
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+.phone__camera {
+  background: var(--card-brand-bg);
+  border-radius: var(--radius-full);
+  height: var(--space-2);
+  width: var(--space-2);
+}
+
+.phone__signal {
+  background: var(--color-text-primary);
+  border-radius: var(--radius-xs);
+  height: var(--space-2);
+  width: var(--space-4);
+}
+
+.phone__app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.phone__appname {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-extrabold);
+  text-transform: uppercase;
+}
+
+.phone__line,
+.phone__block {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  display: block;
+  height: var(--space-2);
+  width: 60%;
+}
+
+.phone__line--wide {
+  width: 85%;
+}
+
+.phone__block {
+  height: var(--space-10);
+  width: 100%;
+}
+
+.phone__scrim {
+  background: var(--color-overlay);
+  inset: 0;
+  position: absolute;
+}
+
+/* ---------- Modal ---------- */
+.sheet {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  left: var(--space-3);
+  max-height: calc(100% - var(--space-10));
+  overflow: hidden;
+  padding: var(--space-4);
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.sheet__icon {
+  align-items: center;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  height: var(--space-7);
+  justify-content: center;
+  width: var(--space-7);
+
+  svg {
+    height: var(--icon-md);
+    width: var(--icon-md);
+  }
+}
+
+.sheet__icon[data-tone='info'] {
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
+}
+
+.sheet__icon[data-tone='success'] {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
+.sheet__icon[data-tone='warning'] {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.sheet__icon[data-tone='danger'] {
+  background: var(--color-error-soft);
+  color: var(--color-error-strong);
+}
+
+.sheet__tone {
+  color: var(--color-text-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xxs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sheet__title {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.sheet__body {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  margin: 0;
+  max-height: 12rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.is-placeholder {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.sheet__primary,
+.sheet__dismiss,
+.sheet__locked {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  justify-content: center;
+  min-height: var(--control-height-md);
+  overflow: hidden;
+  padding: 0 var(--space-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sobre verde, el texto siempre es tinta. */
+.sheet__primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.sheet__dismiss {
+  color: var(--color-text-primary);
+}
+
+.sheet__locked {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  gap: var(--space-1);
+  min-height: var(--control-height-sm);
+
+  svg {
+    height: var(--icon-sm);
+    width: var(--icon-sm);
+  }
+}

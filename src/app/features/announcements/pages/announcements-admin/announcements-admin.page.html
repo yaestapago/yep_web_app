@@ -1,0 +1,178 @@
+<section class="page announcements-page">
+  <yep-page-header
+    title="Anuncios y versiones"
+    subtitle="Avisos con un botón que salen dentro del Notificador y de la App de YEP. Solo los ven el Notificador 1.0.10 y la App de YEP 1.2.0 en adelante."
+  >
+    @if (tab() === 'announcements') {
+      <ng-container ngProjectAs="[slot=actions]">
+        <yep-button variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
+          <svg lucideRefreshCw aria-hidden="true"></svg>
+          Actualizar
+        </yep-button>
+        <a yepButton size="sm" routerLink="/__ops/announcements/new" data-testid="new-announcement">
+          <svg lucidePlus aria-hidden="true"></svg>
+          Nuevo anuncio
+        </a>
+      </ng-container>
+    }
+  </yep-page-header>
+
+  <yep-segmented
+    class="tabs"
+    aria-label="Secciones"
+    [options]="tabOptions"
+    [value]="tab()"
+    (valueChange)="setTab($event)"
+  />
+
+  @if (tab() === 'versions') {
+    <app-app-releases-panel />
+  } @else {
+    @if (notice()) {
+      <yep-alert variant="success" [dismissible]="true" (dismissed)="notice.set('')">{{
+        notice()
+      }}</yep-alert>
+    }
+    @if (error() && announcements()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
+
+    <div class="filters">
+      <yep-segmented
+        aria-label="Filtrar por app"
+        [options]="appOptions"
+        [value]="appFilter()"
+        (valueChange)="setAppFilter($event)"
+      />
+      <yep-segmented
+        aria-label="Filtrar por estado"
+        [options]="statusOptions"
+        [value]="statusFilter()"
+        (valueChange)="setStatusFilter($event)"
+      />
+    </div>
+
+    @if (loading() && !announcements()) {
+      <yep-state kind="loading" title="Cargando anuncios…" [rows]="4" />
+    } @else if (error() && !announcements()) {
+      <yep-state kind="error" [title]="error()">
+        <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()"
+          >Reintentar</yep-button
+        >
+      </yep-state>
+    } @else {
+      <yep-card padding="none" aria-label="Anuncios">
+        <div class="yep-table-wrap">
+          <table yepTable [clickableRows]="true" class="announcements-table">
+            <thead>
+              <tr>
+                <th scope="col">Anuncio</th>
+                <th scope="col">Estado</th>
+                <th scope="col">A quién va</th>
+                <th scope="col">Ventana</th>
+                <th scope="col" class="num">Vistos</th>
+                <th scope="col" class="num">Tocaron el botón</th>
+                <th scope="col" class="num">Cerraron</th>
+                <th scope="col" class="num">Notificados</th>
+                <th scope="col" class="actions"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.announcement.id) {
+                @let item = row.announcement;
+                <tr (click)="open(item)" [attr.data-testid]="'announcement-row-' + item.id">
+                  <td data-label="Anuncio">
+                    <a
+                      class="title"
+                      [routerLink]="['/__ops/announcements', item.id]"
+                      (click)="$event.stopPropagation()"
+                      >{{ item.title }}</a
+                    >
+                    <span class="sub">
+                      <yep-status-chip tone="neutral" [dot]="false" [label]="row.appLabel" />
+                      <yep-status-chip
+                        [tone]="toneChip[item.tone]"
+                        [label]="toneLabels[item.tone]"
+                      />
+                      @if (item.source === 'system') {
+                        <yep-status-chip tone="neutral" [dot]="false" label="Automático" />
+                      }
+                    </span>
+                  </td>
+                  <td data-label="Estado">
+                    <yep-status-chip [tone]="statusTones[item.status]" [label]="row.statusLabel" />
+                    @if (row.statusNote) {
+                      <small>{{ row.statusNote }}</small>
+                    }
+                  </td>
+                  <td data-label="A quién va" class="audience">{{ row.audience }}</td>
+                  <td data-label="Ventana" class="nowrap">{{ row.window }}</td>
+                  <td data-label="Vistos" class="num">{{ row.seen }}</td>
+                  <td data-label="Tocaron el botón" class="num">{{ row.action }}</td>
+                  <td data-label="Cerraron" class="num">{{ row.dismissed }}</td>
+                  <td data-label="Notificados" class="num">{{ row.notified }}</td>
+                  <td class="actions" (click)="$event.stopPropagation()">
+                    <yep-icon-button action="edit" (clicked)="edit(item)" />
+                    <yep-menu label="Más acciones" [disabled]="actingId() === item.id">
+                      <button yepMenuItem (click)="duplicate(item)">
+                        <svg lucideCopy aria-hidden="true"></svg>
+                        Duplicar
+                      </button>
+                      @if (item.status !== 'published') {
+                        <button yepMenuItem (click)="changeStatus(item, 'published')">
+                          <svg lucideSend aria-hidden="true"></svg>
+                          Publicar
+                        </button>
+                      }
+                      @if (item.status !== 'draft') {
+                        <button yepMenuItem (click)="changeStatus(item, 'draft')">
+                          <svg lucideUndo2 aria-hidden="true"></svg>
+                          Pasar a borrador
+                        </button>
+                      }
+                      @if (item.status !== 'archived') {
+                        <button yepMenuItem (click)="changeStatus(item, 'archived')">
+                          <svg lucideArchive aria-hidden="true"></svg>
+                          Archivar
+                        </button>
+                      }
+                      @if (canDelete(item)) {
+                        <button yepMenuItem tone="danger" (click)="remove(item)">
+                          <svg lucideTrash2 aria-hidden="true"></svg>
+                          Borrar
+                        </button>
+                      }
+                    </yep-menu>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="9" class="empty">
+                    <yep-state
+                      kind="empty"
+                      [title]="
+                        hasFilters() ? 'No hay anuncios con este filtro.' : 'Aún no hay anuncios.'
+                      "
+                      description="Crea uno con «Nuevo anuncio». Los automáticos del Notificador aparecen aquí cuando el backend los crea."
+                    >
+                      @if (hasFilters()) {
+                        <yep-button
+                          slot="action"
+                          variant="ghost"
+                          size="sm"
+                          (clicked)="clearFilters()"
+                        >
+                          Limpiar filtros
+                        </yep-button>
+                      }
+                    </yep-state>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </yep-card>
+    }
+  }
+</section>

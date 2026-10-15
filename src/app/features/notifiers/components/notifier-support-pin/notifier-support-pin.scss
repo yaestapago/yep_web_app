@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.support-pin__body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.support-pin__status {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  margin: 0;
+
+  svg {
+    flex: 0 0 auto;
+    height: var(--icon-sm);
+    width: var(--icon-sm);
+  }
+}
+
+.support-pin__form {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 14rem));
+}
+
+.support-pin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: 768px) {
+  .support-pin__form {
+    grid-template-columns: 1fr;
+  }
+}
