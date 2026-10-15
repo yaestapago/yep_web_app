@@ -1,0 +1,95 @@
+<yep-card
+  class="support-pin"
+  data-testid="notifier-support-pin"
+  title="PIN de soporte del Notificador"
+  subtitle="Lo pide el Notificador en Configuración → Modo soporte para ver reglas y datos técnicos. No se lo des a los clientes."
+>
+  @if (status()) {
+    <yep-status-chip
+      slot="actions"
+      [tone]="configured() ? 'success' : 'warning'"
+      [label]="configured() ? 'Configurado' : 'Sin configurar'"
+      data-testid="support-pin-chip"
+    />
+  }
+
+  @if (loading() && !status()) {
+    <yep-state kind="loading" title="Cargando…" [rows]="2" />
+  } @else if (loadError() && !status()) {
+    <yep-state kind="error" [title]="loadError()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="load()"
+        >Reintentar</yep-button
+      >
+    </yep-state>
+  } @else if (status()) {
+    <div class="support-pin__body">
+      <p class="support-pin__status" data-testid="support-pin-status">
+        <svg lucideLock aria-hidden="true"></svg>
+        {{ updatedLabel() }}
+      </p>
+
+      @if (success()) {
+        <yep-alert variant="success" [dismissible]="true" (dismissed)="success.set('')">{{
+          success()
+        }}</yep-alert>
+      }
+
+      @if (showForm()) {
+        <div class="support-pin__form" data-testid="support-pin-form">
+          <yep-input
+            type="password"
+            autocomplete="new-password"
+            [label]="configured() ? 'PIN nuevo' : 'PIN'"
+            placeholder="6 a 8 números"
+            hint="Solo números, de 6 a 8 dígitos."
+            [required]="true"
+            [error]="pinError()"
+            [ngModel]="pin()"
+            (ngModelChange)="pin.set($event)"
+            data-testid="support-pin-input"
+          />
+          <yep-input
+            type="password"
+            autocomplete="new-password"
+            label="Repite el PIN"
+            [required]="true"
+            [error]="confirmError()"
+            [ngModel]="confirm()"
+            (ngModelChange)="confirm.set($event)"
+            data-testid="support-pin-confirm"
+          />
+        </div>
+        @if (saveError()) {
+          <yep-alert variant="error">{{ saveError() }}</yep-alert>
+        }
+        <div class="support-pin__actions">
+          @if (configured()) {
+            <yep-button variant="ghost" size="sm" [disabled]="saving()" (clicked)="cancel()">
+              Cancelar
+            </yep-button>
+          }
+          <yep-button
+            variant="secondary"
+            size="sm"
+            [loading]="saving()"
+            (clicked)="save()"
+            data-testid="support-pin-save"
+          >
+            {{ configured() ? 'Guardar PIN nuevo' : 'Fijar PIN' }}
+          </yep-button>
+        </div>
+      } @else {
+        <div class="support-pin__actions">
+          <yep-button
+            variant="secondary"
+            size="sm"
+            (clicked)="startEditing()"
+            data-testid="support-pin-change"
+          >
+            Cambiar PIN
+          </yep-button>
+        </div>
+      }
+    </div>
+  }
+</yep-card>
