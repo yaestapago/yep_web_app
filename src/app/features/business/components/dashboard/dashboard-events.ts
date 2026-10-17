@@ -37,6 +37,7 @@ import {
 } from '../../../../shared/utils/source-event-groups';
 import type { TransactionTone } from '../../../../shared/utils/transaction-status';
 import { Card, State, StatusChip, Table } from '../../../../shared/ui';
+import { Segmented, type SegmentedOption } from '../../../../shared/ui/segmented/segmented';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { TtsPlaybackService } from '../../../source-events/services/tts-playback.service';
@@ -92,7 +93,9 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
 
 /**
  * Zona 3: eventos en lenguaje claro (sin logs técnicos crudos) con filtros
- * compactos. El filtrado es client-side sobre los eventos ya cargados.
+ * compactos. Los filtros (estado, origen, banco, búsqueda) se aplican en el
+ * servidor: la sección recarga la lista con su propio cursor. Aquí solo se
+ * pagina en local la ventana ya cargada.
  */
 @Component({
   selector: 'app-dashboard-events',
@@ -110,6 +113,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     LucideVolume2,
     LucideVolumeX,
     Card,
+    Segmented,
     Select,
     State,
     StatusChip,
@@ -143,10 +147,20 @@ export class DashboardEventsPanel {
   readonly bankAccounts = defineInput<Map<string, BankAccount>>(new Map());
   /** Bancos disponibles para el select (fuente estable: cuentas del negocio). */
   readonly bankOptions = defineInput<string[]>([]);
-  /** Hay más páginas en el servidor más allá de lo cargado. */
+  /**
+   * Hay más páginas en el servidor más allá de lo cargado. Mientras sea true
+   * se ofrece "Cargar más" en TODAS las páginas locales (ver plantilla): su
+   * presencia no puede depender de la página actual o el ajuste de filas al
+   * alto entra en bucle.
+   */
   readonly hasMore = defineInput(false);
   readonly loadingMore = defineInput(false);
-  /** Eventos en vivo que encajan en el filtro y esperan ser mostrados. */
+  /**
+   * Cuántos eventos están "Por revisar" (el backend no supo a qué cuenta entró
+   * el pago) dentro de los demás filtros activos. Va en el chip del filtro de
+   * estado para que no pasen desapercibidos.
+   */
+  readonly reviewCount = defineInput(0);
 
   /** Emite el id del evento que el usuario marcó como leído (al abrirlo). */
   readonly view = output<SourceEvent>();
@@ -159,6 +173,8 @@ export class DashboardEventsPanel {
   readonly search = signal('');
   readonly typeFilter = signal<string>('');
   readonly bankFilter = signal<string>('');
+  /** Filtro de estado: todos los estados de ingreso o solo "Por revisar". */
+  readonly statusFilter = signal<'' | 'needs_review'>('');
 
   readonly typeOptions = SOURCE_OPTIONS;
 
@@ -168,9 +184,20 @@ export class DashboardEventsPanel {
     ...this.bankOptions().map((bank) => ({ id: bank, label: bank })),
   ]);
 
+  /** Opciones del filtro de estado; el contador solo aparece cuando hay algo por revisar. */
+  readonly statusOptions = computed<SegmentedOption[]>(() => [
+    { value: '', label: 'Todos' },
+    {
+      value: 'needs_review',
+      label: 'Por revisar',
+      count: this.reviewCount() > 0 ? this.reviewCount() : undefined,
+    },
+  ]);
+
   /** Filtros normalizados que se envían al servidor. */
   private readonly filterValue = computed<SourceEventFilters>(() => ({
     sourceType: (this.typeFilter() || undefined) as SourceEventType | undefined,
+    status: (this.statusFilter() || undefined) as SourceEventStatus | undefined,
     bankId: this.bankFilter() || undefined,
     q: this.search().trim() || undefined,
   }));
@@ -245,9 +272,6 @@ export class DashboardEventsPanel {
     return this.groupedEvents().slice(start, start + size);
   });
 
-  /** Estamos en la última página cargada (donde ofrecemos "cargar más"). */
-  readonly onLastPage = computed(() => this.currentPage() >= this.totalPages());
-
   constructor() {
     // Volver a la primera página cuando cambia un filtro: depende solo de los
     // signals de filtro (no de los datos ni de los eventos en vivo).
@@ -255,6 +279,7 @@ export class DashboardEventsPanel {
       this.search();
       this.typeFilter();
       this.bankFilter();
+      this.statusFilter();
       this.page.set(1);
     });
 

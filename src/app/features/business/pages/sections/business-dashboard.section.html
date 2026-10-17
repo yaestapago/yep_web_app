@@ -160,6 +160,7 @@
         [bankOptions]="bankOptions()"
         [hasMore]="eventsHasMore()"
         [loadingMore]="loadingMoreEvents()"
+        [reviewCount]="needsReviewCount()"
         (view)="openEventDetail($event)"
         (filtersChange)="onEventFiltersChange($event)"
         (loadMore)="loadMoreEvents()"
