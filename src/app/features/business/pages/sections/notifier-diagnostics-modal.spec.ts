@@ -12,11 +12,15 @@ import {
   CONVERSATIONS_BLOCKED_DETAIL,
   NotifierDiagnosticsModal,
   SELF_TEST_REASON_COPY,
+  SMS_HIDDEN_INSTRUCTION,
+  SMS_QUIET_DETAIL,
   TIMELINE_BUCKETS,
   conversationsFlag,
   flagFor,
   seenByPackageEntries,
   selfTestReasonCopy,
+  smsHiddenDetail,
+  smsHiddenFlag,
   summarizeTimeline,
   topSeenApps,
   watchedPackageSet,
@@ -372,6 +376,7 @@ describe('NotifierDiagnosticsModal', () => {
       'listener',
       'permission',
       'conversations',
+      'smsHidden',
       'notifications',
       'service',
       'battery',
@@ -380,8 +385,10 @@ describe('NotifierDiagnosticsModal', () => {
     expect(rows[0].textContent).toContain('desde hace 2 h');
     // App ≤ 1.0.8: aún no prueba las conversaciones.
     expect(rows[2].textContent).toContain('Sin probar');
-    expect(rows[3].textContent).toContain('Permitidos');
-    expect(rows[5].textContent).toContain('Sin restricciones');
+    // App ≤ 1.0.10: no reporta los SMS ocultos.
+    expect(rows[3].textContent).toContain('Sin datos');
+    expect(rows[4].textContent).toContain('Permitidos');
+    expect(rows[6].textContent).toContain('Sin restricciones');
 
     expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('96');
     // Sin `lastNotificationAt` no hay fecha, así que tampoco se muestra la app.
@@ -496,6 +503,104 @@ describe('NotifierDiagnosticsModal', () => {
         label: 'Sin probar',
       });
       expect(conversationsFlag(undefined).label).toBe('Sin probar');
+    });
+  });
+
+  describe('fila "SMS del banco" (capture.smsHidden, app ≥ 1.0.11)', () => {
+    const HOUR_MIN = 60;
+    const smsRow = (fixture: ComponentFixture<NotifierDiagnosticsModal>) =>
+      el(fixture).querySelector('[data-testid="diag-status"] li[data-key="smsHidden"]');
+
+    function renderWith(smsHidden: NotifierCaptureSnapshot['smsHidden'] | undefined) {
+      const snapshot = capture();
+      if (smsHidden === undefined) {
+        delete snapshot.smsHidden;
+      } else {
+        snapshot.smsHidden = smsHidden;
+      }
+      api.diagnostics.mockReturnValue(of({ ...response, capture: snapshot }));
+      return render(notifier());
+    }
+
+    it('legible reciente ⇒ "Visibles" en verde, con hace cuánto', () => {
+      const row = smsRow(
+        renderWith({
+          count: 0,
+          lastHiddenAt: null,
+          lastReadableAt: iso(3 * HOUR_MIN),
+          packageName: null,
+        }),
+      );
+      expect(row?.textContent).toContain('SMS del banco');
+      expect(row?.textContent).toContain('Visibles');
+      expect(row?.querySelector('.yep-status-chip--success')).not.toBeNull();
+      expect(row?.querySelector('.diag-flags__detail')?.textContent?.trim()).toBe(
+        'último hace 3 h',
+      );
+    });
+
+    it('oculta en 72 h y ninguna legible ⇒ "Android los oculta" en ámbar, con la hora de Bogotá y qué hacer', () => {
+      // NOW = 15:00 UTC; hace 2 h = 13:00 UTC = 08:00 en Bogotá.
+      const row = smsRow(
+        renderWith({
+          count: 12,
+          lastHiddenAt: iso(2 * HOUR_MIN),
+          lastReadableAt: iso(80 * HOUR_MIN),
+          packageName: 'com.google.android.apps.messaging',
+        }),
+      );
+      expect(row?.textContent).toContain('Android los oculta');
+      expect(row?.querySelector('.yep-status-chip--warning')).not.toBeNull();
+      expect(row?.querySelector('.diag-flag__icon--warn')).not.toBeNull();
+      const detail = row?.querySelector('.diag-flags__detail')?.textContent ?? '';
+      expect(detail).toContain('Última oculta: 13 de oct');
+      expect(detail).toContain('08:00');
+      expect(detail).toContain(SMS_HIDDEN_INSTRUCTION);
+      expect(SMS_HIDDEN_INSTRUCTION).toBe(
+        'Guardar el remitente como contacto (p. ej. Bancolombia: 85540 y 85630) y abrir la conversación en Mensajes.',
+      );
+    });
+
+    it('legible dentro de las 72 h ⇒ "Visibles" aunque haya una oculta', () => {
+      const row = smsRow(
+        renderWith({ lastHiddenAt: iso(HOUR_MIN), lastReadableAt: iso(5 * HOUR_MIN) }),
+      );
+      expect(row?.textContent).toContain('Visibles');
+    });
+
+    it('la reporta pero sin SMS del banco en 72 h ⇒ "Sin datos" con la aclaración', () => {
+      const row = smsRow(
+        renderWith({ count: 0, lastHiddenAt: null, lastReadableAt: iso(73 * HOUR_MIN) }),
+      );
+      expect(row?.textContent).toContain('Sin datos');
+      expect(row?.querySelector('.yep-status-chip--neutral')).not.toBeNull();
+      expect(row?.querySelector('.diag-flags__detail')?.textContent?.trim()).toBe(SMS_QUIET_DETAIL);
+    });
+
+    it('null o ausente (app ≤ 1.0.10) ⇒ "Sin datos" sin detalle', () => {
+      for (const value of [null, undefined]) {
+        const row = smsRow(renderWith(value));
+        expect(row?.textContent).toContain('Sin datos');
+        expect(row?.querySelector('.diag-flags__detail')).toBeNull();
+      }
+    });
+
+    it('smsHiddenFlag y smsHiddenDetail', () => {
+      expect(smsHiddenFlag('visible')).toEqual({ kind: 'ok', tone: 'success', label: 'Visibles' });
+      expect(smsHiddenFlag('hidden')).toEqual({
+        kind: 'warn',
+        tone: 'warning',
+        label: 'Android los oculta',
+      });
+      expect(smsHiddenFlag('quiet').label).toBe('Sin datos');
+      expect(smsHiddenFlag('none')).toEqual({
+        kind: 'unknown',
+        tone: 'neutral',
+        label: 'Sin datos',
+      });
+      // Sin hora legible, solo la indicación.
+      expect(smsHiddenDetail({ lastHiddenAt: 'x' }, 'hidden')).toBe(SMS_HIDDEN_INSTRUCTION);
+      expect(smsHiddenDetail(null, 'none')).toBe('');
     });
   });
 

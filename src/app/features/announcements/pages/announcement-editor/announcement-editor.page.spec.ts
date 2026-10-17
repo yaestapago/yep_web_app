@@ -97,6 +97,7 @@ describe('AnnouncementEditorPage', () => {
       'open_url',
       'open_notification_access',
       'open_conversations_settings',
+      'save_bank_contact',
       'open_autostart_settings',
       'open_battery_settings',
       'open_app_notification_settings',
@@ -146,6 +147,20 @@ describe('AnnouncementEditorPage', () => {
     page.form.controls.actionLabel.setValue('Probar ahora');
     page.form.controls.actionType.setValue('open_diagnostics');
     expect(page.form.controls.actionLabel.value).toBe('Probar ahora');
+  });
+
+  it('SMS del banco ocultos por Android: condición y acción «Guardar contacto del banco»', () => {
+    const { page } = create();
+    expect(page['conditionOptions']).toContainEqual({
+      id: 'sms_hidden',
+      label: 'SMS del banco ocultos por Android',
+    });
+    expect(page.actionOptions()).toContainEqual({
+      id: 'save_bank_contact',
+      label: 'Guardar contacto del banco',
+    });
+    page.form.controls.actionType.setValue('save_bank_contact');
+    expect(page.form.controls.actionLabel.value).toBe('Guardar contacto');
   });
 
   it('no guarda con errores y los muestra en el formulario', async () => {

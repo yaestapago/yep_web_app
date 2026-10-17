@@ -78,6 +78,7 @@ export const CONDITION_LABELS: Record<AnnouncementCondition, string> = {
   permission_missing: 'Sin permiso de notificaciones',
   listener_off: 'Escucha apagada',
   conversations_blocked: '«Conversaciones» bloqueado',
+  sms_hidden: 'SMS del banco ocultos por Android',
   notifications_blocked: 'Notificaciones de YEP apagadas',
   battery_restricted: 'Batería restringida',
 };
@@ -87,6 +88,8 @@ export const CONDITION_HINTS: Record<AnnouncementCondition, string> = {
   permission_missing: 'YEP no tiene permiso para leer las notificaciones.',
   listener_off: 'Tiene el permiso, pero Android apagó la escucha de YEP.',
   conversations_blocked: 'Android no le entrega a YEP los SMS del banco.',
+  sms_hidden:
+    'Android le oculta a YEP los SMS del banco porque el número no está en los contactos (últimas 72 h).',
   notifications_blocked: 'Las notificaciones de YEP están apagadas en el celular.',
   battery_restricted: 'Android le restringe la batería a YEP.',
 };
@@ -97,6 +100,7 @@ export const ACTION_LABELS: Record<AnnouncementActionType, string> = {
   open_route: 'Abrir una pantalla de la app',
   open_notification_access: 'Abrir Acceso a notificaciones',
   open_conversations_settings: 'Abrir el ajuste «Conversaciones»',
+  save_bank_contact: 'Guardar contacto del banco',
   open_autostart_settings: 'Abrir Inicio automático',
   open_battery_settings: 'Quitar la restricción de batería',
   open_app_notification_settings: 'Abrir las notificaciones de YEP',
@@ -111,6 +115,7 @@ export const ACTIONS_BY_APP: Record<AnnouncementApp, readonly AnnouncementAction
     'open_url',
     'open_notification_access',
     'open_conversations_settings',
+    'save_bank_contact',
     'open_autostart_settings',
     'open_battery_settings',
     'open_app_notification_settings',
@@ -180,8 +185,8 @@ export function audienceSummary(app: AnnouncementApp, audience: AnnouncementAudi
 }
 
 function lowerFirst(text: string): string {
-  // Respeta las comillas de «Conversaciones» y los nombres propios (YEP).
-  if (text.startsWith('«')) return text;
+  // Respeta las comillas de «Conversaciones» y las siglas o nombres propios (SMS, YEP).
+  if (text.startsWith('«') || /^[A-Z]{2,}\b/.test(text)) return text;
   return text.charAt(0).toLowerCase() + text.slice(1);
 }
 

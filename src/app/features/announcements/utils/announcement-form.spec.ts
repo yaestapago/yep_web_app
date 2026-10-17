@@ -11,7 +11,10 @@ import {
   validateAnnouncementForm,
 } from './announcement-form';
 import {
+  ACTION_LABELS,
   ACTIONS_BY_APP,
+  CONDITION_HINTS,
+  CONDITION_LABELS,
   appInSentence,
   audienceSummary,
   isActionAllowed,
@@ -165,6 +168,15 @@ describe('announcement-form · filtrado por app', () => {
     expect(isActionAllowed('notifier', 'open_route')).toBe(false);
     expect(isActionAllowed('notifier', 'open_conversations_settings')).toBe(true);
     expect(isActionAllowed('yep', 'run_self_test')).toBe(false);
+    // Notificador 1.0.11: guardar el remitente como contacto (SMS ocultos por Android).
+    expect(isActionAllowed('notifier', 'save_bank_contact')).toBe(true);
+    expect(isActionAllowed('yep', 'save_bank_contact')).toBe(false);
+  });
+
+  it('SMS del banco ocultos por Android: nombres de la condición y de la acción', () => {
+    expect(CONDITION_LABELS.sms_hidden).toBe('SMS del banco ocultos por Android');
+    expect(CONDITION_HINTS.sms_hidden).toContain('72 h');
+    expect(ACTION_LABELS.save_bank_contact).toBe('Guardar contacto del banco');
   });
 
   it('switchFormApp quita lo que la otra app no entiende y lo cuenta', () => {
@@ -327,6 +339,10 @@ describe('announcement-labels · a quién va', () => {
     expect(
       audienceSummary('notifier', { condition: 'conversations_blocked', accountIds: ['b1'] }),
     ).toBe('Automático: «Conversaciones» bloqueado · 1 negocio');
+    // La sigla no se pasa a minúscula.
+    expect(audienceSummary('notifier', { condition: 'sms_hidden' })).toBe(
+      'Automático: SMS del banco ocultos por Android',
+    );
   });
 
   it('todos, o el resumen de los filtros', () => {
