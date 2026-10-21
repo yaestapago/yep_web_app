@@ -8,6 +8,8 @@
 
 :host {
   display: contents;
+  /* Alto del botón: avatar de 56 px + el borde interno. El panel y el saludo se ubican encima. */
+  --assistant-fab-size: 66px;
 }
 
 /* Cápsula tinta con la cara de Zaira: el contraste la hace visible sin ser un segundo primario. */
@@ -23,8 +25,8 @@
   display: inline-flex;
   font: inherit;
   gap: var(--space-3);
-  min-height: 56px;
-  padding: var(--space-1) var(--space-5) var(--space-1) var(--space-1);
+  min-height: var(--assistant-fab-size);
+  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-1);
   position: fixed;
   right: var(--space-5);
   text-align: left;
@@ -33,8 +35,8 @@
 
   > svg {
     flex: 0 0 auto;
-    height: var(--icon-md);
-    width: var(--icon-md);
+    height: var(--icon-lg);
+    width: var(--icon-lg);
   }
 
   &:hover {
@@ -53,20 +55,20 @@
 }
 
 .assistant-fab__name {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
 }
 
 .assistant-fab__hint {
   color: var(--brand-on-ink-muted);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 
 .assistant-fab--open {
   justify-content: center;
-  min-height: 56px;
+  min-height: var(--assistant-fab-size);
   padding: 0;
-  width: 56px;
+  width: var(--assistant-fab-size);
 }
 
 /* Saludo: aparece una vez al día junto al botón, hasta que lo cierren o abran el chat. */
@@ -77,7 +79,7 @@
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-xs);
-  bottom: calc(var(--space-5) + 56px + var(--space-2));
+  bottom: calc(var(--space-5) + var(--assistant-fab-size) + var(--space-2));
   box-shadow: var(--shadow-overlay);
   display: flex;
   gap: var(--space-1);
@@ -124,17 +126,17 @@
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-xl);
-  bottom: calc(var(--space-5) + 56px + var(--space-3));
+  bottom: calc(var(--space-5) + var(--assistant-fab-size) + var(--space-3));
   box-shadow: var(--shadow-overlay);
   color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 56px - var(--space-5) * 2 - var(--space-3));
-  height: 640px;
+  max-height: calc(100dvh - var(--assistant-fab-size) - var(--space-5) * 2 - var(--space-3));
+  height: 660px;
   overflow: hidden;
   position: fixed;
   right: var(--space-5);
-  width: min(400px, calc(100vw - var(--space-5) * 2));
+  width: min(420px, calc(100vw - var(--space-5) * 2));
   z-index: 18;
 }
 
@@ -144,7 +146,14 @@
   display: flex;
   flex: 0 0 auto;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+}
+
+/* Reiniciar · Minimizar · Cerrar */
+.assistant-panel__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-1);
 }
 
 .assistant-panel__titles {
@@ -365,7 +374,7 @@
   display: flex;
   flex: 0 0 auto;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
 }
 
 .assistant-composer__input {
@@ -419,13 +428,6 @@
   }
 }
 
-.assistant-panel__note {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xxs);
-  margin: 0;
-  padding: 0 var(--space-4) var(--space-3);
-}
-
 @media (max-width: 768px) {
   .assistant-fab {
     bottom: var(--space-4);
@@ -442,7 +444,7 @@
   }
 
   .assistant-nudge {
-    bottom: calc(var(--space-4) + 56px + var(--space-2));
+    bottom: calc(var(--space-4) + var(--assistant-fab-size) + var(--space-2));
     right: var(--space-4);
   }
 

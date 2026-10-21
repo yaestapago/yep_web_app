@@ -9,7 +9,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { LucideRotateCcw, LucideSendHorizontal, LucideX } from '@lucide/angular';
+import {
+  LucideChevronDown,
+  LucideMinus,
+  LucideRotateCcw,
+  LucideSendHorizontal,
+  LucideX,
+} from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
@@ -37,7 +43,7 @@ function today(): string {
  */
 @Component({
   selector: 'app-assistant-widget',
-  imports: [IconButton, NgTemplateOutlet, LucideSendHorizontal, LucideX, ZairaAvatar],
+  imports: [IconButton, NgTemplateOutlet, LucideChevronDown, LucideSendHorizontal, ZairaAvatar],
   templateUrl: './assistant-widget.html',
   styleUrl: './assistant-widget.scss',
 })
@@ -48,6 +54,7 @@ export class AssistantWidget {
   protected readonly menu = ASSISTANT_MENU;
   protected readonly maxLength = MAX_MESSAGE_LENGTH;
   protected readonly closeIcon = LucideX;
+  protected readonly minimizeIcon = LucideMinus;
   protected readonly resetIcon = LucideRotateCcw;
   protected readonly draft = signal('');
   /** Menú de preguntas frecuentes reabierto en medio de una conversación. */
@@ -95,8 +102,17 @@ export class AssistantWidget {
     }
   }
 
-  protected close(): void {
+  /** Esconde el panel; la conversación sigue ahí al volver a abrirlo. */
+  protected minimize(): void {
     this.chat.close();
+  }
+
+  /** Cierra y termina la conversación: al volver a abrir, empieza en el menú. */
+  protected closeConversation(): void {
+    this.chat.close();
+    this.chat.reset();
+    this.menuOpen.set(false);
+    this.draft.set('');
   }
 
   protected ask(item: AssistantMenuItem): void {

@@ -4,23 +4,36 @@
     class="assistant-panel"
     role="dialog"
     aria-labelledby="assistant-title"
-    (keydown.escape)="close()"
+    (keydown.escape)="minimize()"
   >
     <header class="assistant-panel__header">
-      <app-zaira-avatar [size]="40" [online]="true" />
+      <app-zaira-avatar [size]="44" [online]="true" />
       <div class="assistant-panel__titles">
         <h2 id="assistant-title" class="assistant-panel__title">Zaira</h2>
         <p class="assistant-panel__subtitle">Asistente virtual de YEP · en línea</p>
       </div>
-      @if (chat.messages().length) {
+      <div class="assistant-panel__actions">
+        @if (chat.messages().length) {
+          <yep-icon-button
+            [icon]="resetIcon"
+            label="Reiniciar chat"
+            size="md"
+            (clicked)="newConversation()"
+          />
+        }
         <yep-icon-button
-          [icon]="resetIcon"
-          label="Nueva conversación"
+          [icon]="minimizeIcon"
+          label="Minimizar (la conversación se guarda)"
           size="md"
-          (clicked)="newConversation()"
+          (clicked)="minimize()"
         />
-      }
-      <yep-icon-button [icon]="closeIcon" label="Cerrar" size="md" (clicked)="close()" />
+        <yep-icon-button
+          [icon]="closeIcon"
+          label="Cerrar y terminar la conversación"
+          size="md"
+          (clicked)="closeConversation()"
+        />
+      </div>
     </header>
 
     <div class="assistant-panel__log" #log aria-live="polite">
@@ -113,9 +126,6 @@
         <svg lucideSendHorizontal aria-hidden="true"></svg>
       </button>
     </form>
-    <p class="assistant-panel__note">
-      Zaira es una inteligencia artificial y puede equivocarse. Solo ve la información de tu negocio.
-    </p>
   </section>
 }
 
@@ -141,13 +151,13 @@
   [class.assistant-fab--open]="chat.open()"
   [attr.aria-expanded]="chat.open()"
   aria-controls="assistant-panel"
-  [attr.aria-label]="chat.open() ? 'Cerrar el chat con Zaira' : 'Pregúntale a Zaira'"
+  [attr.aria-label]="chat.open() ? 'Minimizar el chat con Zaira' : 'Pregúntale a Zaira'"
   (click)="toggle()"
 >
   @if (chat.open()) {
-    <svg lucideX aria-hidden="true"></svg>
+    <svg lucideChevronDown aria-hidden="true"></svg>
   } @else {
-    <app-zaira-avatar class="assistant-fab__avatar" [size]="44" [online]="true" />
+    <app-zaira-avatar class="assistant-fab__avatar" [size]="56" [online]="true" />
     <span class="assistant-fab__label">
       <span class="assistant-fab__name">Zaira</span>
       <span class="assistant-fab__hint">¿Te ayudo?</span>

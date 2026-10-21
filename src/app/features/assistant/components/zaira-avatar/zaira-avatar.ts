@@ -3,9 +3,10 @@ import { Component, input as defineInput } from '@angular/core';
 let nextClipId = 0;
 
 /**
- * Caricatura de Zaira, la asistente virtual: plana, con contorno tinta y los
- * colores de marca (más `--illustration-skin` / `--illustration-blush`), sobre
- * el círculo verde. Decorativa: el texto accesible lo pone quien la usa.
+ * Caricatura de Zaira, la asistente virtual (opción C: moño, gafas redondas y
+ * auricular): plana, con contorno tinta y los colores de marca más los
+ * `--illustration-*`, sobre el círculo verde. Decorativa: el texto accesible
+ * lo pone quien la usa.
  */
 @Component({
   selector: 'app-zaira-avatar',
