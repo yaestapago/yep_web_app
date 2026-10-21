@@ -1,0 +1,325 @@
+<section class="page assistant-admin-page">
+  <yep-page-header
+    title="Conversaciones de Zaira"
+    subtitle="Lo que los negocios le preguntan a Zaira, cuánto gasta cada uno en el mes y las alertas para revisar."
+  >
+    <ng-container ngProjectAs="[slot=actions]">
+      <yep-button
+        variant="ghost"
+        size="sm"
+        [loading]="listLoading() || usageLoading()"
+        (clicked)="refresh()"
+      >
+        <svg lucideRefreshCw aria-hidden="true"></svg>
+        Actualizar
+      </yep-button>
+    </ng-container>
+  </yep-page-header>
+
+  @if (usageError()) {
+    <yep-alert variant="error">{{ usageError() }}</yep-alert>
+  }
+
+  <div class="kpis" data-testid="assistant-kpis">
+    <yep-kpi
+      label="Gasto del mes"
+      [value]="formatCop(usage()?.totals?.costCop)"
+      [hint]="usage() ? monthLabel() + ' · tope por negocio ' + formatCop(usage()!.budgetCop) : ''"
+      [loading]="usageLoading() && !usage()"
+    />
+    <yep-kpi
+      label="Conversaciones"
+      [value]="formatCount(usage()?.totals?.conversations)"
+      hint="Con actividad en el mes"
+      [loading]="usageLoading() && !usage()"
+    />
+    <yep-kpi
+      label="Preguntas libres"
+      [value]="formatCount(usage()?.totals?.questions)"
+      hint="Las del menú no cuentan"
+      [loading]="usageLoading() && !usage()"
+    />
+    <yep-kpi
+      label="Negocios"
+      [value]="formatCount(usage()?.totals?.accounts)"
+      hint="Que usaron preguntas libres"
+      [loading]="usageLoading() && !usage()"
+    />
+  </div>
+
+  <yep-card padding="none" aria-labelledby="assistant-usage-title">
+    <h2 class="section-title" id="assistant-usage-title">Gasto por negocio este mes</h2>
+    @if (usage(); as data) {
+      <div class="yep-table-wrap">
+        <table yepTable class="usage-table">
+          <thead>
+            <tr>
+              <th scope="col">Negocio</th>
+              <th scope="col" class="num">Preguntas</th>
+              <th scope="col" class="num">Gasto</th>
+              <th scope="col" class="num">% del tope</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of data.accounts; track $index) {
+              <tr>
+                <td data-label="Negocio">
+                  {{ row.account?.name ?? 'Usuario sin negocio' }}
+                </td>
+                <td data-label="Preguntas" class="num">{{ formatCount(row.questions) }}</td>
+                <td data-label="Gasto" class="num">{{ formatCop(row.costCop) }}</td>
+                <td data-label="% del tope" class="num">
+                  @if (budgetTone(row.percentOfBudget) === 'neutral') {
+                    {{ row.percentOfBudget }} %
+                  } @else {
+                    <yep-status-chip
+                      [tone]="budgetTone(row.percentOfBudget)"
+                      [label]="row.percentOfBudget + ' %'"
+                    />
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty">
+                  <yep-state
+                    kind="empty"
+                    title="Este mes nadie ha hecho preguntas libres."
+                    description="Las preguntas del menú no gastan, por eso no aparecen aquí."
+                  />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (usageLoading()) {
+      <yep-state kind="loading" title="Cargando el gasto del mes…" [rows]="3" />
+    }
+  </yep-card>
+
+  <div class="toolbar">
+    <label class="flagged-toggle">
+      <yep-toggle
+        [pressed]="flaggedOnly()"
+        ariaLabel="Solo con alertas"
+        data-testid="flagged-toggle"
+        (toggled)="setFlaggedOnly($event)"
+      />
+      <span>Solo con alertas</span>
+    </label>
+    <form class="search" (submit)="applySearch($event)">
+      <yep-input
+        class="search-box"
+        type="search"
+        label="Buscar negocio"
+        placeholder="Nombre del negocio"
+        name="q"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+      <yep-button type="submit" variant="secondary" size="md">
+        <svg lucideSearch aria-hidden="true"></svg>
+        Buscar
+      </yep-button>
+    </form>
+  </div>
+
+  @if (listError() && conversations()) {
+    <yep-alert variant="error">{{ listError() }}</yep-alert>
+  }
+
+  @if (listLoading() && !conversations()) {
+    <yep-state kind="loading" title="Cargando conversaciones…" [rows]="4" />
+  } @else if (listError() && !conversations()) {
+    <yep-state kind="error" [title]="listError()">
+      <yep-button slot="action" variant="secondary" size="sm" (clicked)="loadConversations()"
+        >Reintentar</yep-button
+      >
+    </yep-state>
+  } @else {
+    <yep-card padding="none" aria-label="Conversaciones">
+      <div class="yep-table-wrap">
+        <table yepTable [clickableRows]="true" class="conversations-table">
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Negocio</th>
+              <th scope="col">Usuario</th>
+              <th scope="col" class="num">Preguntas</th>
+              <th scope="col" class="num">Gasto</th>
+              <th scope="col">Alertas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of conversations() ?? []; track item.id) {
+              <tr
+                tabindex="0"
+                [attr.data-testid]="'conversation-row-' + item.id"
+                (click)="open(item)"
+                (keydown.enter)="open(item)"
+              >
+                <td data-label="Fecha" class="nowrap">{{ formatDateTime(item.lastMessageAt) }}</td>
+                <td data-label="Negocio">
+                  <span class="strong">{{ item.account?.name ?? 'Sin negocio' }}</span>
+                  @if (item.preview) {
+                    <small class="preview">«{{ item.preview }}»</small>
+                  }
+                </td>
+                <td data-label="Usuario">
+                  @if (item.user) {
+                    <span>{{ item.user.name }}</span>
+                    <small>{{ item.user.email }}</small>
+                  } @else {
+                    <span class="muted">Usuario eliminado</span>
+                  }
+                </td>
+                <td data-label="Preguntas" class="num">{{ formatCount(item.userTurns) }}</td>
+                <td data-label="Gasto" class="num">{{ formatCop(item.costCop) }}</td>
+                <td data-label="Alertas">
+                  <span class="chips">
+                    @for (flag of item.flags; track flag) {
+                      <yep-status-chip [tone]="incidentTones[flag]" [label]="incidentLabels[flag]" />
+                    } @empty {
+                      <span class="muted">—</span>
+                    }
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty">
+                  <yep-state
+                    kind="empty"
+                    [title]="
+                      hasFilters()
+                        ? 'No hay conversaciones con este filtro.'
+                        : 'Aún no hay conversaciones con Zaira.'
+                    "
+                    [description]="
+                      flaggedOnly()
+                        ? 'Ninguna conversación tiene alertas. Apaga «Solo con alertas» para verlas todas.'
+                        : ''
+                    "
+                  >
+                    @if (hasFilters()) {
+                      <yep-button
+                        slot="action"
+                        variant="ghost"
+                        size="sm"
+                        (clicked)="clearFilters()"
+                        >Ver todas</yep-button
+                      >
+                    }
+                  </yep-state>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </yep-card>
+
+    @if (nextCursor()) {
+      <div class="more">
+        <yep-button variant="secondary" size="sm" [loading]="loadingMore()" (clicked)="loadMore()">
+          Cargar más
+        </yep-button>
+      </div>
+    }
+  }
+
+  <yep-modal
+    [open]="detailOpen()"
+    size="lg"
+    title="Conversación con Zaira"
+    [subtitle]="detailSubtitle()"
+    [loading]="detailLoading()"
+    (closeRequested)="closeDetail()"
+  >
+    @if (detailError()) {
+      <yep-state kind="error" [title]="detailError()" />
+    } @else if (detail(); as conversation) {
+      <div class="detail">
+        @if (conversation.incidents.length) {
+          <section class="incidents" aria-labelledby="assistant-incidents-title">
+            <h3 id="assistant-incidents-title">Alertas</h3>
+            <ul>
+              @for (incident of conversation.incidents; track $index) {
+                <li>
+                  <span class="mono">{{ formatDateTime(incident.at) }}</span>
+                  <yep-status-chip
+                    [tone]="incidentTones[incident.kind]"
+                    [label]="incidentLabels[incident.kind]"
+                  />
+                  @if (incident.text) {
+                    <span class="incident-text">{{ incident.text }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <section class="transcript" aria-label="Transcripción" data-testid="assistant-transcript">
+          @for (entry of conversation.transcript; track $index; let index = $index) {
+            @switch (entry.role) {
+              @case ('user') {
+                <div class="bubble bubble--user">
+                  <span class="who">Usuario</span>
+                  <p>{{ entry.text }}</p>
+                </div>
+              }
+              @case ('assistant') {
+                <div class="bubble bubble--assistant">
+                  <span class="who">Zaira</span>
+                  <p>{{ entry.text }}</p>
+                </div>
+              }
+              @case ('tool_call') {
+                <div class="tool">
+                  <span class="tool__label">Consultó: {{ toolLabel(entry.toolName) }}</span>
+                  @if (entry.text && entry.text !== '{}') {
+                    <code class="tool__input">{{ entry.text }}</code>
+                  }
+                </div>
+              }
+              @case ('tool_result') {
+                <div class="tool" [class.tool--error]="entry.isError">
+                  <button
+                    type="button"
+                    class="tool__toggle"
+                    [attr.aria-expanded]="expandedResults().has(index)"
+                    (click)="toggleResult(index)"
+                  >
+                    {{ expandedResults().has(index) ? 'Ocultar' : 'Ver' }} lo que devolvió
+                    {{ toolLabel(entry.toolName) }}
+                    @if (entry.isError) {
+                      (error)
+                    }
+                  </button>
+                  @if (expandedResults().has(index)) {
+                    <pre class="tool__result">{{ entry.text }}</pre>
+                  }
+                </div>
+              }
+            }
+          } @empty {
+            <p class="muted">
+              Esta conversación no tiene mensajes guardados: el turno no tuvo respuesta. Las alertas
+              de arriba dicen por qué.
+            </p>
+          }
+        </section>
+
+        <p class="meta">
+          Modelo {{ conversation.model }} · empezó {{ formatDateTime(conversation.createdAt) }}
+        </p>
+      </div>
+    }
+
+    <ng-container modalFooter>
+      <yep-button variant="ghost" (clicked)="closeDetail()">Cerrar</yep-button>
+    </ng-container>
+  </yep-modal>
+</section>
