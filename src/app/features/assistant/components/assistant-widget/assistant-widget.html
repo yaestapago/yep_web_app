@@ -1,0 +1,185 @@
+@if (chat.open()) {
+  <section
+    id="assistant-panel"
+    class="assistant-panel"
+    role="dialog"
+    aria-labelledby="assistant-title"
+    (keydown.escape)="close()"
+  >
+    <header class="assistant-panel__header">
+      <span class="assistant-panel__avatar" aria-hidden="true">
+        <svg lucideMessageCircle></svg>
+      </span>
+      <div class="assistant-panel__titles">
+        <h2 id="assistant-title" class="assistant-panel__title">Zaira</h2>
+        <p class="assistant-panel__subtitle">Asistente virtual de YEP</p>
+      </div>
+      @if (chat.messages().length) {
+        <yep-icon-button
+          [icon]="resetIcon"
+          label="Nueva conversación"
+          size="md"
+          (clicked)="newConversation()"
+        />
+      }
+      <yep-icon-button [icon]="closeIcon" label="Cerrar" size="md" (clicked)="close()" />
+    </header>
+
+    <div class="assistant-panel__log" #log aria-live="polite">
+      @if (!chat.messages().length) {
+        <div class="assistant-bubble assistant-bubble--assistant">
+          <p>
+            Hola{{ firstName() ? ', ' + firstName() : '' }}. Soy Zaira, la asistente virtual de
+            YEP. ¿En qué te ayudo?
+          </p>
+        </div>
+        <ng-container [ngTemplateOutlet]="menuList" />
+      }
+
+      @for (message of chat.messages(); track message.id) {
+        <div
+          class="assistant-bubble"
+          [class.assistant-bubble--user]="message.role === 'user'"
+          [class.assistant-bubble--assistant]="message.role === 'assistant'"
+          [class.assistant-bubble--error]="message.error"
+        >
+          @for (block of message.blocks; track $index) {
+            @if (block.type === 'p') {
+              <p>
+                @for (part of block.parts; track trackPart($index, part)) {
+                  <ng-container
+                    [ngTemplateOutlet]="inline"
+                    [ngTemplateOutletContext]="{ $implicit: part }"
+                  />
+                }
+              </p>
+            } @else if (block.type === 'ol') {
+              <ol>
+                @for (item of block.items; track $index) {
+                  <li>
+                    @for (part of item; track trackPart($index, part)) {
+                      <ng-container
+                        [ngTemplateOutlet]="inline"
+                        [ngTemplateOutletContext]="{ $implicit: part }"
+                      />
+                    }
+                  </li>
+                }
+              </ol>
+            } @else {
+              <ul>
+                @for (item of block.items; track $index) {
+                  <li>
+                    @for (part of item; track trackPart($index, part)) {
+                      <ng-container
+                        [ngTemplateOutlet]="inline"
+                        [ngTemplateOutletContext]="{ $implicit: part }"
+                      />
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </div>
+      }
+
+      @if (chat.sending()) {
+        <div
+          class="assistant-bubble assistant-bubble--assistant assistant-typing"
+          role="status"
+          aria-label="Zaira está escribiendo"
+        >
+          <span></span><span></span><span></span>
+        </div>
+      }
+
+      @if (menuOpen() && chat.messages().length) {
+        <ng-container [ngTemplateOutlet]="menuList" />
+      }
+    </div>
+
+    @if (chat.messages().length) {
+      <div class="assistant-panel__shortcuts">
+        <button
+          type="button"
+          class="assistant-panel__menu-toggle"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="toggleMenu()"
+        >
+          {{ menuOpen() ? 'Ocultar preguntas frecuentes' : 'Preguntas frecuentes' }}
+        </button>
+      </div>
+    }
+
+    <form class="assistant-composer" (submit)="submit($event)">
+      <textarea
+        #input
+        class="assistant-composer__input"
+        rows="1"
+        [attr.maxlength]="maxLength"
+        placeholder="Escribe tu pregunta"
+        aria-label="Escribe tu pregunta"
+        (input)="onInput($event)"
+        (keydown)="onKeydown($event)"
+      ></textarea>
+      <button
+        type="submit"
+        class="assistant-composer__send"
+        [disabled]="!canSend()"
+        aria-label="Enviar"
+        title="Enviar"
+      >
+        <svg lucideSendHorizontal aria-hidden="true"></svg>
+      </button>
+    </form>
+    <p class="assistant-panel__note">
+      Zaira es una inteligencia artificial y puede equivocarse. Solo ve la información de tu negocio.
+    </p>
+  </section>
+}
+
+<button
+  type="button"
+  class="assistant-fab"
+  [class.assistant-fab--open]="chat.open()"
+  [attr.aria-expanded]="chat.open()"
+  aria-controls="assistant-panel"
+  [attr.aria-label]="chat.open() ? 'Cerrar el chat con Zaira' : 'Pregúntale a Zaira'"
+  (click)="toggle()"
+>
+  @if (chat.open()) {
+    <svg lucideX aria-hidden="true"></svg>
+  } @else {
+    <svg lucideMessageCircle aria-hidden="true"></svg>
+    <span class="assistant-fab__label">Pregúntale a Zaira</span>
+  }
+</button>
+
+<ng-template #menuList>
+  <p class="assistant-menu__label">Preguntas frecuentes</p>
+  <ul class="assistant-menu">
+    @for (item of menu; track item.question) {
+      <li>
+        <button
+          type="button"
+          class="assistant-menu__item"
+          [disabled]="chat.sending()"
+          (click)="ask(item)"
+        >
+          {{ item.question }}
+        </button>
+      </li>
+    }
+  </ul>
+</ng-template>
+
+<ng-template #inline let-part>
+  @if (part.href) {
+    <a [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a>
+  } @else if (part.bold) {
+    <strong>{{ part.text }}</strong>
+  } @else {
+    {{ part.text }}
+  }
+</ng-template>
