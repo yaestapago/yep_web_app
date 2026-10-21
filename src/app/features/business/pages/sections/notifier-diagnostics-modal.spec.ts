@@ -76,13 +76,14 @@ function capture(overrides: Partial<NotifierCaptureSnapshot> = {}): NotifierCapt
     batteryUnrestricted: true,
     processStartedAt: iso(180),
     seenTotal: 96,
-    // Como lo manda el backend: arreglo ordenado desc.
+    // Como lo manda el backend: arreglo ordenado desc y solo apps vigiladas
+    // (banco, SMS y la propia app); `seenTotal` sí cuenta todas.
     seenByPackage: [
-      { packageName: 'com.whatsapp', count: 80 },
       { packageName: 'com.android.mms', count: 12 },
       { packageName: 'com.nequi.mobileapp', count: 4 },
+      { packageName: 'co.yaestapago.notifier', count: 2 },
     ],
-    lastNotificationPackage: 'com.whatsapp',
+    lastNotificationPackage: 'com.nequi.mobileapp',
     receiver: {
       received: 16,
       accepted: 3,
@@ -155,18 +156,18 @@ describe('helpers del diagnóstico de escucha', () => {
   it('seenByPackageEntries: lee el arreglo del backend y tolera el objeto antiguo; descarta basura', () => {
     expect(
       seenByPackageEntries([
-        { packageName: 'com.whatsapp', count: 80 },
+        { packageName: 'co.yaestapago.notifier', count: 80 },
         { packageName: '', count: 3 },
         { packageName: 'com.android.mms', count: 'x' } as never,
         null as never,
         { packageName: 'com.nequi.mobileapp', count: 4 },
       ]),
     ).toEqual([
-      { packageName: 'com.whatsapp', count: 80 },
+      { packageName: 'co.yaestapago.notifier', count: 80 },
       { packageName: 'com.nequi.mobileapp', count: 4 },
     ]);
-    expect(seenByPackageEntries({ 'com.whatsapp': 80, 'com.android.mms': 12 })).toEqual([
-      { packageName: 'com.whatsapp', count: 80 },
+    expect(seenByPackageEntries({ 'co.yaestapago.notifier': 80, 'com.android.mms': 12 })).toEqual([
+      { packageName: 'co.yaestapago.notifier', count: 80 },
       { packageName: 'com.android.mms', count: 12 },
     ]);
     expect(seenByPackageEntries([])).toEqual([]);
@@ -178,7 +179,7 @@ describe('helpers del diagnóstico de escucha', () => {
     const rows = topSeenApps(
       [
         { packageName: 'com.android.mms', count: 12 },
-        { packageName: 'com.whatsapp', count: 80 },
+        { packageName: 'co.yaestapago.notifier', count: 80 },
         { packageName: 'com.nequi.mobileapp', count: 4 },
         { packageName: 'x.y', count: 0 },
       ],
@@ -186,17 +187,17 @@ describe('helpers del diagnóstico de escucha', () => {
       'com.android.mms',
       2,
     );
-    expect(rows.map((row) => row.packageName)).toEqual(['com.whatsapp', 'com.android.mms']);
-    expect(rows[0]).toMatchObject({ appLabel: 'WhatsApp', watched: false, isSms: false });
+    expect(rows.map((row) => row.packageName)).toEqual(['co.yaestapago.notifier', 'com.android.mms']);
+    expect(rows[0]).toMatchObject({ appLabel: 'YEP Notifyer', watched: false, isSms: false });
     expect(rows[1]).toMatchObject({ appLabel: 'Mensajes', watched: true, isSms: true, count: 12 });
     expect(topSeenApps(null, new Set(), null)).toEqual([]);
     expect(topSeenApps([], new Set(), null)).toEqual([]);
   });
 
   it('topSeenApps: también funciona con el objeto de un backend anterior', () => {
-    const rows = topSeenApps({ 'com.whatsapp': 80, 'com.android.mms': 12 }, new Set(), null);
+    const rows = topSeenApps({ 'com.nequi.mobileapp': 80, 'com.android.mms': 12 }, new Set(), null);
     expect(rows.map((row) => `${row.packageName}:${row.count}`)).toEqual([
-      'com.whatsapp:80',
+      'com.nequi.mobileapp:80',
       'com.android.mms:12',
     ]);
   });
@@ -392,7 +393,7 @@ describe('NotifierDiagnosticsModal', () => {
 
     expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('96');
     // Sin `lastNotificationAt` no hay fecha, así que tampoco se muestra la app.
-    expect(dlValue(fixture, 'Última notificación vista (cualquier app)')).toBe('Ninguna todavía');
+    expect(dlValue(fixture, 'Última notificación vista')).toBe('Ninguna todavía');
     expect(dlValue(fixture, 'Aceptadas (pagos)')).toBe('3');
     expect(content).toContain('Funcionó');
     expect(content).toContain('entregada en 230 ms');
@@ -400,10 +401,28 @@ describe('NotifierDiagnosticsModal', () => {
 
   it('"última notificación vista": hace X · fecha · app (del `capture.lastNotificationPackage`)', () => {
     const fixture = render(notifier({ lastNotificationAt: iso(3) }));
-    const value = dlValue(fixture, 'Última notificación vista (cualquier app)');
+    const value = dlValue(fixture, 'Última notificación vista');
     expect(value).toContain('hace 3 min');
-    expect(value).toContain('WhatsApp');
-    expect(value).toContain('com.whatsapp');
+    expect(value).toContain('Nequi');
+    expect(value).toContain('com.nequi.mobileapp');
+  });
+
+  it('"última notificación vista" sin app (no era una app vigilada): solo la hora', () => {
+    const snapshot = capture({ lastNotificationPackage: null });
+    api.diagnostics.mockReturnValue(of({ ...response, capture: snapshot }));
+    const fixture = render(notifier({ lastNotificationAt: iso(3), capture: snapshot }));
+    const value = dlValue(fixture, 'Última notificación vista');
+    expect(value).toContain('hace 3 min');
+    // "hace 3 min · fecha", sin el tercer tramo de la app.
+    expect(value?.match(/·/g)).toHaveLength(1);
+  });
+
+  it('la sección se llama "Apps vigiladas" y dice que solo muestra las del banco y la de SMS', () => {
+    const content = text(render(notifier()));
+    expect(content).toContain('Apps vigiladas');
+    expect(content).toContain('Solo las apps del banco y la de SMS. Sin texto: solo cuántas.');
+    expect(content).not.toContain('Lo que ha visto el listener');
+    expect(content).not.toContain('cualquier app');
   });
 
   describe('fila "Avisos de la app" (capture.notificationsEnabled)', () => {
@@ -698,16 +717,17 @@ describe('NotifierDiagnosticsModal', () => {
       el(fixture).querySelectorAll<HTMLTableRowElement>('[data-testid="diag-top-apps"] tbody tr'),
     );
     expect(rows.map((row) => row.getAttribute('data-package'))).toEqual([
-      'com.whatsapp',
       'com.android.mms',
       'com.nequi.mobileapp',
+      'co.yaestapago.notifier',
     ]);
-    expect(rows[0].textContent).toContain('WhatsApp');
-    expect(rows[0].textContent).not.toContain('Vigilada');
-    expect(rows[1].textContent).toContain('App de SMS');
+    expect(rows[0].textContent).toContain('App de SMS');
+    expect(rows[0].textContent).toContain('Vigilada');
+    expect(rows[1].textContent).toContain('Nequi');
     expect(rows[1].textContent).toContain('Vigilada');
-    expect(rows[2].textContent).toContain('Nequi');
-    expect(rows[2].textContent).toContain('Vigilada');
+    // La propia app (prueba de escucha) se ve, pero no es una app vigilada.
+    expect(rows[2].textContent).toContain('YEP Notifyer');
+    expect(rows[2].textContent).not.toContain('Vigilada');
   });
 
   it('pinta la línea de tiempo con 96 cubetas fijas y los cambios de estado', () => {
@@ -788,7 +808,7 @@ describe('NotifierDiagnosticsModal', () => {
     const content = text(fixture);
     expect(content).toContain('No pudimos cargar el detalle');
     expect(dlValue(fixture, 'Notificaciones vistas desde el arranque')).toContain('7');
-    expect(content).toContain('no ha visto notificaciones de ninguna app');
+    expect(content).toContain('Las apps vigiladas no han mostrado notificaciones');
     expect(content).toContain('todavía no reporta los contadores del filtro');
     expect(el(fixture).querySelector('[data-testid="diag-self-test"]')?.textContent).toContain(
       'Sin prueba todavía',

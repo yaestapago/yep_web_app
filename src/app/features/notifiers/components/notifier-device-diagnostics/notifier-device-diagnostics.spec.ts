@@ -110,7 +110,7 @@ describe('NotifierDeviceDiagnostics — app de SMS y avisos descartados', () => 
         recentDiscards: [
           discard({ packageName: 'com.nequi.mobileapp', reason: 'content_not_matched', count: 1 }),
           discard({ reason: 'sender_not_matched', count: 4 }),
-          discard({ packageName: 'com.whatsapp', reason: 'package_not_watched', count: 2 }),
+          discard({ packageName: 'com.davivienda.daviplata', reason: 'package_not_watched', count: 2 }),
           discard({ packageName: 'com.android.mms', reason: 'sender_not_matched', count: 7 }),
         ],
       }),
@@ -134,7 +134,8 @@ describe('NotifierDeviceDiagnostics — app de SMS y avisos descartados', () => 
     expect(groups[1].textContent).toContain('Texto no reconocido');
     expect(groups[1].textContent).toContain('Escríbenos para revisarlo.');
     expect(groups[2].textContent).toContain('App no escuchada');
-    expect(groups[2].textContent).toContain('Llegó por una app que no estamos escuchando.');
+    expect(groups[2].textContent).toContain(DISCARD_REASON_COPY.package_not_watched.hint);
+    expect(groups[2].textContent).toContain('Daviplata');
   });
 
   it('cada fila muestra la app, cuántos avisos y la fecha del último', () => {

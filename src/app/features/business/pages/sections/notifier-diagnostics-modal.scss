@@ -88,6 +88,11 @@
   margin-top: var(--space-3);
 }
 
+/* Bajada de una sección: qué muestra y qué no. */
+.diag-lead {
+  margin-bottom: var(--space-3);
+}
+
 /* Causa de una prueba fallida: texto de lectura, debajo del chip. */
 .diag-reason {
   color: var(--color-text-primary);
