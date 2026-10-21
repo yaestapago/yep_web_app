@@ -9,8 +9,14 @@
     [eyebrow]="'Novedad · ' + featured.category"
     [title]="featured.title"
     [text]="featured.description"
-    imageSrc="illustrations/home-panel.svg"
+    [imageSrc]="featured.image ?? 'illustrations/home-panel.svg'"
   >
+    <!-- Un solo @if: el banner solo proyecta en [slot=actions] la raíz directa del bloque. -->
+    @if (featured.opensAssistant && canUseAssistant()) {
+      <yep-button slot="actions" (clicked)="openAssistant()">
+        {{ featured.opensAssistant.label }}
+      </yep-button>
+    }
     @if (featured.action; as action) {
       <a slot="actions" yepButton [href]="action.href" target="_blank" rel="noopener noreferrer">
         @if (action.icon) {

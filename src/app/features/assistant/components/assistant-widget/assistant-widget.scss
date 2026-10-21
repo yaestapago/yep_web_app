@@ -71,6 +71,28 @@
   width: var(--assistant-fab-size);
 }
 
+/* Presentación de lanzamiento, dentro de yep-modal. */
+.assistant-intro {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.assistant-intro__text {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.assistant-intro__note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
 /* Saludo: aparece una vez al día junto al botón, hasta que lo cierren o abran el chat. */
 .assistant-nudge {
   align-items: flex-start;
