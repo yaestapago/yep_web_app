@@ -16,8 +16,12 @@ export type AssistantBlock =
 
 const ORDERED_ITEM = /^\d+[.)]\s+(.*)$/;
 const BULLET_ITEM = /^[-*•]\s+(.*)$/;
-/** `**negrita**` o un enlace http(s) sin la puntuación final. */
-const INLINE = /\*\*(.+?)\*\*|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?¿¡"'»])/g;
+/**
+ * `**negrita**`, un enlace con título `[Con Gmail](https://…)` (así llegan los
+ * videos de las guías) o un enlace http(s) suelto, sin la puntuación final.
+ */
+const INLINE =
+  /\*\*(.+?)\*\*|\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?¿¡"'»])/g;
 
 export function parseAssistantInline(text: string): AssistantInline[] {
   const parts: AssistantInline[] = [];
@@ -27,8 +31,10 @@ export function parseAssistantInline(text: string): AssistantInline[] {
     if (index > last) parts.push({ text: text.slice(last, index) });
     if (match[1] !== undefined) {
       parts.push({ text: match[1], bold: true });
+    } else if (match[2] !== undefined) {
+      parts.push({ text: match[2], href: match[3] });
     } else {
-      parts.push({ text: match[2], href: match[2] });
+      parts.push({ text: match[4], href: match[4] });
     }
     last = index + match[0].length;
   }

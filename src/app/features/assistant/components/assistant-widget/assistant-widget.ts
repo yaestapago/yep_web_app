@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
+  DestroyRef,
   ElementRef,
   afterRenderEffect,
   computed,
@@ -8,12 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {
-  LucideMessageCircle,
-  LucideRotateCcw,
-  LucideSendHorizontal,
-  LucideX,
-} from '@lucide/angular';
+import { LucideRotateCcw, LucideSendHorizontal, LucideX } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { IconButton } from '../../../../shared/ui/icon-button/icon-button';
@@ -23,9 +19,17 @@ import {
   AssistantChatService,
   AssistantMenuItem,
 } from '../../services/assistant-chat.service';
+import { ZairaAvatar } from '../zaira-avatar/zaira-avatar';
 
 /** Igual que el backend (`ASSISTANT_MESSAGE_MAX_LENGTH`). */
 const MAX_MESSAGE_LENGTH = 1000;
+/** Día (`YYYY-MM-DD`) en que se cerró el saludo o se abrió el chat. */
+const NUDGE_STORAGE_KEY = 'yep-zaira-nudge';
+const NUDGE_DELAY_MS = 4000;
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /**
  * Botón flotante y panel de chat con Zaira, la asistente virtual. Se monta una
@@ -33,7 +37,7 @@ const MAX_MESSAGE_LENGTH = 1000;
  */
 @Component({
   selector: 'app-assistant-widget',
-  imports: [IconButton, NgTemplateOutlet, LucideMessageCircle, LucideSendHorizontal, LucideX],
+  imports: [IconButton, NgTemplateOutlet, LucideSendHorizontal, LucideX, ZairaAvatar],
   templateUrl: './assistant-widget.html',
   styleUrl: './assistant-widget.scss',
 })
@@ -48,6 +52,8 @@ export class AssistantWidget {
   protected readonly draft = signal('');
   /** Menú de preguntas frecuentes reabierto en medio de una conversación. */
   protected readonly menuOpen = signal(false);
+  /** Saludo junto al botón: una vez al día, hasta que lo cierren o abran el chat. */
+  protected readonly nudgeVisible = signal(false);
   protected readonly firstName = computed(() => this.session.user()?.firstName?.trim() || null);
   protected readonly canSend = computed(() => !!this.draft().trim() && !this.chat.sending());
 
@@ -63,11 +69,30 @@ export class AssistantWidget {
       const log = this.log()?.nativeElement;
       if (log) log.scrollTop = log.scrollHeight;
     });
+
+    if (!this.nudgeShownToday()) {
+      const timer = setTimeout(() => {
+        if (!this.chat.open()) this.nudgeVisible.set(true);
+      }, NUDGE_DELAY_MS);
+      inject(DestroyRef).onDestroy(() => clearTimeout(timer));
+    }
   }
 
   protected toggle(): void {
     this.chat.toggle();
-    if (this.chat.open()) this.focusInput();
+    if (this.chat.open()) {
+      this.dismissNudge();
+      this.focusInput();
+    }
+  }
+
+  protected dismissNudge(): void {
+    this.nudgeVisible.set(false);
+    try {
+      localStorage.setItem(NUDGE_STORAGE_KEY, today());
+    } catch {
+      // Sin almacenamiento (modo privado): el saludo vuelve en la próxima visita.
+    }
   }
 
   protected close(): void {
@@ -124,6 +149,14 @@ export class AssistantWidget {
   private autoResize(textarea: HTMLTextAreaElement): void {
     textarea.style.height = 'auto';
     textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  private nudgeShownToday(): boolean {
+    try {
+      return localStorage.getItem(NUDGE_STORAGE_KEY) === today();
+    } catch {
+      return false;
+    }
   }
 
   private focusInput(): void {

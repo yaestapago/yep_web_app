@@ -7,12 +7,10 @@
     (keydown.escape)="close()"
   >
     <header class="assistant-panel__header">
-      <span class="assistant-panel__avatar" aria-hidden="true">
-        <svg lucideMessageCircle></svg>
-      </span>
+      <app-zaira-avatar [size]="40" [online]="true" />
       <div class="assistant-panel__titles">
         <h2 id="assistant-title" class="assistant-panel__title">Zaira</h2>
-        <p class="assistant-panel__subtitle">Asistente virtual de YEP</p>
+        <p class="assistant-panel__subtitle">Asistente virtual de YEP · en línea</p>
       </div>
       @if (chat.messages().length) {
         <yep-icon-button
@@ -27,70 +25,52 @@
 
     <div class="assistant-panel__log" #log aria-live="polite">
       @if (!chat.messages().length) {
-        <div class="assistant-bubble assistant-bubble--assistant">
-          <p>
-            Hola{{ firstName() ? ', ' + firstName() : '' }}. Soy Zaira, la asistente virtual de
-            YEP. ¿En qué te ayudo?
-          </p>
+        <div class="assistant-row">
+          <app-zaira-avatar [size]="28" />
+          <div class="assistant-bubble assistant-bubble--assistant">
+            <p>
+              Hola{{ firstName() ? ', ' + firstName() : '' }}. Soy Zaira, la asistente virtual de
+              YEP. ¿En qué te ayudo?
+            </p>
+          </div>
         </div>
         <ng-container [ngTemplateOutlet]="menuList" />
       }
 
       @for (message of chat.messages(); track message.id) {
-        <div
-          class="assistant-bubble"
-          [class.assistant-bubble--user]="message.role === 'user'"
-          [class.assistant-bubble--assistant]="message.role === 'assistant'"
-          [class.assistant-bubble--error]="message.error"
-        >
-          @for (block of message.blocks; track $index) {
-            @if (block.type === 'p') {
-              <p>
-                @for (part of block.parts; track trackPart($index, part)) {
-                  <ng-container
-                    [ngTemplateOutlet]="inline"
-                    [ngTemplateOutletContext]="{ $implicit: part }"
-                  />
-                }
-              </p>
-            } @else if (block.type === 'ol') {
-              <ol>
-                @for (item of block.items; track $index) {
-                  <li>
-                    @for (part of item; track trackPart($index, part)) {
-                      <ng-container
-                        [ngTemplateOutlet]="inline"
-                        [ngTemplateOutletContext]="{ $implicit: part }"
-                      />
-                    }
-                  </li>
-                }
-              </ol>
-            } @else {
-              <ul>
-                @for (item of block.items; track $index) {
-                  <li>
-                    @for (part of item; track trackPart($index, part)) {
-                      <ng-container
-                        [ngTemplateOutlet]="inline"
-                        [ngTemplateOutletContext]="{ $implicit: part }"
-                      />
-                    }
-                  </li>
-                }
-              </ul>
-            }
-          }
-        </div>
+        @if (message.role === 'user') {
+          <div class="assistant-bubble assistant-bubble--user">
+            <ng-container
+              [ngTemplateOutlet]="blocks"
+              [ngTemplateOutletContext]="{ $implicit: message.blocks }"
+            />
+          </div>
+        } @else {
+          <div class="assistant-row">
+            <app-zaira-avatar [size]="28" />
+            <div
+              class="assistant-bubble assistant-bubble--assistant"
+              [class.assistant-bubble--error]="message.error"
+            >
+              <ng-container
+                [ngTemplateOutlet]="blocks"
+                [ngTemplateOutletContext]="{ $implicit: message.blocks }"
+              />
+            </div>
+          </div>
+        }
       }
 
       @if (chat.sending()) {
-        <div
-          class="assistant-bubble assistant-bubble--assistant assistant-typing"
-          role="status"
-          aria-label="Zaira está escribiendo"
-        >
-          <span></span><span></span><span></span>
+        <div class="assistant-row">
+          <app-zaira-avatar [size]="28" />
+          <div
+            class="assistant-bubble assistant-bubble--assistant assistant-typing"
+            role="status"
+            aria-label="Zaira está escribiendo"
+          >
+            <span></span><span></span><span></span>
+          </div>
         </div>
       }
 
@@ -139,6 +119,22 @@
   </section>
 }
 
+@if (nudgeVisible() && !chat.open()) {
+  <div class="assistant-nudge" role="status">
+    <button type="button" class="assistant-nudge__text" (click)="toggle()">
+      <strong>¡Hola! Soy Zaira.</strong>
+      Si tienes dudas con YEP, pregúntame.
+    </button>
+    <yep-icon-button
+      class="assistant-nudge__close"
+      [icon]="closeIcon"
+      label="Cerrar saludo"
+      size="sm"
+      (clicked)="dismissNudge()"
+    />
+  </div>
+}
+
 <button
   type="button"
   class="assistant-fab"
@@ -151,10 +147,51 @@
   @if (chat.open()) {
     <svg lucideX aria-hidden="true"></svg>
   } @else {
-    <svg lucideMessageCircle aria-hidden="true"></svg>
-    <span class="assistant-fab__label">Pregúntale a Zaira</span>
+    <app-zaira-avatar class="assistant-fab__avatar" [size]="44" [online]="true" />
+    <span class="assistant-fab__label">
+      <span class="assistant-fab__name">Zaira</span>
+      <span class="assistant-fab__hint">¿Te ayudo?</span>
+    </span>
   }
 </button>
+
+<ng-template #blocks let-blocks>
+  @for (block of blocks; track $index) {
+    @if (block.type === 'p') {
+      <p>
+        @for (part of block.parts; track trackPart($index, part)) {
+          <ng-container [ngTemplateOutlet]="inline" [ngTemplateOutletContext]="{ $implicit: part }" />
+        }
+      </p>
+    } @else if (block.type === 'ol') {
+      <ol>
+        @for (item of block.items; track $index) {
+          <li>
+            @for (part of item; track trackPart($index, part)) {
+              <ng-container
+                [ngTemplateOutlet]="inline"
+                [ngTemplateOutletContext]="{ $implicit: part }"
+              />
+            }
+          </li>
+        }
+      </ol>
+    } @else {
+      <ul>
+        @for (item of block.items; track $index) {
+          <li>
+            @for (part of item; track trackPart($index, part)) {
+              <ng-container
+                [ngTemplateOutlet]="inline"
+                [ngTemplateOutletContext]="{ $implicit: part }"
+              />
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</ng-template>
 
 <ng-template #menuList>
   <p class="assistant-menu__label">Preguntas frecuentes</p>

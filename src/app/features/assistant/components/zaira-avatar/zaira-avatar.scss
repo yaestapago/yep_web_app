@@ -1,0 +1,78 @@
+/* Ilustración plana con contorno tinta (design-system: "personas dibujadas con la misma línea"). */
+
+:host {
+  display: inline-block;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.zaira__lines {
+  stroke: var(--brand-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.zaira__bg {
+  fill: var(--brand-green);
+  stroke: none;
+}
+
+.zaira__ink {
+  fill: var(--brand-ink);
+}
+
+.zaira__skin {
+  fill: var(--illustration-skin);
+}
+
+.zaira__shirt {
+  fill: var(--brand-on-ink);
+}
+
+.zaira__lime {
+  fill: var(--brand-lime);
+}
+
+.zaira__band {
+  fill: none;
+  stroke: var(--brand-lime);
+  stroke-width: 4;
+}
+
+.zaira__line {
+  fill: none;
+}
+
+.zaira__eye {
+  fill: var(--brand-ink);
+  stroke: none;
+}
+
+.zaira__brow {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.zaira__blush {
+  fill: var(--illustration-blush);
+  stroke: none;
+}
+
+/* "Punto en vivo": el uso del lima que pide el sistema de diseño. */
+.zaira__online {
+  background: var(--brand-lime);
+  border: 2px solid var(--brand-ink);
+  border-radius: var(--radius-full);
+  bottom: 2%;
+  height: 26%;
+  position: absolute;
+  right: 2%;
+  width: 26%;
+}

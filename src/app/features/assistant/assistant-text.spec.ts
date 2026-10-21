@@ -44,6 +44,32 @@ describe('parseAssistantInline', () => {
     ]);
   });
 
+  it('muestra los enlaces con título (videos de las guías) por su título', () => {
+    expect(
+      parseAssistantInline('Mira el video: [Con Gmail](https://www.loom.com/share/abc).'),
+    ).toEqual([
+      { text: 'Mira el video: ' },
+      { text: 'Con Gmail', href: 'https://www.loom.com/share/abc' },
+      { text: '.' },
+    ]);
+    expect(parseAssistantText('Videos:\n- [Con Gmail](https://a.co/1)\n- [Con Outlook](https://a.co/2)')).toEqual([
+      { type: 'p', parts: [{ text: 'Videos:' }] },
+      {
+        type: 'ul',
+        items: [
+          [{ text: 'Con Gmail', href: 'https://a.co/1' }],
+          [{ text: 'Con Outlook', href: 'https://a.co/2' }],
+        ],
+      },
+    ]);
+  });
+
+  it('un enlace con título que no es https queda como texto', () => {
+    expect(parseAssistantInline('[clic](javascript:alert(1))')).toEqual([
+      { text: '[clic](javascript:alert(1))' },
+    ]);
+  });
+
   it('no convierte en enlace lo que no es http(s)', () => {
     expect(parseAssistantInline('javascript:alert(1)')).toEqual([
       { text: 'javascript:alert(1)' },

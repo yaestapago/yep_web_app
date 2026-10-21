@@ -1,0 +1,41 @@
+<svg viewBox="0 0 96 96" focusable="false">
+  <defs>
+    <clipPath [attr.id]="clipId">
+      <circle cx="48" cy="48" r="48" />
+    </clipPath>
+  </defs>
+  <g class="zaira__lines" [attr.clip-path]="'url(#' + clipId + ')'">
+    <circle class="zaira__bg" cx="48" cy="48" r="48" />
+    <!-- Pelo largo, detrás de la cara -->
+    <path
+      class="zaira__ink"
+      d="M24 48 C22 26 34 15 48 15 C62 15 74 26 72 48 L74 70 C74 74 70 76 66 74 L30 74 C26 76 22 74 22 70 Z"
+    />
+    <path class="zaira__skin" d="M41 58 L41 72 C41 76 55 76 55 72 L55 58 Z" />
+    <path class="zaira__shirt" d="M12 98 C12 79 27 70 48 70 C69 70 84 79 84 98 Z" />
+    <path class="zaira__line" d="M40 71 L48 79 L56 71" />
+    <ellipse class="zaira__skin" cx="48" cy="44" rx="17" ry="19" />
+    <!-- Flequillo -->
+    <path
+      class="zaira__ink"
+      d="M31 41 C30 28 38 21 49 21 C59 21 67 28 66 38 C58 37 52 33 47 27 C44 34 38 39 31 41 Z"
+    />
+    <!-- Diadema de soporte, en lima -->
+    <path class="zaira__band" d="M28 46 C27 27 36 17 48 17 C60 17 69 27 68 46" />
+    <rect class="zaira__lime" x="23" y="40" width="9" height="13" rx="4" />
+    <rect class="zaira__lime" x="64" y="40" width="9" height="13" rx="4" />
+    <path class="zaira__line" d="M28 53 C29 61 34 63 38 62" />
+    <circle class="zaira__lime" cx="41" cy="61.5" r="3" />
+    <!-- Cara -->
+    <ellipse class="zaira__eye" cx="41.5" cy="46" rx="2.4" ry="3" />
+    <ellipse class="zaira__eye" cx="54.5" cy="46" rx="2.4" ry="3" />
+    <path class="zaira__brow" d="M37.5 39.5 Q41.5 37.5 45 39" />
+    <path class="zaira__brow" d="M51 39 Q54.5 37.5 58.5 39.5" />
+    <circle class="zaira__blush" cx="36" cy="52" r="2.8" />
+    <circle class="zaira__blush" cx="60" cy="52" r="2.8" />
+    <path class="zaira__line" d="M42 54 Q48 59.5 54 54" />
+  </g>
+</svg>
+@if (online()) {
+  <span class="zaira__online"></span>
+}
