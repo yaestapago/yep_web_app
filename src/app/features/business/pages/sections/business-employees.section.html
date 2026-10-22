@@ -242,6 +242,7 @@
           <span class="access-member__name">{{ employeeLabel(member) }}</span>
           <span class="access-member__hint">
             Por defecto el staff ve en el panel de control todas las cuentas y todas las llaves.
+            En cada una puedes dejarle ver solo los últimos 5, 10 o 20 pagos.
           </span>
         </div>
       </div>
@@ -286,23 +287,53 @@
                 }
 
                 @if (accountSelected) {
-                  <yep-check-option
-                    label="Cuenta directa"
-                    meta="Sin llave Bre-B"
-                    [checked]="isAccessBreBKeySelected(directAccountFilterKey(account))"
-                    [disabled]="savingAccess()"
-                    (checkedChange)="toggleAccessBreBKey(directAccountFilterKey(account), $event)"
-                  />
+                  @let directKey = directAccountFilterKey(account);
+                  <div class="access-option">
+                    <yep-check-option
+                      label="Cuenta directa"
+                      meta="Sin llave Bre-B"
+                      [checked]="isAccessBreBKeySelected(directKey)"
+                      [disabled]="savingAccess()"
+                      (checkedChange)="toggleAccessBreBKey(directKey, $event)"
+                    />
+                    @if (isAccessBreBKeySelected(directKey)) {
+                      <yep-select
+                        class="access-option__limit"
+                        size="sm"
+                        ariaLabel="Pagos que ve de la cuenta directa"
+                        [options]="accessLimitOptions"
+                        [ngModel]="accessLimitValue(directKey)"
+                        (ngModelChange)="setAccessLimit(directKey, $event)"
+                        [disabled]="savingAccess()"
+                        dataCy="access-limit-direct"
+                      />
+                    }
+                  </div>
 
                   @for (key of account.breBKeys; track key; let i = $index) {
-                    <yep-check-option
-                      class="access-key-option"
-                      [label]="account.breBKeysDisplay[i] || key"
-                      meta="Llave Bre-B"
-                      [checked]="isAccessBreBKeySelected(key)"
-                      [disabled]="savingAccess()"
-                      (checkedChange)="toggleAccessBreBKey(key, $event)"
-                    />
+                    @let keyLabel = account.breBKeysDisplay[i] || key;
+                    <div class="access-option">
+                      <yep-check-option
+                        class="access-key-option"
+                        [label]="keyLabel"
+                        meta="Llave Bre-B"
+                        [checked]="isAccessBreBKeySelected(key)"
+                        [disabled]="savingAccess()"
+                        (checkedChange)="toggleAccessBreBKey(key, $event)"
+                      />
+                      @if (isAccessBreBKeySelected(key)) {
+                        <yep-select
+                          class="access-option__limit"
+                          size="sm"
+                          [ariaLabel]="'Pagos que ve de la llave ' + keyLabel"
+                          [options]="accessLimitOptions"
+                          [ngModel]="accessLimitValue(key)"
+                          (ngModelChange)="setAccessLimit(key, $event)"
+                          [disabled]="savingAccess()"
+                          [dataCy]="'access-limit-' + key"
+                        />
+                      }
+                    </div>
                   }
 
                   @if (account.breBKeys.length === 0) {

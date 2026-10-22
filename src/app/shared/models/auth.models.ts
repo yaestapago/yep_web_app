@@ -146,10 +146,21 @@ export interface SectionAccess {
   dashboardRejected: boolean;
 }
 
+/**
+ * Tope de pagos visibles para un filtro de `allowedBreBKeys` (una llave Bre-B o
+ * `direct-account:<id>`): el staff ve solo los `limit` más recientes.
+ */
+export interface SourceEventFilterLimit {
+  filter: string;
+  limit: number;
+}
+
 export interface SourceEventAccess {
   enabled?: boolean;
   bankAccountIds: string[];
   allowedBreBKeys: string[];
+  /** Filtros con tope; los que no están: todos. Ausente en backends viejos. */
+  filterLimits?: SourceEventFilterLimit[];
 }
 
 export interface InvoiceReferencePreferences {

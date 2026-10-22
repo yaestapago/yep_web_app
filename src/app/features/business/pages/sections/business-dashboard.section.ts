@@ -96,6 +96,8 @@ const TRANSACTIONS_PAGE_LIMIT = 100;
 const NOTIFIERS_BACKUP_POLL_MS = 120_000;
 /** Duración (ms) del pulso de "otra fuente confirmó este pago" (algo más que la animación). */
 const CORROBORATION_CUE_MS = 2_000;
+/** Filtro de pagos sin llave de una cuenta (`direct-account:<id>`), como en el backend. */
+const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
 const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
   'received',
@@ -206,6 +208,15 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   });
 
   readonly account = computed(() => this.session.activeMembership()?.businessAccount ?? null);
+  /** Tope de pagos visibles por filtro del staff (filtro → cuántos ve); vacío = sin topes. */
+  private readonly visibleLimits = computed(
+    () =>
+      new Map(
+        (this.session.activeMembership()?.sourceEventAccess?.filterLimits ?? []).map(
+          ({ filter, limit }) => [filter, limit] as const,
+        ),
+      ),
+  );
   readonly canViewEventPayload = computed(() => this.session.isSuperUser());
   readonly canViewSummary = computed(() =>
     canViewDashboardSummary(
@@ -598,7 +609,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       this.tts.speak(event);
     }
 
-    this.metricsEvents.update((events) => this.upsert(events, event));
+    this.metricsEvents.update((events) => this.trimToVisibleLimits(this.upsert(events, event)));
     this.loadSummary();
     this.now.set(Date.now());
     this.trackNeedsReview(event);
@@ -613,7 +624,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     // Se clasifica contra la lista ANTES de insertar: ¿es un reporte nuevo o
     // la reemisión de uno ya listado? ¿se suma a la fila de un pago ya listado?
     const change = classifyLiveSourceEvent(this.sourceEvents(), event);
-    this.sourceEvents.update((events) => this.upsert(events, event));
+    this.sourceEvents.update((events) => this.trimToVisibleLimits(this.upsert(events, event)));
 
     // Campana de "no leído" = pago nuevo. Una corroboración (se suma a la fila
     // de un pago ya listado, o el backend la marca con `firstReport: false`)
@@ -778,6 +789,37 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       return next;
     }
     return [event, ...events];
+  }
+
+  /**
+   * Staff con tope de pagos por filtro ("Cuentas y llaves visibles"): el pago
+   * que llega en vivo saca de la lista al más viejo de su filtro, como hace el
+   * servidor al recargar. Sin topes devuelve la misma lista.
+   */
+  private trimToVisibleLimits(events: SourceEvent[]): SourceEvent[] {
+    const limits = this.visibleLimits();
+    if (limits.size === 0) {
+      return events;
+    }
+    const byFilter = new Map<string, SourceEvent[]>();
+    for (const event of events) {
+      const filter =
+        event.normalized?.receiverBreBKey ||
+        (event.reportedBankAccountId
+          ? `${DIRECT_ACCOUNT_FILTER_PREFIX}${event.reportedBankAccountId}`
+          : '');
+      if (limits.has(filter)) {
+        byFilter.set(filter, [...(byFilter.get(filter) ?? []), event]);
+      }
+    }
+    const hidden = new Set<string>();
+    for (const [filter, filtered] of byFilter) {
+      [...filtered]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(limits.get(filter))
+        .forEach((event) => hidden.add(event.id));
+    }
+    return hidden.size === 0 ? events : events.filter((event) => !hidden.has(event.id));
   }
 
   toggleSummary(): void {

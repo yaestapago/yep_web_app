@@ -217,4 +217,44 @@ describe('BusinessDashboardSection — eventos "Por revisar"', () => {
       'processed',
     );
   });
+
+  it('staff con tope: el pago en vivo saca al más viejo de su filtro y no toca los demás', () => {
+    const owner = session.activeMembership();
+    session.activeMembership.set({
+      role: 'account_staff',
+      businessAccount: { name: 'Café Central' },
+      sourceEventAccess: {
+        enabled: true,
+        bankAccountIds: [],
+        allowedBreBKeys: ['direct-account:ba-1', '0090995395'],
+        filterLimits: [{ filter: 'direct-account:ba-1', limit: 2 }],
+      },
+    } as never);
+    try {
+      const direct = (id: string, createdAt: string) =>
+        sourceEvent({ id, reportedBankAccountId: 'ba-1', createdAt });
+      const keyed = sourceEvent({
+        id: 'llave-vieja',
+        reportedBankAccountId: 'ba-1',
+        normalized: { bankId: 'bancolombia', receiverBreBKey: '0090995395' },
+        createdAt: '2026-10-01T10:00:00.000Z',
+      });
+      const section = create(
+        listMock({
+          all: [
+            direct('directa-2', '2026-10-17T15:00:02.000Z'),
+            direct('directa-1', '2026-10-17T15:00:01.000Z'),
+            keyed,
+          ],
+          review: [],
+        }),
+      );
+
+      events$.next(direct('directa-3', '2026-10-17T15:00:03.000Z'));
+
+      expect(ids(section.sourceEvents())).toEqual(['directa-3', 'directa-2', 'llave-vieja']);
+    } finally {
+      session.activeMembership.set(owner);
+    }
+  });
 });

@@ -59,6 +59,8 @@ export class Select implements ControlValueAccessor {
 
   readonly id = defineInput(`yep-select-${nextSelectId++}`);
   readonly label = defineInput('');
+  /** Nombre accesible cuando no hay `label` visible (p. ej. un selector dentro de una fila). */
+  readonly ariaLabel = defineInput('');
   readonly placeholder = defineInput('Selecciona una opción');
   readonly options = defineInput<readonly SelectSource[]>([]);
   readonly size = defineInput<SelectSize>('md');

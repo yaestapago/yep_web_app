@@ -23,6 +23,7 @@
       [class.yep-select__button--placeholder]="selectedOptions().length === 0"
       [class.yep-select__button--invalid]="error()"
       [attr.data-cy]="dataCy() || null"
+      [attr.aria-label]="label() ? null : ariaLabel() || null"
       [attr.aria-expanded]="open()"
       [attr.aria-invalid]="error() ? 'true' : null"
       [attr.aria-describedby]="hint() || error() ? id() + '-message' : null"
