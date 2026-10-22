@@ -4,6 +4,7 @@ import {
   BusinessMembershipRole,
   BusinessMembershipStatus,
   InvoiceRecipient,
+  SourceEventFilterLimit,
 } from './auth.models';
 
 export interface BusinessAccountsResponse {
@@ -101,6 +102,7 @@ export interface UpdateSourceEventAccessRequest {
   enabled?: boolean;
   bankAccountIds?: string[];
   allowedBreBKeys?: string[];
+  filterLimits?: SourceEventFilterLimit[];
 }
 
 export interface RequestBusinessDeletionResponse {

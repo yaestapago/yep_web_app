@@ -30,6 +30,7 @@ describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
     listApprovedMembers: vi.fn().mockReturnValue(of({ memberships: [] })),
     listLocations: vi.fn().mockReturnValue(of({ locations: [] })),
     updateMemberSectionAccess: vi.fn(),
+    updateMemberSourceEventAccess: vi.fn(),
   };
 
   function create(): BusinessEmployeesSection {
@@ -144,6 +145,108 @@ describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
     expect(section.sectionAccessOpen()).toBe(true);
     expect(section.error()).toContain('No se guardaron');
     expect(section.members()[0].sectionAccess?.dashboardEvents).toBeUndefined();
+  });
+
+  describe('tope de pagos por opción (directa: 5, llave: todos)', () => {
+    const direct = 'direct-account:ba-1';
+    const bankAccount = {
+      id: 'ba-1',
+      bankId: 'bancolombia',
+      accountNumberLast4: '2303',
+      isActive: true,
+      breBKeys: ['0090995395', '0091275512'],
+      breBKeysDisplay: ['0090995395', '0091275512'],
+    } as any;
+
+    function openWith(sourceEventAccess: Record<string, unknown>) {
+      const section = create();
+      const member = { id: 'staff-3', role: 'account_staff', sourceEventAccess } as any;
+      section.bankAccounts.set([bankAccount]);
+      section.members.set([member]);
+      section.openAccess(member);
+      businessApi.updateMemberSourceEventAccess.mockImplementation(
+        (_businessId, _memberId, requested) =>
+          of({ membership: { ...member, sourceEventAccess: requested } }),
+      );
+      return section;
+    }
+
+    it('con un tope manda los filtros explícitos aunque estén todos marcados', () => {
+      const section = openWith({ enabled: true, bankAccountIds: [], allowedBreBKeys: [] });
+
+      expect(section.accessLimitValue(direct)).toBe('all');
+      section.setAccessLimit(direct, '5');
+      section.saveAccess();
+
+      expect(businessApi.updateMemberSourceEventAccess).toHaveBeenCalledWith(
+        businessId,
+        'staff-3',
+        {
+          enabled: true,
+          bankAccountIds: [],
+          allowedBreBKeys: [direct, '0090995395', '0091275512'],
+          filterLimits: [{ filter: direct, limit: 5 }],
+        },
+      );
+    });
+
+    it('al reabrir muestra el tope guardado y "Todos los pagos" lo quita', () => {
+      const section = openWith({
+        enabled: true,
+        bankAccountIds: [],
+        allowedBreBKeys: [direct, '0090995395'],
+        filterLimits: [{ filter: direct, limit: 5 }],
+      });
+
+      expect(section.accessLimitValue(direct)).toBe('5');
+      expect(section.accessLimitValue('0090995395')).toBe('all');
+      section.setAccessLimit(direct, 'all');
+      section.saveAccess();
+
+      expect(businessApi.updateMemberSourceEventAccess).toHaveBeenLastCalledWith(
+        businessId,
+        'staff-3',
+        expect.objectContaining({
+          allowedBreBKeys: [direct, '0090995395'],
+          filterLimits: [],
+        }),
+      );
+    });
+
+    it('no manda el tope de una opción desmarcada', () => {
+      const section = openWith({ enabled: true, bankAccountIds: [], allowedBreBKeys: [] });
+
+      section.setAccessLimit('0091275512', '10');
+      section.toggleAccessBreBKey('0091275512', false);
+      section.saveAccess();
+
+      expect(businessApi.updateMemberSourceEventAccess).toHaveBeenLastCalledWith(
+        businessId,
+        'staff-3',
+        expect.objectContaining({
+          allowedBreBKeys: [direct, '0090995395'],
+          filterLimits: [],
+        }),
+      );
+    });
+
+    it('describe los topes en el resumen del botón de acceso', () => {
+      const section = create();
+      section.bankAccounts.set([bankAccount]);
+
+      expect(
+        section.accessSummary({
+          id: 'staff-4',
+          role: 'account_staff',
+          sourceEventAccess: {
+            enabled: true,
+            bankAccountIds: [],
+            allowedBreBKeys: [direct, '0090995395'],
+            filterLimits: [{ filter: direct, limit: 5 }],
+          },
+        } as any),
+      ).toBe('1 cuenta(s), 2 filtro(s) (directa: últimos 5)');
+    });
   });
 
   it('genera un QR que codifica exactamente el link de registro', async () => {

@@ -186,6 +186,20 @@
   }
 }
 
+/* Opción (cuenta directa o llave) con su tope de pagos debajo, alineado al texto
+   de la opción: casilla 18 px + separación 10 px. */
+.access-option {
+  align-content: start;
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.access-option__limit {
+  margin-left: 28px;
+  max-width: 11rem;
+}
+
 /* Las llaves Bre-B son códigos: van en mono (P9). */
 .access-key-option ::ng-deep .yep-check__label {
   font-family: var(--font-family-mono);

@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   LucideBell,
@@ -20,6 +20,7 @@ import { finalize } from 'rxjs';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessMembershipRole, SectionAccess } from '../../../../shared/models/auth.models';
 import type { BankAccount, BusinessLocation } from '../../../../shared/models/bank-account.models';
+import type { UpdateSourceEventAccessRequest } from '../../../../shared/models/business-account.models';
 import type { ApprovedMember } from '../../../../shared/models/schedule.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Avatar } from '../../../../shared/ui/avatar/avatar';
@@ -41,6 +42,10 @@ import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
+
+/** Topes que se ofrecen por filtro (llave o cuenta directa) en "Cuentas y llaves visibles". */
+const ACCESS_LIMIT_CHOICES = [5, 10, 20];
+const ALL_PAYMENTS = 'all';
 
 const DEFAULT_SECTION_ACCESS: SectionAccess = {
   dashboard: true,
@@ -64,6 +69,7 @@ const DEFAULT_SECTION_ACCESS: SectionAccess = {
 @Component({
   selector: 'app-business-employees-section',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     RouterLink,
     Alert,
@@ -126,6 +132,12 @@ export class BusinessEmployeesSection implements OnInit {
   readonly accessMember = signal<ApprovedMember | null>(null);
   readonly selectedAccessBankAccountIds = signal<string[]>([]);
   readonly selectedAccessBreBKeys = signal<string[]>([]);
+  /** Tope de pagos visibles por filtro marcado; sin entrada = todos. */
+  readonly selectedAccessLimits = signal<Record<string, number>>({});
+  readonly accessLimitOptions: readonly SelectOption[] = [
+    { id: ALL_PAYMENTS, label: 'Todos los pagos' },
+    ...ACCESS_LIMIT_CHOICES.map((limit) => ({ id: String(limit), label: `Últimos ${limit}` })),
+  ];
 
   // Apartados de la aplicación (modal separado, ícono de engranaje).
   readonly sectionAccessOpen = signal(false);
@@ -324,7 +336,30 @@ export class BusinessEmployeesSection implements OnInit {
     if (!access?.allowedBreBKeys.length) {
       return `${accountCount} cuenta(s), todas las llaves`;
     }
-    return `${accountCount} cuenta(s), ${access.allowedBreBKeys.length} filtro(s)`;
+    const summary = `${accountCount} cuenta(s), ${access.allowedBreBKeys.length} filtro(s)`;
+    const limits = (access.filterLimits ?? []).map(
+      ({ filter, limit }) =>
+        `${filter.startsWith(DIRECT_ACCOUNT_FILTER_PREFIX) ? 'directa' : filter}: últimos ${limit}`,
+    );
+    return limits.length > 0 ? `${summary} (${limits.join(', ')})` : summary;
+  }
+
+  accessLimitValue(key: string): string {
+    const limit = this.selectedAccessLimits()[key];
+    return limit ? String(limit) : ALL_PAYMENTS;
+  }
+
+  setAccessLimit(key: string, value: string | number | null): void {
+    const limit = Number(value);
+    this.selectedAccessLimits.update((limits) => {
+      const next = { ...limits };
+      if (Number.isInteger(limit) && limit > 0) {
+        next[key] = limit;
+      } else {
+        delete next[key];
+      }
+      return next;
+    });
   }
 
   isAccessAccountSelected(accountId: string): boolean {
@@ -415,6 +450,7 @@ export class BusinessEmployeesSection implements OnInit {
     this.accessMember.set(null);
     this.selectedAccessBankAccountIds.set([]);
     this.selectedAccessBreBKeys.set([]);
+    this.selectedAccessLimits.set({});
   }
 
   // --- Apartados de la aplicación --------------------------------------------
@@ -671,6 +707,7 @@ export class BusinessEmployeesSection implements OnInit {
           this.accessMember.set(null);
           this.selectedAccessBankAccountIds.set([]);
           this.selectedAccessBreBKeys.set([]);
+          this.selectedAccessLimits.set({});
           closeLoading();
           void this.notifications.success({
             title: 'Acceso actualizado',
@@ -748,6 +785,9 @@ export class BusinessEmployeesSection implements OnInit {
   private initializeAccessSelection(member: ApprovedMember): void {
     const activeAccounts = this.selectableBankAccounts();
     const access = member.sourceEventAccess;
+    this.selectedAccessLimits.set(
+      Object.fromEntries((access?.filterLimits ?? []).map(({ filter, limit }) => [filter, limit])),
+    );
     if (access?.enabled === false) {
       this.selectedAccessBankAccountIds.set([]);
       this.selectedAccessBreBKeys.set([]);
@@ -777,11 +817,7 @@ export class BusinessEmployeesSection implements OnInit {
       .flatMap((account) => this.accessFiltersForAccount(account));
   }
 
-  private accessPayload(): {
-    enabled: boolean;
-    bankAccountIds: string[];
-    allowedBreBKeys: string[];
-  } | null {
+  private accessPayload(): UpdateSourceEventAccessRequest | null {
     const activeAccountIds = this.selectableBankAccounts().map((account) => account.id);
     const selectedAccountIds = this.selectedAccessBankAccountIds().filter((id) =>
       activeAccountIds.includes(id),
@@ -792,6 +828,7 @@ export class BusinessEmployeesSection implements OnInit {
         enabled: false,
         bankAccountIds: [],
         allowedBreBKeys: [],
+        filterLimits: [],
       };
     }
 
@@ -804,14 +841,22 @@ export class BusinessEmployeesSection implements OnInit {
       return null;
     }
 
+    const limits = this.selectedAccessLimits();
+    const filterLimits = selectedKeys
+      .filter((key) => limits[key])
+      .map((key) => ({ filter: key, limit: limits[key] }));
+
+    // Con topes, los filtros van explícitos aunque estén todos: el tope va atado a cada uno.
     return {
       enabled: true,
       bankAccountIds:
         selectedAccountIds.length === activeAccountIds.length ? [] : selectedAccountIds,
       allowedBreBKeys:
-        availableKeys.length === 0 || selectedKeys.length === availableKeys.length
+        filterLimits.length === 0 &&
+        (availableKeys.length === 0 || selectedKeys.length === availableKeys.length)
           ? []
           : selectedKeys,
+      filterLimits,
     };
   }
 
