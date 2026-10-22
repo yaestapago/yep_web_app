@@ -50,6 +50,12 @@
     </yep-button>
   }
 
+  @if (canShowAssistant()) {
+    @defer (on idle) {
+      <app-assistant-widget />
+    }
+  }
+
   @defer (when receiptCaptureOpen()) {
     <app-receipt-capture-modal
       [open]="receiptCaptureOpen()"

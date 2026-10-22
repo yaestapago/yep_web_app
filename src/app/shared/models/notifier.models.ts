@@ -148,6 +148,22 @@ export interface NotifierCaptureSelfTest {
 }
 
 /**
+ * SMS del banco que Android 15+ le oculta a YEP (app ≥ 1.0.11): si el
+ * remitente no está en contactos, el título es el número (`85540`), parece un
+ * código OTP y la notificación llega con el texto de redacción del sistema.
+ */
+export interface NotifierCaptureSmsHidden {
+  /** Ocultas desde que arrancó el proceso de la app. */
+  count?: number | null;
+  /** Última notificación oculta (ISO). */
+  lastHiddenAt?: string | null;
+  /** Último SMS bancario legible (ISO). */
+  lastReadableAt?: string | null;
+  /** App que publicó la última oculta. */
+  packageName?: string | null;
+}
+
+/**
  * Foto de la captura en el celular tal como llegó en el último heartbeat
  * (app ≥ 1.0.8). `listenerConnected` es la verdad sobre si Android tiene
  * enlazado el servicio que lee notificaciones: el servicio en primer plano puede
@@ -184,17 +200,20 @@ export interface NotifierCaptureSnapshot {
   /** Notificaciones de cualquier app vistas por el listener desde `processStartedAt`. */
   seenTotal?: number | null;
   /**
-   * Apps vistas y cuántas veces, de mayor a menor (máx. 50). El backend lo
-   * expone como arreglo (Mongo no admite puntos en claves de mapa); se tolera
-   * también el objeto `{ paquete: n }` de un backend anterior.
+   * Apps vistas y cuántas veces, de mayor a menor (máx. 50); solo las
+   * vigiladas (banco, SMS y la propia app de YEP): el backend nunca manda
+   * apps personales. Lo expone como arreglo (Mongo no admite puntos en claves
+   * de mapa); se tolera también el objeto `{ paquete: n }` de un backend anterior.
    */
   seenByPackage?: NotifierSeenByPackageEntry[] | Record<string, number> | null;
-  /** Paquete Android de la última notificación que vio el listener (cualquier app). */
+  /** Paquete Android de la última notificación vista, solo si es una app vigilada (si no, `null`). */
   lastNotificationPackage?: string | null;
   receiver?: NotifierCaptureReceiverStats | null;
   rebindAttempts?: number | null;
   lastRebindAt?: string | null;
   selfTest?: NotifierCaptureSelfTest | null;
+  /** `null`/ausente = la app (< 1.0.11) o el backend aún no lo reportan. */
+  smsHidden?: NotifierCaptureSmsHidden | null;
 }
 
 /** Un punto de la línea de tiempo de captura (uno por heartbeat, ~24 h). */

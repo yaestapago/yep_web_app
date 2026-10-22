@@ -328,3 +328,14 @@
     width: 100%;
   }
 }
+
+/* Filtro de estado (Todos / Por revisar): va primero en la barra y no se estira. */
+.status-filter {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 560px) {
+  .status-filter {
+    grid-column: 1 / -1;
+  }
+}

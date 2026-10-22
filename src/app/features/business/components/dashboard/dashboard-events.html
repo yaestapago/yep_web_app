@@ -27,6 +27,13 @@
   </div>
 
   <div class="filters">
+    <yep-segmented
+      class="status-filter"
+      aria-label="Estado"
+      [options]="statusOptions()"
+      [value]="statusFilter()"
+      (valueChange)="statusFilter.set($event === 'needs_review' ? 'needs_review' : '')"
+    />
     <span class="search">
       <svg class="search__icon" lucideSearch aria-hidden="true"></svg>
       <input
@@ -69,11 +76,19 @@
     } @else if (error()) {
       <yep-state kind="error" title="No se pudieron cargar los eventos" [description]="error()" />
     } @else if (events().length === 0) {
-      <yep-state
-        kind="empty"
-        title="Sin eventos"
-        description="No hay reportes de ingreso que coincidan con los filtros."
-      />
+      @if (statusFilter() === 'needs_review') {
+        <yep-state
+          kind="empty"
+          title="Nada por revisar"
+          description="No hay avisos pendientes de asignar a una cuenta con estos filtros."
+        />
+      } @else {
+        <yep-state
+          kind="empty"
+          title="Sin eventos"
+          description="No hay reportes de ingreso que coincidan con los filtros."
+        />
+      }
     } @else {
       <div class="yep-table-wrap">
         <table yepTable clickableRows class="events">
@@ -208,7 +223,12 @@
       [total]="groupedEvents().length"
       (pageChange)="page.set($event)"
     />
-    @if (hasMore() && onLastPage()) {
+    <!-- "Cargar más" se ofrece en cualquier página mientras el servidor tenga
+         más, nunca solo en la última: el botón resta alto al cuerpo y
+         appAutoFitRows recalcula cuántas filas caben; si su presencia
+         dependiera de la página actual, cada ajuste movería la "última
+         página" y el botón entraría y saldría en bucle (paginado trabado). -->
+    @if (hasMore()) {
       <button type="button" class="load-more" (click)="loadMore.emit()" [disabled]="loadingMore()">
         @if (loadingMore()) {
           <svg class="spin" lucideLoaderCircle aria-hidden="true"></svg> Cargando…

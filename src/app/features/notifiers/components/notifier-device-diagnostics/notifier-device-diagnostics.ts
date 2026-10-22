@@ -8,8 +8,13 @@ import type {
 } from '../../../../shared/models/notifier.models';
 import { formatDateTime } from '../../../../shared/utils/billing-format';
 
-/** Nombres conocidos de apps de SMS y bancarias, para mostrar algo legible. */
+/**
+ * Nombres conocidos de apps de SMS y bancarias, para mostrar algo legible.
+ * Solo esas y la propia app: el backend nunca manda apps personales.
+ */
 const KNOWN_APP_LABELS: Record<string, string> = {
+  'co.yaestapago.notifier': 'YEP Notifyer',
+  'co.yaestapago.notifier.stage': 'YEP Notifyer',
   'com.google.android.apps.messaging': 'Mensajes de Google',
   'com.samsung.android.messaging': 'Mensajes de Samsung',
   'com.android.mms': 'Mensajes',
@@ -25,7 +30,6 @@ const KNOWN_APP_LABELS: Record<string, string> = {
   'com.todo1.mobile': 'Bancolombia',
   'com.bancolombia.app.personas': 'Bancolombia',
   'com.davivienda.daviplata': 'Daviplata',
-  'com.whatsapp': 'WhatsApp',
 };
 
 interface ReasonCopy {
@@ -45,7 +49,7 @@ export const DISCARD_REASON_COPY: Record<NotifierDiscardReason, ReasonCopy> = {
   },
   package_not_watched: {
     label: 'App no escuchada',
-    hint: 'Llegó por una app que no estamos escuchando.',
+    hint: 'Llegó por una app de banco o de SMS que este celular no está escuchando.',
   },
 };
 

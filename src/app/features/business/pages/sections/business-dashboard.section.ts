@@ -296,7 +296,15 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
   readonly eventsHasMore = computed(() => this.eventsCursor() !== undefined);
   readonly txHasMore = computed(() => this.txCursor() !== undefined);
 
-  /** Eventos llegados en vivo que encajan en el filtro y esperan ser mostrados. */
+  /**
+   * Ventana de eventos "Por revisar" (el backend no supo a qué cuenta entró el
+   * pago) que encajan en los demás filtros activos. Se pide aparte de la lista
+   * porque esta solo trae su primera página: un "Por revisar" viejo debe
+   * seguir contando aunque ya no esté en lo cargado. Alimenta el contador del
+   * chip del filtro de estado y se mantiene al día con los eventos en vivo.
+   */
+  readonly needsReviewEvents = signal<SourceEvent[]>([]);
+  readonly needsReviewCount = computed(() => this.needsReviewEvents().length);
 
   /** IDs de eventos llegados en vivo y aún no vistos (estilo bandeja). */
   readonly unreadEventIds = signal<Set<string>>(new Set());
@@ -593,8 +601,13 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.metricsEvents.update((events) => this.upsert(events, event));
     this.loadSummary();
     this.now.set(Date.now());
+    this.trackNeedsReview(event);
 
     if (!this.matchesEventFilter(event, this.eventFilters())) {
+      // Ya no encaja en el filtro activo (p. ej. un "Por revisar" que se
+      // resolvió con ese filtro puesto): sale de la lista en vez de quedarse
+      // mostrando el estado viejo.
+      this.dropListedEvent(event.id);
       return;
     }
     // Se clasifica contra la lista ANTES de insertar: ¿es un reporte nuevo o
@@ -638,6 +651,31 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       });
     }, CORROBORATION_CUE_MS);
     this.corroborationTimers.add(timer);
+  }
+
+  /**
+   * El contador de "Por revisar" sigue al evento en vivo: entra si quedó por
+   * revisar (dentro de los demás filtros) y sale si una reemisión lo resolvió.
+   * No toca el signal si nada cambia.
+   */
+  private trackNeedsReview(event: SourceEvent): void {
+    const matches = this.matchesEventFilter(event, this.needsReviewFilters());
+    const listed = this.needsReviewEvents().some((current) => current.id === event.id);
+    if (!matches && !listed) {
+      return;
+    }
+    this.needsReviewEvents.update((events) =>
+      matches ? this.upsert(events, event) : events.filter((current) => current.id !== event.id),
+    );
+  }
+
+  /** Saca de la lista un evento que ya no encaja en el filtro activo (y apaga su campana). */
+  private dropListedEvent(eventId: string): void {
+    if (!this.sourceEvents().some((current) => current.id === eventId)) {
+      return;
+    }
+    this.sourceEvents.update((events) => events.filter((current) => current.id !== eventId));
+    this.setEventsUnread([eventId], false);
   }
 
   /** Marca/desmarca ids como no leídos (no toca el signal si nada cambia). */
@@ -698,8 +736,15 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
       .join(' ');
   }
 
-  private moneyReportQuery(cursor?: string, includeActiveFilters = true): SourceEventQuery {
-    const filters = includeActiveFilters ? this.eventFilters() : {};
+  /** Mismos filtros activos de la tabla, pero solo el estado "Por revisar" (contador del chip). */
+  private needsReviewFilters(): SourceEventFilters {
+    return { ...this.eventFilters(), status: 'needs_review' };
+  }
+
+  private moneyReportQuery(
+    cursor?: string,
+    filters: SourceEventFilters = this.eventFilters(),
+  ): SourceEventQuery {
     const query: SourceEventQuery = {
       ...filters,
       limit: EVENTS_PAGE_LIMIT,
@@ -981,6 +1026,9 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     this.eventsError.set('');
     // Al recargar (filtro o refresh) descartamos lo acumulado en vivo: la nueva
     // página ya trae el estado más reciente que encaja en el filtro.
+    // Con el filtro "Por revisar" puesto, la propia lista es la ventana del
+    // contador; si no, se pide aparte.
+    const reviewOnly = this.eventFilters().status === 'needs_review';
     this.sourceEventsApi
       .list(this.moneyReportQuery())
       .pipe(
@@ -991,8 +1039,28 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
         next: (response) => {
           this.sourceEvents.set(response.sourceEvents);
           this.eventsCursor.set(response.nextCursor);
+          if (reviewOnly) {
+            this.needsReviewEvents.set(response.sourceEvents);
+          }
         },
         error: (error) => this.eventsError.set(httpErrorMessage(error)),
+      });
+    if (!reviewOnly) {
+      this.loadNeedsReviewEvents();
+    }
+  }
+
+  /**
+   * Recarga la ventana de "Por revisar" para el contador del chip. Falla en
+   * silencio: el contador no bloquea la lista (el chip queda sin número).
+   */
+  private loadNeedsReviewEvents(): void {
+    this.sourceEventsApi
+      .list(this.moneyReportQuery(undefined, this.needsReviewFilters()))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.needsReviewEvents.set(response.sourceEvents),
+        error: () => undefined,
       });
   }
 

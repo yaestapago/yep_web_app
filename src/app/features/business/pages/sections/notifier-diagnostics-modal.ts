@@ -26,6 +26,7 @@ import { DEFAULT_SMS_PACKAGE_TOKEN } from '../../../../shared/models/bank.models
 import type {
   Notifier,
   NotifierCaptureHistoryEntry,
+  NotifierCaptureSmsHidden,
   NotifierCaptureSnapshot,
   NotifierDiagnosticReport,
   NotifierDiagnosticsResponse,
@@ -43,6 +44,11 @@ import { StatusChip, type StatusChipTone } from '../../../../shared/ui/status-ch
 import { Table } from '../../../../shared/ui/table/table';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { relativeFromMs } from '../../../../shared/utils/notifier-status';
+import {
+  type SmsHiddenState,
+  formatBogotaDateTime,
+  smsHiddenState,
+} from '../../../../shared/utils/sms-hidden';
 import { knownAppLabel } from '../../../notifiers/components/notifier-device-diagnostics/notifier-device-diagnostics';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 
@@ -160,6 +166,42 @@ export function conversationsFlag(value: boolean | null | undefined): Flag {
     return flagFor(value, 'Permitidas', 'Bloqueadas', 'warn');
   }
   return { kind: 'unknown', tone: 'neutral', label: 'Sin probar' };
+}
+
+/** Qué hacer cuando Android oculta los SMS del banco (contrato «SMS ocultos por Android 15+» §3). */
+export const SMS_HIDDEN_INSTRUCTION =
+  'Guardar el remitente como contacto (p. ej. Bancolombia: 85540 y 85630) y abrir la conversación en Mensajes.';
+
+/** Detalle cuando la app lo reporta pero no hubo SMS del banco en la ventana. */
+export const SMS_QUIET_DETAIL = 'Ningún SMS del banco en las últimas 72 h.';
+
+/**
+ * Chip de "SMS del banco" (`capture.smsHidden`, app ≥ 1.0.11). Misma regla de
+ * 72 h que la condición `sms_hidden` del backend (ver `smsHiddenState`).
+ */
+export function smsHiddenFlag(state: SmsHiddenState): Flag {
+  switch (state) {
+    case 'visible':
+      return { kind: 'ok', tone: 'success', label: 'Visibles' };
+    case 'hidden':
+      return { kind: 'warn', tone: 'warning', label: 'Android los oculta' };
+    default:
+      return { kind: 'unknown', tone: 'neutral', label: 'Sin datos' };
+  }
+}
+
+/** Detalle de la fila: hora de la última oculta (Bogotá) y qué hacer. */
+export function smsHiddenDetail(
+  smsHidden: NotifierCaptureSmsHidden | null | undefined,
+  state: SmsHiddenState,
+): string {
+  if (state === 'hidden') {
+    const at = formatBogotaDateTime(smsHidden?.lastHiddenAt);
+    return at
+      ? `Última oculta: ${at} (hora de Colombia). ${SMS_HIDDEN_INSTRUCTION}`
+      : SMS_HIDDEN_INSTRUCTION;
+  }
+  return state === 'quiet' ? SMS_QUIET_DETAIL : '';
 }
 
 /**
@@ -491,6 +533,7 @@ export class NotifierDiagnosticsModal {
         flag: conversationsFlag(capture.conversationsAllowed),
         detail: capture.conversationsAllowed === false ? CONVERSATIONS_BLOCKED_DETAIL : '',
       },
+      this.smsHiddenRow(capture),
       {
         key: 'notifications',
         label: 'Avisos de la app',
@@ -675,6 +718,24 @@ export class NotifierDiagnosticsModal {
     const ms = parseMs(value);
     if (ms === null) return '—';
     return relativeFromMs(Math.max(0, this.now() - ms));
+  }
+
+  /**
+   * "SMS del banco": Android 15+ oculta los SMS cuyo remitente no está en
+   * contactos (el título `85540` parece un OTP). Se recalcula con el reloj.
+   */
+  private smsHiddenRow(capture: NotifierCaptureSnapshot): StatusRow {
+    const smsHidden = capture.smsHidden;
+    const state = smsHiddenState(smsHidden, this.now());
+    return {
+      key: 'smsHidden',
+      label: 'SMS del banco',
+      flag: smsHiddenFlag(state),
+      detail:
+        state === 'visible'
+          ? this.sinceLabel('último', smsHidden?.lastReadableAt)
+          : smsHiddenDetail(smsHidden, state),
+    };
   }
 
   private sinceLabel(prefix: string, value: string | null | undefined): string {

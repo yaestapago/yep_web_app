@@ -1,0 +1,504 @@
+/*
+ * Zaira: botón flotante + panel de chat abajo a la derecha.
+ * Capa flotante: única sombra permitida (--shadow-overlay). z-index 18: por encima
+ * del contenido (y del FAB "Validar pago", 15), por debajo del scrim (20) y del
+ * drawer (30) en celular, y de los modales (1000).
+ * Celular (≤ 768 px): el panel es una hoja inferior a todo el ancho.
+ */
+
+:host {
+  display: contents;
+  /* Alto del botón: avatar de 56 px + el borde interno. El panel y el saludo se ubican encima. */
+  --assistant-fab-size: 66px;
+}
+
+/* Cápsula tinta con la cara de Zaira: el contraste la hace visible sin ser un segundo primario. */
+.assistant-fab {
+  align-items: center;
+  background: var(--brand-ink);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  bottom: var(--space-5);
+  box-shadow: var(--shadow-overlay);
+  color: var(--brand-on-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: var(--space-3);
+  min-height: var(--assistant-fab-size);
+  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-1);
+  position: fixed;
+  right: var(--space-5);
+  text-align: left;
+  transition: transform var(--motion-fast);
+  z-index: 18;
+
+  > svg {
+    flex: 0 0 auto;
+    height: var(--icon-lg);
+    width: var(--icon-lg);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+}
+
+.assistant-fab__label {
+  display: grid;
+  line-height: var(--line-height-tight);
+}
+
+.assistant-fab__name {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.assistant-fab__hint {
+  color: var(--brand-on-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+.assistant-fab--open {
+  justify-content: center;
+  min-height: var(--assistant-fab-size);
+  padding: 0;
+  width: var(--assistant-fab-size);
+}
+
+/* Presentación de lanzamiento, dentro de yep-modal. */
+.assistant-intro {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.assistant-intro__text {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.assistant-intro__note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+/* Saludo: aparece una vez al día junto al botón, hasta que lo cierren o abran el chat. */
+.assistant-nudge {
+  align-items: flex-start;
+  animation: assistant-nudge-in var(--motion-base) ease-out;
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-xs);
+  bottom: calc(var(--space-5) + var(--assistant-fab-size) + var(--space-2));
+  box-shadow: var(--shadow-overlay);
+  display: flex;
+  gap: var(--space-1);
+  max-width: min(280px, calc(100vw - var(--space-4) * 2));
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+  position: fixed;
+  right: var(--space-5);
+  z-index: 18;
+}
+
+.assistant-nudge__text {
+  background: none;
+  border: 0;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  padding: 0;
+  text-align: left;
+
+  strong {
+    display: block;
+  }
+
+  &:focus-visible {
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+}
+
+@keyframes assistant-nudge-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.assistant-panel {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  bottom: calc(var(--space-5) + var(--assistant-fab-size) + var(--space-3));
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--assistant-fab-size) - var(--space-5) * 2 - var(--space-3));
+  height: 660px;
+  overflow: hidden;
+  position: fixed;
+  right: var(--space-5);
+  width: min(420px, calc(100vw - var(--space-5) * 2));
+  z-index: 18;
+}
+
+.assistant-panel__header {
+  align-items: center;
+  border-bottom: var(--border-width) solid var(--color-border);
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+}
+
+/* Reiniciar · Minimizar · Cerrar */
+.assistant-panel__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-1);
+}
+
+.assistant-panel__titles {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.assistant-panel__title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.assistant-panel__subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.assistant-panel__log {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+}
+
+/* Respuesta de Zaira: su cara a la izquierda de la burbuja. */
+.assistant-row {
+  align-items: flex-end;
+  align-self: flex-start;
+  display: flex;
+  gap: var(--space-2);
+  max-width: 94%;
+
+  .assistant-bubble {
+    max-width: none;
+    min-width: 0;
+  }
+}
+
+.assistant-bubble {
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  max-width: 88%;
+  overflow-wrap: anywhere;
+  padding: var(--space-3) var(--space-4);
+
+  p,
+  ol,
+  ul {
+    margin: 0;
+  }
+
+  p {
+    white-space: pre-line;
+  }
+
+  > * + * {
+    margin-top: var(--space-2);
+  }
+
+  ol,
+  ul {
+    display: grid;
+    gap: var(--space-1);
+    padding-left: var(--space-5);
+  }
+
+  a {
+    color: inherit;
+    font-weight: var(--font-weight-semibold);
+    text-decoration: underline;
+  }
+}
+
+.assistant-bubble--assistant {
+  align-self: flex-start;
+  background: var(--color-surface-muted);
+  border-bottom-left-radius: var(--radius-xs);
+}
+
+.assistant-bubble--user {
+  align-self: flex-end;
+  background: var(--color-primary);
+  border-bottom-right-radius: var(--radius-xs);
+  color: var(--color-on-primary);
+}
+
+.assistant-bubble--error {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.assistant-menu__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  margin: var(--space-2) 0 0;
+  text-transform: uppercase;
+}
+
+.assistant-menu {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.assistant-menu__item {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  transition:
+    background var(--motion-fast),
+    border-color var(--motion-fast);
+  width: 100%;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &:focus-visible {
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+}
+
+.assistant-panel__shortcuts {
+  border-top: var(--border-width) solid var(--color-border);
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-4) 0;
+}
+
+.assistant-panel__menu-toggle {
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--space-1) 0;
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+
+  &:focus-visible {
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+}
+
+.assistant-typing {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+
+  span {
+    animation: assistant-typing 1.2s infinite ease-in-out;
+    background: var(--color-text-muted);
+    border-radius: var(--radius-full);
+    height: var(--space-2);
+    width: var(--space-2);
+  }
+
+  span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+
+@keyframes assistant-typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* Con atajos encima, el borde superior lo pone `.assistant-panel__shortcuts`. */
+.assistant-panel__shortcuts + .assistant-composer {
+  border-top: 0;
+}
+
+.assistant-composer {
+  align-items: flex-end;
+  border-top: var(--border-width) solid var(--color-border);
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+}
+
+.assistant-composer__input {
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  max-height: 120px;
+  min-height: var(--control-height-md);
+  padding: var(--space-2) var(--space-3);
+  resize: none;
+
+  &:focus {
+    border-color: var(--color-focus);
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+}
+
+.assistant-composer__send {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: var(--control-height-md);
+  justify-content: center;
+  width: var(--control-height-md);
+
+  svg {
+    height: var(--icon-sm);
+    width: var(--icon-sm);
+  }
+
+  &:disabled {
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    box-shadow: var(--shadow-focus);
+    outline: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .assistant-fab {
+    bottom: var(--space-4);
+    right: var(--space-4);
+  }
+
+  /* En celular solo la cara de Zaira: no tapa el contenido. */
+  .assistant-fab__label {
+    display: none;
+  }
+
+  .assistant-fab:not(.assistant-fab--open) {
+    padding: var(--space-1);
+  }
+
+  .assistant-nudge {
+    bottom: calc(var(--space-4) + var(--assistant-fab-size) + var(--space-2));
+    right: var(--space-4);
+  }
+
+  .assistant-panel {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    bottom: 0;
+    height: 85dvh;
+    left: 0;
+    max-height: none;
+    right: 0;
+    width: auto;
+  }
+
+  /* El panel ocupa la parte de abajo: el botón de cerrar va en su encabezado. */
+  .assistant-fab--open {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-typing span {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .assistant-nudge {
+    animation: none;
+  }
+
+  .assistant-fab:hover {
+    transform: none;
+  }
+}

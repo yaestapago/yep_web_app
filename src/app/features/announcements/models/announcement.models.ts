@@ -17,6 +17,7 @@ export type AnnouncementCondition =
   | 'permission_missing'
   | 'listener_off'
   | 'conversations_blocked'
+  | 'sms_hidden'
   | 'notifications_blocked'
   | 'battery_restricted';
 
@@ -26,6 +27,7 @@ export type AnnouncementActionType =
   | 'open_route'
   | 'open_notification_access'
   | 'open_conversations_settings'
+  | 'save_bank_contact'
   | 'open_autostart_settings'
   | 'open_battery_settings'
   | 'open_app_notification_settings'

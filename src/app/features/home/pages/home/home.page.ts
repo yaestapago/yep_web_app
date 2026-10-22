@@ -17,7 +17,16 @@ import {
 } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { SUPPORT_WHATSAPP_URL } from '../../../../shared/constants/legal.constants';
-import { Banner, ButtonLink, Card, IconTile, PageHeader, StatusChip } from '../../../../shared/ui';
+import {
+  Banner,
+  Button,
+  ButtonLink,
+  Card,
+  IconTile,
+  PageHeader,
+  StatusChip,
+} from '../../../../shared/ui';
+import { AssistantChatService } from '../../../assistant/services/assistant-chat.service';
 
 /** Acción propia de una novedad: enlace externo que se abre en otra pestaña. */
 interface NovedadAction {
@@ -37,6 +46,10 @@ interface Novedad {
    * un enlace de texto.
    */
   readMore?: NovedadAction;
+  /** Ilustración del banner (por defecto, el panel). */
+  image?: string;
+  /** El botón primario abre el chat con Zaira en vez de un enlace. */
+  opensAssistant?: { label: string };
 }
 
 interface QuickLink {
@@ -78,6 +91,7 @@ const TODAY_FORMAT = new Intl.DateTimeFormat('es-CO', {
     LucideDynamicIcon,
     LucideUsers,
     Banner,
+    Button,
     ButtonLink,
     Card,
     IconTile,
@@ -89,6 +103,14 @@ const TODAY_FORMAT = new Intl.DateTimeFormat('es-CO', {
 })
 export class HomePage {
   private readonly session = inject(AuthSessionService);
+  private readonly assistant = inject(AssistantChatService);
+
+  /** El rol `support` no tiene a Zaira (ver `Shell.canShowAssistant`). */
+  readonly canUseAssistant = computed(() => !this.session.isSupportUser());
+
+  openAssistant(): void {
+    if (!this.assistant.open()) this.assistant.toggle();
+  }
 
   readonly user = this.session.user;
   readonly blogUrl = BLOG_URL;
@@ -158,6 +180,14 @@ export class HomePage {
   });
 
   readonly novedades: Novedad[] = [
+    {
+      category: 'Asistente virtual',
+      title: 'Conoce a Zaira, tu asistente en YEP',
+      description:
+        'Pregúntale cómo agregar un empleado, cómo configurar tus correos o por qué se demoró una notificación: revisa tu negocio y te responde en segundos. Solo ve la información de tu negocio, con tus mismos permisos. La encuentras abajo a la derecha.',
+      image: 'illustrations/zaira.svg',
+      opensAssistant: { label: 'Pregúntale a Zaira' },
+    },
     {
       category: 'App móvil',
       title: 'La app de YEP llega a tu celular',

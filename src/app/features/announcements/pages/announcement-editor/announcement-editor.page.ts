@@ -94,6 +94,7 @@ export const SUGGESTED_ACTION_LABELS: Record<AnnouncementActionType, string> = {
   open_route: 'Ver',
   open_notification_access: 'Dar permiso',
   open_conversations_settings: 'Activar',
+  save_bank_contact: 'Guardar contacto',
   open_autostart_settings: 'Activar',
   open_battery_settings: 'Quitar restricción',
   open_app_notification_settings: 'Activar',
@@ -105,6 +106,7 @@ const CONDITIONS: AnnouncementCondition[] = [
   'permission_missing',
   'listener_off',
   'conversations_blocked',
+  'sms_hidden',
   'notifications_blocked',
   'battery_restricted',
 ];

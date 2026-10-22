@@ -72,6 +72,15 @@ export const routes: Routes = [
           import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
       },
       {
+        // Conversaciones de Zaira: alertas, transcripciones y gasto del mes.
+        path: '__ops/assistant',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/assistant-admin/pages/assistant-admin/assistant-admin.page').then(
+            (m) => m.AssistantAdminPage,
+          ),
+      },
+      {
         // Anuncios y versiones de las apps (docs/anuncios-y-avisos.md en local-dev-env).
         path: '__ops/announcements',
         canActivate: [superAdminGuard],

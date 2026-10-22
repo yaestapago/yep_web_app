@@ -107,10 +107,13 @@
           </p>
         </yep-card-section>
 
-        <!-- 2. Lo que ha visto el listener -->
-        <yep-card-section title="Lo que ha visto el listener">
+        <!-- 2. Apps vigiladas: YEP nunca nombra las apps personales del celular -->
+        <yep-card-section title="Apps vigiladas">
+          <p class="diag-muted diag-lead">
+            Solo las apps del banco y la de SMS. Sin texto: solo cuántas.
+          </p>
           <yep-description-list [columns]="2">
-            <yep-description-item label="Última notificación vista (cualquier app)">
+            <yep-description-item label="Última notificación vista">
               @if (lastNotificationAt()) {
                 {{ lastNotificationAgo() }}
                 <span class="diag-muted">· {{ lastNotificationAt() | date: 'short' }}</span>
@@ -177,7 +180,7 @@
             </p>
           } @else {
             <p class="diag-muted">
-              El listener no ha visto notificaciones de ninguna app desde que arrancó el proceso.
+              Las apps vigiladas no han mostrado notificaciones desde que arrancó el proceso.
             </p>
           }
         </yep-card-section>

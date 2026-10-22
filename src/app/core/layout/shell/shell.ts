@@ -4,6 +4,7 @@ import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/ro
 import { LucideMenu, LucideScanLine } from '@lucide/angular';
 import { filter, startWith } from 'rxjs';
 
+import { AssistantWidget } from '../../../features/assistant/components/assistant-widget/assistant-widget';
 import { AuthApiService } from '../../../features/auth/services/auth-api.service';
 import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
 import { Button } from '../../../shared/ui/button/button';
@@ -23,7 +24,16 @@ const RECEIPT_CAPTURE_ENABLED = false;
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, ReceiptCaptureModal, Modal, Button, IconButton, LucideScanLine],
+  imports: [
+    RouterOutlet,
+    Sidebar,
+    AssistantWidget,
+    ReceiptCaptureModal,
+    Modal,
+    Button,
+    IconButton,
+    LucideScanLine,
+  ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -49,6 +59,9 @@ export class Shell {
       this.session.subscription()?.plan.code !== 'free_trial' &&
       !this.billing.isBlocked(),
   );
+
+  /** Zaira (chat de ayuda). El rol `support` es de solo lectura y el backend le niega el POST. */
+  readonly canShowAssistant = computed(() => !this.session.isSupportUser());
 
   /** Rail colapsable en escritorio; se recuerda entre sesiones. */
   readonly sidebarCollapsed = signal(this.loadSidebarCollapsed());
