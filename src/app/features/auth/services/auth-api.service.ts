@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import {
+  AccountDeletionConfirmResponse,
+  AccountDeletionPreviewResponse,
+  AccountDeletionRequestResponse,
   AuthResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
@@ -94,6 +97,29 @@ export class AuthApiService {
 
   updateGeneralPreferences(request: UpdateGeneralPreferencesRequest): Observable<UserResponse> {
     return this.http.patch<UserResponse>(`${this.apiUrl}/auth/me/general-preferences`, request);
+  }
+
+  previewAccountDeletion(): Observable<AccountDeletionPreviewResponse> {
+    return this.http.post<AccountDeletionPreviewResponse>(
+      `${this.apiUrl}/auth/me/deletion/preview`,
+      {},
+    );
+  }
+
+  requestAccountDeletion(password: string): Observable<AccountDeletionRequestResponse> {
+    return this.http.post<AccountDeletionRequestResponse>(
+      `${this.apiUrl}/auth/me/deletion/request`,
+      { password },
+    );
+  }
+
+  /** Con credenciales, como `logout`: sin ellas el navegador ignora la cookie que limpia el backend. */
+  confirmAccountDeletion(code: string): Observable<AccountDeletionConfirmResponse> {
+    return this.http.post<AccountDeletionConfirmResponse>(
+      `${this.apiUrl}/auth/me/deletion/confirm`,
+      { code },
+      { withCredentials: true },
+    );
   }
 
   requestPasswordResetCode(
