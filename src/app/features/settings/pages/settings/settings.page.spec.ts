@@ -48,6 +48,16 @@ describe('SettingsPage notifications accordion', () => {
     expect(compiled.querySelector('#notifications-panel')).not.toBeNull();
   });
 
+  it('shows the delete account danger zone', () => {
+    const fixture = TestBed.createComponent(SettingsPage);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-delete-account-card')?.textContent).toContain(
+      'Eliminar cuenta',
+    );
+  });
+
   it('does not render the commented-out transaction/security alert toggles', () => {
     const fixture = TestBed.createComponent(SettingsPage);
     fixture.componentInstance.notificationsOpen.set(true);

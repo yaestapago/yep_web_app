@@ -40,6 +40,7 @@ import { Segmented, type SegmentedOption } from '../../../../shared/ui/segmented
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
+import { DeleteAccountCard } from '../../components/delete-account-card/delete-account-card';
 
 const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
   emailEnabled: true,
@@ -71,6 +72,7 @@ interface NotificationToggle {
     ButtonLink,
     Card,
     CardSection,
+    DeleteAccountCard,
     IconTile,
     Input,
     Modal,
