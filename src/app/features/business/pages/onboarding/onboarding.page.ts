@@ -24,6 +24,7 @@ import { PhoneInput, type PhoneInputValue } from '../../../../shared/ui/phone-in
 import { businessNitError, normalizeBusinessNit } from '../../../../shared/utils/business-nit';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
+import { DeleteAccountCard } from '../../../settings/components/delete-account-card/delete-account-card';
 import { BusinessAccountsApiService } from '../../services/business-accounts-api.service';
 
 @Component({
@@ -38,6 +39,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     AddressLocationSelect,
     Alert,
     Button,
+    DeleteAccountCard,
     Input,
     Modal,
     PageHeader,

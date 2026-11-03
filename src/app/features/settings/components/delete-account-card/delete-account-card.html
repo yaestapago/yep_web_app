@@ -1,0 +1,138 @@
+<yep-card title="Zona de peligro" subtitle="Acciones permanentes sobre tu cuenta.">
+  <svg slot="icon" class="danger-icon" lucideTriangleAlert aria-hidden="true"></svg>
+
+  @if (canDelete()) {
+    <div class="danger-body">
+      <yep-alert variant="error">
+        Eliminar tu cuenta es permanente y no se puede deshacer. Antes de confirmar te mostramos qué
+        pasa con cada uno de tus negocios.
+      </yep-alert>
+
+      @if (previewError()) {
+        <yep-alert variant="error">{{ previewError() }}</yep-alert>
+      }
+
+      <div>
+        <yep-button
+          variant="secondary"
+          tone="danger"
+          size="sm"
+          [loading]="loadingPreview()"
+          (clicked)="start()"
+        >
+          @if (!loadingPreview()) {
+            <svg lucideTrash2 aria-hidden="true"></svg>
+          }
+          Eliminar cuenta
+        </yep-button>
+      </div>
+    </div>
+  } @else {
+    <yep-alert variant="info">
+      Las cuentas de soporte no se pueden eliminar desde aquí. Si necesitas cerrar la tuya, habla con
+      el equipo de YEP.
+    </yep-alert>
+  }
+</yep-card>
+
+<yep-modal
+  [open]="modalOpen()"
+  title="Eliminar cuenta"
+  [loading]="deleting()"
+  (closeRequested)="close()"
+>
+  @switch (step()) {
+    @case ('notice') {
+      <div class="notice">
+        <yep-alert variant="error">
+          Esto es permanente: tu cuenta y tus datos se borran y no se pueden recuperar.
+        </yep-alert>
+
+        @if (preview()?.businessesToDelete?.length) {
+          <section class="notice-group" data-cy="businesses-to-delete">
+            <h3 class="notice-title">
+              <svg class="notice-icon notice-icon--danger" lucideTrash2 aria-hidden="true"></svg>
+              Se borrarán por completo
+            </h3>
+            <p class="modal-hint">
+              Eres su único dueño. Se borra cada negocio con todos sus datos: transacciones,
+              notificadores, empleados, sedes, cuentas bancarias y más.
+            </p>
+            <ul class="notice-list">
+              @for (business of preview()?.businessesToDelete; track business.id) {
+                <li>{{ business.name || 'Negocio sin nombre' }}</li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (preview()?.businessesToLeave?.length) {
+          <section class="notice-group" data-cy="businesses-to-leave">
+            <h3 class="notice-title">
+              <svg class="notice-icon" lucideLogOut aria-hidden="true"></svg>
+              Solo saldrás de estos negocios
+            </h3>
+            <p class="modal-hint">Los negocios siguen funcionando, pero tú pierdes el acceso.</p>
+            <ul class="notice-list">
+              @for (business of preview()?.businessesToLeave; track business.id) {
+                <li>{{ business.name || 'Negocio sin nombre' }}</li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (!preview()?.businessesToDelete?.length && !preview()?.businessesToLeave?.length) {
+          <p class="modal-hint">No perteneces a ningún negocio: solo se elimina tu cuenta.</p>
+        }
+      </div>
+    }
+    @case ('password') {
+      <form [formGroup]="passwordForm" (ngSubmit)="submitPassword()" class="form-grid">
+        <p class="modal-hint">Confirma tu contraseña para continuar con la eliminación de tu cuenta.</p>
+        <yep-input
+          formControlName="password"
+          type="password"
+          label="Tu contraseña"
+          [error]="passwordFieldError()"
+          autocomplete="current-password"
+        />
+      </form>
+    }
+    @case ('code') {
+      <div class="form-grid">
+        <p class="modal-hint">
+          Te enviamos un código de 6 dígitos a {{ email() || 'tu correo' }}. Cuando lo escribas
+          completo, tu cuenta se elimina de inmediato.
+        </p>
+        <yep-otp-input
+          engine="email"
+          [status]="otpStatus()"
+          [errorMessage]="otpError()"
+          [resendSeconds]="resendSeconds()"
+          (codeChanged)="handleCodeChanged($event)"
+          (codeCompleted)="confirmCode($event)"
+          (resendRequested)="resendCode()"
+        />
+      </div>
+    }
+  }
+
+  <ng-container modalFooter>
+    <yep-button variant="ghost" [disabled]="deleting()" (clicked)="close()">Cancelar</yep-button>
+    @if (step() === 'notice') {
+      <yep-button variant="secondary" tone="danger" (clicked)="continueToPassword()">
+        Continuar
+      </yep-button>
+    } @else if (step() === 'password') {
+      <yep-button
+        variant="secondary"
+        tone="danger"
+        type="submit"
+        [loading]="deleting()"
+        (clicked)="submitPassword()"
+      >
+        Continuar
+      </yep-button>
+    }
+  </ng-container>
+</yep-modal>

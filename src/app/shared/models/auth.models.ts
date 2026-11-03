@@ -313,3 +313,24 @@ export interface UserResponse {
 export interface ChangePasswordResponse {
   changed: boolean;
 }
+
+export interface AccountDeletionBusiness {
+  id: string;
+  name: string;
+}
+
+export interface AccountDeletionPreviewResponse {
+  /** Negocios donde es el único dueño: se borran por completo. */
+  businessesToDelete: AccountDeletionBusiness[];
+  /** Negocios de los que solo sale; siguen existiendo. */
+  businessesToLeave: AccountDeletionBusiness[];
+}
+
+export interface AccountDeletionRequestResponse {
+  sent: boolean;
+  resendInSeconds: number;
+}
+
+export interface AccountDeletionConfirmResponse {
+  deleted: boolean;
+}
