@@ -1,5 +1,14 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -82,7 +91,18 @@ interface NotifierKindOption {
 const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 
 const MOBILE_NOTIFIERS_ENABLED = true;
-const DESKTOP_NOTIFIERS_ENABLED = false;
+
+/**
+ * Remitentes que el catálogo lista pero que solo mandan códigos de confirmación: no se
+ * reenvían a YEP, así que no se piden en el filtro. Si alguien los reenvía igual, el
+ * backend los descarta. Es la misma lista de `REMITENTES_SOLO_CODIGOS` en Zaira.
+ */
+const CODE_ONLY_SENDERS = new Set(['somos@nequi.com.co']);
+
+/** Remitentes del banco que van en el filtro: uno por cada dirección, sin los de códigos. */
+function filterSenders(patterns: readonly string[] | undefined): string[] {
+  return (patterns ?? []).filter((pattern) => !CODE_ONLY_SENDERS.has(pattern.trim().toLowerCase()));
+}
 
 /** Dominios comunes -> nombre de proveedor mostrado en vez de "sin heartbeat". */
 const EMAIL_PROVIDER_LABELS: Record<string, string> = {
@@ -198,34 +218,16 @@ export class BusinessNotifiersSection implements OnInit {
   readonly diagnosticsModalOpen = computed(() => this.diagnosticsNotifier() !== null);
 
   /**
-   * Opciones de tipo mostradas como radio buttons al crear un notificador.
-   * MVP: "Telefono" queda habilitado para crear notificadores nuevos.
-   * "Escritorio" queda visible pero deshabilitado. "Correo" ademas solo esta
-   * disponible si el dueno tiene al menos una cuenta de un banco que lo permita.
+   * Opciones de tipo mostradas como radio buttons al crear un notificador. "Correo" va primero
+   * y es el predeterminado: es el que todo negocio debe tener. Solo está disponible si hay una
+   * cuenta activa de un banco que lo permita. "Escritorio" no se ofrece: los que ya existen se
+   * siguen viendo y editando.
    */
   readonly kindOptions = computed<NotifierKindOption[]>(() => {
     const emailDisabled = !this.hasEmailEligibleAccount();
     const eligibleNames = this.emailEligibleBankNames();
     const mobileEnabled = MOBILE_NOTIFIERS_ENABLED;
     return [
-      {
-        value: 'phone',
-        label: 'Teléfono',
-        description: mobileEnabled
-          ? 'Recibe pagos desde la app móvil emparejada.'
-          : 'Por ahora no está disponible para este usuario. Usa el notificador de correo.',
-        disabled: !mobileEnabled,
-        badge: mobileEnabled ? undefined : 'Próximamente',
-      },
-      {
-        value: 'desktop',
-        label: 'Escritorio',
-        description: DESKTOP_NOTIFIERS_ENABLED
-          ? 'Recibe pagos desde la app de escritorio (Vínculo con Windows).'
-          : 'Por ahora no está disponible para crear. Usa el notificador de correo.',
-        disabled: !DESKTOP_NOTIFIERS_ENABLED,
-        badge: DESKTOP_NOTIFIERS_ENABLED ? undefined : 'Próximamente',
-      },
       {
         value: 'email',
         label: 'Correo',
@@ -234,6 +236,15 @@ export class BusinessNotifiersSection implements OnInit {
           : 'Reenvía los correos del banco a un alias y los registramos.',
         disabled: emailDisabled,
         badge: emailDisabled ? 'Requiere cuenta compatible' : undefined,
+      },
+      {
+        value: 'phone',
+        label: 'Teléfono',
+        description: mobileEnabled
+          ? 'Recibe pagos desde la app móvil emparejada.'
+          : 'Por ahora no está disponible para este usuario. Usa el notificador de correo.',
+        disabled: !mobileEnabled,
+        badge: mobileEnabled ? undefined : 'Próximamente',
       },
     ];
   });
@@ -245,7 +256,7 @@ export class BusinessNotifiersSection implements OnInit {
       description: option.description,
       disabled: option.disabled,
       tag: option.badge,
-      halfWidth: option.value !== 'email',
+      halfWidth: false,
     })),
   );
 
@@ -303,7 +314,7 @@ export class BusinessNotifiersSection implements OnInit {
     );
     return Array.from(
       new Set(
-        bankIds.flatMap((bankId) => this.banksByCode().get(bankId)?.email?.senderPatterns ?? []),
+        bankIds.flatMap((bankId) => filterSenders(this.banksByCode().get(bankId)?.email?.senderPatterns)),
       ),
     );
   });
@@ -346,7 +357,7 @@ export class BusinessNotifiersSection implements OnInit {
   });
 
   readonly form = this.fb.group({
-    kind: [(MOBILE_NOTIFIERS_ENABLED ? 'phone' : 'email') as NotifierKind, [Validators.required]],
+    kind: ['email' as NotifierKind, [Validators.required]],
     displayName: ['', [Validators.required, Validators.maxLength(120)]],
     // Solo para `email`: correo remitente desde el que se reenviarán las
     // notificaciones del banco. El validador `required` se activa/desactiva
@@ -379,6 +390,26 @@ export class BusinessNotifiersSection implements OnInit {
         return 'Selecciona las cuentas que este notificador va a monitorear. La configuración de cada banco se aplicará automáticamente.';
     }
   });
+
+  constructor() {
+    // "Correo" es el predeterminado. Si este negocio aún no lo puede usar, queda el primero
+    // habilitado, solo mientras la persona no haya elegido otro.
+    effect(() => {
+      const options = this.kindOptions();
+      untracked(() => {
+        const control = this.form.controls.kind;
+        if (this.editingId() || control.dirty) return;
+        if (options.some((option) => option.value === control.value && !option.disabled)) return;
+        const firstEnabled = options.find((option) => !option.disabled);
+        if (firstEnabled) control.setValue(firstEnabled.value);
+      });
+    });
+  }
+
+  /** "Correo" si este negocio lo puede usar; si no, el primero habilitado. */
+  private defaultKind(): NotifierKind {
+    return this.kindOptions().find((option) => !option.disabled)?.value ?? 'email';
+  }
 
   ngOnInit(): void {
     this.load();
@@ -483,7 +514,7 @@ export class BusinessNotifiersSection implements OnInit {
     this.selectedBankAccountIds.set([]);
     this.selectedAllowedBreBKeys.set([]);
     this.form.reset({
-      kind: MOBILE_NOTIFIERS_ENABLED ? 'phone' : 'email',
+      kind: this.defaultKind(),
       displayName: '',
       senderEmail: '',
     });
@@ -794,8 +825,8 @@ export class BusinessNotifiersSection implements OnInit {
 
     return Array.from(
       new Set(
-        Array.from(bankIds).flatMap(
-          (bankId) => this.banksByCode().get(bankId)?.email?.senderPatterns ?? [],
+        Array.from(bankIds).flatMap((bankId) =>
+          filterSenders(this.banksByCode().get(bankId)?.email?.senderPatterns),
         ),
       ),
     );

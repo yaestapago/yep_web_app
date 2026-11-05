@@ -181,12 +181,16 @@ describe('AssistantWidget · conversación', () => {
     http.verify();
   });
 
-  it('al abrir saluda y ofrece el menú según el rol', async () => {
+  it('al abrir saluda, dice que es un robot y ofrece el menú según el rol', async () => {
     render('account_staff');
     await openPanel();
     expect(element.querySelector('.assistant-bubble')?.textContent).toContain(
-      'Hola, Ana. Soy Zaira',
+      'Hola, Ana. Soy Zaira, un robot que responde preguntas sobre YEP. No soy una persona.',
     );
+    const human = element.querySelector<HTMLAnchorElement>('.assistant-presentation__actions a')!;
+    expect(human.textContent).toContain('Hablar con una persona');
+    expect(human.getAttribute('href')).toContain('https://wa.me/573108019222?text=');
+    expect(human.getAttribute('target')).toBe('_blank');
     expect(buttonsText('.assistant-menu__item')).toEqual([
       '¿Por qué no veo un pago?',
       '¿Qué puedo ver en YEP?',
@@ -284,6 +288,16 @@ describe('AssistantWidget · conversación', () => {
     req.flush('{"t":"done","conversationId":"c1","reply":"Listo."}\n');
   });
 
+  it('la presentación de robot sigue arriba cuando ya hay mensajes', async () => {
+    render();
+    await openPanel();
+    await answer({ reply: 'Listo.' });
+    const presentation = element.querySelector('.assistant-presentation');
+    expect(presentation?.textContent).toContain('No soy una persona.');
+    expect(presentation?.querySelector('a')?.textContent).toContain('Hablar con una persona');
+    expect(element.querySelector('.assistant-menu')).toBeNull();
+  });
+
   it('los enlaces internos respetan los permisos: un empleado ve texto, no un enlace roto', async () => {
     render();
     await openPanel();
@@ -295,8 +309,8 @@ describe('AssistantWidget · conversación', () => {
 
     session.activeMembership.set({ role: 'account_staff', businessAccount: { name: 'X' } });
     await settle();
-    expect(element.querySelector('.assistant-bubble--assistant a')).toBeNull();
-    expect(element.querySelector('.assistant-bubble--assistant')?.textContent).toContain(
+    expect(element.querySelector('.assistant-messages .assistant-bubble--assistant a')).toBeNull();
+    expect(element.querySelector('.assistant-messages .assistant-bubble--assistant')?.textContent).toContain(
       'Ve a "Notificadores".',
     );
   });
@@ -630,7 +644,7 @@ describe('AssistantWidget · conversación', () => {
     });
     await settle();
     expect(element.querySelector('.assistant-panel__note')).toBeNull();
-    expect(element.querySelector('.assistant-bubble--assistant')?.textContent).toContain(
+    expect(element.querySelector('.assistant-messages .assistant-bubble--assistant')?.textContent).toContain(
       'Sigo aquí.',
     );
   });
@@ -665,7 +679,7 @@ describe('AssistantWidget · conversación', () => {
 
     session.activeMembership.set({ role: 'account_staff', businessAccount: { name: 'X' } });
     fixture.detectChanges();
-    expect(element.querySelector('.assistant-nudge')?.textContent).toContain('¡Hola! Soy Zaira.');
+    expect(element.querySelector('.assistant-nudge')?.textContent).toContain('¡Hola! Soy Zaira, el robot de ayuda de YEP.');
     vi.useRealTimers();
   });
 

@@ -23,7 +23,10 @@ function notifier(overrides: Partial<Notifier> = {}): Notifier {
   } as Notifier;
 }
 
-function setup(notifiers: Notifier[]) {
+function setup(
+  notifiers: Notifier[],
+  catalog: { bankAccounts?: unknown[]; banks?: unknown[] } = {},
+) {
   const chat = { ask: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
@@ -40,9 +43,14 @@ function setup(notifiers: Notifier[]) {
       { provide: NotifiersApiService, useValue: { list: vi.fn(() => of({ notifiers })) } },
       {
         provide: BusinessAccountsApiService,
-        useValue: { listBankAccounts: vi.fn(() => of({ bankAccounts: [] })) },
+        useValue: {
+          listBankAccounts: vi.fn(() => of({ bankAccounts: catalog.bankAccounts ?? [] })),
+        },
       },
-      { provide: BanksApiService, useValue: { list: vi.fn(() => of({ banks: [] })) } },
+      {
+        provide: BanksApiService,
+        useValue: { list: vi.fn(() => of({ banks: catalog.banks ?? [] })) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(BusinessNotifiersSection);
@@ -52,8 +60,57 @@ function setup(notifiers: Notifier[]) {
     Array.from(root.querySelectorAll<HTMLButtonElement>('app-ask-zaira button')).find(
       (item) => item.textContent?.trim() === label,
     );
-  return { chat, button };
+  return { chat, button, component: fixture.componentInstance, fixture };
 }
+
+describe('BusinessNotifiersSection — tipo de notificador al crear', () => {
+  const bancolombia = { code: 'bancolombia', name: 'Bancolombia', email: { enabled: true } };
+  const nequi = { code: 'nequi', name: 'Nequi', email: { enabled: false } };
+  const account = (bankId: string) => ({ id: `cuenta-${bankId}`, bankId, isActive: true });
+
+  it('"Correo" va primero y viene elegido; "Escritorio" ya no se ofrece', () => {
+    const { component } = setup([], { bankAccounts: [account('bancolombia')], banks: [bancolombia] });
+    component.openCreate();
+
+    expect(component.kindOptions().map((option) => option.label)).toEqual(['Correo', 'Teléfono']);
+    expect(component.form.controls.kind.value).toBe('email');
+  });
+
+  it('sin una cuenta que permita correo, queda elegido el primero habilitado', () => {
+    const { component, fixture } = setup([], { bankAccounts: [account('nequi')], banks: [nequi] });
+    component.openCreate();
+    fixture.detectChanges();
+
+    expect(component.kindOptions()[0]).toMatchObject({ value: 'email', disabled: true });
+    expect(component.form.controls.kind.value).toBe('phone');
+  });
+
+  it('los remitentes que solo mandan códigos no se piden en el filtro', () => {
+    const nequiCorreo = {
+      code: 'nequi',
+      name: 'Nequi',
+      email: { enabled: true, senderPatterns: ['notificaciones@nequi.com.co', 'somos@nequi.com.co'] },
+    };
+    const { component } = setup(
+      [notifier({ type: 'email_gmail', bankIds: ['nequi'], bankAccountIds: [] })],
+      { bankAccounts: [account('nequi')], banks: [nequiCorreo] },
+    );
+
+    expect(component.notifierEmailSenderPatterns(notifier({ type: 'email_gmail', bankIds: ['nequi'] }))).toEqual([
+      'notificaciones@nequi.com.co',
+    ]);
+  });
+
+  it('no cambia lo que la persona ya eligió', () => {
+    const { component, fixture } = setup([], { bankAccounts: [account('bancolombia')], banks: [bancolombia] });
+    component.openCreate();
+    component.form.controls.kind.setValue('phone');
+    component.form.controls.kind.markAsDirty();
+    fixture.detectChanges();
+
+    expect(component.form.controls.kind.value).toBe('phone');
+  });
+});
 
 describe('BusinessNotifiersSection — preguntarle a Zaira', () => {
   it('una tarjeta en mal estado pregunta por su chip, con el notificador en foco y sin su nombre', () => {

@@ -12,7 +12,7 @@
       <app-zaira-avatar [size]="44" />
       <div class="assistant-panel__titles">
         <h2 id="assistant-title" class="assistant-panel__title">Zaira</h2>
-        <p class="assistant-panel__subtitle">Asistente virtual de YEP</p>
+        <p class="assistant-panel__subtitle">Robot de ayuda de YEP</p>
       </div>
       <div class="assistant-panel__actions">
         @if (chat.messages().length) {
@@ -35,13 +35,37 @@
     <div class="assistant-panel__log" #log>
       @if (chat.restoring()) {
         <p class="assistant-panel__note" role="status">Recuperando tu conversación…</p>
-      } @else if (!chat.messages().length) {
-        <div class="assistant-row">
-          <app-zaira-avatar [size]="28" />
-          <div class="assistant-bubble assistant-bubble--assistant">
-            <p>{{ greeting() }}</p>
+      } @else {
+        <!-- Siempre arriba, también cuando la conversación empieza desde otra pantalla. -->
+        <div class="assistant-presentation">
+          <div class="assistant-row">
+            <app-zaira-avatar [size]="28" />
+            <div class="assistant-bubble assistant-bubble--assistant">
+              <p>{{ greeting() }}</p>
+              <p>Si prefieres hablar con alguien del equipo, escríbenos por WhatsApp.</p>
+              @if (!chat.messages().length && chat.suggestions().length) {
+                <p>Revisé tu negocio y hay algo para mirar.</p>
+              }
+            </div>
+          </div>
+          <div class="assistant-presentation__actions">
+            <a
+              yepButton
+              variant="secondary"
+              size="sm"
+              target="_blank"
+              rel="noopener noreferrer"
+              [href]="humanSupportUrl"
+              >
+              <svg lucideMessageCircle aria-hidden="true"></svg>
+              Hablar con una persona
+              <span class="assistant-sr-only">(se abre en otra pestaña)</span>
+            </a>
           </div>
         </div>
+      }
+
+      @if (!chat.restoring() && !chat.messages().length) {
 
         @if (chat.suggestions().length) {
           <ul class="assistant-suggestions">
@@ -326,7 +350,7 @@
         <strong>{{ alert.title || 'Revisé tu negocio' }}</strong>
         {{ alert.text }}
       } @else {
-        <strong>¡Hola! Soy Zaira.</strong>
+        <strong>¡Hola! Soy Zaira, el robot de ayuda de YEP.</strong>
         Si tienes dudas con YEP, pregúntame.
       }
     </button>
@@ -365,18 +389,18 @@
   [open]="introOpen()"
   size="sm"
   title="Conoce a Zaira"
-  subtitle="Tu nueva asistente virtual en YEP"
+  subtitle="El robot de ayuda de YEP"
   (closeRequested)="closeIntro()"
 >
   <div class="assistant-intro">
     <app-zaira-avatar [size]="104" [online]="true" />
     <p class="assistant-intro__text">
-      Pregúntale cómo agregar un empleado, cómo configurar tus correos o por qué se demoró una
-      notificación. Revisa tu negocio y te responde.
+      Zaira es un robot, no una persona. Pregúntale cómo agregar un empleado, cómo configurar tus
+      correos o por qué se demoró una notificación: revisa tu negocio y te responde.
     </p>
     <p class="assistant-intro__note">
       Solo ve la información de tu negocio, con tus mismos permisos. La encuentras abajo a la
-      derecha.
+      derecha. Si prefieres hablar con alguien del equipo, escríbenos por WhatsApp.
     </p>
   </div>
   <ng-container modalFooter>
