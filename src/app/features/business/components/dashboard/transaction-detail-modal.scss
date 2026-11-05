@@ -69,6 +69,19 @@ app-transaction-supports-panel {
   font-weight: var(--font-weight-medium);
 }
 
+.field__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.field__hint--error {
+  color: var(--color-error-strong);
+}
+
+.field__hint--warning {
+  color: var(--color-warning-strong);
+}
+
 .control {
   background: var(--color-input-bg);
   border: var(--border-width) solid var(--color-border-strong);
@@ -217,6 +230,29 @@ app-transaction-supports-panel {
   max-height: 90vh;
   max-width: 90vw;
   object-fit: contain;
+}
+
+.receipt-lightbox__fallback {
+  align-items: center;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-sm);
+  gap: var(--space-3);
+  max-width: 24rem;
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.receipt-lightbox__fallback p {
+  margin: 0;
+}
+
+.receipt-lightbox__fallback svg {
+  height: var(--icon-lg);
+  width: var(--icon-lg);
 }
 
 .receipt-lightbox__close {

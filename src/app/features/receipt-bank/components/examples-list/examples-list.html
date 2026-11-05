@@ -1,0 +1,117 @@
+<div class="examples">
+  <yep-file-drop
+    accept="image/png,image/jpeg,application/pdf"
+    label="Arrastra el comprobante o haz clic para elegirlo"
+    buttonLabel="Subir comprobante"
+    hint="PNG, JPG o PDF de una página, hasta 10 MB. Entra como borrador: tú llenas sus datos y lo confirmas."
+    [error]="uploadError()"
+    [disabled]="uploading()"
+    (fileChange)="onFileSelected($event)"
+  />
+  @if (uploading()) {
+    <p class="examples__hint" role="status">Subiendo y leyendo el comprobante…</p>
+  }
+
+  @if (showFilters()) {
+    <div class="examples__filters">
+      @if (issuerOptions().length && !issuerId()) {
+        <yep-select
+          label="Banco emisor"
+          placeholder="Todos"
+          [options]="issuerOptions()"
+          [clearable]="true"
+          [ngModel]="filterIssuer()"
+          (ngModelChange)="setFilter('issuer', $event)"
+        />
+      }
+      <yep-select
+        label="Estado"
+        placeholder="Todos"
+        [options]="statusOptions"
+        [clearable]="true"
+        [ngModel]="filterStatus()"
+        (ngModelChange)="setFilter('status', $event)"
+      />
+      <yep-select
+        label="Origen"
+        placeholder="Todos"
+        [options]="sourceOptions"
+        [clearable]="true"
+        [ngModel]="filterSource()"
+        (ngModelChange)="setFilter('source', $event)"
+      />
+    </div>
+  }
+
+  @if (loading() && !examples().length) {
+    <yep-state kind="loading" [rows]="3" />
+  } @else if (error()) {
+    <yep-state kind="error" title="No pudimos cargar los ejemplos" [description]="error()">
+      <yep-button slot="action" variant="secondary" (clicked)="load()">Reintentar</yep-button>
+    </yep-state>
+  } @else if (!examples().length) {
+    <yep-state
+      kind="empty"
+      title="Todavía no hay ejemplos"
+      description="Sube un comprobante o escoge uno de un cliente para empezar."
+    />
+  } @else {
+    <div class="yep-table-wrap">
+      <table yepTable [clickableRows]="true">
+        <thead>
+          <tr>
+            <th scope="col">Ejemplo</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Origen</th>
+            <th scope="col">Fecha</th>
+            @if (testResult()) {
+              <th scope="col">Última prueba</th>
+            }
+            <th scope="col" class="actions"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (example of examples(); track example.id) {
+            <tr data-testid="example-row" (click)="openExample.emit(example.id)">
+              <td data-label="Ejemplo">
+                {{ example.label || 'Sin nombre' }}
+                @if (!example.expectMatch) {
+                  <yep-status-chip label="No debe leerse" />
+                }
+              </td>
+              <td data-label="Estado">
+                <yep-status-chip
+                  [tone]="example.status === 'confirmed' ? 'success' : 'neutral'"
+                  [label]="example.status === 'confirmed' ? 'Confirmado' : 'Borrador'"
+                />
+              </td>
+              <td data-label="Origen">
+                {{ example.sourceType === 'client_support' ? 'De un cliente' : 'Subido por un admin' }}
+              </td>
+              <td data-label="Fecha" class="mono">{{ example.selectedAt | date: 'dd/MM/yyyy' }}</td>
+              @if (testResult()) {
+                <td data-label="Última prueba">
+                  @switch (testOutcome(example.id)) {
+                    @case (true) { ✅ Pasa }
+                    @case (false) { ❌ Falla }
+                    @default { Sin probar }
+                  }
+                </td>
+              }
+              <td class="actions">
+                <yep-button variant="ghost" size="sm" (clicked)="openExample.emit(example.id); $event.stopPropagation()">
+                  Abrir
+                </yep-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (nextCursor()) {
+      <div class="examples__more">
+        <yep-button variant="secondary" size="sm" [loading]="loadingMore()" (clicked)="loadMore()">Ver más</yep-button>
+      </div>
+    }
+  }
+</div>

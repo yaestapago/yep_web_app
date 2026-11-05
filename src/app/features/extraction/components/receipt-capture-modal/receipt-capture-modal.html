@@ -88,14 +88,14 @@
           }
           @if (extraction(); as ocr) {
             <yep-description-list class="review-meta" layout="inline">
-              <yep-description-item label="Banco">{{ ocr.transaction.bank || 'Sin datos' }}</yep-description-item>
+              <yep-description-item label="Banco">{{ bankName() }}</yep-description-item>
               <yep-description-item label="Monto" [mono]="true">
                 {{
                   ocr.transaction.amount || 0
                     | currency: ocr.transaction.currency || 'COP' : 'symbol-narrow' : '1.0-0'
                 }}
               </yep-description-item>
-              <yep-description-item label="Confianza" [mono]="true">
+              <yep-description-item [label]="confidenceLabel()" [mono]="true">
                 {{ ocr.transaction.confidence | percent: '1.0-0' }}
               </yep-description-item>
             </yep-description-list>
@@ -114,7 +114,7 @@
         >
           <div class="form-grid">
             <label class="field">
-              <span>Banco</span>
+              <span>Código del banco</span>
               <input type="text" formControlName="bankId" autocomplete="off" />
               @if (isInvalid('bankId')) {
                 <small>Ingresa el banco.</small>

@@ -42,11 +42,22 @@ const MISSING_FIELD_LABELS: Record<MissingField, string> = {
 };
 
 const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
-  amount: 'Ej. 50000',
-  receiverAccount: 'Número de cuenta',
-  reference: 'Número de referencia',
-  transactionDate: 'Ej. 2026-07-05 14:30',
+  amount: 'Ej. $ 48.000',
+  receiverAccount: 'Número completo de la cuenta',
+  reference: 'Ej. M12345678',
+  transactionDate: 'Ej. 05/07/2026 3:45 pm',
 };
+
+/** Qué formato acepta cada dato. Son las reglas de `parseMissingFieldValue` en el backend. */
+const MISSING_FIELD_HINTS: Record<MissingField, string> = {
+  amount: 'Escríbelo así: $ 48.000',
+  receiverAccount: 'Escribe el número completo de la cuenta, al menos 4 dígitos.',
+  reference: 'Al menos 4 caracteres, con un número.',
+  transactionDate: 'Escríbela así: 05/07/2026 3:45 pm. La hora es obligatoria.',
+};
+
+/** Con solo los últimos dígitos, el backend guarda esos dígitos y no el número completo. */
+const SHORT_ACCOUNT_MAX_DIGITS = 4;
 
 /**
  * Modal de detalle de una transacción: resumen (con quién la generó), cómo se
@@ -116,6 +127,8 @@ export class TransactionDetailModal {
   readonly formValues = signal<Partial<Record<MissingField, string>>>({});
   readonly submitting = signal(false);
   readonly completeError = signal('');
+  /** Datos que el backend no entendió: se quedan como se escribieron, con su aviso. */
+  readonly rejectedFields = signal<MissingField[]>([]);
 
   private loadedId: string | null = null;
 
@@ -131,6 +144,7 @@ export class TransactionDetailModal {
       this.loadedId = id;
       this.formValues.set({});
       this.completeError.set('');
+      this.rejectedFields.set([]);
     });
   }
 
@@ -158,6 +172,21 @@ export class TransactionDetailModal {
     return MISSING_FIELD_PLACEHOLDERS[field];
   }
 
+  fieldHint(field: MissingField): string {
+    return MISSING_FIELD_HINTS[field];
+  }
+
+  isRejected(field: MissingField): boolean {
+    return this.rejectedFields().includes(field);
+  }
+
+  /** Avisa que quedarían guardados solo esos dígitos. No bloquea: quizá es lo único que se ve. */
+  showsShortAccountWarning(field: MissingField): boolean {
+    if (field !== 'receiverAccount') return false;
+    const digits = this.formValue(field).replace(/\D/g, '');
+    return digits.length > 0 && digits.length <= SHORT_ACCOUNT_MAX_DIGITS;
+  }
+
   // --- Completar datos faltantes -------------------------------------------
 
   formValue(field: MissingField): string {
@@ -166,6 +195,7 @@ export class TransactionDetailModal {
 
   setFormValue(field: MissingField, value: string): void {
     this.formValues.set({ ...this.formValues(), [field]: value });
+    this.rejectedFields.update((fields) => fields.filter((item) => item !== field));
   }
 
   readonly canSubmit = computed(() =>
@@ -195,14 +225,20 @@ export class TransactionDetailModal {
       )
       .subscribe({
         next: (response) => {
+          // Lo rechazado se queda como se escribió, para corregirlo sin volver a digitarlo.
+          this.rejectedFields.set(response.rejected);
           if (response.rejected.length > 0) {
             this.completeError.set(
-              `No se pudo interpretar: ${response.rejected
+              `No entendimos: ${response.rejected
                 .map((field) => this.fieldLabel(field))
-                .join(', ')}.`,
+                .join(', ')}. Revisa el formato.`,
             );
           }
-          this.formValues.set({});
+          const kept: Partial<Record<MissingField, string>> = {};
+          for (const field of response.rejected) {
+            kept[field] = values[field];
+          }
+          this.formValues.set(kept);
           this.updated.emit(response.transaction);
         },
         error: (error) => this.completeError.set(httpErrorMessage(error)),

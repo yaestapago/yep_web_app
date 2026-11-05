@@ -31,8 +31,9 @@ import type {
   PaymentSupportType,
   PaymentTransaction,
 } from '../../../../shared/models/transaction.models';
-import { Alert, CardSection, StatusChip, type StatusChipTone } from '../../../../shared/ui';
+import { Alert, ButtonLink, CardSection, StatusChip, type StatusChipTone } from '../../../../shared/ui';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { formatCop } from '../../../assistant-admin/utils/assistant-admin-labels';
 import {
   isTransactionInvoiceable,
   isTransactionVerifiable,
@@ -89,6 +90,7 @@ const EVENT_SOURCE_LABELS: Record<string, string> = {
     LucideUserCheck,
     LucideX,
     Alert,
+    ButtonLink,
     CardSection,
     StatusChip,
   ],
@@ -122,6 +124,10 @@ export class TransactionSupportsPanel {
 
   // Foto del comprobante (lightbox).
   readonly receiptUrl = signal<string | null>(null);
+  /** Un PDF no se puede pintar en un `<img>`: se ofrece un enlace. */
+  readonly receiptIsPdf = signal(false);
+  /** La imagen no cargó (tipo desconocido o enlace vencido): también se ofrece el enlace. */
+  readonly receiptImageFailed = signal(false);
   readonly loadingReceiptId = signal<string | null>(null);
   readonly receiptError = signal('');
 
@@ -234,9 +240,14 @@ export class TransactionSupportsPanel {
     return SUPPORT_TYPE_LABELS[type] ?? type;
   }
 
-  /** Un soporte con imagen adjunta puede abrirse como foto. */
+  /** Un soporte con archivo adjunto puede abrirse. */
   hasPhoto(support: PaymentSupport): boolean {
     return support.type === 'OCR_RECEIPT' || Boolean(support.file);
+  }
+
+  /** Lo que se abre al tocar el soporte, según el tipo de archivo. */
+  openLabel(support: PaymentSupport): string {
+    return isPdfFile(support.file?.mimeType) ? 'Ver PDF' : 'Ver foto';
   }
 
   isDuplicateSupport(support: PaymentSupport): boolean {
@@ -250,6 +261,7 @@ export class TransactionSupportsPanel {
       return;
     }
     this.receiptError.set('');
+    this.receiptImageFailed.set(false);
     this.loadingReceiptId.set(support.id);
     this.api
       .getSupportFileUrl(support.id)
@@ -260,6 +272,9 @@ export class TransactionSupportsPanel {
       .subscribe({
         next: (response) => {
           if (response.url) {
+            this.receiptIsPdf.set(
+              isPdfFile(support.file?.mimeType) || urlPointsToPdf(response.url),
+            );
             this.receiptUrl.set(response.url);
           } else {
             this.receiptError.set('La imagen del comprobante no está disponible.');
@@ -275,6 +290,8 @@ export class TransactionSupportsPanel {
 
   private resetReceipt(): void {
     this.receiptUrl.set(null);
+    this.receiptIsPdf.set(false);
+    this.receiptImageFailed.set(false);
     this.loadingReceiptId.set(null);
     this.receiptError.set('');
   }
@@ -308,6 +325,35 @@ export class TransactionSupportsPanel {
     const who = item.byName || 'Staff';
     const via = item.via === 'whatsapp' ? 'WhatsApp' : 'módulo';
     const when = new Date(item.at).toLocaleString();
-    return `${who} · ${via} · ${when}`;
+    const value = this.dataEntryValue(item);
+    return value ? `${value} · ${who} · ${via} · ${when}` : `${who} · ${via} · ${when}`;
+  }
+
+  /** El dato que quedó guardado, con el mismo formato con el que se pide. */
+  private dataEntryValue(item: DataRequestEntry): string {
+    const value = (item.value ?? '').trim();
+    if (!value) return '';
+    if (item.field === 'amount') {
+      const amount = Number(value);
+      return Number.isFinite(amount) ? formatCop(amount) : value;
+    }
+    if (item.field === 'transactionDate') {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+    }
+    return value;
+  }
+}
+
+function isPdfFile(mimeType: string | null | undefined): boolean {
+  return (mimeType ?? '').trim().toLowerCase() === 'application/pdf';
+}
+
+/** Un soporte viejo puede no traer `mimeType`; la clave firmada conserva la extensión. */
+function urlPointsToPdf(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf');
+  } catch {
+    return false;
   }
 }

@@ -49,7 +49,16 @@
                 [ngModel]="formValue(field)"
                 (ngModelChange)="setFormValue(field, $event)"
                 [attr.aria-label]="fieldLabel(field)"
+                [attr.aria-invalid]="isRejected(field) ? 'true' : null"
               />
+              <small class="field__hint" [class.field__hint--error]="isRejected(field)">
+                {{ fieldHint(field) }}
+              </small>
+              @if (showsShortAccountWarning(field)) {
+                <small class="field__hint field__hint--warning" data-testid="short-account-warning">
+                  Con estos dígitos guardamos solo esos, no la cuenta completa. Si la tienes, escríbela toda.
+                </small>
+              }
             </label>
           }
         </div>

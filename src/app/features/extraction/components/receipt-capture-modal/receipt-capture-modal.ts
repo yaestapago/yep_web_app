@@ -42,6 +42,7 @@ import { FileDrop, FileDropItem } from '../../../../shared/ui/file-drop/file-dro
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
+import { BanksApiService } from '../../../banks/services/banks-api.service';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionEventsService } from '../../../transactions/services/transaction-events.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
@@ -80,6 +81,7 @@ export class ReceiptCaptureModal {
   private readonly document = inject(DOCUMENT);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notificationModal = inject(NotificationModalService);
+  private readonly banksApi = inject(BanksApiService);
 
   readonly open = input(false);
   readonly closeRequested = output<void>();
@@ -100,6 +102,22 @@ export class ReceiptCaptureModal {
   readonly selectedReceipt = signal<File | null>(null);
   readonly previewUrl = signal('');
   readonly extraction = signal<TransactionExtractionResponse | null>(null);
+  /** Código → nombre del catálogo de bancos: `bank` llega como código (`nequi`). */
+  private readonly bankNames = signal<ReadonlyMap<string, string>>(new Map());
+  private bankNamesRequested = false;
+  /** Nombre del banco leído. Lo que no está en el catálogo se muestra como llegó. */
+  readonly bankName = computed(() => {
+    const bank = this.extraction()?.transaction.bank?.trim();
+    if (!bank) return 'Sin datos';
+    return this.bankNames().get(bank.toLowerCase()) ?? bank;
+  });
+  /**
+   * Con reglas, `confidence` es la parte de los datos que se leyó, no qué tan cierto es:
+   * un 100 % dice que se leyó todo, no que el comprobante sea real.
+   */
+  readonly confidenceLabel = computed(() =>
+    this.extraction()?.model === 'rules' ? 'Datos leídos' : 'Confianza',
+  );
   readonly loading = computed(() => this.extracting() || this.creatingTransaction());
   /** Presentación: el comprobante elegido como fila de `yep-file-drop`. */
   readonly receiptFiles = computed<FileDropItem[]>(() => {
@@ -121,6 +139,13 @@ export class ReceiptCaptureModal {
   });
 
   constructor() {
+    effect(() => {
+      if (this.open() && !this.bankNamesRequested) {
+        this.bankNamesRequested = true;
+        this.loadBankNames();
+      }
+    });
+
     // Enciende la cámara solo mientras el modal está abierto en el paso de
     // captura y todavía no hay una foto tomada; en cualquier otro caso libera
     // el dispositivo (la captura congela la imagen mostrando la foto tomada).
@@ -312,6 +337,18 @@ export class ReceiptCaptureModal {
 
   isDirty(): boolean {
     return this.manualForm.dirty || this.selectedReceipt() !== null || this.extraction() !== null;
+  }
+
+  private loadBankNames(): void {
+    this.banksApi
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ banks }) =>
+          this.bankNames.set(new Map(banks.map((bank) => [bank.code.toLowerCase(), bank.name]))),
+        // Sin catálogo se muestra el código, como antes: no impide registrar el pago.
+        error: () => (this.bankNamesRequested = false),
+      });
   }
 
   private async startCamera(video: HTMLVideoElement): Promise<void> {

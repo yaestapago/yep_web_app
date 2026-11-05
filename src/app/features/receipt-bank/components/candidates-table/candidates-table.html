@@ -1,0 +1,152 @@
+<div class="candidates">
+  <yep-alert variant="warning" title="Datos personales de terceros" data-testid="third-party-notice">
+    Estos comprobantes son de clientes de otros negocios y traen nombres, cuentas y montos de terceros.
+    Usarlos requiere autorización confirmada. Si no tienes claro que exista, consúltalo con el equipo
+    antes de escoger uno, y escoge solo los que necesites para crear una plantilla.
+  </yep-alert>
+
+  <div class="candidates__filters">
+    <yep-date-range-picker
+      fieldLabel="Fechas"
+      [range]="range()"
+      [preset]="preset()"
+      (rangeChange)="onRangeChange($event)"
+    />
+    <yep-select
+      label="Negocio"
+      placeholder="Todos"
+      hint="Lista los negocios de lo que ya cargaste."
+      [options]="accountOptions()"
+      [clearable]="true"
+      [ngModel]="accountId()"
+      (ngModelChange)="accountId.set($event ?? '')"
+    />
+    <yep-input
+      label="Pista de banco"
+      placeholder="Ej. Nequi"
+      [error]="issuerHintError()"
+      [ngModel]="issuerHint()"
+      (ngModelChange)="issuerHint.set($event)"
+    />
+    <yep-select
+      label="Por qué no se leyó con reglas"
+      placeholder="Todos"
+      [options]="reasonOptions"
+      [clearable]="true"
+      [ngModel]="fallbackReason()"
+      (ngModelChange)="fallbackReason.set($event ?? '')"
+    />
+    <yep-toggle
+      appearance="button"
+      label="Sin escoger"
+      ariaLabel="Solo los que no se han escogido"
+      [pressed]="onlyUnselected()"
+      (toggled)="onlyUnselected.set($event)"
+    />
+    <yep-button variant="secondary" [loading]="loading()" [disabled]="!!issuerHintError()" (clicked)="search()">
+      Buscar
+    </yep-button>
+  </div>
+
+  @if (actionError()) {
+    <yep-alert variant="error">{{ actionError() }}</yep-alert>
+  }
+
+  @if (loading() && !candidates().length) {
+    <yep-state kind="loading" [rows]="4" />
+  } @else if (error()) {
+    <yep-state kind="error" title="No pudimos cargar los comprobantes" [description]="error()">
+      <yep-button slot="action" variant="secondary" (clicked)="search()">Reintentar</yep-button>
+    </yep-state>
+  } @else if (!candidates().length) {
+    <yep-state
+      kind="empty"
+      title="Todavía no hay comprobantes de clientes para revisar"
+      description="Prueba con otras fechas o quita un filtro."
+    />
+  } @else {
+    <div class="yep-table-wrap">
+      <table yepTable>
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Negocio</th>
+            <th scope="col">Pista de banco</th>
+            <th scope="col">Cómo se leyó</th>
+            <th scope="col">Motivo</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="actions"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (candidate of candidates(); track candidate.paymentSupportId) {
+            <tr data-testid="candidate-row">
+              <td data-label="Fecha" class="mono">{{ candidate.createdAt | date: 'dd/MM/yyyy h:mm a' }}</td>
+              <td data-label="Negocio">{{ candidate.accountName || 'Negocio sin nombre' }}</td>
+              <td data-label="Pista de banco">{{ candidate.issuerHint || '—' }}</td>
+              <td data-label="Cómo se leyó">{{ methodLabel(candidate) }}</td>
+              <td data-label="Motivo">{{ reasonLabel(candidate) }}</td>
+              <td data-label="Estado">
+                @if (candidate.alreadySelected) {
+                  <yep-status-chip tone="info" label="Ya escogido" />
+                } @else {
+                  <yep-status-chip label="Sin escoger" />
+                }
+              </td>
+              <td class="actions">
+                <div class="candidates__actions">
+                  <yep-icon-button label="Ver comprobante" [icon]="eyeIcon" (clicked)="view(candidate)" />
+                  <yep-button
+                    variant="secondary"
+                    size="sm"
+                    [loading]="choosingId() === candidate.paymentSupportId"
+                    [disabled]="!!choosingId()"
+                    (clicked)="choose(candidate)"
+                  >
+                    {{ candidate.alreadySelected ? 'Abrir' : 'Escoger' }}
+                  </yep-button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (nextCursor()) {
+      <div class="candidates__more">
+        <yep-button variant="secondary" size="sm" [loading]="loadingMore()" (clicked)="loadMore()">Ver más</yep-button>
+      </div>
+    }
+  }
+
+  <yep-modal
+    size="lg"
+    title="Comprobante de cliente"
+    subtitle="Trae datos personales de terceros. Escógelo solo si lo necesitas para una plantilla."
+    [open]="viewing() !== null"
+    (closeRequested)="closeView()"
+  >
+    @if (viewLoading()) {
+      <yep-state kind="loading" [rows]="4" />
+    } @else if (viewError()) {
+      <yep-alert variant="error">{{ viewError() }}</yep-alert>
+    } @else if (viewing(); as candidate) {
+      <app-receipt-file-preview
+        [url]="viewUrl()"
+        [mimeType]="candidate.mimeType"
+        (reload)="loadViewUrl(candidate)"
+      />
+    }
+    <ng-container modalFooter>
+      <yep-button variant="ghost" (clicked)="closeView()">Cerrar</yep-button>
+      @if (viewing(); as candidate) {
+        <yep-button
+          [loading]="choosingId() === candidate.paymentSupportId"
+          (clicked)="choose(candidate)"
+        >
+          {{ candidate.alreadySelected ? 'Abrir borrador' : 'Escoger' }}
+        </yep-button>
+      }
+    </ng-container>
+  </yep-modal>
+</div>

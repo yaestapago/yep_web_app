@@ -1,0 +1,23 @@
+.prompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.prompt__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.prompt__text {
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  padding: var(--space-3);
+  resize: vertical;
+  width: 100%;
+}

@@ -171,6 +171,16 @@
               <span>Gestión de bancos</span>
             </a>
             <a
+              routerLink="/__ops/receipt-bank"
+              routerLinkActive="active"
+              (click)="onNavigate()"
+              title="Banco de comprobantes"
+              data-testid="receipt-bank-link"
+            >
+              <svg lucideFileSearch aria-hidden="true"></svg>
+              <span>Banco de comprobantes</span>
+            </a>
+            <a
               routerLink="/__ops/announcements"
               routerLinkActive="active"
               (click)="onNavigate()"

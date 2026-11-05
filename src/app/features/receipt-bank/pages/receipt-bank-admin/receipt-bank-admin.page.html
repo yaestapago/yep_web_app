@@ -1,0 +1,275 @@
+<section class="page receipt-bank-page">
+  <yep-page-header
+    title="Banco de comprobantes"
+    subtitle="Organizado por banco emisor: el banco desde el que se hizo la transferencia."
+  >
+    <ng-container ngProjectAs="[slot=actions]">
+      <yep-menu label="Prompts de la IA">
+        <button type="button" yepMenuItem (click)="promptKind.set('classify')">Prompt para reconocer</button>
+        <button type="button" yepMenuItem (click)="promptKind.set('rules')">Prompt para generar reglas</button>
+      </yep-menu>
+    </ng-container>
+  </yep-page-header>
+
+  <div class="receipt-bank-page__tabs">
+    <yep-segmented
+      aria-label="Vista del banco de comprobantes"
+      [options]="viewOptions"
+      [value]="view()"
+      (valueChange)="setView($event)"
+    />
+  </div>
+
+  @if (notice()) {
+    <yep-alert variant="success" data-testid="page-notice" [dismissible]="true" (dismissed)="notice.set('')">
+      {{ notice() }}
+    </yep-alert>
+  }
+
+  @switch (view()) {
+    @case ('issuers') {
+      <yep-alert variant="info" title="Lo que importa es el banco emisor" data-testid="issuer-explainer">
+        Es el banco desde el que el cliente hizo la transferencia, no el banco donde la recibe el negocio. Una
+        transferencia de Nequi a una cuenta Bancolombia trae el comprobante de Nequi: va en Nequi. Cada emisor
+        tiene sus propios tipos de comprobante, labels y datos esperados.
+      </yep-alert>
+
+      <div class="receipt-bank-page__layout">
+        <yep-card padding="none" class="issuers">
+          <div class="issuers__head">
+            <h2>Bancos emisores</h2>
+            <yep-button variant="secondary" size="sm" data-testid="add-issuer" (clicked)="openNewIssuer()">
+              <svg lucidePlus aria-hidden="true"></svg>
+              Agregar
+            </yep-button>
+          </div>
+          @if (issuersLoading() && !issuers().length) {
+            <yep-state kind="loading" [rows]="4" />
+          } @else if (issuersError()) {
+            <yep-state kind="error" title="No pudimos cargar los emisores" [description]="issuersError()">
+              <yep-button slot="action" variant="secondary" (clicked)="loadIssuers()">Reintentar</yep-button>
+            </yep-state>
+          } @else if (!issuers().length) {
+            <yep-state
+              kind="empty"
+              title="Aún no hay bancos emisores"
+              description="Agrega el primero para empezar."
+            />
+          } @else {
+            <ul class="issuers__list">
+              @for (issuer of issuers(); track issuer.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="issuers__item"
+                    data-testid="issuer-item"
+                    [class.issuers__item--active]="issuer.id === selectedIssuerId()"
+                    [attr.aria-current]="issuer.id === selectedIssuerId() ? 'true' : null"
+                    (click)="selectIssuer(issuer)"
+                  >
+                    <span class="issuers__name">{{ issuer.name }}</span>
+                    <span class="issuers__meta">{{ issuerSummary(issuer) }}</span>
+                    @if (!issuer.isActive) {
+                      <yep-status-chip tone="warning" label="Inactivo" />
+                    }
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </yep-card>
+
+        <div class="receipt-bank-page__detail">
+          @if (selectedTemplateId(); as templateId) {
+            <app-template-editor
+              [templateId]="templateId"
+              [issuerName]="selectedIssuer()?.name ?? ''"
+              [examplesRefreshKey]="examplesRefreshKey()"
+              (back)="selectedTemplateId.set(null); reloadTemplates()"
+              (changed)="onTemplateChanged()"
+              (deleted)="onTemplateDeleted()"
+              (promptRequested)="promptKind.set('rules')"
+              (openExample)="openExampleId.set($event)"
+              (exampleUploaded)="openExampleId.set($event.id); onExampleChanged()"
+            />
+          } @else if (selectedIssuer(); as issuer) {
+            <yep-card padding="none">
+              <div class="issuer-detail__head">
+                <div>
+                  <h2>{{ issuer.name }}</h2>
+                  <p class="issuer-detail__code">{{ issuer.code }}</p>
+                </div>
+                <div class="issuer-detail__actions">
+                  <yep-button variant="ghost" size="sm" (clicked)="editIssuer(issuer)">Editar</yep-button>
+                  @if (issuer.isActive) {
+                    <yep-button
+                      variant="ghost"
+                      size="sm"
+                      tone="danger"
+                      data-testid="deactivate-issuer"
+                      [loading]="issuerActionId() === issuer.id"
+                      (clicked)="setIssuerActive(issuer, false)"
+                    >
+                      Desactivar
+                    </yep-button>
+                  } @else {
+                    <yep-button
+                      variant="ghost"
+                      size="sm"
+                      data-testid="activate-issuer"
+                      [loading]="issuerActionId() === issuer.id"
+                      (clicked)="setIssuerActive(issuer, true)"
+                    >
+                      Activar
+                    </yep-button>
+                  }
+                  <yep-button size="sm" data-testid="add-template" [disabled]="!issuer.isActive" (clicked)="openNewTemplate()">
+                    <svg lucidePlus aria-hidden="true"></svg>
+                    Agregar tipo
+                  </yep-button>
+                </div>
+              </div>
+              @if (issuerError()) {
+                <div class="issuer-detail__alert"><yep-alert variant="error">{{ issuerError() }}</yep-alert></div>
+              }
+              @if (!issuer.isActive) {
+                <div class="issuer-detail__alert">
+                  <yep-alert variant="warning">Este emisor está inactivo. Actívalo para agregar tipos de comprobante.</yep-alert>
+                </div>
+              }
+
+              @if (templatesLoading() && !templates().length) {
+                <yep-state kind="loading" [rows]="3" />
+              } @else if (templatesError()) {
+                <yep-state kind="error" title="No pudimos cargar las plantillas" [description]="templatesError()">
+                  <yep-button slot="action" variant="secondary" (clicked)="reloadTemplates()">Reintentar</yep-button>
+                </yep-state>
+              } @else if (!templates().length) {
+                <yep-state
+                  kind="empty"
+                  title="Sin tipos de comprobante"
+                  description="Agrega uno por cada comprobante distinto que muestre este banco."
+                />
+              } @else {
+                <div class="yep-table-wrap">
+                  <table yepTable [clickableRows]="true">
+                    <thead>
+                      <tr>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col" class="num">Versión</th>
+                        <th scope="col" class="num">Ejemplos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (template of templates(); track template.id) {
+                        <tr data-testid="template-row" (click)="selectedTemplateId.set(template.id)">
+                          <td data-label="Nombre">{{ template.name }}</td>
+                          <td data-label="Tipo">{{ kindLabel(template.kind) }}</td>
+                          <td data-label="Estado">
+                            <span class="chips">
+                              @for (chip of chips(template); track chip.label) {
+                                <yep-status-chip [tone]="chip.tone" [label]="chip.label" />
+                              }
+                            </span>
+                          </td>
+                          <td data-label="Versión" class="num">{{ template.approvedVersion ?? '—' }}</td>
+                          <td data-label="Ejemplos" class="num">
+                            {{ template.exampleCounts.confirmed }} de
+                            {{ template.exampleCounts.confirmed + template.exampleCounts.draft }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </yep-card>
+          } @else {
+            <yep-card>
+              <yep-state
+                kind="empty"
+                title="Escoge un banco emisor"
+                description="Aquí ves sus tipos de comprobante, con sus labels y datos esperados."
+              />
+            </yep-card>
+          }
+        </div>
+      </div>
+    }
+    @case ('examples') {
+      <yep-card>
+        <app-examples-list
+          [issuers]="issuers()"
+          [refreshKey]="examplesRefreshKey()"
+          (openExample)="openExampleId.set($event)"
+          (uploaded)="openExampleId.set($event.id); onExampleChanged()"
+        />
+      </yep-card>
+    }
+    @case ('candidates') {
+      <yep-card>
+        <app-candidates-table (exampleChosen)="onExampleChosen($event)" />
+      </yep-card>
+    }
+  }
+
+  <app-issuer-editor-modal
+    [draft]="issuerDraft()"
+    (closed)="issuerDraft.set(null)"
+    (saved)="onIssuerSaved($event)"
+  />
+
+  <yep-modal
+    title="Agregar tipo de comprobante"
+    [subtitle]="selectedIssuer() ? 'Banco emisor: ' + selectedIssuer()!.name : ''"
+    [open]="creatingTemplate()"
+    [loading]="newTemplateSaving()"
+    (closeRequested)="creatingTemplate.set(false)"
+  >
+    <div class="new-template">
+      <yep-input
+        label="Nombre"
+        placeholder="Ej. Envío a otro Nequi"
+        [required]="true"
+        [ngModel]="newName()"
+        (ngModelChange)="newName.set($event)"
+      />
+      <yep-input
+        label="Código"
+        placeholder="Ej. envio_a_nequi"
+        hint="En minúsculas y sin espacios. No se puede cambiar después."
+        [required]="true"
+        [error]="newCodeError()"
+        [ngModel]="newCode()"
+        (ngModelChange)="newCode.set($event)"
+      />
+      <yep-select label="Tipo" [options]="kindOptions" [ngModel]="newKind()" (ngModelChange)="newKind.set($event)" />
+      <yep-select label="Medio" [options]="mediumOptions" [ngModel]="newMedium()" (ngModelChange)="newMedium.set($event)" />
+      @if (newTemplateError()) {
+        <yep-alert variant="error">{{ newTemplateError() }}</yep-alert>
+      }
+    </div>
+    <ng-container modalFooter>
+      <yep-button variant="ghost" [disabled]="newTemplateSaving()" (clicked)="creatingTemplate.set(false)">Cancelar</yep-button>
+      <yep-button [loading]="newTemplateSaving()" [disabled]="!canCreateTemplate()" (clicked)="createTemplate()">Crear en borrador</yep-button>
+    </ng-container>
+  </yep-modal>
+
+  @if (openExampleId(); as exampleId) {
+    <app-receipt-example-modal
+      [exampleId]="exampleId"
+      [issuers]="issuers()"
+      (closed)="openExampleId.set(null)"
+      (changed)="onExampleChanged()"
+      (catalogChanged)="loadIssuers(); reloadTemplates()"
+    />
+  }
+
+  <app-copilot-prompt-modal
+    [kind]="promptKind()"
+    (closed)="promptKind.set(null)"
+    (saved)="onPromptSaved($event)"
+  />
+</section>
