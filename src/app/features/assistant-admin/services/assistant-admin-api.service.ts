@@ -23,6 +23,7 @@ export class AssistantAdminApiService {
   listConversations(query: AssistantConversationQuery = {}): Observable<AssistantConversationPage> {
     let params = new HttpParams();
     if (query.flagged !== undefined) params = params.set('flagged', String(query.flagged));
+    if (query.feedback) params = params.set('feedback', query.feedback);
     if (query.q?.trim()) params = params.set('q', query.q.trim());
     if (query.cursor) params = params.set('cursor', query.cursor);
     if (query.limit) params = params.set('limit', String(query.limit));

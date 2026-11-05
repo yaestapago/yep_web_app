@@ -9,6 +9,11 @@
     </div>
     @if (canManage()) {
       <div class="employees-toolbar__actions">
+        <app-ask-zaira
+          label="Ayuda"
+          question="¿Cómo agrego empleados y cómo los configuro?"
+          presetId="configurar-empleados"
+        />
         <yep-button size="sm" (clicked)="openInvite()">
           <svg lucideUserPlus aria-hidden="true"></svg>
           Agregar usuario

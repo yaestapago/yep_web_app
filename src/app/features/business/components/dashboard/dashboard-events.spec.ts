@@ -2,6 +2,8 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import type { SourceEvent } from '../../../../shared/models/source-event.models';
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { AssistantChatService } from '../../../assistant/services/assistant-chat.service';
 import { TtsPlaybackService } from '../../../source-events/services/tts-playback.service';
 import { DashboardEventsPanel } from './dashboard-events';
 
@@ -314,6 +316,62 @@ describe('DashboardEventsPanel — paginado ajustado al alto (appAutoFitRows)', 
   function rowsOf(fixture: ComponentFixture<DashboardEventsPanel>): HTMLElement[] {
     return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tr.event'));
   }
+});
+
+describe('DashboardEventsPanel — "¿Falta un pago?"', () => {
+  const expectedOptions = {
+    presetId: undefined,
+    page: undefined,
+    focus: undefined,
+    autoSend: false,
+    cursor: 'Me hicieron un pago de $ '.length,
+  };
+
+  function create(events: SourceEvent[], isSupportUser = false) {
+    const chat = { ask: vi.fn() };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: TtsPlaybackService, useValue: { enabled: signal(false), setEnabled: vi.fn() } },
+        { provide: AssistantChatService, useValue: chat },
+        { provide: AuthSessionService, useValue: { isSupportUser: signal(isSupportUser) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(DashboardEventsPanel);
+    fixture.componentRef.setInput('events', events);
+    fixture.detectChanges();
+    const buttons = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('app-ask-zaira button'));
+    return { chat, buttons };
+  }
+
+  it('en el encabezado deja la pregunta en el cuadro, lista para poner el monto', () => {
+    const { chat, buttons } = create([sourceEvent({ id: 'evt-1' })]);
+
+    expect(buttons().length).toBe(1);
+    expect(buttons()[0].textContent?.trim()).toBe('¿Falta un pago?');
+    (buttons()[0] as HTMLButtonElement).click();
+
+    expect(chat.ask).toHaveBeenCalledWith(
+      'Me hicieron un pago de $  a las  y no aparece',
+      expectedOptions,
+    );
+  });
+
+  it('sin eventos también aparece en el estado vacío', () => {
+    const { chat, buttons } = create([]);
+
+    expect(buttons().length).toBe(2);
+    (buttons()[1] as HTMLButtonElement).click();
+    expect(chat.ask).toHaveBeenCalledWith(
+      'Me hicieron un pago de $  a las  y no aparece',
+      expectedOptions,
+    );
+  });
+
+  it('el rol support no lo ve', () => {
+    const { buttons } = create([], true);
+    expect(buttons().length).toBe(0);
+  });
 });
 
 describe('DashboardEventsPanel — filtro de estado "Por revisar"', () => {

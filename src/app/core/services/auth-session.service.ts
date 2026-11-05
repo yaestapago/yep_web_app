@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { forgetAssistantConversations } from '../../features/assistant/assistant-storage';
 import {
   AuthResponse,
   BusinessAccount,
@@ -212,6 +213,8 @@ export class AuthSessionService {
   clearSession(): void {
     this.session.set(null);
     localStorage.removeItem(this.storageKey);
+    // Aquí y no en el chat: se puede cerrar sesión sin que el chat exista en esa carga (onboarding).
+    forgetAssistantConversations();
   }
 
   /**

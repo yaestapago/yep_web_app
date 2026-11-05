@@ -8,8 +8,10 @@
 
 :host {
   display: contents;
-  /* Alto del botón: avatar de 56 px + el borde interno. El panel y el saludo se ubican encima. */
-  --assistant-fab-size: 66px;
+  /* Alto del botón: avatar de 56 px + relleno + borde. El panel y el saludo se ubican encima. */
+  --assistant-fab-size: calc(var(--space-9) + var(--space-1) * 2 + var(--border-width) * 2);
+  /* Avatar de 28 px de las respuestas: lo que va debajo de la burbuja se alinea con ella. */
+  --assistant-avatar-size: calc(var(--space-6) - var(--space-1));
 }
 
 /* Cápsula tinta con la cara de Zaira: el contraste la hace visible sin ser un segundo primario. */
@@ -40,12 +42,7 @@
   }
 
   &:hover {
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    box-shadow: var(--shadow-focus);
-    outline: none;
+    transform: translateY(calc(var(--space-1) / -2));
   }
 }
 
@@ -105,7 +102,7 @@
   box-shadow: var(--shadow-overlay);
   display: flex;
   gap: var(--space-1);
-  max-width: min(280px, calc(100vw - var(--space-4) * 2));
+  max-width: min(calc(var(--space-10) * 4.5), calc(100vw - var(--space-4) * 2));
   padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
   position: fixed;
   right: var(--space-5);
@@ -125,11 +122,6 @@
 
   strong {
     display: block;
-  }
-
-  &:focus-visible {
-    box-shadow: var(--shadow-focus);
-    outline: none;
   }
 }
 
@@ -154,11 +146,11 @@
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - var(--assistant-fab-size) - var(--space-5) * 2 - var(--space-3));
-  height: 660px;
+  height: calc(var(--space-10) * 10);
   overflow: hidden;
   position: fixed;
   right: var(--space-5);
-  width: min(420px, calc(100vw - var(--space-5) * 2));
+  width: min(calc(var(--space-10) * 6.5), calc(100vw - var(--space-5) * 2));
   z-index: 18;
 }
 
@@ -255,6 +247,26 @@
     font-weight: var(--font-weight-semibold);
     text-decoration: underline;
   }
+
+  ul.assistant-sublist {
+    margin-left: var(--space-5);
+  }
+}
+
+/* Con ícono de error, el cuerpo va al lado: los márgenes entre bloques son de aquí. */
+.assistant-bubble__body {
+  min-width: 0;
+
+  > * + * {
+    margin-top: var(--space-2);
+  }
+}
+
+.assistant-bubble__icon {
+  flex: 0 0 auto;
+  height: var(--icon-sm);
+  margin-top: var(--space-1);
+  width: var(--icon-sm);
 }
 
 .assistant-bubble--assistant {
@@ -273,13 +285,172 @@
 .assistant-bubble--error {
   background: var(--color-warning-soft);
   color: var(--color-warning-strong);
+  display: flex;
+  gap: var(--space-2);
+
+  > * + * {
+    margin-top: 0;
+  }
+}
+
+/* Montos, horas y direcciones (sistema de diseño: JetBrains Mono). */
+.assistant-mono {
+  font-family: var(--font-family-mono);
+}
+
+/* Solo para lectores de pantalla. */
+.assistant-sr-only {
+  border: 0;
+  clip-path: inset(50%);
+  height: var(--border-width);
+  margin: calc(var(--border-width) * -1);
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: var(--border-width);
+}
+
+/* Dirección "Reenviar a": se selecciona a mano o se copia con el botón. */
+.assistant-copy {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  font-size: var(--font-size-xs);
+  gap: var(--space-1);
+  max-width: 100%;
+  padding-left: var(--space-2);
+  vertical-align: middle;
+}
+
+.assistant-copy__button {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  gap: var(--space-1);
+  justify-content: center;
+  min-height: var(--space-6);
+  min-width: var(--space-6);
+  padding: 0 var(--space-1);
+
+  svg {
+    height: var(--icon-sm);
+    width: var(--icon-sm);
+  }
+
+  &:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text-primary);
+  }
+}
+
+/* Solo los mensajes llevan role="log": abrir el menú no le lee las opciones a un lector de pantalla. */
+.assistant-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.assistant-message {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Bajo la burbuja de Zaira: acciones, opciones, calificación y soporte. */
+.assistant-extras {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-left: calc(var(--assistant-avatar-size) + var(--space-2));
+
+  &:empty {
+    display: none;
+  }
+}
+
+.assistant-extras__row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.assistant-extras__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.assistant-chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* El texto puede ser una pregunta larga: en celular angosto pasa a varias líneas. */
+.assistant-chip {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  min-height: var(--control-height-sm);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+/* Avisos según el estado del negocio, antes de las preguntas frecuentes. */
+.assistant-suggestions {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.assistant-suggestion__text {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-snug);
+  margin: 0 0 var(--space-2);
+}
+
+.assistant-panel__note {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0;
 }
 
 .assistant-menu__label {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.04em;
   margin: var(--space-2) 0 0;
   text-transform: uppercase;
 }
@@ -317,11 +488,6 @@
     cursor: not-allowed;
     opacity: 0.6;
   }
-
-  &:focus-visible {
-    box-shadow: var(--shadow-focus);
-    outline: none;
-  }
 }
 
 .assistant-panel__shortcuts {
@@ -345,16 +511,19 @@
   &:hover {
     color: var(--color-text-primary);
   }
-
-  &:focus-visible {
-    box-shadow: var(--shadow-focus);
-    outline: none;
-  }
 }
 
 .assistant-typing {
   align-items: center;
   display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.assistant-typing__dots {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
   gap: var(--space-1);
 
   span {
@@ -385,6 +554,38 @@
   }
 }
 
+.assistant-budget {
+  align-items: flex-start;
+  background: var(--color-info-soft);
+  color: var(--color-info-strong);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  gap: var(--space-2);
+  line-height: var(--line-height-snug);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+
+  svg {
+    flex: 0 0 auto;
+    height: var(--icon-sm);
+    width: var(--icon-sm);
+  }
+}
+
+.assistant-counter {
+  color: var(--color-text-secondary);
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  margin: 0;
+  padding: var(--space-1) var(--space-4) 0;
+  text-align: right;
+}
+
+.assistant-counter--limit {
+  color: var(--color-warning-strong);
+}
+
 /* Con atajos encima, el borde superior lo pone `.assistant-panel__shortcuts`. */
 .assistant-panel__shortcuts + .assistant-composer {
   border-top: 0;
@@ -408,16 +609,10 @@
   font: inherit;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-body);
-  max-height: 120px;
+  max-height: calc(var(--space-10) * 2);
   min-height: var(--control-height-md);
   padding: var(--space-2) var(--space-3);
   resize: none;
-
-  &:focus {
-    border-color: var(--color-focus);
-    box-shadow: var(--shadow-focus);
-    outline: none;
-  }
 }
 
 .assistant-composer__send {
@@ -443,11 +638,6 @@
     color: var(--color-text-muted);
     cursor: not-allowed;
   }
-
-  &:focus-visible {
-    box-shadow: var(--shadow-focus);
-    outline: none;
-  }
 }
 
 @media (max-width: 768px) {
@@ -470,6 +660,11 @@
     right: var(--space-4);
   }
 
+  /* iOS Safari hace zoom al enfocar un campo de menos de 16 px. */
+  .assistant-composer__input {
+    font-size: var(--font-size-md);
+  }
+
   .assistant-panel {
     border-bottom: 0;
     border-bottom-left-radius: 0;
@@ -489,7 +684,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .assistant-typing span {
+  .assistant-typing__dots span {
     animation: none;
     opacity: 0.6;
   }

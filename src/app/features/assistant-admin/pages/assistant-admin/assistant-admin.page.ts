@@ -20,6 +20,7 @@ import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import type {
   AssistantConversationDetail,
+  AssistantConversationQuery,
   AssistantConversationSummary,
   AssistantUsage,
 } from '../../models/assistant-admin.models';
@@ -27,12 +28,19 @@ import { AssistantAdminApiService } from '../../services/assistant-admin-api.ser
 import {
   INCIDENT_LABELS,
   INCIDENT_TONES,
+  TURN_OUTCOME_LABELS,
+  TURN_OUTCOME_TONES,
   formatCop,
   formatCount,
   formatDateTime,
+  formatLatency,
   formatMonth,
+  formatTurnTools,
   toolLabel,
 } from '../../utils/assistant-admin-labels';
+
+/** Texto del sistema que se muestra de una vez; uno más largo (una guía) arranca plegado. */
+const SYSTEM_TEXT_INLINE_MAX = 120;
 
 /** `% del tope` en amarillo desde el 80 % y en rojo al llegar. */
 export function budgetTone(percent: number): 'neutral' | 'warning' | 'error' {
@@ -72,6 +80,10 @@ export class AssistantAdminPage implements OnInit {
 
   protected readonly incidentLabels = INCIDENT_LABELS;
   protected readonly incidentTones = INCIDENT_TONES;
+  protected readonly turnOutcomeLabels = TURN_OUTCOME_LABELS;
+  protected readonly turnOutcomeTones = TURN_OUTCOME_TONES;
+  protected readonly formatLatency = formatLatency;
+  protected readonly formatTurnTools = formatTurnTools;
   protected readonly formatCop = formatCop;
   protected readonly formatCount = formatCount;
   protected readonly formatDateTime = formatDateTime;
@@ -89,6 +101,8 @@ export class AssistantAdminPage implements OnInit {
   readonly listError = signal('');
   /** Por defecto solo las que tienen alertas: es lo que hay que revisar. */
   readonly flaggedOnly = signal(true);
+  /** Va aparte de las alertas: una conversación mal calificada puede no tener ninguna. */
+  readonly badFeedbackOnly = signal(false);
   readonly search = signal('');
   private readonly appliedSearch = signal('');
 
@@ -96,14 +110,24 @@ export class AssistantAdminPage implements OnInit {
   readonly detailOpen = signal(false);
   readonly detailLoading = signal(false);
   readonly detailError = signal('');
-  /** Índices de la transcripción con el resultado de la herramienta abierto. */
+  /** Índices de la transcripción con su texto largo abierto (herramienta o sistema). */
   readonly expandedResults = signal<ReadonlySet<number>>(new Set());
 
   readonly monthLabel = computed(() => {
     const usage = this.usage();
     return usage ? formatMonth(usage.month) : '';
   });
-  readonly hasFilters = computed(() => this.flaggedOnly() || !!this.appliedSearch());
+  readonly hasFilters = computed(
+    () => this.flaggedOnly() || this.badFeedbackOnly() || !!this.appliedSearch(),
+  );
+  readonly emptyDescription = computed(() => {
+    if (this.badFeedbackOnly()) {
+      return 'Ninguna conversación tiene respuestas mal calificadas. Apaga «Solo mal calificadas» para verlas todas.';
+    }
+    return this.flaggedOnly()
+      ? 'Ninguna conversación tiene alertas. Apaga «Solo con alertas» para verlas todas.'
+      : '';
+  });
   readonly detailSubtitle = computed(() => {
     const detail = this.detail();
     if (!detail) return '';
@@ -116,6 +140,7 @@ export class AssistantAdminPage implements OnInit {
   });
 
   private listRequest?: Subscription;
+  private moreRequest?: Subscription;
   private detailRequest?: Subscription;
 
   ngOnInit(): void {
@@ -145,10 +170,12 @@ export class AssistantAdminPage implements OnInit {
   /** Recarga la lista desde el principio con los filtros actuales. */
   loadConversations(): void {
     this.listRequest?.unsubscribe();
+    // Una página en camino es de los filtros anteriores: no se puede sumar a la lista nueva.
+    this.moreRequest?.unsubscribe();
     this.listLoading.set(true);
     this.listError.set('');
     this.listRequest = this.api
-      .listConversations({ flagged: this.flaggedOnly(), q: this.appliedSearch() })
+      .listConversations(this.listQuery())
       .pipe(
         finalize(() => this.listLoading.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -158,16 +185,21 @@ export class AssistantAdminPage implements OnInit {
           this.conversations.set(page.conversations);
           this.nextCursor.set(page.nextCursor ?? null);
         },
-        error: (error) => this.listError.set(httpErrorMessage(error)),
+        error: (error) => {
+          // El cursor es de la lista anterior: con los filtros nuevos saltaría a cualquier parte.
+          this.nextCursor.set(null);
+          this.listError.set(httpErrorMessage(error));
+        },
       });
   }
 
   loadMore(): void {
     const cursor = this.nextCursor();
-    if (!cursor || this.loadingMore()) return;
+    // Mientras carga la lista, el cursor todavía es de los filtros anteriores.
+    if (!cursor || this.loadingMore() || this.listLoading()) return;
     this.loadingMore.set(true);
-    this.api
-      .listConversations({ flagged: this.flaggedOnly(), q: this.appliedSearch(), cursor })
+    this.moreRequest = this.api
+      .listConversations({ ...this.listQuery(), cursor })
       .pipe(
         finalize(() => this.loadingMore.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -183,6 +215,14 @@ export class AssistantAdminPage implements OnInit {
 
   setFlaggedOnly(value: boolean): void {
     this.flaggedOnly.set(value);
+    if (value) this.badFeedbackOnly.set(false);
+    this.loadConversations();
+  }
+
+  /** Encendido apaga "Solo con alertas": si no, escondería las mal calificadas sin alertas. */
+  setBadFeedbackOnly(value: boolean): void {
+    this.badFeedbackOnly.set(value);
+    if (value) this.flaggedOnly.set(false);
     this.loadConversations();
   }
 
@@ -194,6 +234,7 @@ export class AssistantAdminPage implements OnInit {
 
   clearFilters(): void {
     this.flaggedOnly.set(false);
+    this.badFeedbackOnly.set(false);
     this.search.set('');
     this.appliedSearch.set('');
     this.loadConversations();
@@ -223,6 +264,10 @@ export class AssistantAdminPage implements OnInit {
     this.detailOpen.set(false);
   }
 
+  isShortSystemText(text: string): boolean {
+    return text.length <= SYSTEM_TEXT_INLINE_MAX;
+  }
+
   toggleResult(index: number): void {
     this.expandedResults.update((current) => {
       const next = new Set(current);
@@ -230,5 +275,13 @@ export class AssistantAdminPage implements OnInit {
       else next.add(index);
       return next;
     });
+  }
+
+  private listQuery(): AssistantConversationQuery {
+    return {
+      flagged: this.flaggedOnly(),
+      q: this.appliedSearch(),
+      ...(this.badFeedbackOnly() ? { feedback: 'down' as const } : {}),
+    };
   }
 }

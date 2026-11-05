@@ -5,6 +5,11 @@
       <p class="section-subtitle">Cuentas donde se reciben los pagos de este negocio.</p>
     </div>
     <div class="accounts-toolbar__actions">
+      <app-ask-zaira
+        label="Ayuda"
+        question="¿Cómo manejo mis cuentas bancarias y sedes?"
+        presetId="cuentas-y-sedes"
+      />
       <yep-button variant="ghost" size="sm" (clicked)="load()">
         <svg lucideRefreshCw aria-hidden="true"></svg>
         Actualizar

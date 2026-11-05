@@ -40,6 +40,11 @@ import { Card, State, StatusChip, Table } from '../../../../shared/ui';
 import { Segmented, type SegmentedOption } from '../../../../shared/ui/segmented/segmented';
 import { Select, type SelectOption } from '../../../../shared/ui/select/select';
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
+import {
+  MISSING_PAYMENT_CURSOR,
+  MISSING_PAYMENT_QUESTION,
+} from '../../../assistant/assistant-questions';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import { TtsPlaybackService } from '../../../source-events/services/tts-playback.service';
 import { AutoFitRowsDirective } from './auto-fit-rows.directive';
 import { DashboardPager } from './dashboard-pager';
@@ -119,6 +124,7 @@ const SOURCE_PHRASES: Record<SourceEventType, string> = {
     StatusChip,
     Table,
     Toggle,
+    AskZaira,
     AutoFitRowsDirective,
     DashboardPager,
   ],
@@ -177,6 +183,9 @@ export class DashboardEventsPanel {
   readonly statusFilter = signal<'' | 'needs_review'>('');
 
   readonly typeOptions = SOURCE_OPTIONS;
+
+  protected readonly missingPaymentQuestion = MISSING_PAYMENT_QUESTION;
+  protected readonly missingPaymentCursor = MISSING_PAYMENT_CURSOR;
 
   /** Presentación: opciones del select de banco a partir de `bankOptions`. */
   readonly bankSelectOptions = computed<SelectOption[]>(() => [

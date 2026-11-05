@@ -14,6 +14,13 @@
     <yep-alert class="status-alert" [variant]="semaphore().level === 'red' ? 'error' : 'warning'">
       {{ semaphore().detail }}
     </yep-alert>
+    @if (notifiersLink()) {
+      <app-ask-zaira
+        class="status-ask"
+        label="¿Qué hago?"
+        question="¿Qué significa el estado del sistema y cómo lo arreglo?"
+      />
+    }
   } @else {
     <p class="status-detail">{{ semaphore().detail }}</p>
   }

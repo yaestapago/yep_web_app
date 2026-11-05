@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
 
@@ -7,6 +8,8 @@ import type {
   NotifierCaptureSnapshot,
   NotifierDiagnosticsResponse,
 } from '../../../../shared/models/notifier.models';
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { AssistantChatService } from '../../../assistant/services/assistant-chat.service';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
 import {
   CONVERSATIONS_BLOCKED_DETAIL,
@@ -884,6 +887,30 @@ describe('NotifierDiagnosticsModal', () => {
       fixture.detectChanges();
       expect(fixture.componentInstance.data()).toBeNull();
     });
+  });
+
+  it('"Preguntarle a Zaira" cierra el modal y lleva el notificador en foco', () => {
+    const chat = { ask: vi.fn() };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: NotifiersApiService, useValue: api },
+        { provide: AssistantChatService, useValue: chat },
+        { provide: AuthSessionService, useValue: { isSupportUser: signal(false) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(NotifierDiagnosticsModal);
+    fixture.componentRef.setInput('notifier', notifier({ id: 'A' }));
+    fixture.componentRef.setInput('open', true);
+    fixture.detectChanges();
+    const order: string[] = [];
+    fixture.componentInstance.closeRequested.subscribe(() => order.push('cerrar'));
+    chat.ask.mockImplementation(() => order.push('abrir chat'));
+
+    document.querySelector<HTMLButtonElement>('app-ask-zaira button')!.click();
+
+    expect(order).toEqual(['cerrar', 'abrir chat']);
+    expect(chat.ask.mock.calls[0][1].focus).toEqual({ notifierId: 'A' });
   });
 
   it('"Actualizar" vuelve a pedir el diagnóstico; "Cerrar" avisa al padre', () => {

@@ -195,6 +195,15 @@
   }
 
   <ng-container modalFooter>
+    <!-- Se cierra el modal antes de abrir el chat: los modales quedan por encima. -->
+    @if (detail(); as report) {
+      <app-ask-zaira
+        [label]="zairaQuestion().label"
+        [question]="zairaQuestion().question"
+        [focus]="{ sourceEventId: report.id }"
+        (asked)="close.emit()"
+      />
+    }
     <yep-button variant="ghost" (clicked)="close.emit()">Cerrar</yep-button>
     @if (transaction(); as tx) {
       @if (canApplyInvoice()) {

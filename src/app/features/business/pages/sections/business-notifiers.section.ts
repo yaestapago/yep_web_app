@@ -19,6 +19,8 @@ import {
 import { finalize, interval } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { notifierStatusQuestion } from '../../../assistant/assistant-questions';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import {
   Alert,
   Card,
@@ -109,6 +111,7 @@ const EMAIL_PROVIDER_LABELS: Record<string, string> = {
     RadioSelectionList,
     Toggle,
     Alert,
+    AskZaira,
     Card,
     CardSection,
     DescriptionItem,
@@ -160,6 +163,7 @@ export class BusinessNotifiersSection implements OnInit {
   protected readonly copyIcon = LucideClipboardCopy;
   protected readonly copiedIcon = LucideClipboardCheck;
   protected readonly diagnosticsIcon = LucideActivity;
+  protected readonly notifierStatusQuestion = notifierStatusQuestion;
 
   readonly businessId = this.session.activeBusinessAccountId;
   readonly notifiers = signal<Notifier[]>([]);

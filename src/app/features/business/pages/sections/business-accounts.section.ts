@@ -12,6 +12,7 @@ import {
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import type { SubscriptionCreationPermissionResponse } from '../../../../shared/models/auth.models';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
@@ -44,6 +45,7 @@ import { BusinessAccountsApiService } from '../../services/business-accounts-api
     ReactiveFormsModule,
     RouterLink,
     Alert,
+    AskZaira,
     Button,
     Card,
     Checkbox,

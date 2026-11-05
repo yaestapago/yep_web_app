@@ -2,6 +2,12 @@
   <svg slot="icon" class="zone__icon" lucideBell aria-hidden="true"></svg>
 
   <div slot="actions" class="zone__actions">
+    <app-ask-zaira
+      label="¿Falta un pago?"
+      [question]="missingPaymentQuestion"
+      [cursor]="missingPaymentCursor"
+      [autoSend]="false"
+    />
     <yep-status-chip
       class="zone__count"
       tone="neutral"
@@ -87,7 +93,15 @@
           kind="empty"
           title="Sin eventos"
           description="No hay reportes de ingreso que coincidan con los filtros."
-        />
+        >
+          <app-ask-zaira
+            slot="action"
+            label="¿Falta un pago?"
+            [question]="missingPaymentQuestion"
+            [cursor]="missingPaymentCursor"
+            [autoSend]="false"
+          />
+        </yep-state>
       }
     } @else {
       <div class="yep-table-wrap">

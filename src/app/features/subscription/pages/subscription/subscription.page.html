@@ -3,6 +3,12 @@
     title="Suscripción"
     subtitle="Revisa el consumo de tu plan y compara las capacidades disponibles."
   >
+    <app-ask-zaira
+      slot="actions"
+      label="Ayuda"
+      question="¿Cuáles son los precios?"
+      presetId="precios"
+    />
     <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
       Actualizar

@@ -1,6 +1,11 @@
 /* Eventos de ingreso (S4): tabla con filas clicables; en celular cada fila es
    un bloque (yep-table stackOnMobile). */
 
+/* En celular el título y las acciones no caben juntos: las acciones pasan a su propia fila. */
+.zone ::ng-deep > .yep-card > .yep-card__header {
+  flex-wrap: wrap;
+}
+
 /* Toggle de voz: botón cuadrado de 40 px con el icono de bocina. */
 .tts-toggle ::ng-deep .yep-toggle--button {
   border-radius: var(--radius-md);
