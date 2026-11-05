@@ -369,6 +369,20 @@
 }
 
 /* Bajo la burbuja de Zaira: acciones, opciones, calificación y soporte. */
+/* Presentación fija al inicio de cada conversación: es un robot, y hay una persona por WhatsApp. */
+.assistant-presentation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.assistant-presentation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-left: calc(var(--assistant-avatar-size) + var(--space-2));
+}
+
 .assistant-extras {
   align-items: flex-start;
   display: flex;

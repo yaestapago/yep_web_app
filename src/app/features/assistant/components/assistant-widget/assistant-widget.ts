@@ -146,13 +146,18 @@ export class AssistantWidget {
   );
   protected readonly draftLength = computed(() => this.chat.draft().length);
   protected readonly showCounter = computed(() => this.draftLength() >= COUNTER_FROM_LENGTH);
+  /**
+   * Abre cada conversación. La gente creía estar hablando con Zaira Bayona, la persona de la
+   * landing: por eso arranca diciendo que es un robot, y siempre ofrece a una persona por WhatsApp.
+   */
   protected readonly greeting = computed(() => {
     const name = this.firstName();
-    const hello = `Hola${name ? `, ${name}` : ''}.`;
-    return this.chat.suggestions().length
-      ? `${hello} Revisé tu negocio y hay algo para mirar.`
-      : `${hello} Soy Zaira, la asistente virtual de YEP. ¿En qué te ayudo?`;
+    return `Hola${name ? `, ${name}` : ''}. Soy Zaira, un robot que responde preguntas sobre YEP. No soy una persona.`;
   });
+  /** WhatsApp de soporte, para quien prefiera hablar con alguien del equipo. */
+  protected readonly humanSupportUrl = assistantWhatsappUrl(
+    'Hola, quiero hablar con una persona del equipo de YEP.',
+  );
   /** Aviso urgente para el saludo. Un empleado no recibe alarmas del negocio por aquí. */
   protected readonly nudgeAlert = computed(() =>
     this.session.activeMembership()?.role === 'account_owner'
