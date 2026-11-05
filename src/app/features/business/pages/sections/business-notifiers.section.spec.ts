@@ -85,6 +85,22 @@ describe('BusinessNotifiersSection — tipo de notificador al crear', () => {
     expect(component.form.controls.kind.value).toBe('phone');
   });
 
+  it('los remitentes que solo mandan códigos no se piden en el filtro', () => {
+    const nequiCorreo = {
+      code: 'nequi',
+      name: 'Nequi',
+      email: { enabled: true, senderPatterns: ['notificaciones@nequi.com.co', 'somos@nequi.com.co'] },
+    };
+    const { component } = setup(
+      [notifier({ type: 'email_gmail', bankIds: ['nequi'], bankAccountIds: [] })],
+      { bankAccounts: [account('nequi')], banks: [nequiCorreo] },
+    );
+
+    expect(component.notifierEmailSenderPatterns(notifier({ type: 'email_gmail', bankIds: ['nequi'] }))).toEqual([
+      'notificaciones@nequi.com.co',
+    ]);
+  });
+
   it('no cambia lo que la persona ya eligió', () => {
     const { component, fixture } = setup([], { bankAccounts: [account('bancolombia')], banks: [bancolombia] });
     component.openCreate();

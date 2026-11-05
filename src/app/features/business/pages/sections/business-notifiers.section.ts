@@ -92,6 +92,18 @@ const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
 
 const MOBILE_NOTIFIERS_ENABLED = true;
 
+/**
+ * Remitentes que el catálogo lista pero que solo mandan códigos de confirmación: no se
+ * reenvían a YEP, así que no se piden en el filtro. Si alguien los reenvía igual, el
+ * backend los descarta. Es la misma lista de `REMITENTES_SOLO_CODIGOS` en Zaira.
+ */
+const CODE_ONLY_SENDERS = new Set(['somos@nequi.com.co']);
+
+/** Remitentes del banco que van en el filtro: uno por cada dirección, sin los de códigos. */
+function filterSenders(patterns: readonly string[] | undefined): string[] {
+  return (patterns ?? []).filter((pattern) => !CODE_ONLY_SENDERS.has(pattern.trim().toLowerCase()));
+}
+
 /** Dominios comunes -> nombre de proveedor mostrado en vez de "sin heartbeat". */
 const EMAIL_PROVIDER_LABELS: Record<string, string> = {
   'gmail.com': 'Gmail',
@@ -302,7 +314,7 @@ export class BusinessNotifiersSection implements OnInit {
     );
     return Array.from(
       new Set(
-        bankIds.flatMap((bankId) => this.banksByCode().get(bankId)?.email?.senderPatterns ?? []),
+        bankIds.flatMap((bankId) => filterSenders(this.banksByCode().get(bankId)?.email?.senderPatterns)),
       ),
     );
   });
@@ -813,8 +825,8 @@ export class BusinessNotifiersSection implements OnInit {
 
     return Array.from(
       new Set(
-        Array.from(bankIds).flatMap(
-          (bankId) => this.banksByCode().get(bankId)?.email?.senderPatterns ?? [],
+        Array.from(bankIds).flatMap((bankId) =>
+          filterSenders(this.banksByCode().get(bankId)?.email?.senderPatterns),
         ),
       ),
     );
