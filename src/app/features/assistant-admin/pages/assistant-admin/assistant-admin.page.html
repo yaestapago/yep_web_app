@@ -99,15 +99,26 @@
   </yep-card>
 
   <div class="toolbar">
-    <label class="flagged-toggle">
-      <yep-toggle
-        [pressed]="flaggedOnly()"
-        ariaLabel="Solo con alertas"
-        data-testid="flagged-toggle"
-        (toggled)="setFlaggedOnly($event)"
-      />
-      <span>Solo con alertas</span>
-    </label>
+    <div class="filter-toggles">
+      <label class="filter-toggle">
+        <yep-toggle
+          [pressed]="flaggedOnly()"
+          ariaLabel="Solo con alertas"
+          data-testid="flagged-toggle"
+          (toggled)="setFlaggedOnly($event)"
+        />
+        <span>Solo con alertas</span>
+      </label>
+      <label class="filter-toggle">
+        <yep-toggle
+          [pressed]="badFeedbackOnly()"
+          ariaLabel="Solo mal calificadas"
+          data-testid="bad-feedback-toggle"
+          (toggled)="setBadFeedbackOnly($event)"
+        />
+        <span>Solo mal calificadas</span>
+      </label>
+    </div>
     <form class="search" (submit)="applySearch($event)">
       <yep-input
         class="search-box"
@@ -179,7 +190,10 @@
                 <td data-label="Alertas">
                   <span class="chips">
                     @for (flag of item.flags; track flag) {
-                      <yep-status-chip [tone]="incidentTones[flag]" [label]="incidentLabels[flag]" />
+                      <yep-status-chip
+                        [tone]="incidentTones[flag]"
+                        [label]="incidentLabels[flag]"
+                      />
                     } @empty {
                       <span class="muted">—</span>
                     }
@@ -196,18 +210,10 @@
                         ? 'No hay conversaciones con este filtro.'
                         : 'Aún no hay conversaciones con Zaira.'
                     "
-                    [description]="
-                      flaggedOnly()
-                        ? 'Ninguna conversación tiene alertas. Apaga «Solo con alertas» para verlas todas.'
-                        : ''
-                    "
+                    [description]="emptyDescription()"
                   >
                     @if (hasFilters()) {
-                      <yep-button
-                        slot="action"
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="clearFilters()"
+                      <yep-button slot="action" variant="ghost" size="sm" (clicked)="clearFilters()"
                         >Ver todas</yep-button
                       >
                     }
@@ -222,7 +228,12 @@
 
     @if (nextCursor()) {
       <div class="more">
-        <yep-button variant="secondary" size="sm" [loading]="loadingMore()" (clicked)="loadMore()">
+        <yep-button
+          variant="secondary"
+          size="sm"
+          [loading]="loadingMore() || listLoading()"
+          (clicked)="loadMore()"
+        >
           Cargar más
         </yep-button>
       </div>
@@ -261,6 +272,48 @@
           </section>
         }
 
+        @if (conversation.turnLog?.length) {
+          <section
+            class="turns"
+            aria-labelledby="assistant-turns-title"
+            data-testid="assistant-turns"
+          >
+            <h3 id="assistant-turns-title">Turnos</h3>
+            <div class="yep-table-wrap">
+              <table yepTable density="compact">
+                <thead>
+                  <tr>
+                    <th scope="col">Hora</th>
+                    <th scope="col">Resultado</th>
+                    <th scope="col" class="num">Latencia</th>
+                    <th scope="col" class="num">Rondas</th>
+                    <th scope="col">Herramientas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (turn of conversation.turnLog; track $index) {
+                    <tr>
+                      <td data-label="Hora" class="nowrap">{{ formatDateTime(turn.at) }}</td>
+                      <td data-label="Resultado">
+                        <yep-status-chip
+                          [tone]="turnOutcomeTones[turn.outcome]"
+                          [label]="turnOutcomeLabels[turn.outcome]"
+                        />
+                        @if (turn.cause) {
+                          <small>{{ turn.cause }}</small>
+                        }
+                      </td>
+                      <td data-label="Latencia" class="num">{{ formatLatency(turn.latencyMs) }}</td>
+                      <td data-label="Rondas" class="num">{{ formatCount(turn.rounds) }}</td>
+                      <td data-label="Herramientas">{{ formatTurnTools(turn.tools) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+
         <section class="transcript" aria-label="Transcripción" data-testid="assistant-transcript">
           @for (entry of conversation.transcript; track $index; let index = $index) {
             @switch (entry.role) {
@@ -274,6 +327,29 @@
                 <div class="bubble bubble--assistant">
                   <span class="who">Zaira</span>
                   <p>{{ entry.text }}</p>
+                </div>
+              }
+              @case ('system') {
+                <div class="tool tool--system" data-testid="transcript-system">
+                  <span class="tool__head">
+                    <yep-status-chip tone="info" [dot]="false" label="Agregado por YEP" />
+                    <span class="tool__label">{{ entry.label || 'Texto del sistema' }}</span>
+                  </span>
+                  @if (isShortSystemText(entry.text)) {
+                    <span class="tool__input">{{ entry.text }}</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="tool__toggle"
+                      [attr.aria-expanded]="expandedResults().has(index)"
+                      (click)="toggleResult(index)"
+                    >
+                      {{ expandedResults().has(index) ? 'Ocultar' : 'Ver' }} el texto
+                    </button>
+                    @if (expandedResults().has(index)) {
+                      <pre class="tool__result">{{ entry.text }}</pre>
+                    }
+                  }
                 </div>
               }
               @case ('tool_call') {

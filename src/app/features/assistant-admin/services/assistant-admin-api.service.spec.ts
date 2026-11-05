@@ -44,6 +44,18 @@ describe('AssistantAdminApiService (contrato · panel de Zaira)', () => {
     req.flush({ conversations: [] });
   });
 
+  it('manda feedback=down solo si se pide', () => {
+    service.listConversations({ flagged: false, feedback: 'down' }).subscribe();
+    const req = http.expectOne((r) => r.url === `${URL}/conversations`);
+    expect(req.request.params.get('feedback')).toBe('down');
+    req.flush({ conversations: [] });
+
+    service.listConversations({ flagged: false }).subscribe();
+    const plain = http.expectOne((r) => r.url === `${URL}/conversations`);
+    expect(plain.request.params.has('feedback')).toBe(false);
+    plain.flush({ conversations: [] });
+  });
+
   it('GET /conversations/:id devuelve la conversación', () => {
     let result: unknown;
     service.conversation('c1').subscribe((value) => (result = value));

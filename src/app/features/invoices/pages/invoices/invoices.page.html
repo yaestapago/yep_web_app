@@ -3,6 +3,12 @@
     title="Cuentas de cobro"
     subtitle="Historial de cuentas de cobro de tu suscripción y de tus recargas de notificaciones."
   >
+    <app-ask-zaira
+      slot="actions"
+      label="Ayuda"
+      question="¿Cómo pago mi cuenta de cobro?"
+      presetId="cuentas-de-cobro"
+    />
     <yep-button slot="actions" variant="ghost" size="sm" [loading]="loading()" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
       Actualizar

@@ -9,6 +9,7 @@ import {
 } from '@lucide/angular';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import {
   Alert,
   Avatar,
@@ -39,6 +40,7 @@ interface EmployeeRoutingView {
   selector: 'app-business-notification-routing-section',
   imports: [
     Alert,
+    AskZaira,
     Avatar,
     Button,
     Card,

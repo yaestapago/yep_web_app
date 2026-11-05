@@ -45,6 +45,8 @@ import {
   transactionTone,
   type TransactionTone,
 } from '../../../../shared/utils/transaction-status';
+import { paymentQuestion } from '../../../assistant/assistant-questions';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 import { TransactionSupportsPanel } from './transaction-supports-panel';
@@ -74,6 +76,7 @@ const BOGOTA_TIME_ZONE = 'America/Bogota';
     DatePipe,
     JsonPipe,
     Alert,
+    AskZaira,
     Button,
     CardSection,
     DescriptionItem,
@@ -217,6 +220,9 @@ export class SourceEventDetailModal {
     const tx = this.transaction();
     return tx ? transactionTone(tx.status) : 'neutral';
   });
+
+  /** Entrada a Zaira según cómo quedó este pago. */
+  readonly zairaQuestion = computed(() => paymentQuestion(this.detail()?.status, this.amount()));
 
   isExpanded(report: SourceEvent): boolean {
     return this.expandedIds().has(report.id);

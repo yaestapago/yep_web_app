@@ -6,7 +6,10 @@ export type AssistantIncidentKind =
   | 'tool_denied'
   | 'no_answer'
   | 'budget_reached'
-  | 'long_conversation';
+  | 'long_conversation'
+  | 'bad_feedback'
+  | 'output_guard'
+  | 'escalated';
 
 export interface AssistantAdminAccountRef {
   id: string;
@@ -37,13 +40,36 @@ export interface AssistantIncident {
   text?: string;
 }
 
-export type AssistantTranscriptRole = 'user' | 'assistant' | 'tool_call' | 'tool_result';
+export type AssistantTranscriptRole = 'user' | 'assistant' | 'system' | 'tool_call' | 'tool_result';
 
 export interface AssistantTranscriptEntry {
   role: AssistantTranscriptRole;
   text: string;
   toolName?: string;
   isError?: boolean;
+  /** Solo en `system`: qué agregó YEP al mensaje ("Guía precargada: correo-gmail", "Pantalla abierta"). */
+  label?: string;
+}
+
+export type AssistantTurnOutcome =
+  | 'guide'
+  | 'answer'
+  | 'no_answer'
+  | 'budget_reached'
+  | 'cancelled'
+  | 'error';
+
+/** Medición de un turno. No siempre tiene mensajes en la transcripción: por eso va aparte. */
+export interface AssistantTurnLogEntry {
+  at: string;
+  outcome: AssistantTurnOutcome;
+  /** Por qué no hubo respuesta. */
+  cause?: string;
+  latencyMs: number;
+  /** Llamadas al modelo del turno. */
+  rounds: number;
+  /** Herramientas que corrió el modelo, en orden y con repetidas. */
+  tools: string[];
 }
 
 export interface AssistantConversationDetail extends AssistantConversationSummary {
@@ -52,6 +78,8 @@ export interface AssistantConversationDetail extends AssistantConversationSummar
   createdAt: string;
   incidents: AssistantIncident[];
   transcript: AssistantTranscriptEntry[];
+  /** Los últimos turnos. Ausente en un backend que aún no lo devuelve. */
+  turnLog?: AssistantTurnLogEntry[];
 }
 
 export interface AssistantUsageRow {
@@ -72,6 +100,8 @@ export interface AssistantUsage {
 
 export interface AssistantConversationQuery {
   flagged?: boolean;
+  /** `down`: solo las que tienen alguna respuesta mal calificada. */
+  feedback?: 'down';
   q?: string;
   cursor?: string;
   limit?: number;
