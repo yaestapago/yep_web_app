@@ -1,16 +1,18 @@
 @if (chat.open()) {
   <section
+    #panel
     id="assistant-panel"
     class="assistant-panel"
     role="dialog"
+    tabindex="-1"
     aria-labelledby="assistant-title"
     (keydown.escape)="minimize()"
   >
     <header class="assistant-panel__header">
-      <app-zaira-avatar [size]="44" [online]="true" />
+      <app-zaira-avatar [size]="44" />
       <div class="assistant-panel__titles">
         <h2 id="assistant-title" class="assistant-panel__title">Zaira</h2>
-        <p class="assistant-panel__subtitle">Asistente virtual de YEP · en línea</p>
+        <p class="assistant-panel__subtitle">Robot de ayuda de YEP</p>
       </div>
       <div class="assistant-panel__actions">
         @if (chat.messages().length) {
@@ -27,62 +29,246 @@
           size="md"
           (clicked)="minimize()"
         />
-        <yep-icon-button
-          [icon]="closeIcon"
-          label="Cerrar y terminar la conversación"
-          size="md"
-          (clicked)="closeConversation()"
-        />
       </div>
     </header>
 
-    <div class="assistant-panel__log" #log aria-live="polite">
-      @if (!chat.messages().length) {
-        <div class="assistant-row">
-          <app-zaira-avatar [size]="28" />
-          <div class="assistant-bubble assistant-bubble--assistant">
-            <p>
-              Hola{{ firstName() ? ', ' + firstName() : '' }}. Soy Zaira, la asistente virtual de
-              YEP. ¿En qué te ayudo?
-            </p>
+    <div class="assistant-panel__log" #log>
+      @if (chat.restoring()) {
+        <p class="assistant-panel__note" role="status">Recuperando tu conversación…</p>
+      } @else {
+        <!-- Siempre arriba, también cuando la conversación empieza desde otra pantalla. -->
+        <div class="assistant-presentation">
+          <div class="assistant-row">
+            <app-zaira-avatar [size]="28" />
+            <div class="assistant-bubble assistant-bubble--assistant">
+              <p>{{ greeting() }}</p>
+              <p>Si prefieres hablar con alguien del equipo, escríbenos por WhatsApp.</p>
+              @if (!chat.messages().length && chat.suggestions().length) {
+                <p>Revisé tu negocio y hay algo para mirar.</p>
+              }
+            </div>
+          </div>
+          <div class="assistant-presentation__actions">
+            <a
+              yepButton
+              variant="secondary"
+              size="sm"
+              target="_blank"
+              rel="noopener noreferrer"
+              [href]="humanSupportUrl"
+              >
+              <svg lucideMessageCircle aria-hidden="true"></svg>
+              Hablar con una persona
+              <span class="assistant-sr-only">(se abre en otra pestaña)</span>
+            </a>
           </div>
         </div>
+      }
+
+      @if (!chat.restoring() && !chat.messages().length) {
+
+        @if (chat.suggestions().length) {
+          <ul class="assistant-suggestions">
+            @for (suggestion of chat.suggestions(); track suggestion.id) {
+              <li>
+                <yep-alert [variant]="alertVariant(suggestion.severity)" [title]="suggestion.title">
+                  <p class="assistant-suggestion__text">{{ suggestion.text }}</p>
+                  <div class="assistant-chips">
+                    @if (suggestion.ask || suggestion.presetId) {
+                      <button
+                        type="button"
+                        class="assistant-chip"
+                        [disabled]="chat.busy()"
+                        (click)="askSuggestion(suggestion)"
+                      >
+                        {{ suggestion.ask ?? 'Cuéntame más' }}
+                      </button>
+                    }
+                    @if (suggestion.action; as action) {
+                      @if (linkFor(action.route); as link) {
+                        <a
+                          yepButton
+                          variant="secondary"
+                          size="sm"
+                          [routerLink]="link"
+                          [queryParams]="action.query ?? null"
+                          (click)="onInternalLink()"
+                        >
+                          {{ action.label }}
+                        </a>
+                      }
+                    }
+                  </div>
+                </yep-alert>
+              </li>
+            }
+          </ul>
+        }
+
         <ng-container [ngTemplateOutlet]="menuList" />
       }
 
-      @for (message of chat.messages(); track message.id) {
-        @if (message.role === 'user') {
-          <div class="assistant-bubble assistant-bubble--user">
-            <ng-container
-              [ngTemplateOutlet]="blocks"
-              [ngTemplateOutletContext]="{ $implicit: message.blocks }"
-            />
-          </div>
-        } @else {
-          <div class="assistant-row">
-            <app-zaira-avatar [size]="28" />
-            <div
-              class="assistant-bubble assistant-bubble--assistant"
-              [class.assistant-bubble--error]="message.error"
-            >
+      <div
+        class="assistant-messages"
+        role="log"
+        aria-live="polite"
+        aria-label="Conversación con Zaira"
+      >
+        @for (message of chat.messages(); track message.id; let isLast = $last) {
+          @if (message.role === 'user') {
+            <div class="assistant-bubble assistant-bubble--user">
               <ng-container
                 [ngTemplateOutlet]="blocks"
                 [ngTemplateOutletContext]="{ $implicit: message.blocks }"
               />
             </div>
-          </div>
+          } @else {
+            <div class="assistant-message" [attr.data-message-id]="message.id">
+              <div class="assistant-row">
+                <app-zaira-avatar [size]="28" />
+                <div
+                  class="assistant-bubble assistant-bubble--assistant"
+                  [class.assistant-bubble--error]="message.error"
+                >
+                  @if (message.error) {
+                    <svg class="assistant-bubble__icon" lucideCircleAlert aria-hidden="true"></svg>
+                  }
+                  <div class="assistant-bubble__body">
+                    <ng-container
+                      [ngTemplateOutlet]="blocks"
+                      [ngTemplateOutletContext]="{ $implicit: message.blocks }"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="assistant-extras">
+                @if (message.retry) {
+                  <div class="assistant-extras__row">
+                    <yep-button
+                      variant="ghost"
+                      size="sm"
+                      [disabled]="chat.busy() || !!message.retryWait"
+                      (clicked)="chat.retry(message.id)"
+                    >
+                      <svg lucideRotateCw aria-hidden="true"></svg>
+                      Reintentar
+                    </yep-button>
+                    @if (message.retryWait) {
+                      <span class="assistant-extras__hint">{{ message.retryWait }}</span>
+                    }
+                  </div>
+                }
+
+                @if (message.restartQuestion) {
+                  <yep-button variant="ghost" size="sm" (clicked)="chat.startOver(message.id)">
+                    Empezar conversación nueva
+                  </yep-button>
+                }
+
+                @if (isLast && message.actions?.length) {
+                  <div class="assistant-extras__row">
+                    @for (action of message.actions; track action.label) {
+                      @if (linkFor(action.route); as link) {
+                        <a
+                          yepButton
+                          variant="secondary"
+                          size="sm"
+                          [routerLink]="link"
+                          [queryParams]="action.query ?? null"
+                          (click)="onInternalLink()"
+                        >
+                          {{ action.label }}
+                        </a>
+                      }
+                    }
+                  </div>
+                }
+
+                @if (isLast && !chat.busy() && message.followUps?.length) {
+                  <div class="assistant-chips" role="group" aria-label="Preguntas sugeridas">
+                    @for (followUp of message.followUps; track followUp.label) {
+                      <button type="button" class="assistant-chip" (click)="askFollowUp(followUp)">
+                        {{ followUp.label }}
+                      </button>
+                    }
+                  </div>
+                }
+
+                @if (message.turn && message.conversationId && !message.error) {
+                  @if (!message.vote) {
+                    <div
+                      class="assistant-extras__row"
+                      role="group"
+                      aria-label="Califica esta respuesta"
+                    >
+                      <yep-icon-button
+                        [icon]="thumbsUpIcon"
+                        label="Me sirvió"
+                        size="sm"
+                        (clicked)="chat.vote(message.id, 'up')"
+                      />
+                      <yep-icon-button
+                        [icon]="thumbsDownIcon"
+                        label="No me sirvió"
+                        size="sm"
+                        (clicked)="chat.vote(message.id, 'down')"
+                      />
+                    </div>
+                  } @else {
+                    <p class="assistant-extras__hint" role="status">Gracias por contarme.</p>
+                    @if (message.vote === 'down' && !message.voteComment) {
+                      <div
+                        class="assistant-chips"
+                        role="group"
+                        aria-label="¿Qué pasó con esta respuesta?"
+                      >
+                        @for (reason of voteReasons; track reason) {
+                          <button
+                            type="button"
+                            class="assistant-chip"
+                            (click)="chat.comment(message.id, reason)"
+                          >
+                            {{ reason }}
+                          </button>
+                        }
+                      </div>
+                    }
+                  }
+                }
+
+                @if (showSupport(message)) {
+                  <a
+                    yepButton
+                    variant="secondary"
+                    size="sm"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    [href]="supportUrl(message)"
+                  >
+                    <svg lucideMessageCircle aria-hidden="true"></svg>
+                    Escribir a soporte
+                    <span class="assistant-sr-only">(se abre en otra pestaña)</span>
+                  </a>
+                }
+              </div>
+            </div>
+          }
         }
-      }
+      </div>
 
       @if (chat.sending()) {
-        <div class="assistant-row">
+        <div class="assistant-row" role="status">
           <app-zaira-avatar [size]="28" />
-          <div
-            class="assistant-bubble assistant-bubble--assistant assistant-typing"
-            role="status"
-            aria-label="Zaira está escribiendo"
-          >
-            <span></span><span></span><span></span>
+          <div class="assistant-bubble assistant-bubble--assistant assistant-typing">
+            <span class="assistant-typing__dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </span>
+            @if (chat.progress(); as progress) {
+              <span>{{ progress }}</span>
+            } @else {
+              <span class="assistant-sr-only">Zaira está escribiendo</span>
+            }
           </div>
         </div>
       }
@@ -105,13 +291,41 @@
       </div>
     }
 
+    @if (chat.budgetReached()) {
+      <p class="assistant-budget" role="status">
+        <svg lucideInfo aria-hidden="true"></svg>
+        Este mes tu negocio ya usó las preguntas abiertas a Zaira. Las preguntas frecuentes siguen
+        disponibles.
+      </p>
+    }
+
+    @if (showCounter()) {
+      <p
+        class="assistant-counter"
+        [class.assistant-counter--limit]="draftLength() >= maxLength"
+        [attr.role]="draftLength() >= maxLength ? 'status' : null"
+      >
+        @if (draftLength() >= maxLength) {
+          Llegaste al máximo de {{ maxLength }} caracteres.
+        } @else {
+          {{ draftLength() }} de {{ maxLength }} caracteres
+        }
+      </p>
+    }
+
+    <span class="assistant-sr-only" role="status">{{ copied() ? 'Dirección copiada' : '' }}</span>
+
     <form class="assistant-composer" (submit)="submit($event)">
       <textarea
         #input
         class="assistant-composer__input"
         rows="1"
         [attr.maxlength]="maxLength"
-        placeholder="Escribe tu pregunta"
+        [value]="chat.draft()"
+        [disabled]="chat.budgetReached()"
+        [attr.placeholder]="
+          chat.budgetReached() ? 'Solo preguntas frecuentes' : 'Escribe tu pregunta'
+        "
         aria-label="Escribe tu pregunta"
         (input)="onInput($event)"
         (keydown)="onKeydown($event)"
@@ -132,8 +346,13 @@
 @if (nudgeVisible() && !chat.open()) {
   <div class="assistant-nudge" role="status">
     <button type="button" class="assistant-nudge__text" (click)="toggle()">
-      <strong>¡Hola! Soy Zaira.</strong>
-      Si tienes dudas con YEP, pregúntame.
+      @if (nudgeAlert(); as alert) {
+        <strong>{{ alert.title || 'Revisé tu negocio' }}</strong>
+        {{ alert.text }}
+      } @else {
+        <strong>¡Hola! Soy Zaira, el robot de ayuda de YEP.</strong>
+        Si tienes dudas con YEP, pregúntame.
+      }
     </button>
     <yep-icon-button
       class="assistant-nudge__close"
@@ -146,6 +365,7 @@
 }
 
 <button
+  #fab
   type="button"
   class="assistant-fab"
   [class.assistant-fab--open]="chat.open()"
@@ -169,18 +389,18 @@
   [open]="introOpen()"
   size="sm"
   title="Conoce a Zaira"
-  subtitle="Tu nueva asistente virtual en YEP"
+  subtitle="El robot de ayuda de YEP"
   (closeRequested)="closeIntro()"
 >
   <div class="assistant-intro">
     <app-zaira-avatar [size]="104" [online]="true" />
     <p class="assistant-intro__text">
-      Pregúntale cómo agregar un empleado, cómo configurar tus correos o por qué se demoró una
-      notificación. Revisa tu negocio y te responde en segundos.
+      Zaira es un robot, no una persona. Pregúntale cómo agregar un empleado, cómo configurar tus
+      correos o por qué se demoró una notificación: revisa tu negocio y te responde.
     </p>
     <p class="assistant-intro__note">
       Solo ve la información de tu negocio, con tus mismos permisos. La encuentras abajo a la
-      derecha.
+      derecha. Si prefieres hablar con alguien del equipo, escríbenos por WhatsApp.
     </p>
   </div>
   <ng-container modalFooter>
@@ -194,11 +414,14 @@
     @if (block.type === 'p') {
       <p>
         @for (part of block.parts; track trackPart($index, part)) {
-          <ng-container [ngTemplateOutlet]="inline" [ngTemplateOutletContext]="{ $implicit: part }" />
+          <ng-container
+            [ngTemplateOutlet]="inline"
+            [ngTemplateOutletContext]="{ $implicit: part }"
+          />
         }
       </p>
     } @else if (block.type === 'ol') {
-      <ol>
+      <ol [attr.start]="block.start ?? null">
         @for (item of block.items; track $index) {
           <li>
             @for (part of item; track trackPart($index, part)) {
@@ -211,7 +434,7 @@
         }
       </ol>
     } @else {
-      <ul>
+      <ul [class.assistant-sublist]="block.nested">
         @for (item of block.items; track $index) {
           <li>
             @for (part of item; track trackPart($index, part)) {
@@ -230,12 +453,12 @@
 <ng-template #menuList>
   <p class="assistant-menu__label">Preguntas frecuentes</p>
   <ul class="assistant-menu">
-    @for (item of menu; track item.question) {
+    @for (item of menu(); track item.question) {
       <li>
         <button
           type="button"
           class="assistant-menu__item"
-          [disabled]="chat.sending()"
+          [disabled]="chat.busy()"
           (click)="ask(item)"
         >
           {{ item.question }}
@@ -247,10 +470,46 @@
 
 <ng-template #inline let-part>
   @if (part.href) {
-    <a [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a>
+    <a [href]="part.href" target="_blank" rel="noopener noreferrer"
+      >{{ part.text }}<span class="assistant-sr-only"> (se abre en otra pestaña)</span></a
+    >
+  } @else if (part.route) {
+    @if (linkFor(part.route); as link) {
+      <a [routerLink]="link" (click)="onInternalLink()">{{ part.text }}</a>
+    } @else {
+      <span>"{{ part.text }}"</span>
+    }
+  } @else if (part.copy) {
+    <span class="assistant-copy">
+      <!-- <wbr>: si no cabe, parte antes de la arroba y no en una letra cualquiera. -->
+      <span class="assistant-mono"
+        >{{ part.text.split('@')[0] }}<wbr />@{{ part.text.split('@')[1] }}</span
+      >
+      <button
+        type="button"
+        class="assistant-copy__button"
+        [attr.aria-label]="'Copiar ' + part.text"
+        [attr.title]="'Copiar ' + part.text"
+        (click)="copy(part.text)"
+      >
+        @if (copied() === part.text) {
+          <svg lucideCheck aria-hidden="true"></svg>
+          <span>Copiado</span>
+        } @else {
+          <svg lucideCopy aria-hidden="true"></svg>
+        }
+      </button>
+    </span>
+  } @else if (part.bold && part.mono) {
+    <strong class="assistant-mono">{{ part.text }}</strong>
   } @else if (part.bold) {
     <strong>{{ part.text }}</strong>
+  } @else if (part.mono) {
+    <span class="assistant-mono">{{ part.text }}</span>
+  } @else if (part.italic) {
+    <em>{{ part.text }}</em>
   } @else {
-    {{ part.text }}
+    <!-- En su propio elemento: suelto, Angular le deja un espacio antes de la puntuación. -->
+    <span>{{ part.text }}</span>
   }
 </ng-template>

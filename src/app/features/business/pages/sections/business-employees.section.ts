@@ -17,6 +17,7 @@ import {
 import * as QRCode from 'qrcode';
 import { finalize } from 'rxjs';
 
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type { BusinessMembershipRole, SectionAccess } from '../../../../shared/models/auth.models';
 import type { BankAccount, BusinessLocation } from '../../../../shared/models/bank-account.models';
@@ -73,6 +74,7 @@ const DEFAULT_SECTION_ACCESS: SectionAccess = {
     ReactiveFormsModule,
     RouterLink,
     Alert,
+    AskZaira,
     Avatar,
     Button,
     Card,

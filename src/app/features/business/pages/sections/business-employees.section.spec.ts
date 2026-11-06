@@ -260,7 +260,7 @@ describe('BusinessEmployeesSection — compartir invitación (link/QR)', () => {
 
   it('copyRegistrationLink copia el link completo al portapapeles', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     const section = create();
 
     section.copyRegistrationLink();

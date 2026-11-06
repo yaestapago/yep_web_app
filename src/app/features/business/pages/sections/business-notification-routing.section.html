@@ -3,9 +3,15 @@
     <div class="section-heading">
       <h2 class="section-title">Alertas WhatsApp</h2>
       <p class="section-subtitle">
-        Selecciona qué empleados reciben notificaciones bancarias y de qué cuentas.
+        Selecciona qué empleados reciben notificaciones bancarias y de qué cuentas. Si un
+        empleado tiene turnos en Horarios, solo le llegan durante su turno.
       </p>
     </div>
+    <app-ask-zaira
+      label="Ayuda"
+      question="¿Cómo recibo alertas de WhatsApp?"
+      presetId="alertas-whatsapp"
+    />
     <yep-button variant="ghost" size="sm" (clicked)="load()">
       <svg lucideRefreshCw aria-hidden="true"></svg>
       Actualizar

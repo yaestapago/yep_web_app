@@ -22,6 +22,7 @@ import {
 } from '@lucide/angular';
 import { EMPTY, Subject, catchError, interval, map, of, switchMap } from 'rxjs';
 
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import { DEFAULT_SMS_PACKAGE_TOKEN } from '../../../../shared/models/bank.models';
 import type {
   Notifier,
@@ -393,6 +394,7 @@ export function summarizeTimeline(
   imports: [
     DatePipe,
     Alert,
+    AskZaira,
     Button,
     CardSection,
     DescriptionItem,

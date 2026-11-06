@@ -172,6 +172,33 @@ describe('AuthSessionService', () => {
 
     expect(service.activeBusinessAccountId()).toBe('business-1');
   });
+
+  it('al cerrar sesión borra las conversaciones de Zaira, aunque el chat nunca se haya abierto', () => {
+    localStorage.setItem('yep-zaira-conversation:user-1:business-1', '{"id":"c1","at":1}');
+    localStorage.setItem('yep-zaira-conversation:user-2:business-9', '{"id":"c2","at":1}');
+    localStorage.setItem('yep-zaira-intro-v1', 'visto');
+    const service = TestBed.inject(AuthSessionService);
+    service.saveSession({ accessToken: 'token', user, memberships: [approvedMembership] });
+
+    service.clearSession();
+
+    expect(localStorage.getItem('yep-zaira-conversation:user-1:business-1')).toBeNull();
+    expect(localStorage.getItem('yep-zaira-conversation:user-2:business-9')).toBeNull();
+    expect(localStorage.getItem('yep-zaira-intro-v1')).toBe('visto');
+    expect(localStorage.getItem(storageKey)).toBeNull();
+  });
+
+  it('cierra sesión aunque el almacenamiento esté bloqueado para listar', () => {
+    const service = TestBed.inject(AuthSessionService);
+    service.saveSession({ accessToken: 'token', user, memberships: [approvedMembership] });
+    const key = vi.spyOn(Storage.prototype, 'key').mockImplementation(() => {
+      throw new Error('bloqueado');
+    });
+
+    expect(() => service.clearSession()).not.toThrow();
+    expect(service.user()).toBeNull();
+    key.mockRestore();
+  });
 });
 
 describe('AuthSessionService · refreshAccessToken', () => {

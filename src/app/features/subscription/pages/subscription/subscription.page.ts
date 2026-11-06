@@ -7,6 +7,7 @@ import { LucideCheck, LucideMinus, LucideRefreshCw } from '@lucide/angular';
 import { finalize, forkJoin } from 'rxjs';
 
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import { BillingStatusService } from '../../../../core/services/billing-status.service';
 import { SUPPORT_WHATSAPP_URL } from '../../../../shared/constants/legal.constants';
 import type {
@@ -117,6 +118,7 @@ export function billingPeriodChangeMessage(change: BillingPeriodChange): string 
     DatePipe,
     FormsModule,
     Alert,
+    AskZaira,
     Button,
     Input,
     Modal,

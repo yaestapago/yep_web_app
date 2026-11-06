@@ -8,6 +8,7 @@ import {
   type NotifierStatusLevel,
 } from '../../../../shared/utils/notifier-status';
 import type { Notifier } from '../../../../shared/models/notifier.models';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import type { DashboardAlert } from '../../../../shared/models/dashboard-summary.models';
 import {
   Alert,
@@ -49,6 +50,7 @@ export interface NotifierStatusRow {
     LucideMonitor,
     LucideSmartphone,
     Alert,
+    AskZaira,
     Card,
     IconTile,
     Modal,

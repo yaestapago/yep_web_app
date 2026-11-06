@@ -8,6 +8,11 @@
       </p>
     </div>
     <div class="notifiers-toolbar__actions">
+      <app-ask-zaira
+        label="Ayuda"
+        question="¿Cómo agrego un notificador?"
+        presetId="agregar-notificador"
+      />
       <yep-button variant="ghost" size="sm" (clicked)="load()">
         <svg lucideRefreshCw aria-hidden="true"></svg>
         Actualizar
@@ -53,6 +58,12 @@
             Nuevo notificador
           </yep-button>
         }
+        <app-ask-zaira
+          slot="action"
+          label="Ayuda para empezar"
+          question="¿Cómo configuro los correos para que funcionen?"
+          presetId="configurar-correos"
+        />
       </yep-state>
     </yep-card>
   } @else {
@@ -84,6 +95,13 @@
                       [tone]="statusChipTone[row.status.level]"
                       [label]="row.status.label"
                     />
+                    @if (row.notifier.active && row.status.level !== 'online') {
+                      <app-ask-zaira
+                        label="¿Por qué?"
+                        [question]="notifierStatusQuestion(row.status.label)"
+                        [focus]="{ notifierId: row.notifier.id }"
+                      />
+                    }
                   }
                   @if (isCodeVisible(row.notifier)) {
                     <span class="pair-code" title="Código de emparejamiento">

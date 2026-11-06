@@ -5,6 +5,7 @@ import { LucideCircleCheck, LucideClock, LucideLock } from '@lucide/angular';
 import { canAccessBusinessSection } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import { BillingStatusService } from '../../../../core/services/billing-status.service';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import { Button } from '../../../../shared/ui/button/button';
 import { ButtonLink } from '../../../../shared/ui/button/button-link';
 import { State } from '../../../../shared/ui/state/state';
@@ -23,7 +24,16 @@ import {
  */
 @Component({
   selector: 'app-business-blocked-section',
-  imports: [Button, ButtonLink, LucideCircleCheck, LucideClock, LucideLock, RouterLink, State],
+  imports: [
+    AskZaira,
+    Button,
+    ButtonLink,
+    LucideCircleCheck,
+    LucideClock,
+    LucideLock,
+    RouterLink,
+    State,
+  ],
   templateUrl: './business-blocked.section.html',
   styleUrl: './business-blocked.section.scss',
 })

@@ -378,6 +378,14 @@
   }
 
   <ng-container modalFooter>
+    <!-- Se cierra el modal antes de abrir el chat: los modales quedan por encima. -->
+    @if (notifier(); as current) {
+      <app-ask-zaira
+        question="¿Cómo arreglo lo que muestra este diagnóstico?"
+        [focus]="{ notifierId: current.id }"
+        (asked)="close()"
+      />
+    }
     <yep-button variant="ghost" (clicked)="close()">Cerrar</yep-button>
     <yep-button variant="secondary" [loading]="loading()" (clicked)="reload()">
       <svg lucideRefreshCw aria-hidden="true"></svg>

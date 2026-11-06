@@ -11,6 +11,7 @@ import type {
   UserSubscriptionSummary,
 } from '../../../../shared/models/auth.models';
 import type { ChangePlanResponse } from '../../../../shared/models/billing.models';
+import { AssistantChatService } from '../../../assistant/services/assistant-chat.service';
 import { SubscriptionsApiService } from '../../services/subscriptions-api.service';
 import { SubscriptionPage, billingPeriodChangeMessage } from './subscription.page';
 
@@ -112,8 +113,13 @@ describe('SubscriptionPage — ciclo de pago mensual / anual', () => {
         { provide: SubscriptionsApiService, useValue: api },
         {
           provide: AuthSessionService,
-          useValue: { subscription: signal(null), updateSubscription: vi.fn() },
+          useValue: {
+            subscription: signal(null),
+            updateSubscription: vi.fn(),
+            isSupportUser: signal(false),
+          },
         },
+        { provide: AssistantChatService, useValue: { ask: vi.fn() } },
         { provide: BillingStatusService, useValue: { refresh: vi.fn().mockResolvedValue(null) } },
         { provide: Router, useValue: { navigateByUrl: vi.fn() } },
       ],

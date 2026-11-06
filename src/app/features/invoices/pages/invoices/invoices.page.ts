@@ -6,6 +6,7 @@ import { LucideReceipt, LucideRefreshCw } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
 import { BillingStatusService } from '../../../../core/services/billing-status.service';
+import { AskZaira } from '../../../assistant/components/ask-zaira/ask-zaira';
 import type {
   BillingInvoiceStatus,
   BillingInvoiceSummary,
@@ -34,6 +35,7 @@ const VOUCHER_MAX_BYTES = 10 * 1024 * 1024;
     DatePipe,
     FormsModule,
     Alert,
+    AskZaira,
     Button,
     Input,
     Modal,
