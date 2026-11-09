@@ -14,11 +14,14 @@
     @if (success()) {
       <yep-alert variant="success">{{ success() }}</yep-alert>
     }
+    @if (warning()) {
+      <yep-alert variant="warning" data-testid="capture-warning">{{ warning() }}</yep-alert>
+    }
 
     @if (step() === 'capture') {
       <div class="capture-stage">
         <yep-file-drop
-          accept="image/*"
+          [accept]="accept"
           buttonLabel="Adjuntar archivo"
           [files]="receiptFiles()"
           [error]="error()"
