@@ -20,14 +20,16 @@ import {
   LucideRotateCcw,
   LucideSend,
 } from '@lucide/angular';
-import { finalize, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, finalize, map, of, switchMap, throwError } from 'rxjs';
 
+import { canAccessSubscription } from '../../../../core/constants/business-section-access';
 import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import {
   TransactionExtractionResponse,
   nullablePartyToRequestParty,
 } from '../../../../shared/models/extraction.models';
 import {
+  AttachSupportRequest,
   CreateTransactionRequest,
   MechanismKind,
   PaymentTransaction,
@@ -42,10 +44,17 @@ import { FileDrop, FileDropItem } from '../../../../shared/ui/file-drop/file-dro
 import { Modal } from '../../../../shared/ui/modal/modal';
 import { NotificationModalService } from '../../../../shared/ui/notification-modal/notification-modal.service';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
-import { SourceEventsApiService } from '../../../source-events/services/source-events-api.service';
+import { BanksApiService } from '../../../banks/services/banks-api.service';
 import { TransactionEventsService } from '../../../transactions/services/transaction-events.service';
 import { TransactionsApiService } from '../../../transactions/services/transactions-api.service';
 import { ExtractionApiService } from '../../services/extraction-api.service';
+import {
+  RECEIPT_OCR_ACCEPT,
+  RECEIPT_PHOTO_NOT_SAVED_MESSAGE,
+  isInvalidFileKeyError,
+  receiptFileProblem,
+  receiptOcrErrorMessage,
+} from '../../utils/receipt-capture-errors';
 
 type CaptureStep = 'capture' | 'review';
 
@@ -72,7 +81,6 @@ type CaptureStep = 'capture' | 'review';
 })
 export class ReceiptCaptureModal {
   private readonly extractionApi = inject(ExtractionApiService);
-  private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly transactionsApi = inject(TransactionsApiService);
   private readonly transactionEvents = inject(TransactionEventsService);
   private readonly session = inject(AuthSessionService);
@@ -80,6 +88,7 @@ export class ReceiptCaptureModal {
   private readonly document = inject(DOCUMENT);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notificationModal = inject(NotificationModalService);
+  private readonly banksApi = inject(BanksApiService);
 
   readonly open = input(false);
   readonly closeRequested = output<void>();
@@ -97,9 +106,28 @@ export class ReceiptCaptureModal {
   readonly creatingTransaction = signal(false);
   readonly error = signal('');
   readonly success = signal('');
+  /** Algo salió a medias: el pago quedó, pero no todo (p. ej. la foto). */
+  readonly warning = signal('');
+  readonly accept = RECEIPT_OCR_ACCEPT;
   readonly selectedReceipt = signal<File | null>(null);
   readonly previewUrl = signal('');
   readonly extraction = signal<TransactionExtractionResponse | null>(null);
+  /** Código → nombre del catálogo de bancos: `bank` llega como código (`nequi`). */
+  private readonly bankNames = signal<ReadonlyMap<string, string>>(new Map());
+  private bankNamesRequested = false;
+  /** Nombre del banco leído. Lo que no está en el catálogo se muestra como llegó. */
+  readonly bankName = computed(() => {
+    const bank = this.extraction()?.transaction.bank?.trim();
+    if (!bank) return 'Sin datos';
+    return this.bankNames().get(bank.toLowerCase()) ?? bank;
+  });
+  /**
+   * Con reglas, `confidence` es la parte de los datos que se leyó, no qué tan cierto es:
+   * un 100 % dice que se leyó todo, no que el comprobante sea real.
+   */
+  readonly confidenceLabel = computed(() =>
+    this.extraction()?.model === 'rules' ? 'Datos leídos' : 'Confianza',
+  );
   readonly loading = computed(() => this.extracting() || this.creatingTransaction());
   /** Presentación: el comprobante elegido como fila de `yep-file-drop`. */
   readonly receiptFiles = computed<FileDropItem[]>(() => {
@@ -121,6 +149,13 @@ export class ReceiptCaptureModal {
   });
 
   constructor() {
+    effect(() => {
+      if (this.open() && !this.bankNamesRequested) {
+        this.bankNamesRequested = true;
+        this.loadBankNames();
+      }
+    });
+
     // Enciende la cámara solo mientras el modal está abierto en el paso de
     // captura y todavía no hay una foto tomada; en cualquier otro caso libera
     // el dispositivo (la captura congela la imagen mostrando la foto tomada).
@@ -212,6 +247,7 @@ export class ReceiptCaptureModal {
     this.extraction.set(null);
     this.error.set('');
     this.success.set('');
+    this.warning.set('');
     this.step.set('capture');
   }
 
@@ -237,72 +273,81 @@ export class ReceiptCaptureModal {
     this.creatingTransaction.set(true);
     this.error.set('');
     this.success.set('');
+    this.warning.set('');
 
-    this.sourceEventsApi
-      .ingest({
-        sourceType: 'OCR_UPLOAD',
-        rawPayload: {
-          fileName: this.selectedReceipt()?.name,
-          model: extraction.model,
-          transaction: extraction.transaction,
-          diagnostics: extraction.diagnostics,
-        },
-        normalized: {
-          bankId: request.bankId,
-          amount: request.amount,
-          currency: request.currency,
-          reference: request.reference,
-          transactionDate: request.transactionDate,
-          senderAccount: request.sender?.account,
-          receiverAccount: request.receiver?.account,
-        },
-      })
+    // `fileHash` es la huella del archivo: la misma foto subida dos veces devuelve
+    // la transacción que ya existe. Ya no se registra un evento `OCR_UPLOAD` antes:
+    // el backend retiró ese tipo y lo rechaza con 400.
+    const file = extraction.file;
+    this.transactionsApi
+      .create({ ...request, fileHash: file?.hash })
       .pipe(
-        switchMap((event) =>
-          this.transactionsApi
-            .create({ ...request, sourceEventId: event.id })
-            .pipe(map((response) => ({ response, sourceEventId: event.id }))),
-        ),
-        // Tras crear: adjuntar el comprobante como soporte OCR y disparar la
-        // verificación, que además enlaza eventos de banco coincidentes. Si la
-        // transacción ya existía no re-procesamos.
-        switchMap(({ response, sourceEventId }) => {
+        // Tras crear: adjuntar el comprobante como soporte OCR, con su foto, y
+        // disparar la verificación, que además enlaza eventos de banco
+        // coincidentes. Si la transacción ya existía no re-procesamos.
+        switchMap((response) => {
           if (response.action !== 'CREATED') {
-            return of({ action: response.action, transaction: response.transaction });
+            return of({ action: response.action, transaction: response.transaction, photoSaved: true });
           }
           const transactionId = response.transaction.id;
-          return this.transactionsApi
-            .attachSupport(transactionId, {
-              type: 'OCR_RECEIPT',
-              mechanismKind: 'ocr_extraction',
-              sourceEventId,
-              extracted: {
-                bankId: request.bankId,
-                amount: request.amount,
-                currency: request.currency,
-                reference: request.reference,
-                transactionDate: request.transactionDate,
-                sender: request.sender,
-                receiver: request.receiver,
-              },
-            })
-            .pipe(
-              switchMap(() =>
-                this.transactionsApi.runVerification(transactionId, 'support_aggregation'),
-              ),
-              map((verified) => ({
-                action: response.action,
-                transaction: verified.transaction,
-              })),
-            );
+          return this.attachReceipt(transactionId, this.buildSupportRequest(request, file)).pipe(
+            switchMap((photoSaved) =>
+              this.transactionsApi
+                .runVerification(transactionId, 'support_aggregation')
+                .pipe(map((verified) => ({ action: response.action, transaction: verified.transaction, photoSaved }))),
+            ),
+          );
         }),
         finalize(() => this.creatingTransaction.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: ({ action, transaction }) => this.afterTransactionCreated(action, transaction),
+        next: ({ action, transaction, photoSaved }) => {
+          this.afterTransactionCreated(action, transaction);
+          if (!photoSaved) {
+            this.warning.set(RECEIPT_PHOTO_NOT_SAVED_MESSAGE);
+          }
+        },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
+  }
+
+  /**
+   * Adjunta el soporte; emite si la foto quedó guardada. Con una clave que no es de
+   * este negocio (400) se adjunta sin la foto para no dejar el pago sin soporte ni
+   * verificación.
+   */
+  private attachReceipt(transactionId: string, support: AttachSupportRequest): Observable<boolean> {
+    return this.transactionsApi.attachSupport(transactionId, support).pipe(
+      map(() => true),
+      catchError((error: unknown) =>
+        isInvalidFileKeyError(error) && support.file
+          ? this.transactionsApi
+              .attachSupport(transactionId, { ...support, file: undefined })
+              .pipe(map(() => false))
+          : throwError(() => error),
+      ),
+    );
+  }
+
+  private buildSupportRequest(
+    request: CreateTransactionRequest,
+    file: TransactionExtractionResponse['file'],
+  ): AttachSupportRequest {
+    return {
+      type: 'OCR_RECEIPT',
+      mechanismKind: 'ocr_extraction',
+      file: file ? { key: file.key, hash: file.hash, mimeType: file.mimeType, sizeBytes: file.sizeBytes } : undefined,
+      extracted: {
+        bankId: request.bankId,
+        amount: request.amount,
+        currency: request.currency,
+        reference: request.reference,
+        transactionDate: request.transactionDate,
+        sender: request.sender,
+        receiver: request.receiver,
+      },
+    };
   }
 
   isInvalid(controlName: keyof typeof this.manualForm.controls): boolean {
@@ -312,6 +357,18 @@ export class ReceiptCaptureModal {
 
   isDirty(): boolean {
     return this.manualForm.dirty || this.selectedReceipt() !== null || this.extraction() !== null;
+  }
+
+  private loadBankNames(): void {
+    this.banksApi
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ banks }) =>
+          this.bankNames.set(new Map(banks.map((bank) => [bank.code.toLowerCase(), bank.name]))),
+        // Sin catálogo se muestra el código, como antes: no impide registrar el pago.
+        error: () => (this.bankNamesRequested = false),
+      });
   }
 
   private async startCamera(video: HTMLVideoElement): Promise<void> {
@@ -365,9 +422,16 @@ export class ReceiptCaptureModal {
   }
 
   private runOcr(file: File): void {
+    // Un archivo que el servidor rechazaría no se envía: el aviso sale de una vez.
+    const problem = receiptFileProblem(file);
+    if (problem) {
+      this.error.set(problem);
+      return;
+    }
     this.extracting.set(true);
     this.error.set('');
     this.success.set('');
+    this.warning.set('');
 
     this.extractionApi
       .extractReceipt(file)
@@ -382,8 +446,13 @@ export class ReceiptCaptureModal {
           this.step.set('review');
           this.success.set('OCR completado. Revisa los datos antes de crear la transacción.');
         },
-        error: (error) => this.error.set(httpErrorMessage(error)),
+        error: (error) => this.error.set(receiptOcrErrorMessage(error, this.canManagePlan())),
       });
+  }
+
+  /** Solo el dueño (o un super-usuario) entra a Suscripción a cambiar el plan. */
+  private canManagePlan(): boolean {
+    return canAccessSubscription(this.session.activeMembership()?.role, this.session.isSuperUser());
   }
 
   private setReceiptPreview(file: File): void {
@@ -393,6 +462,7 @@ export class ReceiptCaptureModal {
     this.extraction.set(null);
     this.error.set('');
     this.success.set('');
+    this.warning.set('');
   }
 
   private buildTransactionRequest(mechanismKind: MechanismKind): CreateTransactionRequest | null {
@@ -474,6 +544,7 @@ export class ReceiptCaptureModal {
     this.resetForm();
     this.error.set('');
     this.success.set('');
+    this.warning.set('');
     this.step.set('capture');
   }
 

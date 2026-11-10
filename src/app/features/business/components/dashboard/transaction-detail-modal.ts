@@ -14,6 +14,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideCheck, LucideShieldCheck, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
+import { canDecidePayment } from '../../../../core/constants/business-section-access';
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import {
   Alert,
   Button,
@@ -23,7 +25,12 @@ import {
   Modal,
   StatusChip,
 } from '../../../../shared/ui';
-import type { MissingField, PaymentTransaction } from '../../../../shared/models/transaction.models';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import type {
+  CompleteDataRequest,
+  MissingField,
+  PaymentTransaction,
+} from '../../../../shared/models/transaction.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   isTransactionInvoiceable,
@@ -42,11 +49,25 @@ const MISSING_FIELD_LABELS: Record<MissingField, string> = {
 };
 
 const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
-  amount: 'Ej. 50000',
-  receiverAccount: 'Número de cuenta',
-  reference: 'Número de referencia',
-  transactionDate: 'Ej. 2026-07-05 14:30',
+  amount: 'Ej. $ 48.000',
+  receiverAccount: 'Número completo de la cuenta',
+  reference: 'Ej. M12345678',
+  transactionDate: 'Ej. 05/07/2026 3:45 pm',
 };
+
+/** Qué formato acepta cada dato. Son las reglas de `parseMissingFieldValue` en el backend. */
+const MISSING_FIELD_HINTS: Record<MissingField, string> = {
+  amount: 'Escríbelo así: $ 48.000',
+  receiverAccount: 'Escribe el número completo de la cuenta, al menos 4 dígitos.',
+  reference: 'Al menos 4 caracteres, con un número.',
+  transactionDate: 'Escríbela así: 05/07/2026 3:45 pm. La hora es obligatoria.',
+};
+
+/**
+ * Con menos de 4 dígitos el backend guarda solo esos. Con exactamente 4 los cruza con las
+ * cuentas activas de la sede y, si hay una sola, guarda el número completo: no se advierte.
+ */
+const SHORT_ACCOUNT_MAX_DIGITS = 3;
 
 /**
  * Modal de detalle de una transacción: resumen (con quién la generó), cómo se
@@ -64,6 +85,7 @@ const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
     Alert,
     Button,
     CardSection,
+    Checkbox,
     DescriptionItem,
     DescriptionList,
     Modal,
@@ -78,6 +100,7 @@ const MISSING_FIELD_PLACEHOLDERS: Record<MissingField, string> = {
 })
 export class TransactionDetailModal {
   private readonly api = inject(TransactionsApiService);
+  private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput<PaymentTransaction | null>(null);
@@ -93,10 +116,12 @@ export class TransactionDetailModal {
 
   readonly open = computed(() => this.transaction() !== null);
 
+  /** Solo el dueño o un super-usuario confirma o rechaza; al empleado el backend le da 403. */
   readonly canVerify = computed(() => {
     const transaction = this.transaction();
     return (
       transaction !== null &&
+      canDecidePayment(this.session.activeMembership()?.role, this.session.isSuperUser()) &&
       isTransactionVerifiable(transaction.status, transaction.verification.canBeConsideredPaid)
     );
   });
@@ -116,6 +141,13 @@ export class TransactionDetailModal {
   readonly formValues = signal<Partial<Record<MissingField, string>>>({});
   readonly submitting = signal(false);
   readonly completeError = signal('');
+  /** Datos que el backend no entendió: se quedan como se escribieron, con su aviso. */
+  readonly rejectedFields = signal<MissingField[]>([]);
+  /**
+   * La referencia no viene en el comprobante (p. ej. algunos de Nequi): se da
+   * por resuelta sin inventar un número. El backend deja `reference` vacía.
+   */
+  readonly referenceNotShown = signal(false);
 
   private loadedId: string | null = null;
 
@@ -131,6 +163,8 @@ export class TransactionDetailModal {
       this.loadedId = id;
       this.formValues.set({});
       this.completeError.set('');
+      this.rejectedFields.set([]);
+      this.referenceNotShown.set(false);
     });
   }
 
@@ -158,6 +192,21 @@ export class TransactionDetailModal {
     return MISSING_FIELD_PLACEHOLDERS[field];
   }
 
+  fieldHint(field: MissingField): string {
+    return MISSING_FIELD_HINTS[field];
+  }
+
+  isRejected(field: MissingField): boolean {
+    return this.rejectedFields().includes(field);
+  }
+
+  /** Avisa que quedarían guardados solo esos dígitos. No bloquea: quizá es lo único que se ve. */
+  showsShortAccountWarning(field: MissingField): boolean {
+    if (field !== 'receiverAccount') return false;
+    const digits = this.formValue(field).replace(/\D/g, '');
+    return digits.length > 0 && digits.length <= SHORT_ACCOUNT_MAX_DIGITS;
+  }
+
   // --- Completar datos faltantes -------------------------------------------
 
   formValue(field: MissingField): string {
@@ -166,10 +215,29 @@ export class TransactionDetailModal {
 
   setFormValue(field: MissingField, value: string): void {
     this.formValues.set({ ...this.formValues(), [field]: value });
+    this.rejectedFields.update((fields) => fields.filter((item) => item !== field));
   }
 
-  readonly canSubmit = computed(() =>
-    this.missingFields().some((field) => (this.formValues()[field] ?? '').trim()),
+  setReferenceNotShown(notShown: boolean): void {
+    this.referenceNotShown.set(notShown);
+    if (notShown) {
+      // No se envían a la vez un número y "no aparece".
+      const values = { ...this.formValues() };
+      delete values.reference;
+      this.formValues.set(values);
+      this.rejectedFields.update((fields) => fields.filter((item) => item !== 'reference'));
+    }
+  }
+
+  /** "No aparece" solo cuenta si la referencia es uno de los datos que faltan. */
+  private sendsReferenceNotShown(): boolean {
+    return this.referenceNotShown() && this.missingFields().includes('reference');
+  }
+
+  readonly canSubmit = computed(
+    () =>
+      this.sendsReferenceNotShown() ||
+      this.missingFields().some((field) => (this.formValues()[field] ?? '').trim()),
   );
 
   submitCompleteData(): void {
@@ -178,12 +246,16 @@ export class TransactionDetailModal {
       return;
     }
     const values = this.formValues();
-    const payload: Partial<Record<MissingField, string>> = {};
+    const payload: CompleteDataRequest = {};
     for (const field of this.missingFields()) {
       const value = (values[field] ?? '').trim();
       if (value) {
         payload[field] = value;
       }
+    }
+    if (this.sendsReferenceNotShown()) {
+      delete payload.reference;
+      payload.referenceNotShown = true;
     }
     this.submitting.set(true);
     this.completeError.set('');
@@ -195,14 +267,20 @@ export class TransactionDetailModal {
       )
       .subscribe({
         next: (response) => {
+          // Lo rechazado se queda como se escribió, para corregirlo sin volver a digitarlo.
+          this.rejectedFields.set(response.rejected);
           if (response.rejected.length > 0) {
             this.completeError.set(
-              `No se pudo interpretar: ${response.rejected
+              `No entendimos: ${response.rejected
                 .map((field) => this.fieldLabel(field))
-                .join(', ')}.`,
+                .join(', ')}. Revisa el formato.`,
             );
           }
-          this.formValues.set({});
+          const kept: Partial<Record<MissingField, string>> = {};
+          for (const field of response.rejected) {
+            kept[field] = values[field];
+          }
+          this.formValues.set(kept);
           this.updated.emit(response.transaction);
         },
         error: (error) => this.completeError.set(httpErrorMessage(error)),

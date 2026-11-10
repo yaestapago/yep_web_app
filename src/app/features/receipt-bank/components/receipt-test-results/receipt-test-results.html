@@ -1,0 +1,74 @@
+<div class="test-results" data-testid="test-results">
+  @if (!onlyExampleId()) {
+    <p class="test-results__summary">
+      @if (notRun()) {
+        <yep-status-chip size="md" [dot]="false" tone="neutral" label="No se probó" data-testid="test-not-run" />
+        <span class="num">Ejemplos sin probar: {{ result().positives.total + result().negatives.total }}</span>
+      } @else {
+        <yep-status-chip
+          size="md"
+          [dot]="false"
+          [tone]="result().allPass ? 'success' : 'error'"
+          [label]="result().allPass ? '✅ Pasa' : '❌ Falla'"
+        />
+        <span class="num">Sí son de este tipo: {{ result().positives.passed }}/{{ result().positives.total }}</span>
+        <span class="num">No deben leerse: {{ result().negatives.passed }}/{{ result().negatives.total }}</span>
+      }
+    </p>
+  }
+
+  @for (collision of collisions(); track $index) {
+    <yep-alert data-testid="collision" [variant]="collision.blocking ? 'error' : 'warning'">
+      {{ collisionText(collision) }}
+    </yep-alert>
+  }
+
+  @for (item of results(); track item.exampleId) {
+    <article class="test-example" data-testid="test-example">
+      <header class="test-example__head">
+        <strong>{{ item.label || 'Ejemplo sin nombre' }}</strong>
+        <yep-status-chip
+          [dot]="false"
+          [tone]="item.ok ? 'success' : 'error'"
+          [label]="item.ok ? '✅ Pasa' : '❌ Falla'"
+        />
+        @if (!item.expectMatch) {
+          <yep-status-chip label="No debe leerse" />
+        }
+      </header>
+      @if (item.diagnosis?.message; as message) {
+        <p class="test-example__diagnosis">{{ message }}</p>
+      }
+      @if (item.fields?.length) {
+        <div class="yep-table-wrap">
+          <table yepTable density="compact">
+            <thead>
+              <tr>
+                <th scope="col">Dato</th>
+                @if (hasValues()) {
+                  <th scope="col">Esperado</th>
+                  <th scope="col">Leído</th>
+                }
+                <th scope="col">Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (field of item.fields; track field.key) {
+                <tr data-testid="test-field">
+                  <td data-label="Dato">{{ fieldLabel(field) }}</td>
+                  @if (hasValues()) {
+                    <td data-label="Esperado" class="mono">{{ value(field, 'expected') }}</td>
+                    <td data-label="Leído" class="mono">{{ value(field, 'got') }}</td>
+                  }
+                  <td data-label="Resultado">{{ statusLabel(field) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </article>
+  } @empty {
+    <p class="test-example__diagnosis" data-testid="test-empty">{{ emptyMessage() }}</p>
+  }
+</div>

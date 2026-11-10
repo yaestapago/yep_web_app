@@ -1,0 +1,246 @@
+<yep-modal
+  size="lg"
+  title="Ejemplo de comprobante"
+  subtitle="Llena lo que muestra el comprobante y confírmalo. Nada entra solo al banco."
+  [open]="true"
+  [loading]="busy()"
+  (closeRequested)="close()"
+>
+  @if (loading()) {
+    <yep-state kind="loading" [rows]="6" />
+  } @else if (loadError()) {
+    <yep-alert variant="error">{{ loadError() }}</yep-alert>
+  } @else if (example(); as current) {
+    <div class="example">
+      <section class="example__file" aria-label="Comprobante">
+        @if (fileError()) {
+          <yep-alert variant="error">{{ fileError() }}</yep-alert>
+          <yep-button variant="ghost" size="sm" (clicked)="loadFileUrl()">Reintentar</yep-button>
+        } @else if (fileUrl()) {
+          <app-receipt-file-preview [url]="fileUrl()" [mimeType]="current.mimeType" (reload)="loadFileUrl()" />
+        } @else {
+          <yep-state kind="loading" [rows]="3" />
+        }
+
+        <details class="example__ocr">
+          <summary>Texto leído del comprobante</summary>
+          <pre>{{ current.ocr.text || 'No se leyó texto.' }}</pre>
+        </details>
+        @if (!isConfirmed()) {
+          <yep-button variant="ghost" size="sm" [disabled]="busy()" (clicked)="reocr()">
+            <svg lucideRefreshCw aria-hidden="true"></svg>
+            Leer de nuevo
+          </yep-button>
+        }
+      </section>
+
+      <section class="example__form" aria-label="Valores esperados">
+        <div class="example__status">
+          <yep-status-chip
+            [tone]="isConfirmed() ? 'success' : 'neutral'"
+            [label]="isConfirmed() ? 'Confirmado' : 'Borrador'"
+          />
+          <yep-status-chip [label]="current.sourceType === 'client_support' ? 'De un cliente' : 'Subido por un admin'" />
+        </div>
+
+        @if (current.sourceType === 'client_support') {
+          <yep-alert variant="warning">
+            Este comprobante trae datos personales de terceros. Usarlo requiere autorización confirmada.
+          </yep-alert>
+        }
+        @if (notice()) {
+          <yep-alert variant="success">{{ notice() }}</yep-alert>
+        }
+        @if (error()) {
+          <yep-alert variant="error" data-testid="example-error">{{ error() }}</yep-alert>
+        }
+
+        <yep-select
+          label="Banco emisor"
+          placeholder="Escoge el banco emisor"
+          hint="El banco desde el que se hizo la transferencia, no el banco que la recibió."
+          [options]="issuerOptions()"
+          [disabled]="isConfirmed()"
+          [ngModel]="issuerId()"
+          (ngModelChange)="onIssuerChange($event)"
+        />
+        <yep-select
+          label="Tipo de comprobante"
+          placeholder="Escoge el tipo de comprobante"
+          [options]="templateOptions()"
+          [disabled]="isConfirmed() || !issuerId()"
+          [ngModel]="templateId()"
+          (ngModelChange)="onTemplateChange($event)"
+        />
+        <yep-input
+          label="Nombre del ejemplo"
+          placeholder="Ej. Envío a Nequi con referencia"
+          [disabled]="isConfirmed()"
+          [ngModel]="label()"
+          (ngModelChange)="label.set($event)"
+        />
+        <div class="example__switch">
+          <yep-toggle
+            ariaLabel="Ejemplo negativo"
+            [pressed]="!expectMatch()"
+            [disabled]="isConfirmed()"
+            (toggled)="expectMatch.set(!$event)"
+          />
+          <span>Ejemplo negativo: esto no debe leerse como este tipo.</span>
+        </div>
+
+        @if (expectMatch()) {
+          @if (!templateId()) {
+            <p class="example__hint">Escoge el banco emisor y el tipo de comprobante para ver qué datos llenar.</p>
+          }
+          @for (field of fields(); track field.key) {
+            <div class="example__field" data-testid="expected-field" [attr.data-field]="field.key">
+              @if (field.key === 'status') {
+                <yep-select
+                  placeholder="Escoge el estado"
+                  [label]="fieldLabel(field.key) + (field.required ? ' *' : '')"
+                  [options]="statusOptions"
+                  [clearable]="true"
+                  [disabled]="isConfirmed() || isAbsent(field.key)"
+                  [error]="fieldErrors()[field.key] ?? ''"
+                  [ngModel]="value(field.key)"
+                  (ngModelChange)="setValue(field.key, $event)"
+                />
+              } @else {
+                <yep-input
+                  [class.mono-input]="field.key === 'amount' || field.key === 'reference' || field.key === 'dateTime'"
+                  [label]="fieldLabel(field.key) + (field.required ? ' *' : '')"
+                  [hint]="fieldHint(field.key) || fieldLabels(field)"
+                  [disabled]="isConfirmed() || isAbsent(field.key)"
+                  [error]="fieldErrors()[field.key] ?? ''"
+                  [ngModel]="value(field.key)"
+                  (ngModelChange)="setValue(field.key, $event)"
+                />
+              }
+              <yep-checkbox
+                label="Este comprobante no lo muestra"
+                [checked]="isAbsent(field.key)"
+                [disabled]="isConfirmed() || (!!field.required && !isAbsent(field.key))"
+                (checkedChange)="setAbsent(field.key, $event)"
+              />
+            </div>
+          }
+        }
+
+        <div class="example__ai">
+          <yep-button variant="secondary" size="sm" [loading]="classifying()" [disabled]="busy()" (clicked)="classify()">
+            <svg lucideSparkles aria-hidden="true"></svg>
+            Reconocer con IA
+          </yep-button>
+          @if (classifying()) {
+            <span class="example__hint" role="status">Reconociendo el comprobante… Puede tardar unos minutos.</span>
+          }
+        </div>
+        @if (classifyError()) {
+          <yep-alert variant="error" data-testid="classify-error">{{ classifyError() }}</yep-alert>
+        }
+        @if (proposal(); as ai) {
+          <div class="example__proposal" data-testid="classify-proposal">
+            <strong>Propuesta de la IA</strong>
+            <p class="example__hint">Revísala. Nada se aplica hasta que tú lo decidas, y la IA no propone valores.</p>
+            @if (!ai.isReceipt) {
+              <yep-alert variant="warning">La IA cree que esto no es un comprobante.</yep-alert>
+            }
+            @if (ai.issuer; as issuer) {
+              <div class="example__proposal-row">
+                <span>Banco emisor: <strong>{{ issuer.name }}</strong> ({{ percent(issuer.confidence) }})</span>
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  data-testid="use-issuer"
+                  [disabled]="isConfirmed() || creatingFromProposal()"
+                  (clicked)="useProposedIssuer()"
+                >
+                  {{ issuer.existingIssuerId ? 'Usar' : 'Crear y usar' }}
+                </yep-button>
+              </div>
+            }
+            @if (ai.template; as template) {
+              <div class="example__proposal-row">
+                <span>
+                  Tipo: <strong>{{ template.suggestedName }}</strong> ·
+                  {{ templateKindLabel(template.kind) }} ({{ percent(template.confidence) }})
+                </span>
+                <yep-button
+                  variant="ghost"
+                  size="sm"
+                  data-testid="use-template"
+                  [disabled]="isConfirmed() || creatingFromProposal() || (!template.existingTemplateId && !issuerId())"
+                  (clicked)="useProposedTemplate()"
+                >
+                  {{ template.existingTemplateId ? 'Usar' : 'Crear en borrador y usar' }}
+                </yep-button>
+              </div>
+            }
+            @if (ai.fields.length) {
+              <ul class="example__proposal-fields">
+                @for (field of ai.fields; track field.key) {
+                  <li>
+                    {{ fieldLabel(field.key) }}{{ field.required ? ' (requerido)' : '' }}:
+                    {{ fieldLabels(field) || 'sin labels' }}
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        @if (isConfirmed() && templateId()) {
+          <div class="example__ai">
+            <yep-button variant="secondary" size="sm" [loading]="testing()" (clicked)="runTest()">
+              Probar plantilla
+            </yep-button>
+          </div>
+          @if (testError()) {
+            <yep-alert variant="error">{{ testError() }}</yep-alert>
+          }
+          @if (testResult(); as result) {
+            <app-receipt-test-results [result]="result" [onlyExampleId]="current.id" />
+          }
+        }
+
+        <p class="example__audit">
+          Escogido por {{ current.selectedBy.name || 'un admin' }}
+          el {{ current.selectedAt | date: 'dd/MM/yyyy h:mm a' }}.
+          @if (current.confirmedBy) {
+            <br />
+            Confirmado por {{ current.confirmedBy.name || 'un admin' }}
+            el {{ current.confirmedAt | date: 'dd/MM/yyyy h:mm a' }}.
+          }
+        </p>
+        <div>
+          <yep-button variant="ghost" size="sm" tone="danger" [disabled]="busy()" (clicked)="remove()">
+            Eliminar ejemplo
+          </yep-button>
+        </div>
+      </section>
+    </div>
+  }
+
+  <ng-container modalFooter>
+    @if (example() && !isConfirmed() && confirmBlockReason()) {
+      <p class="example__reason" data-testid="confirm-reason">{{ confirmBlockReason() }}</p>
+    }
+    <yep-button variant="ghost" [disabled]="busy()" (clicked)="close()">Cerrar</yep-button>
+    @if (example()) {
+      @if (isConfirmed()) {
+        <yep-button variant="secondary" [disabled]="busy()" (clicked)="reopen()">Volver a borrador</yep-button>
+      } @else {
+        <yep-button variant="secondary" [loading]="saving()" [disabled]="busy()" (clicked)="save()">Guardar</yep-button>
+        <yep-button
+          data-testid="confirm-example"
+          [loading]="confirming()"
+          [disabled]="busy() || !!confirmBlockReason()"
+          (clicked)="confirm()"
+        >
+          Confirmar
+        </yep-button>
+      }
+    }
+  </ng-container>
+</yep-modal>

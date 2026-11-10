@@ -1,0 +1,25 @@
+.issuer-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.issuer-form__field {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  gap: var(--space-1);
+}
+
+.issuer-form__field textarea {
+  background: var(--color-input-bg);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  width: 100%;
+}

@@ -69,7 +69,7 @@
                 }}
               }
               @if (support.extracted?.reference) { · Ref. {{ support.extracted?.reference }} }
-              @if (hasPhoto(support)) { · Ver foto }
+              @if (hasPhoto(support)) { · {{ openLabel(support) }} }
             </span>
             @if (isDuplicateSupport(support)) {
               <yep-status-chip tone="error" label="Duplicado" />
@@ -82,7 +82,7 @@
       }
 
       <!-- Confirmaciones manuales y datos completados por el staff -->
-      @for (entry of manualEntries(); track entry.label) {
+      @for (entry of manualEntries(); track $index) {
         <li class="support support--manual">
           <svg lucideUserCheck aria-hidden="true"></svg>
           <span class="support__main">
@@ -103,6 +103,36 @@
     <button type="button" class="receipt-lightbox__close" (click)="closeReceipt()" aria-label="Cerrar">
       <svg lucideX aria-hidden="true"></svg>
     </button>
-    <img class="receipt-lightbox__img" [src]="url" alt="Comprobante de pago" (click)="$event.stopPropagation()" />
+    @if (receiptIsPdf() || receiptImageFailed()) {
+      <div class="receipt-lightbox__fallback" data-testid="receipt-fallback" (click)="$event.stopPropagation()">
+        <svg lucideFileText aria-hidden="true"></svg>
+        <p>
+          {{
+            receiptIsPdf()
+              ? 'Este comprobante es un PDF. Ábrelo en otra pestaña.'
+              : 'No pudimos mostrar la imagen aquí. Ábrela en otra pestaña.'
+          }}
+        </p>
+        <a
+          yepButton
+          variant="secondary"
+          data-testid="receipt-open-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          [href]="url"
+        >
+          {{ receiptIsPdf() ? 'Abrir PDF' : 'Abrir comprobante' }}
+        </a>
+      </div>
+    } @else {
+      <img
+        class="receipt-lightbox__img"
+        data-testid="receipt-image"
+        alt="Comprobante de pago"
+        [src]="url"
+        (click)="$event.stopPropagation()"
+        (error)="receiptImageFailed.set(true)"
+      />
+    }
   </div>
 }

@@ -21,6 +21,8 @@ import {
 } from '@lucide/angular';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 
+import { canDecidePayment } from '../../../../core/constants/business-section-access';
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type {
   SourceEvent,
   SourceEventStatus,
@@ -99,6 +101,7 @@ const BOGOTA_TIME_ZONE = 'America/Bogota';
 export class SourceEventDetailModal {
   private readonly sourceEventsApi = inject(SourceEventsApiService);
   private readonly transactionsApi = inject(TransactionsApiService);
+  private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly event = input<SourceEvent | null>(null);
@@ -123,10 +126,12 @@ export class SourceEventDetailModal {
   /** Ids de reporte con la tarjeta expandida (varios a la vez). */
   private readonly expandedIds = signal<Set<string>>(new Set());
 
+  /** Solo el dueño o un super-usuario confirma o rechaza; al empleado el backend le da 403. */
   readonly canVerify = computed(() => {
     const transaction = this.transaction();
     return (
       transaction !== null &&
+      canDecidePayment(this.session.activeMembership()?.role, this.session.isSuperUser()) &&
       isTransactionVerifiable(transaction.status, transaction.verification.canBeConsideredPaid)
     );
   });

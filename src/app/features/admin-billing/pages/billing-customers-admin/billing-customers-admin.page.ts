@@ -118,6 +118,8 @@ const NOTICE_KINDS: Array<{ kind: BillingNoticeKind; short: string; label: strin
   { kind: 'payment_confirmed', short: 'Pago', label: 'Pago confirmado' },
   { kind: 'whatsapp_quota_warning', short: 'Cupo 80%', label: 'Cupo de WhatsApp al 80 %' },
   { kind: 'whatsapp_quota_reached', short: 'Cupo agotado', label: 'Cupo de WhatsApp agotado' },
+  { kind: 'ai_validation_quota_warning', short: 'OCR 80%', label: 'Cupo de OCR al 80 %' },
+  { kind: 'ai_validation_quota_reached', short: 'OCR agotado', label: 'Cupo de OCR agotado' },
 ];
 
 const CHANNEL_SYMBOLS: Record<BillingNoticeChannelStatus, string> = {

@@ -72,6 +72,15 @@ export const routes: Routes = [
           import('./features/banks/pages/bank-admin/bank-admin.page').then((m) => m.BankAdminPage),
       },
       {
+        // Banco de comprobantes por banco emisor (backend/docs/whatsapp-validacion/plan.md, T13).
+        path: '__ops/receipt-bank',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./features/receipt-bank/pages/receipt-bank-admin/receipt-bank-admin.page').then(
+            (m) => m.ReceiptBankAdminPage,
+          ),
+      },
+      {
         // Conversaciones de Zaira: alertas, transcripciones y gasto del mes.
         path: '__ops/assistant',
         canActivate: [superAdminGuard],

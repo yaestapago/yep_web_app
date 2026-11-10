@@ -94,6 +94,8 @@ export interface CompleteDataRequest {
   receiverAccount?: string;
   reference?: string;
   transactionDate?: string;
+  /** La referencia no aparece en el comprobante: la da por resuelta sin guardar una. */
+  referenceNotShown?: boolean;
 }
 
 export interface PaymentTransaction {
@@ -190,6 +192,8 @@ export type PaymentSupportType =
 
 export interface PaymentSupportFile {
   url?: string;
+  /** Solo `receipts/{accountId}/…` del negocio activo; otra da 400. */
+  key?: string;
   hash?: string;
   mimeType?: string;
   sizeBytes?: number;

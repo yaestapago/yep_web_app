@@ -19,9 +19,22 @@ export interface NullableTransactionParty {
   account: string | null;
 }
 
+/**
+ * El comprobante ya guardado (`receipts/{accountId}/…`). Se reenvía tal cual como
+ * `file` del soporte y su `hash` como `fileHash` al crear la transacción. Sin
+ * almacenamiento configurado llega sin `key`.
+ */
+export interface ExtractedReceiptFile {
+  key?: string;
+  hash: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
 export interface TransactionExtractionResponse {
   transaction: TransactionExtraction;
   model: string;
+  file?: ExtractedReceiptFile;
   diagnostics?: {
     timingsMs: {
       total: number;

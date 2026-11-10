@@ -1,0 +1,124 @@
+// Superadmin · Banco de comprobantes. Maestro-detalle de emisores y plantillas, en una columna en
+// celular. Los títulos y estados los ponen los componentes compartidos.
+
+:host {
+  display: block;
+}
+
+.receipt-bank-page {
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.receipt-bank-page > yep-page-header {
+  margin-block-end: 0;
+}
+
+.receipt-bank-page__tabs {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.receipt-bank-page__layout {
+  align-items: start;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+}
+
+.receipt-bank-page__detail {
+  min-width: 0;
+}
+
+.issuers__head,
+.issuer-detail__head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  padding: var(--space-4);
+}
+
+.issuers__head h2,
+.issuer-detail__head h2 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.issuer-detail__code {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  margin: 0;
+}
+
+.issuer-detail__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.issuer-detail__alert {
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.issuers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.issuers__item {
+  align-items: flex-start;
+  background: transparent;
+  border: 0;
+  border-top: var(--border-width) solid var(--color-border);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: var(--control-height-lg);
+  padding: var(--space-3) var(--space-4);
+  text-align: start;
+  width: 100%;
+}
+
+.issuers__item:hover {
+  background: var(--color-surface-muted);
+}
+
+.issuers__item--active {
+  background: var(--color-primary-soft);
+}
+
+.issuers__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.issuers__meta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.new-template {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .receipt-bank-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

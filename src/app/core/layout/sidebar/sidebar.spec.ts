@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { AuthSessionService } from '../../services/auth-session.service';
 import { ThemeService } from '../../services/theme.service';
@@ -166,5 +166,42 @@ describe('Sidebar', () => {
 
     expect(setActiveBusinessAccountId).toHaveBeenCalledWith('b2');
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Sidebar: banco de comprobantes', () => {
+  function linkFor(isSuperUser: boolean): Element | null {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthSessionService,
+          useValue: {
+            user: signal({ firstName: 'Ana', lastName: 'Ruiz', email: 'ana@example.com' }),
+            approvedMemberships: signal([]),
+            activeMembership: signal(null),
+            activeBusinessAccountId: signal(null),
+            isSuperUser: signal(isSuperUser),
+            isSupportUser: signal(false),
+            isInternalOpsUser: signal(isSuperUser),
+            setActiveBusinessAccountId: vi.fn(),
+            clearSession: vi.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: { isDark: signal(false), toggleTheme: vi.fn() } },
+      ],
+    });
+    const fixture = TestBed.createComponent(Sidebar);
+    fixture.detectChanges();
+    return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="receipt-bank-link"]');
+  }
+
+  it('el enlace aparece para un superusuario', () => {
+    expect(linkFor(true)?.getAttribute('href')).toBe('/__ops/receipt-bank');
+  });
+
+  it('el enlace no aparece para nadie más', () => {
+    expect(linkFor(false)).toBeNull();
   });
 });

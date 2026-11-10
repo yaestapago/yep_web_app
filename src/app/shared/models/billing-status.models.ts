@@ -101,7 +101,11 @@ export type BillingNoticeKind =
   /** Lleva el 80 % de la cuota mensual de WhatsApp del plan. */
   | 'whatsapp_quota_warning'
   /** Agotó la cuota sin mensajes adicionales: reenvíos en pausa hasta el mes siguiente. */
-  | 'whatsapp_quota_reached';
+  | 'whatsapp_quota_reached'
+  /** Lleva el 80 % del cupo mensual de OCR del plan. */
+  | 'ai_validation_quota_warning'
+  /** Agotó el cupo mensual de OCR del plan. */
+  | 'ai_validation_quota_reached';
 export type BillingNoticeChannelStatus = 'sent' | 'failed' | 'skipped';
 
 export interface BillingNoticeChannelResult {

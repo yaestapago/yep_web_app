@@ -28,7 +28,14 @@ function setup(event: SourceEvent, isSupportUser = false) {
   TestBed.configureTestingModule({
     providers: [
       { provide: AssistantChatService, useValue: chat },
-      { provide: AuthSessionService, useValue: { isSupportUser: signal(isSupportUser) } },
+      {
+        provide: AuthSessionService,
+        useValue: {
+          isSupportUser: signal(isSupportUser),
+          activeMembership: signal({ role: 'account_owner' }),
+          isSuperUser: signal(false),
+        },
+      },
       {
         provide: SourceEventsApiService,
         useValue: {

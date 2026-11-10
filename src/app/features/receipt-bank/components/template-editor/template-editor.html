@@ -1,0 +1,320 @@
+@if (loading()) {
+  <yep-card><yep-state kind="loading" [rows]="6" /></yep-card>
+} @else if (loadError()) {
+  <yep-card>
+    <yep-state kind="error" title="No pudimos cargar la plantilla" [description]="loadError()">
+      <yep-button slot="action" variant="secondary" (clicked)="load()">Reintentar</yep-button>
+    </yep-state>
+  </yep-card>
+} @else if (template(); as current) {
+  <yep-card>
+    <div class="editor__head">
+      <yep-button variant="ghost" size="sm" (clicked)="goBack()">
+        <svg lucideArrowLeft aria-hidden="true"></svg>
+        Volver a {{ issuerName() || 'las plantillas' }}
+      </yep-button>
+      <div class="editor__chips" data-testid="template-status">
+        @for (chip of statusChips(); track chip.label) {
+          <yep-status-chip size="md" [tone]="chip.tone" [label]="chip.label" />
+        }
+      </div>
+    </div>
+
+    @if (notice()) {
+      <yep-alert variant="success" data-testid="template-notice">{{ notice() }}</yep-alert>
+    }
+    @if (error()) {
+      <yep-alert variant="error">{{ error() }}</yep-alert>
+    }
+
+    <yep-card-section title="Datos">
+      <div class="editor__grid">
+        <yep-input label="Nombre" [required]="true" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+        <yep-input label="Código" hint="No se puede cambiar." [disabled]="true" [ngModel]="current.code" />
+        <yep-select label="Tipo" [options]="kindOptions" [ngModel]="kind()" (ngModelChange)="kind.set($event)" />
+        <yep-select label="Medio" [options]="mediumOptions" [ngModel]="medium()" (ngModelChange)="medium.set($event)" />
+      </div>
+    </yep-card-section>
+
+    <yep-card-section title="Labels y datos esperados">
+      <p class="editor__hint">
+        Cada banco emisor muestra sus comprobantes a su manera. Escribe los labels tal como aparecen en el
+        comprobante, uno por línea.
+      </p>
+      @if (optionalFlowFields().length) {
+        <yep-alert variant="info">
+          {{ optionalFlowFields().join(', ') }}: no están como requeridos. Si el comprobante no trae el dato,
+          lo pedimos por WhatsApp.
+        </yep-alert>
+      }
+      @if (duplicateFieldError()) {
+        <yep-alert variant="error">{{ duplicateFieldError() }}</yep-alert>
+      }
+      <div class="editor__fields">
+        @for (field of fields(); track $index; let index = $index) {
+          <div class="editor__field" data-testid="template-field">
+            <yep-select
+              label="Dato"
+              [options]="fieldOptions"
+              [ngModel]="field.key"
+              (ngModelChange)="setFieldKey(index, $event)"
+            />
+            <label class="editor__textarea">
+              <span>Labels</span>
+              <textarea
+                rows="2"
+                [value]="field.labels"
+                (input)="updateField(index, { labels: $any($event.target).value })"
+              ></textarea>
+            </label>
+            <yep-select
+              label="Formato"
+              [options]="formatOptions"
+              [ngModel]="field.valueFormat"
+              (ngModelChange)="updateField(index, { valueFormat: $event })"
+            />
+            <div class="editor__field-end">
+              <div class="editor__required">
+                <yep-toggle
+                  ariaLabel="Requerido"
+                  [pressed]="field.required"
+                  (toggled)="updateField(index, { required: $event })"
+                />
+                <span>Requerido</span>
+              </div>
+              <yep-icon-button label="Quitar dato" tone="danger" [icon]="removeIcon" (clicked)="removeField(index)" />
+            </div>
+          </div>
+        } @empty {
+          <p class="editor__hint">Agrega los datos que trae este comprobante.</p>
+        }
+      </div>
+      <yep-button variant="ghost" size="sm" [disabled]="fields().length >= fieldOptions.length" (clicked)="addField()">
+        <svg lucidePlus aria-hidden="true"></svg>
+        Agregar dato
+      </yep-button>
+    </yep-card-section>
+
+    <yep-card-section title="Detección">
+      <p class="editor__hint">Textos que reconocen este comprobante, uno por línea. Los guardamos sin tildes ni mayúsculas.</p>
+      <div class="editor__grid">
+        <label class="editor__textarea">
+          <span>Debe contener todos</span>
+          <textarea rows="4" [value]="allOf()" (input)="allOf.set($any($event.target).value)"></textarea>
+        </label>
+        <label class="editor__textarea">
+          <span>Debe contener alguno</span>
+          <textarea rows="4" [value]="anyOf()" (input)="anyOf.set($any($event.target).value)"></textarea>
+        </label>
+        <label class="editor__textarea">
+          <span>No debe contener</span>
+          <textarea rows="4" [value]="noneOf()" (input)="noneOf.set($any($event.target).value)"></textarea>
+        </label>
+        <yep-input
+          label="Cantidad mínima de &quot;alguno&quot;"
+          type="number"
+          [ngModel]="minAnyOf()"
+          (ngModelChange)="minAnyOf.set($event)"
+        />
+      </div>
+      @if (weakDetection()) {
+        <yep-alert variant="warning">{{ weakDetectionMessage }}</yep-alert>
+      }
+    </yep-card-section>
+
+    <yep-card-section title="Reglas con IA">
+      <div class="editor__actions">
+        <yep-button
+          variant="secondary"
+          size="sm"
+          data-testid="generate-rules"
+          [loading]="copilotRunning() === 'suggest'"
+          [disabled]="busy()"
+          (clicked)="generateRules()"
+        >
+          <svg lucideSparkles aria-hidden="true"></svg>
+          Generar con IA
+        </yep-button>
+        <yep-button
+          variant="secondary"
+          size="sm"
+          data-testid="repair-rules"
+          [loading]="copilotRunning() === 'repair'"
+          [disabled]="busy() || !!repairBlockReason()"
+          (clicked)="repairRules()"
+        >
+          Reparar con IA
+        </yep-button>
+        <yep-button variant="ghost" size="sm" (clicked)="promptRequested.emit()">Prompt</yep-button>
+      </div>
+      @if (repairBlockReason()) {
+        <p class="editor__hint">{{ repairBlockReason() }}</p>
+      }
+      @if (copilotRunning()) {
+        <p class="editor__hint" role="status">Trabajando con los ejemplos confirmados… Puede tardar unos minutos.</p>
+      }
+      @if (copilotError()) {
+        <yep-alert variant="error" data-testid="copilot-error">{{ copilotError() }}</yep-alert>
+      }
+
+      @if (proposal(); as ai) {
+        <div class="editor__proposal" data-testid="rules-proposal">
+          <yep-alert [variant]="ai.allPass ? 'success' : 'warning'">
+            {{
+              ai.allPass
+                ? 'Propuesta lista. Revísala y pruébala antes de aprobar.'
+                : 'La propuesta no pasó todos los ejemplos.'
+            }}
+          </yep-alert>
+          <p class="editor__hint">
+            {{ ai.iterations }} intentos
+            @if (cost(ai.costUsd)) { · <span class="mono">{{ cost(ai.costUsd) }}</span> }
+            @if (ai.collisionCount) { · {{ ai.collisionCount }} cruces con otras plantillas }
+          </p>
+          <ul class="editor__proposal-list">
+            @for (item of ai.results; track item.exampleId) {
+              <li>
+                {{ item.ok ? '✅ Pasa' : '❌ Falla' }} · ejemplo <span class="mono">{{ shortId(item.exampleId) }}</span>
+                @if (item.failedFields.length) { · {{ fieldNames(item.failedFields) }} }
+              </li>
+            }
+            @for (blocker of ai.blockers; track blocker) {
+              <li>{{ blockerText(blocker) }}</li>
+            }
+          </ul>
+          <pre class="editor__proposal-json">{{ ai.proposed.rules | json }}</pre>
+          <div class="editor__actions">
+            <yep-button variant="secondary" size="sm" data-testid="load-proposal" (clicked)="loadProposal()">
+              Cargar en el editor
+            </yep-button>
+            <yep-button variant="ghost" size="sm" (clicked)="discardProposal()">Descartar</yep-button>
+          </div>
+        </div>
+      }
+
+      <label class="editor__textarea">
+        <span>Reglas (JSON)</span>
+        <textarea
+          class="mono"
+          rows="12"
+          spellcheck="false"
+          data-testid="rules-json"
+          [value]="rulesText()"
+          (input)="rulesText.set($any($event.target).value)"
+        ></textarea>
+      </label>
+      @if (rulesError()) {
+        <p class="editor__error" role="alert">{{ rulesError() }}</p>
+      }
+
+      <div class="editor__actions">
+        <yep-button
+          variant="secondary"
+          data-testid="save-template"
+          [loading]="saving()"
+          [disabled]="busy() || !!formError() || !name().trim() || !dirty()"
+          (clicked)="save()"
+        >
+          Guardar borrador
+        </yep-button>
+        <yep-button
+          variant="secondary"
+          data-testid="test-template"
+          [loading]="testing()"
+          [disabled]="busy() || !!formError()"
+          (clicked)="runTest()"
+        >
+          Probar reglas
+        </yep-button>
+      </div>
+      @if (testError()) {
+        <yep-alert variant="error">{{ testError() }}</yep-alert>
+      }
+      @if (testResult(); as result) {
+        @if (testBlockers().length) {
+          <yep-alert variant="warning" title="Todavía no se puede aprobar" data-testid="test-blockers">
+            <ul class="editor__blockers">
+              @for (message of testBlockers(); track message) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </yep-alert>
+        }
+        <app-receipt-test-results [result]="result" />
+      }
+    </yep-card-section>
+
+    <yep-card-section title="Ejemplos">
+      <app-examples-list
+        [issuerId]="current.issuerId"
+        [templateId]="current.id"
+        [testResult]="testResult()"
+        [refreshKey]="examplesRefreshKey()"
+        (openExample)="openExample.emit($event)"
+        (uploaded)="exampleUploaded.emit($event)"
+      />
+    </yep-card-section>
+
+    <yep-card-section title="Aprobación e historial">
+      @if (current.approved; as approved) {
+        <p class="editor__hint">
+          Versión aprobada <span class="mono">{{ approved.version }}</span>, por
+          {{ approved.approvedByName || 'un admin' }} el {{ approved.approvedAt | date: 'dd/MM/yyyy h:mm a' }}.
+          Pasaron <span class="mono">{{ approved.passed }}/{{ approved.total }}</span> ejemplos.
+          @if (current.status === 'draft') {
+            Volvió a borrador: no corre en vivo hasta aprobarla otra vez.
+          }
+        </p>
+        @if (current.history.length) {
+          <ul class="editor__history">
+            @for (version of current.history; track version.version) {
+              <li>Versión <span class="mono">{{ version.version }}</span> · {{ version.approvedAt | date: 'dd/MM/yyyy' }}</li>
+            }
+          </ul>
+        }
+      } @else {
+        <p class="editor__hint">Todavía no tiene una versión aprobada, así que no corre en vivo.</p>
+      }
+
+      @if (approvalMessage()) {
+        <yep-alert variant="error" [title]="approvalMessage()" data-testid="approval-blockers">
+          <ul class="editor__blockers">
+            @for (message of approvalBlockerMessages(); track message) {
+              <li data-testid="approval-blocker">{{ message }}</li>
+            }
+          </ul>
+        </yep-alert>
+        @if (approvalResult(); as result) {
+          <app-receipt-test-results [result]="result" />
+        }
+      }
+
+      <div class="editor__actions">
+        @if (canApproveAgain()) {
+          <yep-button
+            data-testid="approve-template"
+            [loading]="approving()"
+            [disabled]="busy() || !!approveBlockReason()"
+            (clicked)="approve()"
+          >
+            Aprobar
+          </yep-button>
+        }
+        @if (current.status === 'approved') {
+          <yep-button variant="secondary" tone="danger" data-testid="disable-template" [disabled]="busy()" (clicked)="disable()">
+            Desactivar
+          </yep-button>
+        }
+        @if (current.status === 'disabled') {
+          <yep-button data-testid="enable-template" [disabled]="busy()" (clicked)="enable()">Activar de nuevo</yep-button>
+        }
+        @if (!current.approved) {
+          <yep-button variant="ghost" tone="danger" [disabled]="busy()" (clicked)="remove()">Eliminar plantilla</yep-button>
+        }
+      </div>
+      @if (canApproveAgain() && approveBlockReason()) {
+        <p class="editor__hint" data-testid="approve-reason">{{ approveBlockReason() }}</p>
+      }
+    </yep-card-section>
+  </yep-card>
+}

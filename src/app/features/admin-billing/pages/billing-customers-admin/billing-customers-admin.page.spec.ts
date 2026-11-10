@@ -115,6 +115,17 @@ describe('BillingCustomersAdminPage helpers', () => {
     expect(chips[2].whatsapp.symbol).toBe('–');
   });
 
+  it('labels the OCR quota notices', () => {
+    const chips = buildNoticeChips([
+      notice({ kind: 'ai_validation_quota_reached' }),
+      notice({ kind: 'ai_validation_quota_warning' }),
+    ]);
+
+    expect(chips.map((chip) => chip.short)).toEqual(['OCR 80%', 'OCR agotado']);
+    expect(chips[0].title).toContain('Cupo de OCR al 80 %');
+    expect(chips[1].title).toContain('Cupo de OCR agotado');
+  });
+
   it('formats money, overdue days and blocked rows for the table', () => {
     const blocked = toBillingCustomerView(
       row({

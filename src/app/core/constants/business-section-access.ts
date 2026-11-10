@@ -81,6 +81,17 @@ export function canAccessInvoices(
   return isSu || role === 'account_owner';
 }
 
+/**
+ * Confirmar o rechazar un pago (botón "Verificar"). Igual que el backend
+ * (`assertOwnerOrSu`): un empleado recibe 403, aunque sí puede aplicar factura.
+ */
+export function canDecidePayment(
+  role: BusinessMembershipRole | null | undefined,
+  isSu = false,
+): boolean {
+  return isSu || role === 'account_owner';
+}
+
 export function canManageBusinesses(
   role: BusinessMembershipRole | null | undefined,
   isSu = false,
