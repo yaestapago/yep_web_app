@@ -1,6 +1,9 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
+import type { BusinessMembershipRole } from '../../../../shared/models/auth.models';
 import type {
   CompleteDataResponse,
   PaymentTransaction,
@@ -30,19 +33,34 @@ const transaction = (overrides: Partial<PaymentTransaction> = {}): PaymentTransa
     ...overrides,
   }) as PaymentTransaction;
 
+function sessionAs(role: BusinessMembershipRole | null, isSuperUser = false) {
+  return {
+    activeMembership: signal(role ? { role } : null),
+    isSuperUser: signal(isSuperUser),
+  };
+}
+
 describe('TransactionDetailModal: datos faltantes', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
 
-  function create(): ComponentFixture<TransactionDetailModal> {
+  function create(tx: PaymentTransaction = transaction()): ComponentFixture<TransactionDetailModal> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: TransactionsApiService, useValue: api }],
+      providers: [
+        { provide: TransactionsApiService, useValue: api },
+        { provide: AuthSessionService, useValue: sessionAs('account_owner') },
+      ],
     });
     const fixture = TestBed.createComponent(TransactionDetailModal);
-    fixture.componentRef.setInput('transaction', transaction());
+    fixture.componentRef.setInput('transaction', tx);
     fixture.detectChanges();
     return fixture;
   }
+
+  const withReferenceMissing = () =>
+    transaction({
+      dataRequest: { missingFields: ['reference', 'amount'], status: 'pending', history: [] },
+    } as Partial<PaymentTransaction>);
 
   const respond = (rejected: string[], applied: string[] = []): CompleteDataResponse =>
     ({ transaction: transaction(), applied, rejected, resolved: false }) as unknown as CompleteDataResponse;
@@ -118,5 +136,90 @@ describe('TransactionDetailModal: datos faltantes', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('[data-testid="short-account-warning"]'),
     ).toBeNull();
+  });
+
+  it('"No aparece" resuelve la referencia sin enviar un número', async () => {
+    const fixture = create(withReferenceMissing());
+    const modal = fixture.componentInstance;
+    expect(modal.canSubmit()).toBe(false);
+
+    modal.setFormValue('reference', 'M123');
+    modal.setReferenceNotShown(true);
+    fixture.detectChanges();
+    // ngModel aplica `disabled` en una microtarea.
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(modal.formValue('reference')).toBe('');
+    expect(modal.canSubmit()).toBe(true);
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-testid="reference-not-shown-hint"]')?.textContent).toContain(
+      'sin número de comprobante',
+    );
+    expect(
+      (element.querySelector('input[aria-label="Número de comprobante"]') as HTMLInputElement).disabled,
+    ).toBe(true);
+
+    modal.setFormValue('amount', '$ 48.000');
+    modal.submitCompleteData();
+    expect(api['completeData']).toHaveBeenCalledWith('tx1', {
+      amount: '$ 48.000',
+      referenceNotShown: true,
+    });
+  });
+
+  it('solo muestra "No aparece" cuando falta la referencia', () => {
+    const element = create().nativeElement as HTMLElement;
+    expect(element.querySelector('[data-cy="reference-not-shown"]')).toBeNull();
+    expect(element.textContent).not.toContain('No aparece en el comprobante');
+
+    const withReference = create(withReferenceMissing()).nativeElement as HTMLElement;
+    expect(withReference.textContent).toContain('No aparece en el comprobante');
+  });
+
+  it('desmarcar "No aparece" vuelve a pedir el número', () => {
+    const modal = create(withReferenceMissing()).componentInstance;
+    modal.setReferenceNotShown(true);
+    modal.setReferenceNotShown(false);
+    expect(modal.canSubmit()).toBe(false);
+  });
+});
+
+describe('TransactionDetailModal: quién puede verificar', () => {
+  function create(session: ReturnType<typeof sessionAs>): TransactionDetailModal {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: TransactionsApiService,
+          useValue: { listSupports: vi.fn().mockReturnValue(of({ paymentSupports: [] })) },
+        },
+        { provide: AuthSessionService, useValue: session },
+      ],
+    });
+    const fixture = TestBed.createComponent(TransactionDetailModal);
+    fixture.componentRef.setInput(
+      'transaction',
+      transaction({
+        status: 'PENDING_VERIFICATION',
+        verification: { level: 'MEDIUM', canBeConsideredPaid: false, status: 'PENDING_VERIFICATION' },
+      } as Partial<PaymentTransaction>),
+    );
+    fixture.detectChanges();
+    return fixture.componentInstance;
+  }
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('el dueño ve Verificar', () => {
+    expect(create(sessionAs('account_owner')).canVerify()).toBe(true);
+  });
+
+  it('el super-usuario ve Verificar aunque no sea miembro', () => {
+    expect(create(sessionAs(null, true)).canVerify()).toBe(true);
+  });
+
+  it('el empleado no ve Verificar: el backend le respondería 403', () => {
+    expect(create(sessionAs('account_staff')).canVerify()).toBe(false);
   });
 });

@@ -48,12 +48,27 @@
                 [placeholder]="fieldPlaceholder(field)"
                 [ngModel]="formValue(field)"
                 (ngModelChange)="setFormValue(field, $event)"
+                [disabled]="field === 'reference' && referenceNotShown()"
                 [attr.aria-label]="fieldLabel(field)"
                 [attr.aria-invalid]="isRejected(field) ? 'true' : null"
               />
-              <small class="field__hint" [class.field__hint--error]="isRejected(field)">
-                {{ fieldHint(field) }}
-              </small>
+              @if (field === 'reference' && referenceNotShown()) {
+                <small class="field__hint" data-testid="reference-not-shown-hint">
+                  Se guarda sin número de comprobante.
+                </small>
+              } @else {
+                <small class="field__hint" [class.field__hint--error]="isRejected(field)">
+                  {{ fieldHint(field) }}
+                </small>
+              }
+              @if (field === 'reference') {
+                <yep-checkbox
+                  label="No aparece en el comprobante"
+                  dataCy="reference-not-shown"
+                  [checked]="referenceNotShown()"
+                  (checkedChange)="setReferenceNotShown($event)"
+                />
+              }
               @if (showsShortAccountWarning(field)) {
                 <small class="field__hint field__hint--warning" data-testid="short-account-warning">
                   Con estos dígitos guardamos solo esos, no la cuenta completa. Si la tienes, escríbela toda.

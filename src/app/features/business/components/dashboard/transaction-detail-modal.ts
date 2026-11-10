@@ -14,6 +14,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideCheck, LucideShieldCheck, LucideTriangleAlert } from '@lucide/angular';
 import { finalize } from 'rxjs';
 
+import { canDecidePayment } from '../../../../core/constants/business-section-access';
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import {
   Alert,
   Button,
@@ -23,7 +25,12 @@ import {
   Modal,
   StatusChip,
 } from '../../../../shared/ui';
-import type { MissingField, PaymentTransaction } from '../../../../shared/models/transaction.models';
+import { Checkbox } from '../../../../shared/ui/checkbox/checkbox';
+import type {
+  CompleteDataRequest,
+  MissingField,
+  PaymentTransaction,
+} from '../../../../shared/models/transaction.models';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
   isTransactionInvoiceable,
@@ -75,6 +82,7 @@ const SHORT_ACCOUNT_MAX_DIGITS = 4;
     Alert,
     Button,
     CardSection,
+    Checkbox,
     DescriptionItem,
     DescriptionList,
     Modal,
@@ -89,6 +97,7 @@ const SHORT_ACCOUNT_MAX_DIGITS = 4;
 })
 export class TransactionDetailModal {
   private readonly api = inject(TransactionsApiService);
+  private readonly session = inject(AuthSessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly transaction = defineInput<PaymentTransaction | null>(null);
@@ -104,10 +113,12 @@ export class TransactionDetailModal {
 
   readonly open = computed(() => this.transaction() !== null);
 
+  /** Solo el dueño o un super-usuario confirma o rechaza; al empleado el backend le da 403. */
   readonly canVerify = computed(() => {
     const transaction = this.transaction();
     return (
       transaction !== null &&
+      canDecidePayment(this.session.activeMembership()?.role, this.session.isSuperUser()) &&
       isTransactionVerifiable(transaction.status, transaction.verification.canBeConsideredPaid)
     );
   });
@@ -129,6 +140,11 @@ export class TransactionDetailModal {
   readonly completeError = signal('');
   /** Datos que el backend no entendió: se quedan como se escribieron, con su aviso. */
   readonly rejectedFields = signal<MissingField[]>([]);
+  /**
+   * La referencia no viene en el comprobante (p. ej. algunos de Nequi): se da
+   * por resuelta sin inventar un número. El backend deja `reference` vacía.
+   */
+  readonly referenceNotShown = signal(false);
 
   private loadedId: string | null = null;
 
@@ -145,6 +161,7 @@ export class TransactionDetailModal {
       this.formValues.set({});
       this.completeError.set('');
       this.rejectedFields.set([]);
+      this.referenceNotShown.set(false);
     });
   }
 
@@ -198,8 +215,26 @@ export class TransactionDetailModal {
     this.rejectedFields.update((fields) => fields.filter((item) => item !== field));
   }
 
-  readonly canSubmit = computed(() =>
-    this.missingFields().some((field) => (this.formValues()[field] ?? '').trim()),
+  setReferenceNotShown(notShown: boolean): void {
+    this.referenceNotShown.set(notShown);
+    if (notShown) {
+      // No se envían a la vez un número y "no aparece".
+      const values = { ...this.formValues() };
+      delete values.reference;
+      this.formValues.set(values);
+      this.rejectedFields.update((fields) => fields.filter((item) => item !== 'reference'));
+    }
+  }
+
+  /** "No aparece" solo cuenta si la referencia es uno de los datos que faltan. */
+  private sendsReferenceNotShown(): boolean {
+    return this.referenceNotShown() && this.missingFields().includes('reference');
+  }
+
+  readonly canSubmit = computed(
+    () =>
+      this.sendsReferenceNotShown() ||
+      this.missingFields().some((field) => (this.formValues()[field] ?? '').trim()),
   );
 
   submitCompleteData(): void {
@@ -208,12 +243,16 @@ export class TransactionDetailModal {
       return;
     }
     const values = this.formValues();
-    const payload: Partial<Record<MissingField, string>> = {};
+    const payload: CompleteDataRequest = {};
     for (const field of this.missingFields()) {
       const value = (values[field] ?? '').trim();
       if (value) {
         payload[field] = value;
       }
+    }
+    if (this.sendsReferenceNotShown()) {
+      delete payload.reference;
+      payload.referenceNotShown = true;
     }
     this.submitting.set(true);
     this.completeError.set('');
