@@ -63,8 +63,11 @@ const MISSING_FIELD_HINTS: Record<MissingField, string> = {
   transactionDate: 'Escríbela así: 05/07/2026 3:45 pm. La hora es obligatoria.',
 };
 
-/** Con solo los últimos dígitos, el backend guarda esos dígitos y no el número completo. */
-const SHORT_ACCOUNT_MAX_DIGITS = 4;
+/**
+ * Con menos de 4 dígitos el backend guarda solo esos. Con exactamente 4 los cruza con las
+ * cuentas activas de la sede y, si hay una sola, guarda el número completo: no se advierte.
+ */
+const SHORT_ACCOUNT_MAX_DIGITS = 3;
 
 /**
  * Modal de detalle de una transacción: resumen (con quién la generó), cómo se

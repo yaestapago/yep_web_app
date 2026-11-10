@@ -120,10 +120,20 @@ describe('TransactionDetailModal: datos faltantes', () => {
     expect(modal.completeError()).toBe('');
   });
 
-  it('avisa si escriben solo los últimos 4 de la cuenta, sin impedirlo', () => {
+  it('los últimos 4 de la cuenta no llevan advertencia: el backend completa la cuenta', () => {
+    const fixture = create();
+    fixture.componentInstance.setFormValue('receiverAccount', '1234');
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="short-account-warning"]'),
+    ).toBeNull();
+    expect(fixture.componentInstance.canSubmit()).toBe(true);
+  });
+
+  it('avisa si escriben menos de 4 dígitos de la cuenta, sin impedirlo', () => {
     const fixture = create();
     const modal = fixture.componentInstance;
-    modal.setFormValue('receiverAccount', '1234');
+    modal.setFormValue('receiverAccount', '123');
     fixture.detectChanges();
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('[data-testid="short-account-warning"]')

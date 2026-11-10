@@ -135,6 +135,21 @@ describe('otros apoyos', () => {
     expect(copilotErrorMessage(error)).not.toContain('OPENAI');
   });
 
+  it('el 409 re2_unavailable de generar o reparar explica que no es culpa del superadmin', () => {
+    const error = new HttpErrorResponse({
+      status: 409,
+      error: { code: 're2_unavailable', message: 'El servidor no tiene el binario de RE2' },
+    });
+    expect(copilotErrorMessage(error)).toContain('motor RE2');
+    expect(copilotErrorMessage(error)).toContain('equipo técnico');
+    expect(copilotErrorMessage(error)).not.toContain('binario');
+  });
+
+  it('otro 409 deja el mensaje del servidor', () => {
+    const error = new HttpErrorResponse({ status: 409, error: { message: 'Ya hay un trabajo en curso' } });
+    expect(copilotErrorMessage(error)).toBe('Ya hay un trabajo en curso');
+  });
+
   it('el error de un trabajo pasa tal cual', () => {
     expect(copilotErrorMessage(new Error('Texto del trabajo'))).toBe('Texto del trabajo');
   });

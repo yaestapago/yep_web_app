@@ -106,4 +106,40 @@ describe('ReceiptTestResults', () => {
     const text = (create(result, 'otro').nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('no entró en la prueba');
   });
+
+  describe('sin el motor RE2 en el servidor', () => {
+    // Lo que responde `/test` sin RE2: 0 aciertos y ningún resultado.
+    const notRun: ReceiptTestResult = {
+      allPass: false,
+      canApprove: false,
+      blockers: ['re2_unavailable'],
+      positives: { passed: 0, total: 3 },
+      negatives: { passed: 0, total: 1 },
+      collisions: [],
+      results: [],
+    };
+
+    it('dice "No se probó" en vez de "❌ Falla 0/3"', () => {
+      const element = create(notRun).nativeElement as HTMLElement;
+      expect(element.querySelector('[data-testid="test-not-run"]')?.textContent).toContain('No se probó');
+      expect(element.textContent).toContain('Ejemplos sin probar: 4');
+      expect(element.textContent).not.toContain('❌ Falla');
+      expect(element.textContent).not.toContain('0/3');
+    });
+
+    it('no dice que faltan ejemplos: explica por qué no corrió', () => {
+      const empty = (create(notRun).nativeElement as HTMLElement).querySelector('[data-testid="test-empty"]');
+      expect(empty?.textContent).toContain('no corrió');
+      expect(empty?.textContent).toContain('motor RE2');
+      expect(empty?.textContent).not.toContain('Todavía no hay ejemplos');
+    });
+
+    it('en el modal de un ejemplo tampoco dice que no entró', () => {
+      const empty = (create(notRun, 'e1').nativeElement as HTMLElement).querySelector(
+        '[data-testid="test-empty"]',
+      );
+      expect(empty?.textContent).toContain('no corrió');
+      expect(empty?.textContent).not.toContain('no entró en la prueba');
+    });
+  });
 });

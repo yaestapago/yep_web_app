@@ -33,6 +33,21 @@ export class ReceiptTestResults {
 
   readonly collisions = computed(() => (this.onlyExampleId() ? [] : this.result().collisions));
 
+  /**
+   * Sin el motor RE2 el servidor no corre las reglas y responde con 0 aciertos y sin
+   * resultados: no es que fallen ni que falten ejemplos, es que no se probaron.
+   */
+  readonly notRun = computed(() => (this.result().blockers ?? []).includes('re2_unavailable'));
+
+  readonly emptyMessage = computed(() => {
+    if (this.notRun()) {
+      return 'La prueba no corrió: el servidor no tiene el motor RE2. Los ejemplos están bien; avísale al equipo técnico.';
+    }
+    return this.onlyExampleId()
+      ? 'Este ejemplo no entró en la prueba. Solo se prueban los confirmados.'
+      : 'Todavía no hay ejemplos confirmados para probar.';
+  });
+
   /** En el 409 de aprobar `expected` y `got` siempre llegan en `null`. */
   readonly hasValues = computed(() =>
     this.results().some((item) =>

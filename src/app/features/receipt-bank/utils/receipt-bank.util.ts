@@ -275,9 +275,15 @@ export function expectedToInput(
 
 // --- Errores ----------------------------------------------------------------
 
-/** Texto para un error al pedirle algo a la IA: el 503 es falta de llave, no un fallo. */
+/**
+ * Texto para un error al pedirle algo a la IA: el 503 es falta de llave, no un fallo, y
+ * el 409 `re2_unavailable` es que el servidor no puede probar reglas (generar y reparar).
+ */
 export function copilotErrorMessage(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
+    if (error.status === 409 && error.error?.code === 're2_unavailable') {
+      return blockerMessage('re2_unavailable');
+    }
     return error.status === 503
       ? 'La IA no está configurada en este ambiente. Puedes hacerlo a mano.'
       : httpErrorMessage(error);
