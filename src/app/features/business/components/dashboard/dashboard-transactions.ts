@@ -20,6 +20,8 @@ import {
 } from '@lucide/angular';
 import { debounceTime, distinctUntilChanged, skip } from 'rxjs';
 
+import { canDecidePayment } from '../../../../core/constants/business-section-access';
+import { AuthSessionService } from '../../../../core/services/auth-session.service';
 import type {
   PaymentTransaction,
   TransactionFilters,
@@ -63,6 +65,12 @@ type PeriodFilter = 'all' | 'today' | '7d' | '30d';
 })
 export class DashboardTransactionsPanel {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly session = inject(AuthSessionService);
+
+  /** Solo el dueño o un super-usuario confirma o rechaza; al empleado el backend le da 403. */
+  private readonly canDecide = computed(() =>
+    canDecidePayment(this.session.activeMembership()?.role, this.session.isSuperUser()),
+  );
 
   /** Transacciones ya filtradas y paginadas por el servidor. */
   readonly transactions = defineInput.required<PaymentTransaction[]>();
@@ -174,7 +182,7 @@ export class DashboardTransactionsPanel {
   }
 
   isActionable(tx: PaymentTransaction): boolean {
-    return isTransactionVerifiable(tx.status, tx.verification.canBeConsideredPaid);
+    return this.canDecide() && isTransactionVerifiable(tx.status, tx.verification.canBeConsideredPaid);
   }
 
   isInvoiceActionable(tx: PaymentTransaction): boolean {
