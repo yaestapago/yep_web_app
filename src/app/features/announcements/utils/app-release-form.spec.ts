@@ -11,7 +11,7 @@ import {
 } from './app-release-form';
 
 describe('app-release-form · política de versión', () => {
-  it('sin política sugiere la URL de tienda por defecto (iOS no tiene)', () => {
+  it('sin política sugiere la URL de tienda por defecto', () => {
     expect(releaseToForm({ app: 'notifier', platform: 'android' }, null).storeUrl).toBe(
       'https://play.google.com/store/apps/details?id=co.yaestapago.notifier',
     );
@@ -19,7 +19,7 @@ describe('app-release-form · política de versión', () => {
       'https://play.google.com/store/apps/details?id=co.yaestapago.app',
     );
     const ios = releaseToForm({ app: 'yep', platform: 'ios' }, null);
-    expect(ios.storeUrl).toBe('');
+    expect(ios.storeUrl).toBe('https://apps.apple.com/co/app/id6830199280');
     expect(ios.notify).toBe(true);
     expect(ios.enabled).toBe(true);
   });

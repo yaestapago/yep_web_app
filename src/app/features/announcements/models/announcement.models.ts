@@ -220,10 +220,11 @@ export const APP_RELEASE_SLOTS: readonly AppReleaseSlot[] = [
   { app: 'yep', platform: 'ios' },
 ];
 
-/** URLs de tienda que el panel sugiere cuando no hay política (iOS no tiene). */
+/** URLs de tienda que el panel sugiere cuando no hay política (notifier iOS no tiene). */
 export const DEFAULT_STORE_URLS: Readonly<Record<string, string>> = {
   'notifier/android': 'https://play.google.com/store/apps/details?id=co.yaestapago.notifier',
   'yep/android': 'https://play.google.com/store/apps/details?id=co.yaestapago.app',
+  'yep/ios': 'https://apps.apple.com/co/app/id6830199280',
 };
 
 export function releaseSlotKey(slot: AppReleaseSlot): string {
