@@ -135,7 +135,7 @@ export class SettingsPage implements OnInit {
     {
       key: 'browserPaymentAlerts',
       label: 'Notificaciones push',
-      description: 'Recibe avisos de pagos en tu computador cuando YEP está en otra pestaña.',
+      description: 'Recibe avisos de pagos en tu computador mientras YEP esté abierto.',
     },
     // Opciones visuales ocultas temporalmente (sin eliminar del modelo ni del
     // backend). Para volver a mostrarlas, descomenta estas entradas:
