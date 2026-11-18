@@ -102,18 +102,56 @@ describe('BrowserPaymentAlertsService', () => {
 
     events.next(report('event-1', { linkPending: true }));
     expect(notifications).toHaveLength(0);
-    events.next(report('event-1', { linkedTransactionId: 'payment-1', firstReport: true }));
+    events.next(
+      report('event-1', {
+        linkedTransactionId: 'payment-1',
+        firstReport: true,
+        createdAt: '2026-11-18T19:36:00Z',
+        normalized: {
+          senderName: '  Ana Pérez  ',
+          amount: 50000,
+          currency: 'COP',
+          transactionDate: '2026-11-18T19:32:00Z',
+          transactionDateSource: 'text',
+        },
+      }),
+    );
     events.next(report('event-2', { linkedTransactionId: 'payment-1', firstReport: false }));
     events.next(report('event-1', { linkedTransactionId: 'payment-1', status: 'processed' }));
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0].title).toBe('Pago recibido');
+    expect(notifications[0].options.body?.replace(/\s/g, ' ')).toBe('Ana Pérez · $ 50.000 · 14:32');
     expect(notifications[0].options.silent).toBe(true);
 
     const focus = vi.spyOn(window, 'focus').mockImplementation(() => {});
     notifications[0].onclick?.();
     expect(focus).toHaveBeenCalledOnce();
     expect(notifications[0].close).toHaveBeenCalledOnce();
+  });
+
+  it('shows the receive time in Bogotá when the bank report has no payment time', async () => {
+    await service.setEnabled(true);
+    TestBed.tick();
+
+    events.next(
+      report('email', {
+        sourceType: 'EMAIL_GMAIL',
+        createdAt: '2026-11-18T05:36:00Z',
+        normalized: {
+          amount: 25.5,
+          currency: 'USD',
+          transactionDate: '2026-11-18T05:25:00Z',
+          transactionDateSource: 'header_date',
+        },
+      }),
+    );
+    events.next(report('no-details', { createdAt: 'invalid-date' }));
+
+    expect(notifications[0].options.body?.replace(/\s/g, ' ')).toBe(
+      'USD 25,5 · Recibido a las 00:36',
+    );
+    expect(notifications[1].options.body).toBe('Vuelve a YEP para ver el pago.');
   });
 
   it('skips new payments in the foreground and does not replay them in the background', async () => {

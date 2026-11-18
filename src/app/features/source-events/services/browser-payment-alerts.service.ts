@@ -22,6 +22,40 @@ import { PaymentReportTracker } from './payment-report-tracker';
 import { SourceEventsStreamService } from './source-events-stream.service';
 
 const STORAGE_PREFIX = 'yep_web.payment_alerts.';
+const PAYMENT_TIME_FORMATTER = new Intl.DateTimeFormat('es-CO', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'America/Bogota',
+});
+
+function formatPaymentTime(value?: string): string {
+  const timestamp = value ? Date.parse(value) : NaN;
+  return Number.isFinite(timestamp) ? PAYMENT_TIME_FORMATTER.format(timestamp) : '';
+}
+
+function paymentNotificationBody({ normalized, createdAt }: SourceEvent): string {
+  const sender = normalized?.senderName?.trim();
+  const amount = normalized?.amount;
+  const currency = normalized?.currency?.trim().toUpperCase() || 'COP';
+  const amountFormat: Intl.NumberFormatOptions = /^[A-Z]{3}$/.test(currency)
+    ? { style: 'currency', currency, currencyDisplay: currency === 'COP' ? 'symbol' : 'code' }
+    : { style: 'decimal' };
+  const formattedAmount =
+    typeof amount === 'number' && Number.isFinite(amount)
+      ? new Intl.NumberFormat('es-CO', { ...amountFormat, minimumFractionDigits: 0 }).format(amount)
+      : '';
+
+  const dateSource = normalized?.transactionDateSource;
+  const paymentTime =
+    !dateSource || dateSource === 'text' ? formatPaymentTime(normalized?.transactionDate) : '';
+  const receivedTime = formatPaymentTime(createdAt);
+  const time = paymentTime || (receivedTime && `Recibido a las ${receivedTime}`);
+
+  return (
+    [sender, formattedAmount, time].filter(Boolean).join(' · ') || 'Vuelve a YEP para ver el pago.'
+  );
+}
 
 @Injectable({ providedIn: 'root' })
 export class BrowserPaymentAlertsService {
@@ -133,7 +167,7 @@ export class BrowserPaymentAlertsService {
 
     try {
       const notification = new view.Notification('Pago recibido', {
-        body: 'Vuelve a YEP para ver el pago.',
+        body: paymentNotificationBody(event),
         icon: '/brand/ico.ico',
         silent: true,
         tag: `yep-payment:${accountId}:${event.linkedTransactionId ?? event.id}`,
