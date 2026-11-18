@@ -156,7 +156,6 @@ export class BrowserPaymentAlertsService {
     if (
       !view ||
       view.Notification?.permission !== 'granted' ||
-      !this.document.hidden ||
       !this.enabled() ||
       !this.canReceive() ||
       this.userId() !== userId ||

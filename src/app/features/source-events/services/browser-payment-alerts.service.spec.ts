@@ -154,18 +154,20 @@ describe('BrowserPaymentAlertsService', () => {
     expect(notifications[1].options.body).toBe('Vuelve a YEP para ver el pago.');
   });
 
-  it('skips new payments in the foreground and does not replay them in the background', async () => {
+  it('notifies payments while YEP is on screen and does not replay them in the background', async () => {
     await service.setEnabled(true);
     TestBed.tick();
 
     hidden = false;
     events.next(report('foreground'));
+    expect(notifications).toHaveLength(1);
+
     hidden = true;
     events.next(report('foreground', { status: 'processed' }));
-    expect(notifications).toHaveLength(0);
+    expect(notifications).toHaveLength(1);
 
     events.next(report('background'));
-    expect(notifications).toHaveLength(1);
+    expect(notifications).toHaveLength(2);
   });
 
   it('keeps the setting off if the browser denies permission', async () => {
