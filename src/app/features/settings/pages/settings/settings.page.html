@@ -77,7 +77,11 @@
               </div>
               <yep-toggle
                 appearance="switch"
-                [pressed]="notifications()[toggle.key]"
+                [pressed]="
+                  toggle.key === 'browserPaymentAlerts'
+                    ? browserPaymentAlerts.enabled()
+                    : notifications()[toggle.key]
+                "
                 [ariaLabel]="toggle.label"
                 [disabled]="savingNotifications()"
                 (toggled)="toggleNotification(toggle.key)"
@@ -85,6 +89,9 @@
             </li>
           }
         </ul>
+        @if (browserPaymentAlertsError()) {
+          <yep-alert class="settings-alert" variant="error">{{ browserPaymentAlertsError() }}</yep-alert>
+        }
       }
     </yep-card-section>
 

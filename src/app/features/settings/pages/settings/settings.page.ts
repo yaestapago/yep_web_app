@@ -40,6 +40,7 @@ import { Segmented, type SegmentedOption } from '../../../../shared/ui/segmented
 import { Toggle } from '../../../../shared/ui/toggle/toggle';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import { AuthApiService } from '../../../auth/services/auth-api.service';
+import { BrowserPaymentAlertsService } from '../../../source-events/services/browser-payment-alerts.service';
 import { DeleteAccountCard } from '../../components/delete-account-card/delete-account-card';
 
 const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
@@ -58,7 +59,7 @@ const DEFAULT_GENERAL: GeneralPreferences = {
 };
 
 interface NotificationToggle {
-  key: keyof NotificationPreferences;
+  key: Exclude<keyof NotificationPreferences, 'pushEnabled'> | 'browserPaymentAlerts';
   label: string;
   description: string;
 }
@@ -99,6 +100,7 @@ export class SettingsPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly notificationModal = inject(NotificationModalService);
+  protected readonly browserPaymentAlerts = inject(BrowserPaymentAlertsService);
 
   readonly user = this.session.user;
   readonly isDark = this.theme.isDark;
@@ -131,9 +133,9 @@ export class SettingsPage implements OnInit {
       description: 'Recibe avisos por WhatsApp.',
     },
     {
-      key: 'pushEnabled',
+      key: 'browserPaymentAlerts',
       label: 'Notificaciones push',
-      description: 'Alertas en el navegador o la app.',
+      description: 'Recibe avisos de pagos en tu computador cuando YEP está en otra pestaña.',
     },
     // Opciones visuales ocultas temporalmente (sin eliminar del modelo ni del
     // backend). Para volver a mostrarlas, descomenta estas entradas:
@@ -166,6 +168,7 @@ export class SettingsPage implements OnInit {
   readonly savingProfile = signal(false);
   readonly savingPassword = signal(false);
   readonly savingNotifications = signal(false);
+  readonly browserPaymentAlertsError = signal('');
   readonly savingGeneral = signal(false);
   readonly error = signal('');
   readonly success = signal('');
@@ -372,8 +375,13 @@ export class SettingsPage implements OnInit {
 
   // --- Preferencias de notificaciones ---
 
-  toggleNotification(key: keyof NotificationPreferences): void {
+  toggleNotification(key: NotificationToggle['key']): void {
     if (this.savingNotifications()) {
+      return;
+    }
+
+    if (key === 'browserPaymentAlerts') {
+      void this.toggleBrowserPaymentAlerts();
       return;
     }
 
@@ -394,6 +402,34 @@ export class SettingsPage implements OnInit {
         },
         error: (error) => this.error.set(httpErrorMessage(error)),
       });
+  }
+
+  private async toggleBrowserPaymentAlerts(): Promise<void> {
+    this.savingNotifications.set(true);
+    this.browserPaymentAlertsError.set('');
+
+    try {
+      const permission = await this.browserPaymentAlerts.setEnabled(
+        !this.browserPaymentAlerts.enabled(),
+      );
+      switch (permission) {
+        case 'denied':
+          this.browserPaymentAlertsError.set(
+            'Permite las notificaciones de YEP en la configuración de tu navegador.',
+          );
+          break;
+        case 'default':
+          this.browserPaymentAlertsError.set(
+            'Acepta el permiso del navegador para activar los avisos.',
+          );
+          break;
+        case 'unsupported':
+          this.browserPaymentAlertsError.set('Este navegador no permite activar los avisos.');
+          break;
+      }
+    } finally {
+      this.savingNotifications.set(false);
+    }
   }
 
   // --- Preferencias generales ---

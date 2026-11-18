@@ -1,4 +1,20 @@
-import type { SourceEvent } from '../models/source-event.models';
+import type { SourceEvent, SourceEventStatus, SourceEventType } from '../models/source-event.models';
+
+export const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
+export const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
+  'received',
+  'processing',
+  'processed',
+  'needs_review',
+  'failed',
+];
+
+export function isMoneyReportEvent(event: SourceEvent): boolean {
+  return (
+    MONEY_REPORT_SOURCE_TYPES.includes(event.sourceType) &&
+    MONEY_REPORT_STATUSES.includes(event.status)
+  );
+}
 
 /**
  * Clave del pago real al que pertenece un evento: la transacción enlazada, o el

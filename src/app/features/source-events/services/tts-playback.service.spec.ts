@@ -7,7 +7,8 @@ import { TestBed } from '@angular/core/testing';
 
 import { environment } from '../../../../environments/environment';
 import type { SourceEvent } from '../../../shared/models/source-event.models';
-import { LINK_PENDING_TIMEOUT_MS, TtsPlaybackService } from './tts-playback.service';
+import { LINK_PENDING_TIMEOUT_MS } from './payment-report-tracker';
+import { TtsPlaybackService } from './tts-playback.service';
 
 const STORAGE_KEY = 'yep_web.tts.enabled';
 /** Referencia real (antes de cualquier `vi.useFakeTimers`) para drenar la cola. */
