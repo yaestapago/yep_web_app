@@ -5,16 +5,11 @@ import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import type { SourceEvent } from '../../../shared/models/source-event.models';
+import { PaymentReportTracker } from './payment-report-tracker';
 
 const STORAGE_KEY = 'yep_web.tts.enabled';
 /** Tope de la cola: evita acumular audio si entra una ráfaga de eventos. */
 const MAX_QUEUE = 5;
-/**
- * Espera máxima (ms) por el anuncio final de un evento emitido con
- * `linkPending`. Si no llega, se decide con la deduplicación local: un pago
- * real nunca se queda sin voz.
- */
-export const LINK_PENDING_TIMEOUT_MS = 20_000;
 /** WAV silencioso mínimo (44 bytes de cabecera, 0 muestras) para desbloquear autoplay. */
 const SILENT_WAV =
   'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
@@ -27,13 +22,8 @@ const SILENT_WAV =
  * - `enabled` se persiste por navegador (localStorage), como `ThemeService`.
  * - La reproducción es **secuencial**: los eventos entran en cola y suenan uno
  *   tras otro, sin solaparse; si la cola se llena, se descartan los nuevos.
- * - **Un pago, una sola vez:** un mismo pago real puede llegar por SSE varias
- *   veces (el propio evento se reemite al pasar de `received` a `processed`,
- *   y un segundo notificador del mismo depósito emite SU PROPIO evento). Suena
- *   solo el primer reporte: si el backend lo marca (`firstReport`) se le hace
- *   caso; si no, se deduplica por operación (`linkedTransactionId`, o el id del
- *   evento si todavía no hay transacción enlazada) — ver `speak()`. Una
- *   emisión temprana (`linkPending`) no suena: se espera su anuncio final.
+ * - Lee solo el primer reporte de cada pago. Comparte la deduplicación y la
+ *   espera por el anuncio final con los avisos del navegador.
  * - **Desbloqueo de autoplay:** el navegador exige un gesto del usuario antes de
  *   reproducir audio. `setEnabled(true)` (el click del toggle) ceba el elemento
  *   con un WAV silencioso. Pero si la voz quedó activada de una sesión previa
@@ -54,20 +44,7 @@ export class TtsPlaybackService {
       : null;
 
   private readonly queue: SourceEvent[] = [];
-  /** Claves (evento o transacción) de los pagos ya vistos en esta sesión,
-   *  hayan sonado o no (voz apagada, cola llena) — evita releer el mismo pago
-   *  cuando se re-emite (cambio de estado) o lo reporta otro notificador. */
-  private readonly seen = new Set<string>();
-  /**
-   * Eventos emitidos con `linkPending`, a la espera de su anuncio final: id →
-   * última versión recibida + temporizador de respaldo. NO se registran en
-   * `seen` mientras esperan: si no, su propio anuncio final (`firstReport:
-   * true`) se tomaría como entrega repetida y el pago no sonaría.
-   */
-  private readonly pending = new Map<
-    string,
-    { event: SourceEvent; timer: ReturnType<typeof setTimeout> }
-  >();
+  private readonly reports = new PaymentReportTracker((event) => this.enqueue(event));
   private playing = false;
   /** El navegador ya permite reproducir audio (hubo un gesto del usuario). */
   private unlocked = false;
@@ -89,10 +66,7 @@ export class TtsPlaybackService {
       this.armAutoplayUnlock();
     }
 
-    inject(DestroyRef).onDestroy(() => {
-      this.pending.forEach(({ timer }) => clearTimeout(timer));
-      this.pending.clear();
-    });
+    inject(DestroyRef).onDestroy(() => this.reports.clear());
   }
 
   /**
@@ -109,66 +83,12 @@ export class TtsPlaybackService {
     }
   }
 
-  /**
-   * Encola el evento para leerlo si la voz está activa — pero solo si es el
-   * primer reporte de ese pago. Los reintentos/reemisiones del mismo pago
-   * (otro notificador, o el cambio de estado al enlazarse) no vuelven a sonar.
-   * Una emisión temprana (`linkPending`) se retiene hasta su anuncio final.
-   */
+  /** Registra el reporte y lo lee si es el primero y la voz está activa. */
   speak(event: SourceEvent): void {
-    const held = this.pending.get(event.id);
-    // Con `firstReport` el backend ya decidió: ese es el anuncio final.
-    const isFinal = typeof event.firstReport === 'boolean';
-    if (!isFinal && (event.linkPending === true || held)) {
-      // Todavía no se sabe si es primer reporte o corroboración: hablar ahora
-      // haría que una corroboración sonara dos veces. Se guarda la versión más
-      // reciente (por si trae el enlace) para el respaldo, sin alargar el plazo.
-      this.hold(event, held?.timer);
-      return;
-    }
-    if (held) {
-      // Llegó el anuncio final: se decide con `firstReport` como siempre.
-      clearTimeout(held.timer);
-      this.pending.delete(event.id);
-    }
-    this.announce(event);
+    this.reports.receive(event);
   }
 
-  /** Retiene un evento `linkPending`; si vence el plazo, decide la dedup local. */
-  private hold(event: SourceEvent, timer?: ReturnType<typeof setTimeout>): void {
-    this.pending.set(event.id, {
-      event,
-      timer:
-        timer ??
-        setTimeout(() => {
-          const latest = this.pending.get(event.id)?.event ?? event;
-          this.pending.delete(event.id);
-          // Sin anuncio final: lo retenido nunca trae `firstReport`, así que
-          // decide la deduplicación por id y transacción enlazada.
-          this.announce(latest);
-        }, LINK_PENDING_TIMEOUT_MS),
-    });
-  }
-
-  /** Registra las claves del pago y lo encola si es su primer reporte. */
-  private announce(event: SourceEvent): void {
-    const transactionId = event.linkedTransactionId;
-    const eventSeen = this.seen.has(event.id);
-    const paymentSeen = eventSeen || (!!transactionId && this.seen.has(transactionId));
-    // Se registran SIEMPRE ambas claves, suene o no. Antes, si el id ya estaba
-    // anunciado se salía sin guardar la transacción que traía la reemisión
-    // (`received` sin enlace → `processed` enlazado), y el aviso de OTRO
-    // notificador para ese mismo pago volvía a sonar. Registrar también con la
-    // voz apagada evita que, al encenderla, suene tarde la reemisión de un
-    // pago que ya había llegado.
-    this.seen.add(event.id);
-    if (transactionId) {
-      this.seen.add(transactionId);
-    }
-
-    if (!this.isFirstReport(event, eventSeen, paymentSeen)) {
-      return;
-    }
+  private enqueue(event: SourceEvent): void {
     if (!this.enabled() || !this.audio) {
       return;
     }
@@ -177,28 +97,6 @@ export class TtsPlaybackService {
     }
     this.queue.push(event);
     void this.drain();
-  }
-
-  /**
-   * ¿Este evento es el primer reporte de su pago (el único que debe sonar)?
-   * - `firstReport === false`: el backend dice que corrobora un pago ya
-   *   reportado → nunca suena.
-   * - `firstReport === true`: se le cree al backend; solo se descarta si ESTE
-   *   mismo evento ya pasó (entrega repetida). No se mira la transacción: si la
-   *   corroboración llegó por SSE antes que el primer reporte, ya dejó esa
-   *   transacción registrada y el pago se quedaría sin anunciar.
-   * - Ausente (backend anterior, reemisiones): deduplicación local por id del
-   *   evento y por transacción enlazada.
-   */
-  private isFirstReport(event: SourceEvent, eventSeen: boolean, paymentSeen: boolean): boolean {
-    switch (event.firstReport) {
-      case false:
-        return false;
-      case true:
-        return !eventSeen;
-      default:
-        return !paymentSeen;
-    }
   }
 
   private async drain(): Promise<void> {

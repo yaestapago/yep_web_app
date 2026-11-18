@@ -39,8 +39,6 @@ import type {
   SourceEvent,
   SourceEventFilters,
   SourceEventQuery,
-  SourceEventStatus,
-  SourceEventType,
 } from '../../../../shared/models/source-event.models';
 import {
   type ManualReviewDecision,
@@ -58,7 +56,10 @@ import {
 import { transactionCategory } from '../../../../shared/utils/transaction-status';
 import { httpErrorMessage } from '../../../../shared/utils/http-error-message';
 import {
+  MONEY_REPORT_SOURCE_TYPES,
+  MONEY_REPORT_STATUSES,
   classifyLiveSourceEvent,
+  isMoneyReportEvent,
   sourceEventGroupKey,
 } from '../../../../shared/utils/source-event-groups';
 import { NotifiersApiService } from '../../../notifiers/services/notifiers-api.service';
@@ -98,14 +99,6 @@ const NOTIFIERS_BACKUP_POLL_MS = 120_000;
 const CORROBORATION_CUE_MS = 2_000;
 /** Filtro de pagos sin llave de una cuenta (`direct-account:<id>`), como en el backend. */
 const DIRECT_ACCOUNT_FILTER_PREFIX = 'direct-account:';
-const MONEY_REPORT_SOURCE_TYPES: SourceEventType[] = ['NOTIFIER_APP', 'EMAIL_GMAIL'];
-const MONEY_REPORT_STATUSES: SourceEventStatus[] = [
-  'received',
-  'processing',
-  'processed',
-  'needs_review',
-  'failed',
-];
 
 const EMPTY_CHARTS: DashboardChartsSummary = {
   todayVsLastWeek: { today: 0, lastWeek: 0, todayDate: '', lastWeekDate: '' },
@@ -596,7 +589,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
    * "N nuevos" (sin saltar la vista del usuario); si no encaja, se ignora.
    */
   private onLiveEvent(event: SourceEvent): void {
-    if (!this.isMoneyReportEvent(event)) {
+    if (!isMoneyReportEvent(event)) {
       return;
     }
 
@@ -705,7 +698,7 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
 
   /** ¿El evento encaja en el filtro activo de la tabla de eventos? */
   private matchesEventFilter(event: SourceEvent, filters: SourceEventFilters): boolean {
-    if (!this.isMoneyReportEvent(event)) {
+    if (!isMoneyReportEvent(event)) {
       return false;
     }
     if (filters.sourceType && event.sourceType !== filters.sourceType) {
@@ -771,13 +764,6 @@ export class BusinessDashboardSection implements OnInit, AfterViewInit, OnDestro
     }
 
     return query;
-  }
-
-  private isMoneyReportEvent(event: SourceEvent): boolean {
-    return (
-      MONEY_REPORT_SOURCE_TYPES.includes(event.sourceType) &&
-      MONEY_REPORT_STATUSES.includes(event.status)
-    );
   }
 
   /** Inserta o reemplaza un evento por id, manteniendo el orden por recientes. */

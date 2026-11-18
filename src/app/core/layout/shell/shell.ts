@@ -7,6 +7,7 @@ import { filter, startWith } from 'rxjs';
 import { AssistantWidget } from '../../../features/assistant/components/assistant-widget/assistant-widget';
 import { AuthApiService } from '../../../features/auth/services/auth-api.service';
 import { ReceiptCaptureModal } from '../../../features/extraction/components/receipt-capture-modal/receipt-capture-modal';
+import { BrowserPaymentAlertsService } from '../../../features/source-events/services/browser-payment-alerts.service';
 import { Button } from '../../../shared/ui/button/button';
 import { IconButton } from '../../../shared/ui/icon-button/icon-button';
 import { Modal } from '../../../shared/ui/modal/modal';
@@ -77,6 +78,9 @@ export class Shell {
   readonly immersive = signal(false);
 
   constructor() {
+    // Los avisos de pagos siguen activos al cambiar de sección dentro de YEP.
+    inject(BrowserPaymentAlertsService);
+
     effect(() => {
       if (!this.canShowReceiptCaptureButton()) {
         this.receiptCaptureOpen.set(false);

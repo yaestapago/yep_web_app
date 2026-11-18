@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { environment } from '../../../../../environments/environment';
+import { BrowserPaymentAlertsService } from '../../../source-events/services/browser-payment-alerts.service';
 import { SettingsPage } from './settings.page';
 
 describe('SettingsPage notifications accordion', () => {
@@ -56,6 +57,23 @@ describe('SettingsPage notifications accordion', () => {
     expect(compiled.querySelector('app-delete-account-card')?.textContent).toContain(
       'Eliminar cuenta',
     );
+  });
+
+  it('asks the browser to enable payment alerts from the toggle', async () => {
+    const browserAlerts = TestBed.inject(BrowserPaymentAlertsService);
+    const setEnabled = vi.spyOn(browserAlerts, 'setEnabled').mockResolvedValue('denied');
+    const fixture = TestBed.createComponent(SettingsPage);
+    fixture.componentInstance.notificationsOpen.set(true);
+    fixture.detectChanges();
+
+    const page = fixture.nativeElement as HTMLElement;
+    page.querySelector<HTMLButtonElement>('button[aria-label="Notificaciones push"]')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(setEnabled).toHaveBeenCalledWith(true);
+    expect(page.textContent).toContain('Permite las notificaciones de YEP');
+    httpMock.expectNone(`${environment.apiUrl}/auth/me/notification-preferences`);
   });
 
   it('does not render the commented-out transaction/security alert toggles', () => {
